@@ -7,11 +7,12 @@ interface ProfileCardProps {
 }
 
 export const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
+  const locationString = [user.city, user.state, user.country].filter(Boolean).join(', ');
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 flex flex-col items-center text-center">
       <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full mb-4" />
       <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{user.name}</h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user.city}, {user.country}</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{locationString}</p>
       <p className="mt-2 px-3 py-1 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-full dark:text-indigo-300 dark:bg-indigo-900">{user.studyLevel}</p>
       <p className="mt-4 text-sm text-slate-600 dark:text-slate-300 flex-grow">{user.bio}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">

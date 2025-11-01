@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { View } from './types';
 import { Sidebar } from './components/Sidebar';
@@ -7,6 +6,7 @@ import { DiscussionsPage } from './components/DiscussionsPage';
 import { DirectoryPage } from './components/DirectoryPage';
 import { RoadmapPage } from './components/RoadmapPage';
 import { EventsPage } from './components/EventsPage';
+import { ReadPage } from './components/ReadPage';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.Discussions);
@@ -21,6 +21,8 @@ const App: React.FC = () => {
         return <RoadmapPage />;
       case View.Events:
         return <EventsPage />;
+      case View.Read:
+        return <ReadPage />;
       default:
         return <DiscussionsPage />;
     }

@@ -6,7 +6,7 @@ export const MessageSquareIcon = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
-    viewBox="0 0 24 24"
+    viewBox="-1 -1 26 26"
     fill="none"
     stroke="currentColor"
     strokeWidth="2"
@@ -23,7 +23,7 @@ export const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
-    viewBox="0 0 24 24"
+    viewBox="-1 -1 26 26"
     fill="none"
     stroke="currentColor"
     strokeWidth="2"
@@ -43,7 +43,7 @@ export const MilestoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
-    viewBox="0 0 24 24"
+    viewBox="-1 -1 26 26"
     fill="none"
     stroke="currentColor"
     strokeWidth="2"
@@ -62,7 +62,7 @@ export const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
-    viewBox="0 0 24 24"
+    viewBox="-1 -1 26 26"
     fill="none"
     stroke="currentColor"
     strokeWidth="2"
@@ -82,7 +82,7 @@ export const SparklesIcon = (props: React.SVGProps<SVGSVGElement>) => (
         xmlns="http://www.w3.org/2000/svg" 
         width="24" 
         height="24" 
-        viewBox="0 0 24 24" 
+        viewBox="-1 -1 26 26"
         fill="none" 
         stroke="currentColor" 
         strokeWidth="2" 
@@ -103,7 +103,7 @@ export const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
         xmlns="http://www.w3.org/2000/svg" 
         width="24" 
         height="24" 
-        viewBox="0 0 24 24" 
+        viewBox="-1 -1 26 26"
         fill="none" 
         stroke="currentColor" 
         strokeWidth="2" 
@@ -120,7 +120,7 @@ export const BotIcon = (props: React.SVGProps<SVGSVGElement>) => (
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
-        viewBox="0 0 24 24"
+        viewBox="-1 -1 26 26"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -142,7 +142,7 @@ export const GridIcon = (props: React.SVGProps<SVGSVGElement>) => (
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
-        viewBox="0 0 24 24"
+        viewBox="-1 -1 26 26"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -162,7 +162,7 @@ export const ListIcon = (props: React.SVGProps<SVGSVGElement>) => (
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
-        viewBox="0 0 24 24"
+        viewBox="-1 -1 26 26"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -182,7 +182,7 @@ export const ReplyIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg 
     {...props}
     xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 20 20" 
+    viewBox="-1 -1 22 22"
     fill="currentColor"
     width="16"
     height="16"
@@ -197,7 +197,7 @@ export const BookOpenIcon = (props: React.SVGProps<SVGSVGElement>) => (
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
-        viewBox="0 0 24 24"
+        viewBox="-1 -1 26 26"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -215,7 +215,7 @@ export const VideoIcon = (props: React.SVGProps<SVGSVGElement>) => (
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
-        viewBox="0 0 24 24"
+        viewBox="-1 -1 26 26"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -233,7 +233,7 @@ export const FeatherIcon = (props: React.SVGProps<SVGSVGElement>) => (
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
-        viewBox="0 0 24 24"
+        viewBox="-1 -1 26 26"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -246,13 +246,84 @@ export const FeatherIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-export const ClipboardListIcon = (props: React.SVGProps<SVGSVGElement>) => (
+export const PaperclipIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.59a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+
+{/* FIX: Add missing PlayIcon for FloatingPlayer component */}
+export const PlayIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
         {...props}
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
         viewBox="0 0 24 24"
+        fill="currentColor"
+    >
+        <path d="M8 5v14l11-7L8 5z" />
+    </svg>
+);
+
+{/* FIX: Add missing SkipForwardIcon for FloatingPlayer component */}
+export const SkipForwardIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+        {...props}
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="-1 -1 26 26"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <polygon points="5 4 15 12 5 20 5 4" />
+        <line x1="19" y1="5" x2="19" y2="19" />
+    </svg>
+);
+
+export const ShareIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+        {...props}
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="-1 -1 26 26"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <circle cx="18" cy="12" r="3" />
+        <circle cx="6" cy="5" r="3" />
+        <circle cx="6" cy="19" r="3" />
+        <line x1="15.41" y1="10.49" x2="8.59" y2="6.51" />
+        <line x1="15.41" y1="13.51" x2="8.59" y2="17.49" />
+    </svg>
+);
+
+export const ClipboardListIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+        {...props}
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="-1 -1 26 26"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -266,4 +337,91 @@ export const ClipboardListIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path d="M8 11h.01" />
         <path d="M8 16h.01" />
     </svg>
+);
+
+export const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+
+export const ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+export const MapPinIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="-1 -1 26 26"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+export const LanguagesIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+        {...props}
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="-1 -1 26 26"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <path d="m5 8 6 6" />
+        <path d="m4 14 6-6 2-3" />
+        <path d="M2 5h12" />
+        <path d="M7 2h1" />
+        <path d="m22 22-5-10-5 10" />
+        <path d="M14 18h6" />
+    </svg>
+);
+
+export const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+export const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
 );

@@ -87,11 +87,11 @@ const AITags: React.FC<{ threadBody: string, existingTags: string[] }> = ({ thre
     );
 };
 
-const ReplyNode: React.FC<{ reply: ReplyNodeData; onAddReply: (text: string, parentId: string | null) => void; }> = ({ reply, onAddReply }) => {
+const ReplyNode: React.FC<{ reply: ReplyNodeData; onAddReply: (text: string, image: File | null, parentId: string | null) => void; }> = ({ reply, onAddReply }) => {
     const [showComposer, setShowComposer] = useState(false);
 
-    const handleReplySubmit = (text: string) => {
-        onAddReply(text, reply.id);
+    const handleReplySubmit = (text: string, image: File | null) => {
+        onAddReply(text, image, reply.id);
         setShowComposer(false);
     };
     
@@ -104,7 +104,12 @@ const ReplyNode: React.FC<{ reply: ReplyNodeData; onAddReply: (text: string, par
                         <span className="font-semibold text-slate-800 dark:text-slate-200">{reply.author.name}</span>
                         <span className="text-slate-500 dark:text-slate-400">{reply.createdAt}</span>
                     </div>
-                    <p className="mt-2 text-slate-700 dark:text-slate-300">{reply.body}</p>
+                    {reply.body && <p className="mt-2 text-slate-700 dark:text-slate-300">{reply.body}</p>}
+                    {reply.imageUrl && (
+                        <div className="mt-3">
+                            <img src={reply.imageUrl} alt="Reply attachment" className="w-full max-w-xs rounded-lg object-cover" />
+                        </div>
+                    )}
                 </div>
                 <div className="mt-2 pl-2">
                     <button onClick={() => setShowComposer(prev => !prev)} className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400">
@@ -133,13 +138,14 @@ const ReplyNode: React.FC<{ reply: ReplyNodeData; onAddReply: (text: string, par
 export const DiscussionThread: React.FC<DiscussionThreadProps> = ({ thread, onBack, showBackButton = false }) => {
   const [replies, setReplies] = useState<Reply[]>(thread.replies);
 
-  const handleAddReply = (text: string, parentId: string | null = null) => {
+  const handleAddReply = (text: string, image: File | null, parentId: string | null = null) => {
     const newReply: Reply = {
       id: `r${Date.now()}`,
       author: { id: 'currentUser', name: 'You', avatarUrl: 'https://picsum.photos/seed/current/100/100', city: 'Your City', country: 'Your Country', studyLevel: 'Foundation', interests: [], bio: '' },
       body: text,
       createdAt: 'Just now',
-      parentId: parentId
+      parentId: parentId,
+      imageUrl: image ? URL.createObjectURL(image) : undefined,
     };
     setReplies(prev => [...prev, newReply]);
   };
@@ -184,8 +190,14 @@ export const DiscussionThread: React.FC<DiscussionThreadProps> = ({ thread, onBa
         
         <AITags threadBody={thread.body} existingTags={thread.tags} />
 
-        <p className="mt-6 text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{thread.body}</p>
+        {thread.body && <p className="mt-6 text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{thread.body}</p>}
         
+        {thread.imageUrl && (
+            <div className="mt-4">
+                <img src={thread.imageUrl} alt="Thread attachment" className="w-full max-w-lg rounded-lg object-cover" />
+            </div>
+        )}
+
         <AISummary threadBody={thread.body} />
 
         <div className="flex items-center justify-between mt-6 border-t dark:border-slate-700 pt-4">
@@ -205,7 +217,7 @@ export const DiscussionThread: React.FC<DiscussionThreadProps> = ({ thread, onBa
         </div>
         <div className="mt-6 border-t dark:border-slate-700 pt-6">
             <h3 className="text-lg font-semibold mb-2">Join the conversation</h3>
-            <Composer placeholder="Write a new reply to the main thread..." onSubmit={(text) => handleAddReply(text, null)} buttonText="Post Reply" />
+            <Composer placeholder="Write a new reply to the main thread..." onSubmit={(text, image) => handleAddReply(text, image, null)} buttonText="Post Reply" />
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ export interface User {
   name: string;
   avatarUrl: string;
   city: string;
+  state?: string;
   country: string;
   studyLevel: 'Foundation' | 'Reflection' | 'Exploration' | 'Integration';
   interests: string[];
@@ -15,10 +16,11 @@ export interface Reply {
   body: string;
   createdAt: string;
   parentId?: string | null;
+  imageUrl?: string;
 }
 
 export interface Thread {
-  id: string;
+  id:string;
   title: string;
   body: string;
   author: User;
@@ -26,6 +28,7 @@ export interface Thread {
   createdAt: string;
   resonates: number;
   replies: Reply[];
+  imageUrl?: string;
 }
 
 export interface RoadmapStep {
@@ -52,11 +55,30 @@ export interface Event {
   endDate: string;
   location: string;
   host: User;
+  category: string;
+  organizer: string;
+  language: string;
+}
+
+export interface Chapter {
+  id: string;
+  title: string;
+  content: string;
+}
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  coverUrl: string;
+  description: string;
+  chapters: Chapter[];
 }
 
 export enum View {
   Discussions = 'Discussions',
   Directory = 'Directory',
   Roadmap = 'Roadmap',
-  Events = 'Events'
+  Events = 'Events',
+  Read = 'Read',
 }

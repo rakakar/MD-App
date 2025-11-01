@@ -1,25 +1,32 @@
+
 import React, { useState, useMemo } from 'react';
-import { MOCK_USERS } from '../constants';
+import { COMMUNITY_CONTACTS } from '../constants';
 import { ProfileCard } from './ProfileCard';
 import { ProfileListItem } from './ProfileListItem';
 import { GridIcon, ListIcon } from './icons';
 
 export const DirectoryPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [studyLevelFilter, setStudyLevelFilter] = useState('All');
+    const [stateFilter, setStateFilter] = useState('All');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-    const studyLevels = ['All', 'Foundation', 'Reflection', 'Exploration', 'Integration'];
+    const states = useMemo(() => {
+        const stateSet = new Set(COMMUNITY_CONTACTS.map(user => user.state).filter((s): s is string => !!s));
+        return ['All', ...Array.from(stateSet).sort()];
+    }, []);
 
     const filteredUsers = useMemo(() => {
-        return MOCK_USERS.filter(user => {
-            const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  user.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                  user.interests.some(interest => interest.toLowerCase().includes(searchTerm.toLowerCase()));
-            const matchesLevel = studyLevelFilter === 'All' || user.studyLevel === studyLevelFilter;
-            return matchesSearch && matchesLevel;
+        return COMMUNITY_CONTACTS.filter(user => {
+            const lowerCaseSearch = searchTerm.toLowerCase();
+            const matchesSearch = user.name.toLowerCase().includes(lowerCaseSearch) || 
+                                  user.city.toLowerCase().includes(lowerCaseSearch) ||
+                                  (user.state && user.state.toLowerCase().includes(lowerCaseSearch)) ||
+                                  user.country.toLowerCase().includes(lowerCaseSearch) ||
+                                  user.interests.some(interest => interest.toLowerCase().includes(lowerCaseSearch));
+            const matchesState = stateFilter === 'All' || user.state === stateFilter;
+            return matchesSearch && matchesState;
         });
-    }, [searchTerm, studyLevelFilter]);
+    }, [searchTerm, stateFilter]);
 
   return (
     <div className="p-4 md:p-8 h-full overflow-y-auto">
@@ -36,11 +43,11 @@ export const DirectoryPage: React.FC = () => {
                     className="flex-grow p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:border-slate-600"
                 />
                 <select
-                    value={studyLevelFilter}
-                    onChange={(e) => setStudyLevelFilter(e.target.value)}
+                    value={stateFilter}
+                    onChange={(e) => setStateFilter(e.target.value)}
                     className="p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:border-slate-600"
                 >
-                    {studyLevels.map(level => <option key={level} value={level}>Level: {level}</option>)}
+                    {states.map(loc => <option key={loc} value={loc}>State: {loc}</option>)}
                 </select>
             </div>
 
