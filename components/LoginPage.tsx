@@ -11,10 +11,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <div className="text-center p-8">
                 <BookOpenIcon className="w-16 h-16 mx-auto text-indigo-500" />
                 <h1 className="mt-6 text-3xl font-bold text-slate-900 dark:text-slate-100">
-                    Madhyasth Darshan Community
+                    Madhyasth Darshan
                 </h1>
                 <p className="mt-2 text-slate-600 dark:text-slate-400">
-                    Join the community to learn and discuss.
+                    Join people from around the world to learn, discuss, and share understanding together.
                 </p>
                 <div className="mt-8">
                     <button

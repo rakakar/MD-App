@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { User, Book, Note, Chapter } from '../types';
 import { EditIcon, LogOutIcon, MapPinIcon, BookmarkIcon, FileTextIcon, ShareIcon, ChevronLeftIcon, ChevronRightIcon } from './icons';
 import { EditProfileModal } from './EditProfileModal';
@@ -202,6 +202,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props) => {
     const { user, onUpdateUser, onLogout } = props;
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'about' | 'bookmarks'>('about');
+    const [coverPhoto, setCoverPhoto] = useState('https://picsum.photos/seed/cover/1200/300');
+    
+    const profilePhotoInputRef = useRef<HTMLInputElement>(null);
+    const coverPhotoInputRef = useRef<HTMLInputElement>(null);
+    
     const locationString = [user.city, user.state, user.country].filter(Boolean).join(', ');
     
     const handleSaveChanges = (updatedUser: User) => {
@@ -209,36 +214,91 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props) => {
         setIsEditModalOpen(false);
     };
 
+    const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCoverPhoto(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                onUpdateUser({ ...user, avatarUrl: reader.result as string });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     return (
         <>
             <div className="h-full overflow-y-auto bg-slate-100/50 dark:bg-slate-900/50">
                 <div className="max-w-4xl mx-auto p-4 md:p-8">
-                    <div className="relative h-48 bg-indigo-200 dark:bg-indigo-900 rounded-2xl">
-                        <img src="https://picsum.photos/seed/cover/1200/300" alt="Cover" className="w-full h-full object-cover rounded-2xl" />
-                        <div className="absolute -bottom-16 left-8">
-                            <img src={user.avatarUrl} alt={user.name} className="w-32 h-32 rounded-full border-4 border-slate-100/50 dark:border-slate-900/50" />
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end pt-4 pb-8">
-                        <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">
-                           <EditIcon className="w-4 h-4" /> Edit Profile
+                    <div className="relative h-48 bg-indigo-200 dark:bg-indigo-900 rounded-2xl group">
+                        <img src={coverPhoto} alt="Cover" className="w-full h-full object-cover rounded-2xl" />
+                        <button
+                            onClick={() => coverPhotoInputRef.current?.click()}
+                            className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Change cover photo"
+                        >
+                            <EditIcon className="w-5 h-5" />
                         </button>
-                         <button onClick={onLogout} className="ml-2 flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">
-                           <LogOutIcon className="w-4 h-4" /> Logout
-                        </button>
-                    </div>
-
-                    <div className="mt-8">
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{user.name}</h1>
-                        <div className="mt-2 flex items-center gap-4 text-slate-500 dark:text-slate-400">
-                            <span className="px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-full dark:text-indigo-300 dark:bg-indigo-900">{user.studyLevel}</span>
-                            <div className="flex items-center gap-1.5">
-                               <MapPinIcon className="w-4 h-4" /> {locationString}
+                        <input
+                            type="file"
+                            ref={coverPhotoInputRef}
+                            onChange={handleCoverPhotoChange}
+                            className="hidden"
+                            accept="image/*"
+                        />
+                        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 lg:left-8 lg:translate-x-0">
+                            <div className="relative group">
+                                <img src={user.avatarUrl} alt={user.name} className="w-32 h-32 rounded-full border-4 border-slate-100/50 dark:border-slate-900/50" />
+                                <button
+                                    onClick={() => profilePhotoInputRef.current?.click()}
+                                    className="absolute inset-0 bg-black/50 text-white flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                    aria-label="Change profile photo"
+                                >
+                                    <EditIcon className="w-8 h-8" />
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={profilePhotoInputRef}
+                                    onChange={handleProfilePhotoChange}
+                                    className="hidden"
+                                    accept="image/*"
+                                />
                             </div>
                         </div>
                     </div>
                     
+                    <div className="mt-20 lg:mt-4 lg:pl-44 w-full">
+                        <div className="flex flex-col items-center lg:flex-row lg:items-start lg:justify-between">
+                            <div className="text-center lg:text-left">
+                                <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{user.name}</h1>
+                                <div className="mt-2 flex items-center flex-wrap justify-center gap-4 text-slate-500 dark:text-slate-400 lg:justify-start">
+                                    <span className="px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-full dark:text-indigo-300 dark:bg-indigo-900">{user.studyLevel}</span>
+                                    <div className="flex items-center gap-1.5">
+                                    <MapPinIcon className="w-4 h-4" /> {locationString}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-6 lg:mt-0 flex-shrink-0 flex items-center gap-2">
+                                <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">
+                                <EditIcon className="w-4 h-4" /> Edit Profile
+                                </button>
+                                <button onClick={onLogout} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">
+                                <LogOutIcon className="w-4 h-4" /> Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="mt-8 border-b border-slate-200 dark:border-slate-700">
                         <nav className="flex -mb-px space-x-6">
                             <button onClick={() => setActiveTab('about')} className={`px-1 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'about' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>

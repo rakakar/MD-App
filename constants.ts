@@ -12,10 +12,10 @@ export const NAVIGATION_ITEMS = [
 
 export const MOCK_CURRENT_USER: User = {
     id: 'u-current',
-    name: 'Riya Patel',
-    age: 28,
+    name: 'Rakesh Kanwar',
+    age: 34,
     avatarUrl: 'https://picsum.photos/seed/riya/200/200',
-    city: 'Pune',
+    city: 'Raipur',
     country: 'India',
     studyLevel: 'Reflection',
     interests: ['Coexistence', 'Education', 'Nature'],
@@ -291,7 +291,7 @@ export const MOCK_BOOKS: Book[] = [
     id: 'b1',
     title: 'Manav Vyavahar Darshan',
     author: 'A. Nagraj',
-    coverUrl: 'https://i.imgur.com/X54a3sN.jpg',
+    coverUrl: 'https://i.imgur.com/gK5203G.png',
     description: 'The foundational text on human conduct in Madhyasth Darshan.',
     chapters: bookChapters.map((chapter) => {
         if (chapter.content.startsWith('Content for')) {

@@ -185,8 +185,8 @@ export const DiscussionsPage: React.FC<DiscussionsPageProps> = ({ currentUser })
 
   return (
     <div className="h-full bg-slate-100/50 dark:bg-slate-900/50">
-      {/* Mobile view: Navigate between list and detail */}
-      <div className="md:hidden h-full">
+      {/* Mobile & Tablet view: Navigate between list and detail */}
+      <div className="lg:hidden h-full">
         {selectedThread ? (
           <div className="h-full overflow-y-auto">
             <DiscussionThread thread={selectedThread} onBack={() => setSelectedThread(null)} showBackButton={true} currentUser={currentUser} />
@@ -209,7 +209,7 @@ export const DiscussionsPage: React.FC<DiscussionsPageProps> = ({ currentUser })
       </div>
 
       {/* Desktop view: two-panel layout */}
-      <div className="hidden md:flex h-full">
+      <div className="hidden lg:flex h-full">
         <div className="w-1/3 lg:w-1/4 h-full border-r border-slate-200 dark:border-slate-700">
             <ThreadList
                 threads={filteredThreads}
