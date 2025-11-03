@@ -487,6 +487,91 @@ export const MOCK_THREADS: Thread[] = [
         parentId: 'r5'
       }
     ]
+  },
+  {
+    id: 't6',
+    title: 'How do you maintain consistency in "Abhyas" (Practice)?',
+    body: 'I find it easy to be motivated for a few days, but then life gets in the way. What are some practical ways you all have found to build a consistent practice of self-observation and reflection, especially with a busy schedule?',
+    author: MOCK_USERS[2],
+    tags: ['Practice', 'Abhyas', 'Consistency', 'Daily Life'],
+    createdAt: '14 days ago',
+    resonates: 25,
+    replies: [
+      {
+        id: 'r7',
+        author: MOCK_USERS[3],
+        body: "I link it to an existing habit. For example, I take 10 minutes right after my morning tea to reflect. It's not about the duration, but the regularity. Start small.",
+        createdAt: '14 days ago',
+        parentId: null
+      },
+      {
+        id: 'r8',
+        author: MOCK_USERS[1],
+        body: "Kenji's point is great. Also, don't see it as another 'task' to complete. See it as a moment of peace for yourself. Reframing it helped me a lot. It's a 'get to' not a 'have to'.",
+        createdAt: '13 days ago',
+        parentId: 'r7'
+      },
+      {
+        id: 'r9',
+        author: MOCK_USERS[0],
+        body: "That's a powerful reframe, David. Thank you. The feeling of it being a chore is exactly what I struggle with.",
+        createdAt: '13 days ago',
+        parentId: 'r8'
+      }
+    ]
+  },
+  {
+    id: 't7',
+    title: 'Navigating disagreements to ensure "Nyay" (Justice).',
+    body: 'The concept of justice as "recognition of relationship, evaluation of values, mutual fulfillment, and its continuity" is beautiful. But in a heated disagreement with a loved one, it\'s hard to remember this. How do you bring yourself back to this understanding in the moment?',
+    author: MOCK_USERS[0],
+    tags: ['Justice', 'Nyay', 'Relationships', 'Communication'],
+    createdAt: '16 days ago',
+    resonates: 31,
+    replies: [
+      {
+        id: 'r10',
+        author: MOCK_USERS[2],
+        body: "The first step for me is to just pause. I literally tell my husband, 'I need a moment to think clearly before I respond.' That space, even just 60 seconds, can be enough to shift from reacting to responding with the intention of mutual fulfillment.",
+        createdAt: '15 days ago',
+        parentId: null
+      }
+    ]
+  },
+  {
+    id: 't8',
+    title: 'Redefining Prosperity (Samriddhi) beyond just wealth.',
+    body: 'Society tells us prosperity is about having more and more. Madhyasth Darshan defines it as "the feeling of having more than required physical facilities". This has been a game-changer for me, reducing so much anxiety. Has anyone else experienced this shift? What did it look like for you?',
+    author: MOCK_USERS[3],
+    tags: ['Prosperity', 'Samriddhi', 'Mindfulness', 'Needs vs Wants'],
+    createdAt: '20 days ago',
+    resonates: 45,
+    replies: [
+      {
+        id: 'r11',
+        author: MOCK_USERS[1],
+        body: "Completely. It led my family to do a 'needs assessment'. We wrote down everything we actually *need* for our well-being. It was surprising how much of our spending was on things outside of that. We're not deprived; we're just more intentional. And we feel richer for it.",
+        createdAt: '19 days ago',
+        parentId: null
+      },
+      {
+        id: 'r12',
+        author: MOCK_USERS[2],
+        body: "It's about identifying that feeling of 'enough'. For me, it was realizing I had enough clothes, enough kitchen gadgets, etc. The desire for more just vanished when I focused on what I truly needed to live well.",
+        createdAt: '19 days ago',
+        parentId: 'r11'
+      }
+    ]
+  },
+  {
+    id: 't9',
+    title: 'What would an education system based on Madhyasth Darshan look like?',
+    body: 'I\'ve been thinking about my children\'s education. The current system is so focused on competition and information transfer. What would be the key elements of an educational model designed to foster understanding, resolution, and harmonious living?',
+    author: MOCK_CURRENT_USER,
+    tags: ['Education', 'Children', 'Sanskar', 'Future'],
+    createdAt: '25 days ago',
+    resonates: 19,
+    replies: []
   }
 ];
 
