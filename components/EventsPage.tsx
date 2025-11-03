@@ -38,7 +38,8 @@ export const EventsPage: React.FC = () => {
     }, [appliedFilters]);
 
     const activeFilterCount = useMemo(() => {
-      return Object.values(appliedFilters).reduce((count, arr) => count + arr.length, 0);
+      // FIX: Explicitly type `arr` as string[] to resolve a TypeScript inference issue where it was being treated as 'unknown'.
+      return Object.values(appliedFilters).reduce((count, arr: string[]) => count + arr.length, 0);
     }, [appliedFilters]);
 
     const handleOpenDrawer = () => {

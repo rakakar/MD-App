@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   name: string;
+  age?: number;
   avatarUrl: string;
   city: string;
   state?: string;
@@ -75,10 +76,20 @@ export interface Book {
   chapters: Chapter[];
 }
 
+export interface Note {
+  id: string;
+  chapterId: string;
+  selectedText: string;
+  noteText: string;
+  start: number;
+  end: number;
+}
+
 export enum View {
   Discussions = 'Discussions',
   Directory = 'Directory',
   Roadmap = 'Roadmap',
   Events = 'Events',
   Read = 'Read',
+  Profile = 'Profile',
 }

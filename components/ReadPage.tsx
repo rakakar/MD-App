@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MOCK_BOOKS } from '../constants';
-import { Book } from '../types';
+import { Book, Note } from '../types';
 import { ReaderView } from './ReaderView';
 
 const BookCard: React.FC<{ book: Book; onRead: (book: Book) => void }> = ({ book, onRead }) => (
@@ -13,11 +13,71 @@ const BookCard: React.FC<{ book: Book; onRead: (book: Book) => void }> = ({ book
   </div>
 );
 
-export const ReadPage: React.FC = () => {
+interface ReadPageProps {
+  bookmarks: string[];
+  notes: Note[];
+  onToggleBookmark: (chapterId: string) => void;
+  onAddNote: (note: Note) => void;
+  bookToOpen: string | null;
+  chapterToOpen: string | null;
+  noteToHighlight: Note | null;
+  onDidOpenBook: () => void;
+}
+
+
+export const ReadPage: React.FC<ReadPageProps> = ({
+  bookmarks,
+  notes,
+  onToggleBookmark,
+  onAddNote,
+  bookToOpen,
+  chapterToOpen,
+  noteToHighlight,
+  onDidOpenBook,
+}) => {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
+  useEffect(() => {
+    if (bookToOpen) {
+      const book = MOCK_BOOKS.find(b => b.id === bookToOpen);
+      if (book) {
+        setSelectedBook(book);
+      }
+    }
+  }, [bookToOpen]);
+
+
   if (selectedBook) {
-    return <ReaderView book={selectedBook} onBack={() => setSelectedBook(null)} />;
+    const initialChapterIndex = chapterToOpen
+      ? selectedBook.chapters.findIndex(c => c.id === chapterToOpen)
+      : 0;
+
+    const handleBack = () => {
+      setSelectedBook(null);
+      if (bookToOpen) {
+        onDidOpenBook();
+      }
+    };
+
+    return (
+      <ReaderView
+        book={selectedBook}
+        onBack={handleBack}
+        bookmarks={bookmarks}
+        notes={notes}
+        onToggleBookmark={onToggleBookmark}
+        onAddNote={onAddNote}
+        initialChapterIndex={initialChapterIndex >= 0 ? initialChapterIndex : 0}
+        noteToHighlight={noteToHighlight}
+      />
+    );
+  }
+
+  const handleSelectBookFromLibrary = (book: Book) => {
+    if (bookToOpen) {
+        onDidOpenBook();
+    }
+    setSelectedBook(book);
   }
 
   return (
@@ -27,7 +87,7 @@ export const ReadPage: React.FC = () => {
         <p className="mt-2 text-slate-600 dark:text-slate-400">Foundational texts of Madhyasth Darshan.</p>
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8">
           {MOCK_BOOKS.map(book => (
-            <BookCard key={book.id} book={book} onRead={setSelectedBook} />
+            <BookCard key={book.id} book={book} onRead={handleSelectBookFromLibrary} />
           ))}
         </div>
       </div>

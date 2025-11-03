@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Thread, Reply } from '../types';
+import { Thread, Reply, User } from '../types';
 import { HeartIcon, SparklesIcon, BotIcon, ReplyIcon } from './icons';
 import { summarizeText, generateTags } from '../services/geminiService';
 import { Composer } from './Composer';
@@ -8,6 +8,7 @@ interface DiscussionThreadProps {
   thread: Thread;
   onBack: () => void;
   showBackButton?: boolean;
+  currentUser: User;
 }
 
 type ReplyNodeData = Reply & { children: ReplyNodeData[] };
@@ -135,13 +136,13 @@ const ReplyNode: React.FC<{ reply: ReplyNodeData; onAddReply: (text: string, ima
 };
 
 
-export const DiscussionThread: React.FC<DiscussionThreadProps> = ({ thread, onBack, showBackButton = false }) => {
+export const DiscussionThread: React.FC<DiscussionThreadProps> = ({ thread, onBack, showBackButton = false, currentUser }) => {
   const [replies, setReplies] = useState<Reply[]>(thread.replies);
 
   const handleAddReply = (text: string, image: File | null, parentId: string | null = null) => {
     const newReply: Reply = {
       id: `r${Date.now()}`,
-      author: { id: 'currentUser', name: 'You', avatarUrl: 'https://picsum.photos/seed/current/100/100', city: 'Your City', country: 'Your Country', studyLevel: 'Foundation', interests: [], bio: '' },
+      author: currentUser,
       body: text,
       createdAt: 'Just now',
       parentId: parentId,

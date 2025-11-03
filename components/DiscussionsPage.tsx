@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { MOCK_THREADS, MOCK_USERS } from '../constants';
-import { Thread } from '../types';
+import { Thread, User } from '../types';
 import { DiscussionThread } from './DiscussionThread';
 import { Composer } from './Composer';
 
@@ -136,8 +136,11 @@ const ThreadList: React.FC<ThreadListProps> = ({
   );
 };
 
+interface DiscussionsPageProps {
+  currentUser: User;
+}
 
-export const DiscussionsPage: React.FC = () => {
+export const DiscussionsPage: React.FC<DiscussionsPageProps> = ({ currentUser }) => {
   const [threads, setThreads] = useState<Thread[]>(MOCK_THREADS);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [showComposer, setShowComposer] = useState(false);
@@ -166,7 +169,7 @@ export const DiscussionsPage: React.FC = () => {
           id: `t${threads.length + 1}`,
           title,
           body: body || '',
-          author: { id: 'currentUser', name: 'You', avatarUrl: 'https://picsum.photos/seed/current/100/100', city: 'Your City', country: 'Your Country', studyLevel: 'Foundation', interests: [], bio: '' },
+          author: currentUser,
           tags: [],
           createdAt: 'Just now',
           resonates: 0,
@@ -186,7 +189,7 @@ export const DiscussionsPage: React.FC = () => {
       <div className="md:hidden h-full">
         {selectedThread ? (
           <div className="h-full overflow-y-auto">
-            <DiscussionThread thread={selectedThread} onBack={() => setSelectedThread(null)} showBackButton={true} />
+            <DiscussionThread thread={selectedThread} onBack={() => setSelectedThread(null)} showBackButton={true} currentUser={currentUser} />
           </div>
         ) : (
           <ThreadList
@@ -224,7 +227,7 @@ export const DiscussionsPage: React.FC = () => {
         </div>
         <main className="w-2/3 lg:w-3/4 h-full overflow-y-auto">
           {selectedThread ? (
-            <DiscussionThread thread={selectedThread} onBack={() => {}} showBackButton={false} />
+            <DiscussionThread thread={selectedThread} onBack={() => {}} showBackButton={false} currentUser={currentUser} />
           ) : (
             <div className="flex items-center justify-center h-full text-center p-4">
               <p className="text-slate-500">Select a discussion from the list to read it, or use the filters to narrow your search.</p>
