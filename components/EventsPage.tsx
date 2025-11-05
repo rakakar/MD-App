@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { MOCK_EVENTS } from '../constants';
 import { EventCard } from './EventCard';

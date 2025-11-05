@@ -106,7 +106,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
 
     const isBookmarked = (chapterId: string) => bookmarks.includes(chapterId);
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: React.MouseEvent<HTMLElement>) => {
         if (isNoteModalOpen) return;
         
         const selection = window.getSelection();
@@ -141,11 +141,12 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                 return;
             }
 
-            const rect = range.getBoundingClientRect();
-            const mainScrollTop = contentRef.current?.parentElement?.scrollTop || 0;
+            const selectionRect = range.getBoundingClientRect();
+            const mainRect = e.currentTarget.getBoundingClientRect();
+
             setSelectionPopup({
-                top: rect.top - 50 + mainScrollTop,
-                left: rect.left + rect.width / 2,
+                top: selectionRect.top - mainRect.top + e.currentTarget.scrollTop - 50,
+                left: selectionRect.left - mainRect.left + selectionRect.width / 2,
                 text: selection.toString(),
                 start,
                 end,
@@ -290,7 +291,9 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                 )}
                 {activeTab === 'notes' && (
                     <div className="space-y-4">
-                        {Object.keys(notesByChapter).length > 0 ? Object.entries(notesByChapter).map(([chapterId, chapterNotes]) => {
+                        {/* FIX: Changed from Object.entries to Object.keys to avoid type inference issues with chapterNotes. */}
+                        {Object.keys(notesByChapter).length > 0 ? Object.keys(notesByChapter).map(chapterId => {
+                            const chapterNotes = notesByChapter[chapterId];
                             const chapter = book.chapters.find(c => c.id === chapterId);
                             return (
                                 <div key={chapterId}>
@@ -366,12 +369,12 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                      </div>
                 )}
                 
-                <main className="flex-1 h-full overflow-y-auto relative" onMouseUp={handleMouseUp} onClick={() => selectionPopup && !isNoteModalOpen && setSelectionPopup(null)}>
+                <main className="flex-1 h-full overflow-y-auto relative" onMouseUp={handleMouseUp}>
                     {selectionPopup && (
                         <div 
                             className="absolute z-10 flex items-center gap-1 bg-slate-900 text-white rounded-lg shadow-lg p-1 -translate-x-1/2" 
                             style={{ top: selectionPopup.top, left: selectionPopup.left }}
-                            onClick={e => e.stopPropagation()}
+                            onMouseUp={e => e.stopPropagation()}
                         >
                             <button onClick={handleCopy} title="Copy" className="p-2 rounded-md hover:bg-slate-700"><ClipboardIcon className="w-5 h-5"/></button>
                             <button onClick={handleHighlight} title="Highlight" className="p-2 rounded-md hover:bg-slate-700"><HighlighterIcon className="w-5 h-5"/></button>
