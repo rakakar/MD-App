@@ -79,6 +79,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
     const highlightRef = useRef<HTMLElement>(null);
+    const mainRef = useRef<HTMLElement>(null);
 
     const currentChapter = book.chapters[currentChapterIndex];
 
@@ -100,60 +101,69 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
             setCurrentChapterIndex(index);
             setIsTocOpen(false);
             setSelectionPopup(null);
-            contentRef.current?.parentElement?.scrollTo(0, 0);
+            mainRef.current?.scrollTo(0, 0);
         }
     };
 
     const isBookmarked = (chapterId: string) => bookmarks.includes(chapterId);
 
-    const handleMouseUp = (e: React.MouseEvent<HTMLElement>) => {
+    const handleSelection = () => {
         if (isNoteModalOpen) return;
-        
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0 && selection.toString().trim().length > 5) {
-            const range = selection.getRangeAt(0);
 
-            // Do not show popup if selection is inside another popup/modal
-            let parent = range.startContainer.parentElement;
-            while(parent) {
-                if (parent.closest('.fixed')) return;
-                parent = parent.parentElement;
+        setTimeout(() => {
+            const selection = window.getSelection();
+
+            if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+                if (selectionPopup) setSelectionPopup(null);
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+            const selectedText = range.toString();
+
+            if (selectedText.trim().length < 3) {
+                 if (selectionPopup) setSelectionPopup(null);
+                return;
             }
 
             const contentEl = contentRef.current;
-            if (!contentEl || !contentEl.contains(range.startContainer) || !contentEl.contains(range.endContainer)) {
-                setSelectionPopup(null);
+            if (!contentEl || !contentEl.contains(range.commonAncestorContainer)) {
+                if (selectionPopup) setSelectionPopup(null);
                 return;
             }
 
-            // Create a range from the start of the content container to the start of the selection
-            // to robustly calculate the start offset, ignoring existing DOM nodes like <mark>.
+            let parent = range.startContainer.parentElement;
+            while (parent) {
+                const position = getComputedStyle(parent).position;
+                if (position === 'fixed' || position === 'absolute') {
+                    return;
+                }
+                parent = parent.parentElement;
+            }
+
             const preSelectionRange = document.createRange();
             preSelectionRange.selectNodeContents(contentEl);
             preSelectionRange.setEnd(range.startContainer, range.startOffset);
-            const start = preSelectionRange.toString().length;
+            const startOffset = preSelectionRange.toString().length;
+            const endOffset = startOffset + selectedText.length;
 
-            // The end is just start + selection length
-            const end = start + range.toString().length;
-            
-            if (start >= end) {
-                setSelectionPopup(null);
-                return;
-            }
+            const container = mainRef.current;
+            if (!container) return;
 
             const selectionRect = range.getBoundingClientRect();
-            const mainRect = e.currentTarget.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
 
+            const top = selectionRect.top - containerRect.top + container.scrollTop - 50;
+            const left = selectionRect.left - containerRect.left + container.scrollLeft + selectionRect.width / 2;
+            
             setSelectionPopup({
-                top: selectionRect.top - mainRect.top + e.currentTarget.scrollTop - 50,
-                left: selectionRect.left - mainRect.left + selectionRect.width / 2,
-                text: selection.toString(),
-                start,
-                end,
+                top: Math.max(container.scrollTop, top),
+                left: left,
+                text: selectedText,
+                start: startOffset,
+                end: endOffset,
             });
-        } else {
-            setSelectionPopup(null);
-        }
+        }, 10);
     };
     
     const handleAddNote = (noteText: string) => {
@@ -291,7 +301,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                 )}
                 {activeTab === 'notes' && (
                     <div className="space-y-4">
-                        {/* FIX: Changed from Object.entries to Object.keys to avoid type inference issues with chapterNotes. */}
                         {Object.keys(notesByChapter).length > 0 ? Object.keys(notesByChapter).map(chapterId => {
                             const chapterNotes = notesByChapter[chapterId];
                             const chapter = book.chapters.find(c => c.id === chapterId);
@@ -369,12 +378,19 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                      </div>
                 )}
                 
-                <main className="flex-1 h-full overflow-y-auto relative" onMouseUp={handleMouseUp}>
+                <main 
+                    ref={mainRef}
+                    className="flex-1 h-full overflow-y-auto relative" 
+                    onMouseUp={handleSelection}
+                    onTouchEnd={handleSelection}
+                    onScroll={() => setSelectionPopup(null)}
+                >
                     {selectionPopup && (
                         <div 
                             className="absolute z-10 flex items-center gap-1 bg-slate-900 text-white rounded-lg shadow-lg p-1 -translate-x-1/2" 
                             style={{ top: selectionPopup.top, left: selectionPopup.left }}
                             onMouseUp={e => e.stopPropagation()}
+                            onTouchEnd={e => e.stopPropagation()}
                         >
                             <button onClick={handleCopy} title="Copy" className="p-2 rounded-md hover:bg-slate-700"><ClipboardIcon className="w-5 h-5"/></button>
                             <button onClick={handleHighlight} title="Highlight" className="p-2 rounded-md hover:bg-slate-700"><HighlighterIcon className="w-5 h-5"/></button>
@@ -393,7 +409,11 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                     )}
                     <article className="max-w-3xl mx-auto p-6 md:p-10">
                         <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100">{currentChapter.title}</h1>
-                        <div ref={contentRef} className="mt-8 text-lg leading-8 text-slate-700 dark:text-slate-300 whitespace-pre-wrap selection:bg-indigo-200/50 dark:selection:bg-indigo-900/50">
+                        <div 
+                            ref={contentRef}
+                            onContextMenu={(e) => e.preventDefault()}
+                            className="mt-8 text-lg leading-8 text-slate-700 dark:text-slate-300 whitespace-pre-wrap selection:bg-indigo-200/50 dark:selection:bg-indigo-900/50"
+                        >
                             {renderChapterContent()}
                         </div>
                     </article>
