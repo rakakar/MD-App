@@ -4,6 +4,7 @@ import { CalendarIcon, MapPinIcon, UsersIcon, LanguagesIcon, ShareIcon } from '.
 
 interface EventCardProps {
   event: Event;
+  onViewDetails: (event: Event) => void;
 }
 
 const EventDetail: React.FC<{ icon: React.ElementType; text: string }> = ({ icon: Icon, text }) => (
@@ -13,7 +14,7 @@ const EventDetail: React.FC<{ icon: React.ElementType; text: string }> = ({ icon
   </div>
 );
 
-export const EventCard: React.FC<EventCardProps> = ({ event }) => {
+export const EventCard: React.FC<EventCardProps> = ({ event, onViewDetails }) => {
   const formatDates = (start: string, end: string | undefined) => {
     // A simple check if the date is in DD/MM/YYYY format, otherwise return as is.
     const isFormatted = /^\d{2}\/\d{2}\/\d{4}$/.test(start);
@@ -48,7 +49,9 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
       </div>
       
       <div className="px-6 pt-4 pb-6 flex items-center gap-4 border-t border-slate-100 dark:border-slate-700">
-        <button className="flex-grow px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <button 
+          onClick={() => onViewDetails(event)}
+          className="flex-grow px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
           View Details
         </button>
         <button

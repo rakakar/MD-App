@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { COMMUNITY_CONTACTS } from '../constants';
 import { ProfileCard } from './ProfileCard';
@@ -49,10 +50,7 @@ export const DirectoryPage: React.FC = () => {
                 >
                     {states.map(loc => <option key={loc} value={loc}>State: {loc}</option>)}
                 </select>
-            </div>
-
-            <div className="flex justify-end items-center mt-6">
-                <div className="flex items-center gap-1 p-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                <div className="self-start flex items-center gap-1 p-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
                     <button 
                         onClick={() => setViewMode('grid')}
                         className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-slate-800 text-indigo-600' : 'text-slate-500 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
@@ -70,7 +68,7 @@ export const DirectoryPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-6">
                 {viewMode === 'grid' ? (
                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredUsers.map(user => (

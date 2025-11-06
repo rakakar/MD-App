@@ -59,6 +59,8 @@ export interface Event {
   category: string;
   organizer: string;
   language: string;
+  posterUrl?: string;
+  invitationNote?: string;
 }
 
 export interface Chapter {

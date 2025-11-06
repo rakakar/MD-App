@@ -1,7 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { MOCK_EVENTS } from '../constants';
+import { Event } from '../types';
 import { EventCard } from './EventCard';
+import { EventDetailsPage } from './EventDetailsPage';
 import { FilterIcon, XIcon } from './icons';
 
 type FilterCategory = 'category' | 'location' | 'language' | 'organizer';
@@ -14,6 +16,7 @@ const filterTabs: { id: FilterCategory; label: string }[] = [
 ];
 
 export const EventsPage: React.FC = () => {
+    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [activeFilterTab, setActiveFilterTab] = useState<FilterCategory>('category');
 
@@ -39,7 +42,6 @@ export const EventsPage: React.FC = () => {
     }, [appliedFilters]);
 
     const activeFilterCount = useMemo(() => {
-      // FIX: The `reduce` method was causing a type inference issue. Replaced it with `flat().length` for a simpler and more robust calculation.
       return Object.values(appliedFilters).flat().length;
     }, [appliedFilters]);
 
@@ -68,6 +70,10 @@ export const EventsPage: React.FC = () => {
     const handleClearAll = () => {
       setTempFilters(initialFilters);
     };
+
+    if (selectedEvent) {
+        return <EventDetailsPage event={selectedEvent} onBack={() => setSelectedEvent(null)} />;
+    }
 
     return (
         <div className="p-4 md:p-8 h-full overflow-y-auto">
@@ -139,7 +145,7 @@ export const EventsPage: React.FC = () => {
 
                 {filteredEvents.length > 0 ? (
                     <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {filteredEvents.map(event => <EventCard key={event.id} event={event} />)}
+                        {filteredEvents.map(event => <EventCard key={event.id} event={event} onViewDetails={setSelectedEvent} />)}
                     </div>
                 ) : (
                     <div className="text-center py-16">

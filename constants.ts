@@ -674,6 +674,8 @@ export const MOCK_EVENTS: Event[] = [
     category: 'B1. Adhyayan Shivir (Pustak)',
     organizer: 'Multiple',
     language: 'Hindi [ हिन्दी ]',
+    posterUrl: 'https://i.imgur.com/SOOKk9s.png',
+    invitationNote: 'We cordially invite you to the 8th three-year study and practice session. This is a deep immersion into the philosophy, designed for dedicated students who wish to engage in a structured and continuous learning environment. The session will cover all major texts and include regular practice and reflection periods.'
   },
   {
     id: 'e1',
@@ -687,6 +689,8 @@ export const MOCK_EVENTS: Event[] = [
     category: 'C2. Workshop (Introductory)',
     organizer: MOCK_USERS[1].name,
     language: 'English & Hindi',
+    posterUrl: 'https://i.imgur.com/SOOKk9s.png',
+    invitationNote: 'Join us for a 7-day introductory workshop on Jeevan Vidya (Madhyasth Darshan). This online event is perfect for those new to the philosophy, providing a clear and accessible overview of its core principles. Through interactive sessions, we will explore the nature of happiness, relationships, and existence. No prior experience is required.'
   },
   {
     id: 'e2',
@@ -700,6 +704,8 @@ export const MOCK_EVENTS: Event[] = [
     category: 'A1. Study Circle',
     organizer: 'Mumbai Study Group',
     language: 'Hindi',
+    posterUrl: 'https://i.imgur.com/SOOKk9s.png',
+    invitationNote: 'The Mumbai Study Group invites you to our monthly meetup. This is an informal gathering for fellow students to connect, discuss the texts we are reading, and share insights from our personal practice. It\'s a wonderful opportunity to learn from each other in a supportive community setting.'
   },
   {
     id: 'e3',
@@ -713,6 +719,8 @@ export const MOCK_EVENTS: Event[] = [
     category: 'B2. Advanced Course',
     organizer: MOCK_USERS[3].name,
     language: 'English',
+    posterUrl: 'https://i.imgur.com/SOOKk9s.png',
+    invitationNote: 'This advanced course is for students who have completed the introductory workshops and are familiar with the foundational texts. We will undertake a detailed study of "Manav Abhyas Darshan," focusing on the nuances of human practice and the path to experiential understanding. Please ensure you meet the prerequisites before registering.'
   }
 ];
 
