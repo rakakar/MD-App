@@ -176,7 +176,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     const getModeLabel = () => {
         switch(mode) {
             case 'digital': return 'Digital Mode';
-            case 'physical': return 'Physical Mode';
+            case 'physical': return 'Physical Book Mode';
             case 'audio': return 'Audio Mode';
         }
     };
@@ -521,7 +521,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${mode === 'physical' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                                     >
                                         <BookOpenIcon className="w-4 h-4" />
-                                        Physical Book Mirror Mode
+                                        Physical Book Mode
                                     </button>
                                     <button 
                                         onClick={() => { setMode('audio'); setIsModeDropdownOpen(false); }}
