@@ -20,6 +20,7 @@ interface UserData {
 const App: React.FC = () => {
   const [currentUserData, setCurrentUserData] = useState<UserData | null>(null);
   const [currentView, setCurrentView] = useState<View>(View.Discussions);
+  const [isReadingMode, setIsReadingMode] = useState(false);
   
   const [bookToOpen, setBookToOpen] = useState<string | null>(null);
   const [chapterToOpen, setChapterToOpen] = useState<string | null>(null);
@@ -96,6 +97,7 @@ const App: React.FC = () => {
             setChapterToOpen(null);
             setNoteToHighlight(null);
           }}
+          onReadingStateChange={setIsReadingMode}
         />;
       case View.Profile:
         return <ProfilePage 
@@ -106,7 +108,6 @@ const App: React.FC = () => {
             bookmarks={bookmarks}
             notes={notes}
             onNavigateToChapter={handleNavigateToChapter}
-            // FIX: Corrected a typo in the onToggleBookmark prop. The correct function name is handleToggleBookmark.
             onToggleBookmark={handleToggleBookmark}
         />;
       default:
@@ -116,11 +117,11 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-      <Sidebar currentUser={user} currentView={currentView} onNavigate={setCurrentView} />
-      <main className="flex-1 h-full overflow-hidden pb-16 lg:pb-0">
+      {!isReadingMode && <Sidebar currentUser={user} currentView={currentView} onNavigate={setCurrentView} />}
+      <main className={`flex-1 h-full overflow-hidden ${isReadingMode ? '' : 'pb-16 lg:pb-0'}`}>
         {renderContent()}
       </main>
-      <BottomNav currentView={currentView} onNavigate={setCurrentView} />
+      {!isReadingMode && <BottomNav currentView={currentView} onNavigate={setCurrentView} />}
     </div>
   );
 };

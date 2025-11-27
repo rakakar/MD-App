@@ -22,6 +22,7 @@ interface ReadPageProps {
   chapterToOpen: string | null;
   noteToHighlight: Note | null;
   onDidOpenBook: () => void;
+  onReadingStateChange: (isReading: boolean) => void;
 }
 
 
@@ -34,6 +35,7 @@ export const ReadPage: React.FC<ReadPageProps> = ({
   chapterToOpen,
   noteToHighlight,
   onDidOpenBook,
+  onReadingStateChange,
 }) => {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
@@ -45,6 +47,12 @@ export const ReadPage: React.FC<ReadPageProps> = ({
       }
     }
   }, [bookToOpen]);
+
+  // Notify parent component about reading state changes
+  useEffect(() => {
+    onReadingStateChange(!!selectedBook);
+    return () => onReadingStateChange(false);
+  }, [selectedBook, onReadingStateChange]);
 
 
   if (selectedBook) {
