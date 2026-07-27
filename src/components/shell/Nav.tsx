@@ -24,43 +24,51 @@ export function BottomNav() {
   const { workspace } = useWorkspace();
   const pathname = usePathname() ?? "/";
 
+  // The search slot is centred in a 1fr–auto–1fr row and the other items are
+  // split around it, so it holds the same position whether the workspace has
+  // two ordinary items or three — laying them all out in one evenly-spaced row
+  // pushed it to the edge in the shorter workspaces.
+  const others = workspace.nav.filter((i) => !i.isSearch);
+  const searchItem = workspace.nav.find((i) => i.isSearch);
+  const left = others.slice(0, Math.ceil(others.length / 2));
+  const right = others.slice(Math.ceil(others.length / 2));
+
+  const item = (nav: NavItem) => {
+    const active = isActive(nav, pathname);
+    return (
+      <li key={nav.href} className="flex-1">
+        <Link
+          href={nav.href}
+          aria-current={active ? "page" : undefined}
+          className="flex min-h-13 flex-col items-center justify-center gap-0.5 px-1 pb-1.5 pt-2 text-[11px] font-medium transition-colors active:bg-black/5"
+          style={{ color: active ? "var(--ws-color)" : "var(--color-ink-soft)" }}
+        >
+          <Icon name={nav.icon} className="h-5 w-5" strokeWidth={active ? 2.2 : 1.8} />
+          <span className="max-w-full truncate">{nav.label}</span>
+        </Link>
+      </li>
+    );
+  };
+
   return (
     <nav
       aria-label={`${workspace.name} navigation`}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-[1fr_auto_1fr] items-stretch border-t border-rule bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
-      <ul className="flex items-stretch justify-around">
-        {workspace.nav.map((item) => {
-          const active = isActive(item, pathname);
-          if (item.isSearch) {
-            return (
-              <li key={item.href} className="-mt-4">
-                <Link
-                  href={item.href}
-                  aria-label="Search"
-                  className="flex h-13 w-13 translate-y-[-2px] items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-95"
-                  style={{ background: "var(--ws-color)" }}
-                >
-                  <Icon name="search" className="h-5.5 w-5.5" />
-                </Link>
-              </li>
-            );
-          }
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className="flex flex-col items-center gap-0.5 px-3 pb-1.5 pt-2 text-[11px] font-medium"
-                style={{ color: active ? "var(--ws-color)" : "var(--color-ink-soft)" }}
-              >
-                <Icon name={item.icon} className="h-5 w-5" />
-                {item.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <ul className="flex items-stretch">{left.map(item)}</ul>
+      {searchItem ? (
+        <Link
+          href={searchItem.href}
+          aria-label="Search"
+          className="-mt-4 mx-2 flex h-13 w-13 items-center justify-center self-start rounded-full text-white shadow-lg transition-transform active:scale-95"
+          style={{ background: "var(--ws-color)" }}
+        >
+          <Icon name="search" className="h-5.5 w-5.5" />
+        </Link>
+      ) : (
+        <span />
+      )}
+      <ul className="flex items-stretch">{right.map(item)}</ul>
     </nav>
   );
 }
@@ -73,7 +81,7 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-rule bg-white lg:flex">
       <div className="flex flex-col gap-2 border-b border-rule p-3">
-        <WorkspaceSwitcher />
+        <WorkspaceSwitcher variant="popover" />
         <EventChip />
       </div>
       <nav aria-label={`${workspace.name} navigation`} className="flex-1 p-3">

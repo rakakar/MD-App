@@ -81,8 +81,34 @@ body {
   }
 }
 
+/* bottom sheets (workspace switcher) */
+.ws-sheet {
+  animation: sheet-up 0.22s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+.ws-sheet-backdrop {
+  animation: fade-in 0.22s ease-out 1;
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  :target {
+  :target,
+  .ws-sheet,
+  .ws-sheet-backdrop {
     animation: none;
   }
   * {

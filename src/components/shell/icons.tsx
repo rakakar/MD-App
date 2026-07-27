@@ -128,6 +128,14 @@ export function UserIcon({ className }: { className?: string }) {
   );
 }
 
+export function CheckIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"} strokeWidth={2.2}>
+      <path d="m5 12.5 4.5 4.5L19 7" />
+    </Svg>
+  );
+}
+
 export function CloseIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

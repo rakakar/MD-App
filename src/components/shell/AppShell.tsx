@@ -43,7 +43,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             className={
               neutral
                 ? "min-h-dvh"
-                : "min-h-dvh pb-24 lg:pb-8 lg:pl-60"
+                : // clears the bottom nav plus the home-indicator inset
+                  "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-60"
             }
           >
             {children}

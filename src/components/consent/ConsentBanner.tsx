@@ -54,7 +54,7 @@ export function ConsentBanner() {
     <div
       role="region"
       aria-label="Cookie consent"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-rule bg-white p-4 shadow-2xl lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-sm lg:rounded-2xl lg:border"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-rule bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-sm lg:rounded-2xl lg:border lg:pb-4"
     >
       <p className="text-sm text-ink">
         We use Google Analytics to understand how the app is used. No analytics
