@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = { title: "Offline" };
+
+// Offline fallback served by the service worker for uncached navigations.
+export default function OfflinePage() {
+  return (
+    <div className="flex min-h-[60dvh] flex-col items-center justify-center px-6 text-center">
+      <p className="text-4xl">☁️</p>
+      <h1 className="mt-3 text-lg font-semibold">You&apos;re offline</h1>
+      <p className="mt-1 max-w-xs text-sm text-ink-soft">
+        Downloaded books are still available — open them from your settings or
+        a book page you&apos;ve visited.
+      </p>
+      <Link
+        href="/me/settings"
+        className="mt-4 rounded-full px-4 py-1.5 text-sm font-semibold text-white"
+        style={{ background: "var(--ws-color)" }}
+      >
+        My downloads
+      </Link>
+    </div>
+  );
+}

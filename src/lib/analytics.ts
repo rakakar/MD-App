@@ -1,0 +1,48 @@
+// GA4 via gtag, consent-mode gated (PRD §1, §10). No analytics cookies
+// before consent; event params never carry PII.
+
+declare global {
+  interface Window {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
+export const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
+
+export type GaEvent =
+  | "workspace_switch"
+  | "book_open"
+  | "chapter_read"
+  | "page_turn"
+  | "reader_theme_change"
+  | "font_size_change"
+  | "tts_play"
+  | "tts_complete"
+  | "audio_track_play"
+  | "video_play"
+  | "search"
+  | "search_result_click"
+  | "bookmark_add"
+  | "note_add"
+  | "sutra_view"
+  | "sutra_share"
+  | "event_view"
+  | "event_register"
+  | "login"
+  | "signup"
+  | "book_download_offline"
+  | "install_pwa"
+  | "header_event_chip_tap";
+
+export function track(event: GaEvent, params: Record<string, string | number> = {}): void {
+  if (typeof window === "undefined" || !window.gtag) return;
+  window.gtag("event", event, params);
+}
+
+export function applyConsent(granted: boolean): void {
+  if (typeof window === "undefined" || !window.gtag) return;
+  window.gtag("consent", "update", {
+    analytics_storage: granted ? "granted" : "denied",
+  });
+}
