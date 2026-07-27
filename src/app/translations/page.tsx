@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { BookCard, EmptyState, PageContainer, SectionHeading } from "@/components/ui";
 import { getBooks } from "@/lib/api";
 import type { BookSummary } from "@/lib/types";
-import { sectionCodesForWorkspace } from "@/lib/workspaceConfig";
 
 export const revalidate = 900;
 
@@ -12,12 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function TranslationsHome() {
-  const sections = sectionCodesForWorkspace("translations");
-  const lists = await Promise.all(
-    sections.map((s) => getBooks(s).catch(() => [] as BookSummary[]))
-  );
-  // de-dupe in case BE aliases multiple translation codes to the same books
-  const books = [...new Map(lists.flat().map((b) => [b.code, b])).values()];
+  // section code === workspace id (contract §10)
+  const books = await getBooks("translations").catch(() => [] as BookSummary[]);
 
   return (
     <PageContainer>

@@ -10,7 +10,7 @@ import { track } from "@/lib/analytics";
 import { search } from "@/lib/api";
 import { refToHref } from "@/lib/refs";
 import type { SearchResult } from "@/lib/types";
-import { sectionCodesForWorkspace } from "@/lib/workspaceConfig";
+import { isContentWorkspace } from "@/lib/workspaceConfig";
 
 /**
  * v1 centre-slot Search (PRD §7). This component boundary is the future
@@ -33,9 +33,8 @@ export function SearchScreen() {
     inputRef.current?.focus();
   }, []);
 
-  // workspace filter chips use the section mapping (PRD §7)
-  const wsSections = sectionCodesForWorkspace(workspace.id);
-  const contentWorkspace = wsSections.length > 0;
+  // Journey and Connect have no section, so they get no scope chips (PRD §7)
+  const contentWorkspace = isContentWorkspace(workspace.id);
 
   useEffect(() => {
     const query = q.trim();
@@ -50,8 +49,8 @@ export function SearchScreen() {
       setBusy(true);
       setError(false);
       try {
-        // API takes one section; workspace scope = first mapped section
-        const section = scope === "workspace" && contentWorkspace ? wsSections[0] : undefined;
+        // ?section= takes a section code, which is the workspace id (contract §10)
+        const section = scope === "workspace" && contentWorkspace ? workspace.id : undefined;
         const res = await search(query, { section, signal: ctrl.signal });
         setResults(res);
         track("search", { query_length: query.length });

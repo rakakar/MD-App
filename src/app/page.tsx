@@ -5,7 +5,6 @@ import { BookCard, EmptyState, PageContainer, SectionHeading } from "@/component
 import { getBooks } from "@/lib/api";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { BookSummary, ParaResolution } from "@/lib/types";
-import { sectionCodesForWorkspace } from "@/lib/workspaceConfig";
 
 export const revalidate = 900;
 
@@ -13,11 +12,9 @@ async function loadHome(): Promise<{
   books: BookSummary[];
   sutra: ParaResolution | null;
 }> {
-  const sections = sectionCodesForWorkspace("originals");
+  // section code === workspace id (contract §10)
   const [books, sutra] = await Promise.all([
-    Promise.all(sections.map((s) => getBooks(s).catch(() => [] as BookSummary[]))).then(
-      (lists) => lists.flat()
-    ),
+    getBooks("originals").catch(() => [] as BookSummary[]),
     ACTIVE_SUTRA_SOURCE.getToday().catch(() => null),
   ]);
   return { books, sutra };

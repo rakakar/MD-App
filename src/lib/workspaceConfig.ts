@@ -1,7 +1,7 @@
-// Five-workspace navigation model (PRD §2). This file is the single place
-// where section codes map to workspaces — editable without touching screens.
-// BE confirms exact Translations/Resources codes during M1 (non-blocking);
-// unknown sections default to Resources.
+// Five-workspace navigation model (PRD §2). Three of the five are backed by a
+// BE section, and the section codes are these workspace ids verbatim (contract
+// §10) — so there is no code→workspace mapping table on either side. Journey
+// and Connect have their own endpoints and never appear in sections/.
 
 export type WorkspaceId =
   | "originals"
@@ -9,6 +9,9 @@ export type WorkspaceId =
   | "resources"
   | "journey"
   | "connect";
+
+/** the three workspaces whose content is filtered by ?section__code= */
+export type ContentWorkspaceId = "originals" | "translations" | "resources";
 
 export interface NavItem {
   label: string;
@@ -115,30 +118,25 @@ export const WORKSPACE_ORDER: WorkspaceId[] = [
   "connect",
 ];
 
-/**
- * section__code → workspace. Extend here as BE confirms codes; screens read
- * only through workspaceForSection().
- */
-const SECTION_WORKSPACE_MAP: Record<string, WorkspaceId> = {
-  // live BE codes (schema CodeEnum, confirmed 27 Jul 2026)
-  MOOL: "originals",
-  VIDYARTHI: "resources",
-  ABHIYAAN: "resources",
-  // future codes BE will confirm during M1 — placeholders, safe if absent
-  ANUVAD: "translations",
-  TRANSLATION: "translations",
-};
+const CONTENT_WORKSPACE_IDS: readonly ContentWorkspaceId[] = [
+  "originals",
+  "translations",
+  "resources",
+];
 
-export function workspaceForSection(sectionCode: string | null | undefined): WorkspaceId {
-  if (!sectionCode) return "resources";
-  return SECTION_WORKSPACE_MAP[sectionCode.toUpperCase()] ?? "resources";
+/** true for workspaces that can be used as a ?section__code= value */
+export function isContentWorkspace(ws: WorkspaceId): ws is ContentWorkspaceId {
+  return (CONTENT_WORKSPACE_IDS as readonly string[]).includes(ws);
 }
 
-/** section codes browsed by a content workspace (for ?section__code= filters) */
-export function sectionCodesForWorkspace(ws: WorkspaceId): string[] {
-  return Object.entries(SECTION_WORKSPACE_MAP)
-    .filter(([, v]) => v === ws)
-    .map(([k]) => k);
+/**
+ * section__code → workspace. It is an identity for the three content sections;
+ * a section the FE does not know yet lands in Resources, which is also the
+ * fallback the BE documents (contract §10).
+ */
+export function workspaceForSection(sectionCode: string | null | undefined): ContentWorkspaceId {
+  const code = sectionCode?.toLowerCase() ?? "";
+  return isContentWorkspace(code as WorkspaceId) ? (code as ContentWorkspaceId) : "resources";
 }
 
 export function workspaceForPath(path: string): WorkspaceId | null {

@@ -5,7 +5,7 @@ import { BookCard, EmptyState, PageContainer } from "@/components/ui";
 import { getBooks, getSections } from "@/lib/api";
 import type { BookSummary, Section } from "@/lib/types";
 import {
-  sectionCodesForWorkspace,
+  isContentWorkspace,
   workspaceForSection,
   type WorkspaceId,
 } from "@/lib/workspaceConfig";
@@ -35,14 +35,11 @@ export default async function BooksPage({
 
   const [allSections, books] = await Promise.all([
     getSections().catch(() => [] as Section[]),
+    // a content workspace browses the section that shares its id (contract §10)
     section
       ? getBooks(section).catch(() => [] as BookSummary[])
-      : wsId
-        ? Promise.all(
-            sectionCodesForWorkspace(wsId).map((s) =>
-              getBooks(s).catch(() => [] as BookSummary[])
-            )
-          ).then((l) => [...new Map(l.flat().map((b) => [b.code, b])).values()])
+      : wsId && isContentWorkspace(wsId)
+        ? getBooks(wsId).catch(() => [] as BookSummary[])
         : getBooks().catch(() => [] as BookSummary[]),
   ]);
 
@@ -78,7 +75,7 @@ export default async function BooksPage({
               }`}
               style={section === s.code ? { background: "var(--ws-color)" } : undefined}
             >
-              {(s.name_hi as string) || (s.name as string) || s.code}
+              {s.name_hi || s.name_en || s.code}
             </Link>
           ))}
         </div>

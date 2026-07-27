@@ -15,10 +15,13 @@ export type BlockType =
 
 export type Align = "left" | "center" | "right";
 
+/** sections/ — code doubles as the FE workspace id (contract §10) */
 export interface Section {
   code: string;
-  name?: string;
   name_hi?: string;
+  name_en?: string;
+  ordering?: number;
+  description?: string;
   [key: string]: unknown;
 }
 
