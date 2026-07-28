@@ -26,31 +26,69 @@ function write(key: string, value: unknown): void {
 
 // ---- Preferences ----
 
-export type ReaderTheme = "light" | "dark" | "sepia";
+/** "system" follows prefers-color-scheme; the rest are explicit choices. */
+export type ReaderTheme = "system" | "light" | "dark" | "sepia";
+/** what actually gets painted — `system` is resolved to one of these */
+export type ResolvedTheme = "light" | "dark" | "sepia";
 export type ReadingMode = "page" | "scroll";
+
+/** Typography steps. Exported so the reader UI, the settings page and the
+ *  pre-hydration inline script all agree on the same ladder. */
+export const FONT_SCALES = [0.85, 0.95, 1, 1.1, 1.2, 1.35, 1.5, 1.7];
+export const LINE_HEIGHTS = [1.55, 1.7, 1.85, 2.05, 2.3];
+/** index into the margin presets defined in globals.css */
+export const MARGIN_STEPS = [0, 1, 2];
 
 export interface Prefs {
   fontScale: number; // 1 = base
+  /** line-height multiplier for Devanagari body text */
+  lineHeight: number;
+  /** 0 = narrow gutters, 1 = normal, 2 = wide */
+  margin: number;
   theme: ReaderTheme;
   /** user override of the print→page / digital→scroll default; null = automatic */
   readingMode: ReadingMode | null;
+  /** tapping the left/right edge turns the page (Pages mode only) */
+  tapZones: boolean;
   lastWorkspace: WorkspaceId;
   consent: "granted" | "denied" | null;
   playbackRate: number;
   syncNudgeShown: boolean;
+  /** one-time "tap the middle for controls" coach mark */
+  immersiveHintShown: boolean;
 }
 
-const PREFS_KEY = "md.prefs.v1";
+export const PREFS_KEY = "md.prefs.v1";
 
 export const DEFAULT_PREFS: Prefs = {
   fontScale: 1,
-  theme: "light",
+  lineHeight: 1.85,
+  margin: 1,
+  // a reader that opens bright at night is the single most common complaint
+  // about reading apps — follow the OS unless the user says otherwise
+  theme: "system",
   readingMode: null,
+  tapZones: true,
   lastWorkspace: "originals",
   consent: null,
   playbackRate: 1,
   syncNudgeShown: false,
+  immersiveHintShown: false,
 };
+
+/** Resolve `system` against the OS setting. SSR-safe (assumes light). */
+export function resolveTheme(theme: ReaderTheme): ResolvedTheme {
+  if (theme !== "system") return theme;
+  if (!isBrowser) return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+/** Nearest valid step, so a stale stored value can never wedge a control. */
+export function nearestStep(steps: number[], value: number): number {
+  return steps.reduce((best, s) =>
+    Math.abs(s - value) < Math.abs(best - value) ? s : best
+  );
+}
 
 export function getPrefs(): Prefs {
   return { ...DEFAULT_PREFS, ...read<Partial<Prefs>>(PREFS_KEY, {}) };

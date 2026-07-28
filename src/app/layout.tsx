@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Noto_Serif_Devanagari } from "next/font/google";
 import { Analytics } from "@/components/consent/ConsentBanner";
+import { InlineScript } from "@/components/InlineScript";
 import { AppShell } from "@/components/shell/AppShell";
 import "./globals.css";
 
@@ -45,6 +46,28 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+/**
+ * Runs synchronously while the browser parses <head>, so the saved theme and
+ * type settings are on <html> before the first paint. Without this a reader
+ * with dark mode on gets a full-white flash every time a chapter loads — the
+ * one moment where it is most jarring. See next/docs "Preventing Flash".
+ * The route test must match READER_ROUTE in lib/routes.ts.
+ */
+const THEME_SCRIPT = `(function(){try{
+var p=JSON.parse(localStorage.getItem("md.prefs.v1")||"{}");
+var t=p.theme||"system";
+if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+var d=document.documentElement;
+d.setAttribute("data-reader-theme",t);
+d.setAttribute("data-reader-margin",String(p.margin==null?1:p.margin));
+if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
+if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
+if(/^\\/books\\/[^/]+\\/\\d+$/.test(location.pathname)){
+d.style.colorScheme=t==="dark"?"dark":"light";
+d.setAttribute("data-reading","1");
+}
+}catch(e){}})()`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -53,8 +76,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-reader-theme="light"
+      data-reader-margin="1"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${notoSerifDevanagari.variable} h-full antialiased`}
     >
+      <head>
+        <InlineScript html={THEME_SCRIPT} />
+      </head>
       <body className="min-h-full">
         <AppShell>{children}</AppShell>
         <Analytics />

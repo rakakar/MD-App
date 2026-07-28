@@ -68,7 +68,7 @@ export default function SettingsPage() {
       <div className="rounded-2xl border border-rule bg-white p-4">
         <p className="text-sm font-medium">Theme</p>
         <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Reader theme">
-          {(["light", "sepia", "dark"] as ReaderTheme[]).map((t) => (
+          {(["system", "light", "sepia", "dark"] as ReaderTheme[]).map((t) => (
             <button
               key={t}
               type="button"
@@ -80,10 +80,14 @@ export default function SettingsPage() {
               }`}
               style={prefs.theme === t ? { background: "var(--ws-color)" } : undefined}
             >
-              {t}
+              {t === "system" ? "Auto" : t}
             </button>
           ))}
         </div>
+        <p className="mt-1.5 text-xs text-ink-soft">
+          Auto follows your device&apos;s light/dark setting. Full type controls are in
+          the reader itself.
+        </p>
         <p className="mt-4 text-sm font-medium">Reading mode</p>
         <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Reading mode">
           {([

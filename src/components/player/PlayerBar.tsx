@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { CloseIcon, PauseIcon, PlayIcon } from "@/components/shell/icons";
+import { isReaderRoute } from "@/lib/routes";
 import { activeRendition, usePlayer } from "./PlayerProvider";
 
 const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -22,7 +24,32 @@ function fmt(ms: number): string {
  */
 export function PlayerBar() {
   const player = usePlayer();
+  if (!player.source) return null;
+  return <PlayerBarInner />;
+}
+
+function PlayerBarInner() {
+  const player = usePlayer();
   const [menuOpen, setMenuOpen] = useState<"rate" | "sleep" | "voice" | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  // no bottom nav to clear inside the reader, and the reader stacks its own
+  // controls on top of this bar via --player-h
+  const reader = isReaderRoute(usePathname());
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty("--player-h", `${el.offsetHeight}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.setProperty("--player-h", "0px");
+    };
+  }, []);
+
   const { source } = player;
   if (!source) return null;
 
@@ -35,9 +62,14 @@ export function PlayerBar() {
 
   return (
     <div
+      ref={barRef}
       role="region"
       aria-label="Audio player"
-      className="fixed inset-x-0 bottom-[calc(3.4rem+env(safe-area-inset-bottom))] z-40 border-t border-rule bg-white/95 backdrop-blur lg:bottom-0 lg:left-60"
+      className={`fixed inset-x-0 z-40 border-t backdrop-blur ${
+        reader
+          ? "bottom-[env(safe-area-inset-bottom)] border-(--reader-rule) bg-(--reader-bg)/95 text-(--reader-ink)"
+          : "bottom-[calc(3.4rem+env(safe-area-inset-bottom))] border-rule bg-white/95 lg:bottom-0 lg:left-60"
+      }`}
     >
       {/* seek bar */}
       <input

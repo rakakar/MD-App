@@ -8,7 +8,13 @@ import {
   paraAtPosition,
   usePlayer,
 } from "@/components/player/PlayerProvider";
-import { HeadphonesIcon } from "@/components/shell/icons";
+import {
+  BackIcon,
+  BookmarkIcon,
+  HeadphonesIcon,
+  TocIcon,
+  TypeIcon,
+} from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
 import { createBookmark, createNote, upsertProgress } from "@/lib/me";
 import { citationText, paraAnchorId } from "@/lib/refs";
@@ -17,13 +23,21 @@ import {
   addLocalNote,
   getGuestStore,
   getPrefs,
+  nearestStep,
+  resolveTheme,
   setLocalProgress,
   setPrefs,
+  FONT_SCALES,
+  LINE_HEIGHTS,
   type ReaderTheme,
   type ReadingMode,
 } from "@/lib/storage";
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import { Block } from "./blocks";
+import { Sheet } from "./Sheet";
+import { SettingsSheet } from "./SettingsSheet";
+import { TocSheet } from "./TocSheet";
+import { useReaderChrome } from "./useReaderChrome";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
 
 export interface ReaderBook {
@@ -45,7 +59,18 @@ interface Toast {
   hrefLabel?: string;
 }
 
-const FONT_SCALES = [0.85, 0.95, 1, 1.1, 1.2, 1.35, 1.5];
+/** what the user has highlighted, and which paragraph it belongs to */
+interface Selection {
+  para: Paragraph;
+  text: string;
+}
+
+/** matches the swatches in SettingsSheet */
+const THEME_BG: Record<string, string> = {
+  light: "#fdfbf7",
+  sepia: "#f4e8d3",
+  dark: "#17140f",
+};
 
 export function Reader({ book, initialChapterNumber, initialChapter }: ReaderProps) {
   const { user, loading: authLoading } = useAuth();
@@ -57,10 +82,17 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const [chapterNumber, setChapterNumber] = useState(initialChapterNumber);
   const [chapterLoading, setChapterLoading] = useState(initialChapter === null);
   const [mode, setMode] = useState<ReadingMode>(book.book_type === "print" ? "page" : "scroll");
-  const [theme, setTheme] = useState<ReaderTheme>("light");
+  const [theme, setTheme] = useState<ReaderTheme>("system");
   const [fontScale, setFontScale] = useState(1);
+  const [lineHeight, setLineHeight] = useState(1.85);
+  const [margin, setMargin] = useState(1);
+  const [tapZones, setTapZones] = useState(true);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
-  const [selected, setSelected] = useState<Paragraph | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  // snapshot taken when the note sheet opens: focusing the textarea drops the
+  // document selection, which would otherwise close the sheet mid-typing
+  const [noteTarget, setNoteTarget] = useState<Selection | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [gotoOpen, setGotoOpen] = useState(false);
@@ -68,16 +100,29 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const [toast, setToast] = useState<Toast | null>(null);
   const [resumeHint, setResumeHint] = useState<{ chapter: number; ref: string } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tocOpen, setTocOpen] = useState(false);
+  const [hint, setHint] = useState(false);
+  const [currentRef, setCurrentRef] = useState<string | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const pendingPage = useRef<string | null>(null);
   const pageTurns = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // any modal surface pins the chrome open
+  const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen;
+  const chrome = useReaderChrome(mode, modalOpen);
+
   const pages: ReaderPage[] = useMemo(
     () => (chapter ? groupPages(chapter.paragraphs) : []),
     [chapter]
   );
+  const paraByRef = useMemo(() => {
+    const m = new Map<string, Paragraph>();
+    for (const p of chapter?.paragraphs ?? []) m.set(p.canonical_ref, p);
+    return m;
+  }, [chapter]);
   const isFrontMatter = useMemo(
     () => book.chapters.find((c) => c.number === chapterNumber)?.is_front_matter ?? false,
     [book.chapters, chapterNumber]
@@ -93,8 +138,66 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   useEffect(() => {
     const p = getPrefs();
     setTheme(p.theme);
-    setFontScale(p.fontScale);
+    setFontScale(nearestStep(FONT_SCALES, p.fontScale));
+    setLineHeight(nearestStep(LINE_HEIGHTS, p.lineHeight));
+    setMargin(p.margin);
+    setTapZones(p.tapZones);
     if (p.readingMode) setMode(p.readingMode);
+    setPrefsLoaded(true);
+    if (!p.immersiveHintShown) {
+      setHint(true);
+      setPrefs({ immersiveHintShown: true });
+      setTimeout(() => setHint(false), 4200);
+    }
+  }, []);
+
+  // ---- theme + type applied to <html> ----
+  // The inline script in layout.tsx already painted the saved values; this
+  // keeps them in sync afterwards and on soft navigations. Guarded on
+  // prefsLoaded so the defaults never overwrite a saved dark theme.
+  useEffect(() => {
+    if (!prefsLoaded) return;
+    const root = document.documentElement;
+    const apply = () => {
+      const resolved = resolveTheme(theme);
+      root.setAttribute("data-reader-theme", resolved);
+      root.style.colorScheme = resolved === "dark" ? "dark" : "light";
+      let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.name = "theme-color";
+        document.head.appendChild(meta);
+      }
+      meta.content = THEME_BG[resolved] ?? THEME_BG.light;
+    };
+    apply();
+    // follow the OS while "Auto" is selected
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    if (theme === "system") {
+      mq.addEventListener("change", apply);
+      return () => mq.removeEventListener("change", apply);
+    }
+  }, [theme, prefsLoaded]);
+
+  useEffect(() => {
+    if (!prefsLoaded) return;
+    const root = document.documentElement;
+    root.style.setProperty("--reader-font-scale", String(fontScale));
+    root.style.setProperty("--reader-line-height", String(lineHeight));
+    root.setAttribute("data-reader-margin", String(margin));
+  }, [fontScale, lineHeight, margin, prefsLoaded]);
+
+  // reading takes over the whole page: no white rubber-band, no light
+  // scrollbars, and the app's own chrome colours are restored on the way out
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute("data-reading", "1");
+    return () => {
+      root.removeAttribute("data-reading");
+      root.style.colorScheme = "";
+      const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (meta) meta.content = "#C8621A";
+    };
   }, []);
 
   // ---- analytics ----
@@ -110,7 +213,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const goToChapter = useCallback(
     async (n: number, opts: { targetPage?: string; push?: boolean } = {}) => {
       setChapterLoading(true);
-      setSelected(null);
+      setSelection(null);
       pendingPage.current = opts.targetPage ?? null;
       const payload = await loadChapter(n);
       if (!payload) {
@@ -236,6 +339,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const progressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveProgress = useCallback(
     (ref: string) => {
+      setCurrentRef(ref);
       if (progressTimer.current) clearTimeout(progressTimer.current);
       progressTimer.current = setTimeout(() => {
         if (user) {
@@ -303,16 +407,80 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     [pages.length]
   );
 
+  /** page turn that rolls over into the neighbouring chapter at the edges */
+  const advance = useCallback(
+    (dir: 1 | -1) => {
+      if (dir === 1) {
+        if (pageIndex < pages.length - 1) turnPage(1);
+        else if (chapter?.next) void goToChapter(chapter.next.number);
+      } else {
+        if (pageIndex > 0) turnPage(-1);
+        else if (chapter?.prev) void goToChapter(chapter.prev.number);
+      }
+    },
+    [pageIndex, pages.length, turnPage, chapter, goToChapter]
+  );
+
   useEffect(() => {
     if (mode !== "page") return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "ArrowRight") turnPage(1);
-      if (e.key === "ArrowLeft") turnPage(-1);
+      if (e.key === "ArrowRight") advance(1);
+      if (e.key === "ArrowLeft") advance(-1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, turnPage]);
+  }, [mode, advance]);
+
+  // ---- gestures: tap zones, swipe, tap-to-toggle-chrome ----
+  const gesture = useRef<{ x: number; y: number; t: number } | null>(null);
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    const el = e.target as HTMLElement;
+    // never hijack a control, a link, or a horizontally scrollable table
+    if (el.closest("[data-reader-chrome],a,button,input,textarea,select,label,table")) {
+      gesture.current = null;
+      return;
+    }
+    gesture.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+  }, []);
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      const g = gesture.current;
+      gesture.current = null;
+      if (!g) return;
+
+      // a highlight is an intent of its own — leave it alone
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed) return;
+
+      const dx = e.clientX - g.x;
+      const dy = e.clientY - g.y;
+      const dt = Date.now() - g.t;
+
+      if (
+        mode === "page" &&
+        Math.abs(dx) > 56 &&
+        Math.abs(dx) > Math.abs(dy) * 1.6 &&
+        dt < 700
+      ) {
+        advance(dx < 0 ? 1 : -1);
+        return;
+      }
+
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12 && dt < 400) {
+        const zone = g.x / window.innerWidth;
+        if (mode === "page" && tapZones && !chrome.visible) {
+          if (zone < 0.28) return advance(-1);
+          if (zone > 0.72) return advance(1);
+        }
+        chrome.toggle();
+      }
+    },
+    [mode, tapZones, advance, chrome]
+  );
 
   // prefetch next chapter near the end of this one (PRD §0.4)
   useEffect(() => {
@@ -320,16 +488,40 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     const nearEnd = mode === "page" ? pageIndex / pages.length >= 0.8 : false;
     if (nearEnd) void loadChapter(chapter.next.number);
   }, [pageIndex, pages.length, mode, chapter, loadChapter]);
+
+  // scroll mode: chapter progress + prefetch, on one listener
   useEffect(() => {
-    if (mode !== "scroll" || !chapter?.next) return;
-    const onScroll = () => {
-      const doc = document.documentElement;
-      const progress = (window.scrollY + window.innerHeight) / doc.scrollHeight;
-      if (progress >= 0.8) void loadChapter(chapter.next!.number);
+    if (mode !== "scroll") {
+      setScrollProgress(0);
+      return;
+    }
+    let ticking = false;
+    const measure = () => {
+      const el = contentRef.current;
+      if (!el) return;
+      const top = el.offsetTop;
+      const height = el.offsetHeight;
+      const seen = window.scrollY + window.innerHeight - top;
+      const pct = height > 0 ? Math.min(1, Math.max(0, seen / height)) : 0;
+      setScrollProgress(pct);
+      if (pct >= 0.8 && chapter?.next) void loadChapter(chapter.next.number);
     };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        measure();
+        ticking = false;
+      });
+    };
+    measure();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [mode, chapter, loadChapter]);
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [mode, chapter, loadChapter, pages]);
 
   // ---- TTS follow-along (PRD §5) ----
   const ttsActive =
@@ -376,6 +568,11 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     [chapter, player, book.code, book.title_hi, chapterNumber]
   );
 
+  const clearSelection = useCallback(() => {
+    window.getSelection()?.removeAllRanges();
+    setSelection(null);
+  }, []);
+
   const playFromPara = useCallback(
     (p: Paragraph) => {
       if (ttsActive && rendition) {
@@ -384,10 +581,48 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
       } else {
         startListening(p.sequence);
       }
-      setSelected(null);
+      clearSelection();
     },
-    [ttsActive, rendition, player, startListening]
+    [ttsActive, rendition, player, startListening, clearSelection]
   );
+
+  // ---- selection drives the action bar ----
+  // Tapping a paragraph used to open this bar, which fired constantly by
+  // accident while reading. Highlighting text is deliberate, native on every
+  // platform, and tells us exactly what to cite.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const read = () => {
+      const sel = document.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+        setSelection(null);
+        return;
+      }
+      const node = sel.anchorNode;
+      const host = (node?.nodeType === Node.TEXT_NODE ? node.parentElement : (node as HTMLElement | null))
+        ?.closest?.("[data-ref]");
+      if (!host || !contentRef.current?.contains(host)) {
+        setSelection(null);
+        return;
+      }
+      const para = paraByRef.get(host.getAttribute("data-ref") ?? "");
+      if (!para) {
+        setSelection(null);
+        return;
+      }
+      setSelection({ para, text: sel.toString().trim() });
+    };
+    const onChange = () => {
+      // settle until the drag stops, so the bar doesn't flicker mid-swipe
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(read, 220);
+    };
+    document.addEventListener("selectionchange", onChange);
+    return () => {
+      document.removeEventListener("selectionchange", onChange);
+      if (timer) clearTimeout(timer);
+    };
+  }, [paraByRef]);
 
   // ---- selection actions ----
   const nudgeSync = useCallback(() => {
@@ -405,55 +640,58 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   }, [showToast]);
 
   const doBookmark = useCallback(
-    async (p: Paragraph) => {
+    async (ref: string) => {
       track("bookmark_add");
       if (user) {
         try {
-          await createBookmark(p.canonical_ref);
+          await createBookmark(ref);
           showToast({ text: "Bookmarked." });
         } catch {
           showToast({ text: "Couldn't save bookmark." });
         }
       } else {
-        addLocalBookmark(p.canonical_ref, book.code);
+        addLocalBookmark(ref, book.code);
         nudgeSync();
       }
-      setSelected(null);
+      clearSelection();
     },
-    [user, book.code, nudgeSync, showToast]
+    [user, book.code, nudgeSync, showToast, clearSelection]
   );
 
   const doCopy = useCallback(
-    async (p: Paragraph) => {
+    async (s: Selection) => {
       try {
-        await navigator.clipboard.writeText(citationText(p.text_hi, p.canonical_ref));
+        await navigator.clipboard.writeText(
+          citationText(s.text || s.para.text_hi, s.para.canonical_ref)
+        );
         showToast({ text: "Copied with citation." });
       } catch {
         showToast({ text: "Copy failed." });
       }
-      setSelected(null);
+      clearSelection();
     },
-    [showToast]
+    [showToast, clearSelection]
   );
 
   const saveNote = useCallback(async () => {
-    if (!selected || !noteText.trim()) return;
+    if (!noteTarget || !noteText.trim()) return;
     track("note_add");
     if (user) {
       try {
-        await createNote(selected.canonical_ref, noteText.trim());
+        await createNote(noteTarget.para.canonical_ref, noteText.trim());
         showToast({ text: "Note saved." });
       } catch {
         showToast({ text: "Couldn't save note." });
       }
     } else {
-      addLocalNote(selected.canonical_ref, book.code, noteText.trim());
+      addLocalNote(noteTarget.para.canonical_ref, book.code, noteText.trim());
       nudgeSync();
     }
     setNoteOpen(false);
     setNoteText("");
-    setSelected(null);
-  }, [selected, noteText, user, book.code, nudgeSync, showToast]);
+    setNoteTarget(null);
+    clearSelection();
+  }, [noteTarget, noteText, user, book.code, nudgeSync, showToast, clearSelection]);
 
   // ---- go to page ----
   const goToPrintedPage = useCallback(
@@ -485,14 +723,38 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     setPrefs({ fontScale: s });
     track("font_size_change", { scale: s });
   };
+  const changeLineHeight = (v: number) => {
+    setLineHeight(v);
+    setPrefs({ lineHeight: v });
+  };
+  const changeMargin = (v: number) => {
+    setMargin(v);
+    setPrefs({ margin: v });
+  };
   const changeMode = (m: ReadingMode) => {
     setMode(m);
     setPrefs({ readingMode: m });
+  };
+  const changeTapZones = (v: boolean) => {
+    setTapZones(v);
+    setPrefs({ tapZones: v });
   };
 
   // ---- render ----
   const page = pages[pageIndex];
   const hasAudio = (chapter?.audio_renditions.length ?? 0) > 0;
+  const progress =
+    mode === "page"
+      ? pages.length > 0
+        ? (pageIndex + 1) / pages.length
+        : 0
+      : scrollProgress;
+  const positionLabel =
+    mode === "page" && page
+      ? book.book_type === "print" && page.label === String(Number(page.label))
+        ? `पृष्ठ ${page.label} · ${pageIndex + 1}/${pages.length}`
+        : `${pageIndex + 1} / ${pages.length}`
+      : `${Math.round(progress * 100)}%`;
 
   const pageChrome = (p: ReaderPage) =>
     isFrontMatter || p.label !== String(Number(p.label)) ? (
@@ -503,258 +765,278 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
       <span className="text-xs text-(--reader-ink-soft) opacity-70">{p.label}</span>
     );
 
+  const bottomOffset = "calc(var(--player-h, 0px) + env(safe-area-inset-bottom))";
+
   return (
     <div
-      data-reader-theme={theme}
       className="reader-surface min-h-dvh"
-      style={{ fontSize: `${fontScale * 1.0625}rem` }}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
     >
-      {/* reader toolbar */}
-      <div className="sticky top-0 z-30 border-b border-(--reader-rule) bg-(--reader-bg)/95 text-[1rem] backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2">
+      {/* ---- top chrome ---- */}
+      <div
+        data-reader-chrome
+        data-hidden={!chrome.visible}
+        className="reader-chrome reader-chrome-top fixed inset-x-0 top-0 z-40 border-b border-(--reader-rule) bg-(--reader-bg)/95 pt-[env(safe-area-inset-top)] backdrop-blur"
+      >
+        <div className="reader-content flex items-center gap-1 py-1.5">
           <Link
             href={`/books/${encodeURIComponent(book.code)}`}
-            className="shrink-0 rounded-full p-1.5 hover:bg-black/5"
-            aria-label="Book contents"
+            className="-ms-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:bg-current/10"
+            aria-label="Back to book"
           >
-            ←
+            <BackIcon className="h-5 w-5" />
           </Link>
-          <div className="min-w-0 flex-1">
-            <p lang="hi" className="hi truncate text-sm font-semibold leading-tight">
+          <div className="min-w-0 flex-1 text-center">
+            <p lang="hi" className="hi truncate text-[13px] font-semibold leading-tight">
               {chapter?.title_hi ?? book.title_hi}
             </p>
-            <p className="truncate text-[11px] text-(--reader-ink-soft)">
+            <p className="truncate text-[11px] leading-tight text-(--reader-ink-soft)">
               <span lang="hi" className="hi">{book.title_hi}</span>
-              {chapter && ` · अध्याय ${chapter.number}`}
             </p>
           </div>
-          {hasAudio && (
+          <span className="h-11 w-11 shrink-0" aria-hidden />
+        </div>
+      </div>
+
+      {/* ---- content ---- */}
+      {/* padding matches the top bar exactly, so revealing chrome never
+          covers the line you are reading */}
+      <div className="pt-[calc(3.5rem+env(safe-area-inset-top))]">
+        {resumeHint && (
+          <div className="reader-content pt-2">
             <button
               type="button"
-              onClick={() => (ttsActive ? player.toggle() : startListening())}
-              aria-label="Listen to this chapter"
-              className={`shrink-0 rounded-full p-2 ${ttsActive ? "text-white" : "hover:bg-black/5"}`}
-              style={ttsActive ? { background: "var(--ws-color)" } : undefined}
+              onClick={() => {
+                const m = resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\.([^.]+)$/);
+                void goToChapter(resumeHint.chapter, { targetPage: m?.[1] });
+                setResumeHint(null);
+              }}
+              className="w-full rounded-xl border border-(--reader-rule) px-4 py-2.5 text-left text-sm"
             >
-              <HeadphonesIcon className="h-4.5 w-4.5" />
+              Resume where you left off — chapter {resumeHint.chapter} →
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setSettingsOpen((v) => !v)}
-            aria-label="Reading settings"
-            aria-expanded={settingsOpen}
-            className="shrink-0 rounded-full p-2 hover:bg-black/5"
-          >
-            Aa
-          </button>
-        </div>
-
-        {settingsOpen && (
-          <div className="border-t border-(--reader-rule)">
-            <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 text-[0.875rem]">
-              <label className="flex items-center gap-2">
-                <span className="text-xs text-(--reader-ink-soft)">Text</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={FONT_SCALES.length - 1}
-                  step={1}
-                  value={FONT_SCALES.indexOf(fontScale) === -1 ? 2 : FONT_SCALES.indexOf(fontScale)}
-                  onChange={(e) => changeFontScale(FONT_SCALES[Number(e.target.value)])}
-                  aria-label="Font size"
-                  className="w-28 accent-(--ws-color)"
-                />
-              </label>
-              <div role="radiogroup" aria-label="Theme" className="flex gap-1.5">
-                {(["light", "sepia", "dark"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    role="radio"
-                    aria-checked={theme === t}
-                    onClick={() => changeTheme(t)}
-                    className={`h-7 w-7 rounded-full border ${
-                      theme === t ? "ring-2 ring-(--ws-color) ring-offset-1" : "border-(--reader-rule)"
-                    }`}
-                    style={{
-                      background: t === "light" ? "#fdfbf7" : t === "sepia" ? "#f4e8d3" : "#17140f",
-                    }}
-                    aria-label={`${t} theme`}
-                  />
-                ))}
-              </div>
-              <div role="radiogroup" aria-label="Reading mode" className="flex overflow-hidden rounded-full border border-(--reader-rule) text-xs">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={mode === "page"}
-                  onClick={() => changeMode("page")}
-                  className={mode === "page" ? "px-3 py-1 font-semibold text-white" : "px-3 py-1"}
-                  style={mode === "page" ? { background: "var(--ws-color)" } : undefined}
-                >
-                  Pages
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={mode === "scroll"}
-                  onClick={() => changeMode("scroll")}
-                  className={mode === "scroll" ? "px-3 py-1 font-semibold text-white" : "px-3 py-1"}
-                  style={mode === "scroll" ? { background: "var(--ws-color)" } : undefined}
-                >
-                  Scroll
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => setGotoOpen(true)}
-                className="rounded-full border border-(--reader-rule) px-3 py-1 text-xs"
-              >
-                Go to page…
-              </button>
-            </div>
           </div>
         )}
-      </div>
 
-      {resumeHint && (
-        <div className="mx-auto max-w-3xl px-4 pt-3 text-[1rem]">
-          <button
-            type="button"
-            onClick={() => {
-              const m = resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\.([^.]+)$/);
-              void goToChapter(resumeHint.chapter, { targetPage: m?.[1] });
-              setResumeHint(null);
-            }}
-            className="w-full rounded-xl border border-(--reader-rule) bg-black/[.03] px-4 py-2 text-left text-sm"
-          >
-            Resume where you left off — chapter {resumeHint.chapter} →
-          </button>
-        </div>
-      )}
-
-      {/* content */}
-      <div ref={contentRef} className="mx-auto max-w-3xl px-5 pb-28 pt-4 sm:px-8">
-        {chapterLoading && (
-          <p className="py-16 text-center text-sm text-(--reader-ink-soft)">Loading…</p>
-        )}
-
-        {!chapterLoading && chapter && mode === "page" && page && (
-          <section aria-label={`Page ${page.label}`}>
-            <div className="mb-4 flex justify-center">{pageChrome(page)}</div>
-            {page.paragraphs.map((p) => (
-              <ParaWrap key={p.canonical_ref} para={p} activeSeq={activeSeq} pageKey={page.key} onSelect={setSelected} selected={selected} />
-            ))}
-            <nav aria-label="Page navigation" className="mt-10 flex items-center justify-between text-sm">
-              <button
-                type="button"
-                onClick={() => {
-                  if (pageIndex === 0) {
-                    if (chapter.prev) void goToChapter(chapter.prev.number);
-                  } else {
-                    turnPage(-1);
-                  }
-                }}
-                disabled={pageIndex === 0 && !chapter.prev}
-                className="rounded-full border border-(--reader-rule) px-4 py-1.5 disabled:opacity-40"
-              >
-                ← {pageIndex === 0 && chapter.prev ? "Previous chapter" : "Previous"}
-              </button>
-              <span className="text-xs tabular-nums text-(--reader-ink-soft)">
-                {pageIndex + 1} / {pages.length}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (pageIndex === pages.length - 1) {
-                    if (chapter.next) void goToChapter(chapter.next.number);
-                  } else {
-                    turnPage(1);
-                  }
-                }}
-                disabled={pageIndex === pages.length - 1 && !chapter.next}
-                className="rounded-full border border-(--reader-rule) px-4 py-1.5 disabled:opacity-40"
-              >
-                {pageIndex === pages.length - 1 && chapter.next ? "Next chapter" : "Next"} →
-              </button>
-            </nav>
-          </section>
-        )}
-
-        {!chapterLoading && chapter && mode === "scroll" && (
-          <div>
-            {pages.map((pg) => (
-              <section key={pg.key} id={`page-${pg.key}`} aria-label={`Page ${pg.label}`}>
-                <div className="my-6 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-(--reader-rule)" />
-                  {pageChrome(pg)}
-                  <span className="h-px flex-1 bg-(--reader-rule)" />
-                </div>
-                {pg.paragraphs.map((p) => (
-                  <ParaWrap key={p.canonical_ref} para={p} activeSeq={activeSeq} pageKey={pg.key} onSelect={setSelected} selected={selected} />
-                ))}
-              </section>
-            ))}
-            <nav aria-label="Chapter navigation" className="mt-12 flex items-center justify-between text-sm">
-              {chapter.prev ? (
-                <button
-                  type="button"
-                  onClick={() => void goToChapter(chapter.prev!.number)}
-                  className="rounded-full border border-(--reader-rule) px-4 py-1.5"
-                >
-                  ← <span lang="hi" className="hi">{chapter.prev.title_hi}</span>
-                </button>
-              ) : (
-                <span />
-              )}
-              {chapter.next && (
-                <button
-                  type="button"
-                  onClick={() => void goToChapter(chapter.next!.number)}
-                  className="rounded-full border border-(--reader-rule) px-4 py-1.5"
-                >
-                  <span lang="hi" className="hi">{chapter.next.title_hi}</span> →
-                </button>
-              )}
-            </nav>
-          </div>
-        )}
-      </div>
-
-      {/* selection action bar */}
-      {selected && !noteOpen && (
         <div
-          role="toolbar"
-          aria-label="Paragraph actions"
-          className="fixed inset-x-0 bottom-[calc(3.4rem+env(safe-area-inset-bottom))] z-40 mx-auto flex w-fit max-w-[95vw] items-center gap-1 rounded-full border border-(--reader-rule) bg-(--reader-bg) px-2 py-1.5 text-[0.875rem] shadow-xl lg:bottom-6 lg:left-60"
+          ref={contentRef}
+          className="reader-content min-h-[70dvh] pb-24 pt-3"
         >
-          <ActionBtn onClick={() => void doBookmark(selected)}>Bookmark</ActionBtn>
-          <ActionBtn onClick={() => setNoteOpen(true)}>Note</ActionBtn>
-          <ActionBtn onClick={() => void doCopy(selected)}>Copy</ActionBtn>
-          {hasAudio && rendition?.para_timings[String(selected.sequence)] !== undefined && (
-            <ActionBtn onClick={() => playFromPara(selected)}>▶ From here</ActionBtn>
+          {chapterLoading && (
+            <p className="py-16 text-center text-sm text-(--reader-ink-soft)">Loading…</p>
           )}
-          {hasAudio && !ttsActive && (
-            <ActionBtn onClick={() => playFromPara(selected)}>▶ Listen</ActionBtn>
+
+          {!chapterLoading && chapter && mode === "page" && page && (
+            <section aria-label={`Page ${page.label}`}>
+              <div className="mb-4 flex justify-center">{pageChrome(page)}</div>
+              {page.paragraphs.map((p) => (
+                <ParaWrap key={p.canonical_ref} para={p} activeSeq={activeSeq} pageKey={page.key} selectedRef={selection?.para.canonical_ref} />
+              ))}
+              <nav aria-label="Page navigation" className="mt-10 flex items-center justify-between text-sm">
+                <button
+                  type="button"
+                  onClick={() => advance(-1)}
+                  disabled={pageIndex === 0 && !chapter.prev}
+                  className="min-h-11 rounded-full border border-(--reader-rule) px-4 disabled:opacity-40"
+                >
+                  ← {pageIndex === 0 && chapter.prev ? "Previous chapter" : "Previous"}
+                </button>
+                <span className="text-xs tabular-nums text-(--reader-ink-soft)">
+                  {pageIndex + 1} / {pages.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => advance(1)}
+                  disabled={pageIndex === pages.length - 1 && !chapter.next}
+                  className="min-h-11 rounded-full border border-(--reader-rule) px-4 disabled:opacity-40"
+                >
+                  {pageIndex === pages.length - 1 && chapter.next ? "Next chapter" : "Next"} →
+                </button>
+              </nav>
+            </section>
           )}
-          <ActionBtn onClick={() => setSelected(null)} ariaLabel="Close">✕</ActionBtn>
+
+          {!chapterLoading && chapter && mode === "scroll" && (
+            <div>
+              {pages.map((pg) => (
+                <section key={pg.key} id={`page-${pg.key}`} aria-label={`Page ${pg.label}`}>
+                  <div className="my-6 flex items-center gap-3">
+                    <span className="h-px flex-1 bg-(--reader-rule)" />
+                    {pageChrome(pg)}
+                    <span className="h-px flex-1 bg-(--reader-rule)" />
+                  </div>
+                  {pg.paragraphs.map((p) => (
+                    <ParaWrap key={p.canonical_ref} para={p} activeSeq={activeSeq} pageKey={pg.key} selectedRef={selection?.para.canonical_ref} />
+                  ))}
+                </section>
+              ))}
+              <nav aria-label="Chapter navigation" className="mt-12 flex items-center justify-between gap-3 text-sm">
+                {chapter.prev ? (
+                  <button
+                    type="button"
+                    onClick={() => void goToChapter(chapter.prev!.number)}
+                    className="min-h-11 min-w-0 rounded-full border border-(--reader-rule) px-4"
+                  >
+                    ← <span lang="hi" className="hi">{chapter.prev.title_hi}</span>
+                  </button>
+                ) : (
+                  <span />
+                )}
+                {chapter.next && (
+                  <button
+                    type="button"
+                    onClick={() => void goToChapter(chapter.next!.number)}
+                    className="min-h-11 min-w-0 rounded-full px-4 font-semibold text-white"
+                    style={{ background: "var(--ws-color)" }}
+                  >
+                    <span lang="hi" className="hi">{chapter.next.title_hi}</span> →
+                  </button>
+                )}
+              </nav>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ---- progress hairline: the one thing that never hides ---- */}
+      <div
+        className="pointer-events-none fixed inset-x-0 z-30 h-0.5"
+        style={{ bottom: bottomOffset }}
+        aria-hidden
+      >
+        <div
+          className="h-full transition-[width] duration-200"
+          style={{ width: `${progress * 100}%`, background: "var(--ws-color)", opacity: 0.75 }}
+        />
+      </div>
+
+      {/* ---- bottom chrome ---- */}
+      <div
+        data-reader-chrome
+        data-hidden={!chrome.visible}
+        className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg)/95 backdrop-blur"
+        style={{ bottom: bottomOffset }}
+      >
+        <div className="reader-content flex items-center gap-1 py-1">
+          <ChromeBtn onClick={() => setTocOpen(true)} label="Contents">
+            <TocIcon className="h-5 w-5" />
+          </ChromeBtn>
+          <ChromeBtn
+            onClick={() => currentRef && void doBookmark(currentRef)}
+            label="Bookmark this position"
+            disabled={!currentRef}
+          >
+            <BookmarkIcon className="h-5 w-5" />
+          </ChromeBtn>
+          <span className="flex-1 truncate text-center text-xs tabular-nums text-(--reader-ink-soft)">
+            {positionLabel}
+          </span>
+          {hasAudio && (
+            <ChromeBtn
+              onClick={() => (ttsActive ? player.toggle() : startListening())}
+              label="Listen to this chapter"
+              active={ttsActive}
+            >
+              <HeadphonesIcon className="h-5 w-5" />
+            </ChromeBtn>
+          )}
+          <ChromeBtn onClick={() => setSettingsOpen(true)} label="Reading settings">
+            <TypeIcon className="h-5 w-5" />
+          </ChromeBtn>
+        </div>
+      </div>
+
+      {/* one-time coach mark */}
+      {hint && !chrome.visible && (
+        <div className="pointer-events-none fixed inset-x-0 top-1/2 z-30 flex justify-center px-8">
+          <p className="rounded-full bg-black/75 px-4 py-2 text-center text-xs text-white">
+            Tap the middle of the page for controls
+          </p>
         </div>
       )}
 
-      {/* note dialog */}
-      {noteOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" role="dialog" aria-label="Add note">
-          <div className="w-full max-w-md rounded-t-2xl bg-white p-4 text-ink sm:rounded-2xl">
-            <p lang="hi" className="hi line-clamp-2 text-sm text-ink-soft">{selected.text_hi}</p>
-            <p className="mt-1 text-[11px] text-ink-soft">{selected.canonical_ref}</p>
+      {/* ---- selection action bar ---- */}
+      {selection && !noteOpen && (
+        <div
+          data-reader-chrome
+          role="toolbar"
+          aria-label="Selection actions"
+          className="fixed inset-x-0 z-50 mx-auto flex w-fit max-w-[95vw] items-center gap-0.5 rounded-full border border-(--reader-rule) bg-(--reader-bg) px-1.5 py-1 shadow-xl"
+          style={{ bottom: `calc(${bottomOffset} + 3.5rem)` }}
+        >
+          <ActionBtn onClick={() => void doBookmark(selection.para.canonical_ref)}>Bookmark</ActionBtn>
+          <ActionBtn
+            onClick={() => {
+              setNoteTarget(selection);
+              setNoteOpen(true);
+            }}
+          >
+            Note
+          </ActionBtn>
+          <ActionBtn onClick={() => void doCopy(selection)}>Copy</ActionBtn>
+          {hasAudio && (
+            <ActionBtn onClick={() => playFromPara(selection.para)}>▶ Here</ActionBtn>
+          )}
+          <ActionBtn onClick={clearSelection} ariaLabel="Dismiss">✕</ActionBtn>
+        </div>
+      )}
+
+      {/* ---- sheets ---- */}
+      <TocSheet
+        open={tocOpen}
+        onClose={() => setTocOpen(false)}
+        chapters={book.chapters}
+        current={chapterNumber}
+        bookType={book.book_type}
+        onSelect={(n) => void goToChapter(n)}
+      />
+
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        fontScale={fontScale}
+        onFontScale={changeFontScale}
+        lineHeight={lineHeight}
+        onLineHeight={changeLineHeight}
+        margin={margin}
+        onMargin={changeMargin}
+        theme={theme}
+        onTheme={changeTheme}
+        mode={mode}
+        onMode={changeMode}
+        tapZones={tapZones}
+        onTapZones={changeTapZones}
+        showTapZones={mode === "page"}
+        onGoToPage={() => {
+          setSettingsOpen(false);
+          setGotoOpen(true);
+        }}
+      />
+
+      <Sheet
+        open={noteOpen && !!noteTarget}
+        onClose={() => {
+          setNoteOpen(false);
+          setNoteTarget(null);
+        }}
+        title="Add note"
+      >
+        {noteTarget && (
+          <div className="px-5">
+            <p lang="hi" className="hi line-clamp-3 text-sm text-(--reader-ink-soft)">
+              {noteTarget.text || noteTarget.para.text_hi}
+            </p>
+            <p className="mt-1 text-[11px] text-(--reader-ink-soft)">
+              {noteTarget.para.canonical_ref}
+            </p>
             <textarea
               autoFocus
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               rows={4}
               placeholder="Your note…"
-              className="mt-3 w-full rounded-xl border border-rule p-3 text-sm outline-none focus:border-(--ws-color)"
+              className="mt-3 w-full rounded-xl border border-(--reader-rule) bg-transparent p-3 text-base outline-none focus:border-(--ws-color)"
             />
             <div className="mt-3 flex justify-end gap-2">
               <button
@@ -762,8 +1044,9 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
                 onClick={() => {
                   setNoteOpen(false);
                   setNoteText("");
+                  setNoteTarget(null);
                 }}
-                className="rounded-full border border-rule px-4 py-1.5 text-sm"
+                className="min-h-11 rounded-full border border-(--reader-rule) px-4 text-sm"
               >
                 Cancel
               </button>
@@ -771,55 +1054,52 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
                 type="button"
                 onClick={() => void saveNote()}
                 disabled={!noteText.trim()}
-                className="rounded-full px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                className="min-h-11 rounded-full px-5 text-sm font-semibold text-white disabled:opacity-50"
                 style={{ background: "var(--ws-color)" }}
               >
                 Save note
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Sheet>
 
-      {/* go-to-page dialog */}
-      {gotoOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-label="Go to page">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const n = Number(gotoValue);
-              if (n > 0) goToPrintedPage(n);
-            }}
-            className="w-72 rounded-2xl bg-white p-4 text-ink"
+      <Sheet open={gotoOpen} onClose={() => setGotoOpen(false)} title="Go to printed page">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const n = Number(gotoValue);
+            if (n > 0) goToPrintedPage(n);
+          }}
+          className="px-5"
+        >
+          <input
+            id="goto-page"
+            autoFocus
+            inputMode="numeric"
+            aria-label="Printed page number"
+            value={gotoValue}
+            onChange={(e) => setGotoValue(e.target.value.replace(/\D/g, ""))}
+            className="w-full rounded-xl border border-(--reader-rule) bg-transparent p-3 text-base outline-none focus:border-(--ws-color)"
+            placeholder="e.g. 142"
+          />
+          <button
+            type="submit"
+            className="mt-3 min-h-11 w-full rounded-full text-sm font-semibold text-white"
+            style={{ background: "var(--ws-color)" }}
           >
-            <label htmlFor="goto-page" className="text-sm font-medium">
-              Go to printed page
-            </label>
-            <input
-              id="goto-page"
-              autoFocus
-              inputMode="numeric"
-              value={gotoValue}
-              onChange={(e) => setGotoValue(e.target.value.replace(/\D/g, ""))}
-              className="mt-2 w-full rounded-xl border border-rule p-2.5 text-sm outline-none focus:border-(--ws-color)"
-              placeholder="e.g. 142"
-            />
-            <div className="mt-3 flex justify-end gap-2">
-              <button type="button" onClick={() => setGotoOpen(false)} className="rounded-full border border-rule px-4 py-1.5 text-sm">
-                Cancel
-              </button>
-              <button type="submit" className="rounded-full px-4 py-1.5 text-sm font-semibold text-white" style={{ background: "var(--ws-color)" }}>
-                Go
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+            Go
+          </button>
+        </form>
+      </Sheet>
 
-      {/* toast */}
+      {/* ---- toast ---- */}
       {toast && (
-        <div className="fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 lg:bottom-20 lg:pl-60">
-          <div className="flex items-center gap-3 rounded-full bg-ink px-4 py-2 text-sm text-white shadow-lg">
+        <div
+          className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
+          style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
+        >
+          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-ink px-4 py-2 text-sm text-white shadow-lg">
             {toast.text}
             {toast.href && (
               <Link href={toast.href} className="font-semibold underline underline-offset-2">
@@ -830,6 +1110,33 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
         </div>
       )}
     </div>
+  );
+}
+
+function ChromeBtn({
+  children,
+  onClick,
+  label,
+  active,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  label: string;
+  active?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      disabled={disabled}
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:bg-current/10 disabled:opacity-35"
+      style={active ? { color: "var(--ws-color)" } : undefined}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -847,7 +1154,7 @@ function ActionBtn({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="rounded-full px-3 py-1.5 text-sm font-medium hover:bg-black/5"
+      className="min-h-10 rounded-full px-3 text-sm font-medium active:bg-current/10"
     >
       {children}
     </button>
@@ -858,25 +1165,22 @@ function ParaWrap({
   para,
   pageKey,
   activeSeq,
-  selected,
-  onSelect,
+  selectedRef,
 }: {
   para: Paragraph;
   pageKey: string;
   activeSeq: number | null;
-  selected: Paragraph | null;
-  onSelect: (p: Paragraph | null) => void;
+  selectedRef?: string;
 }) {
   const isActive = activeSeq === para.sequence;
-  const isSelected = selected?.canonical_ref === para.canonical_ref;
+  const isSelected = selectedRef === para.canonical_ref;
   return (
     <div
       id={`p-${pageKey}-${para.para_number}`}
       data-ref={para.canonical_ref}
       data-seq={para.sequence}
-      onClick={() => onSelect(isSelected ? null : para)}
-      className={`cursor-pointer rounded-md px-1 -mx-1 ${isActive ? "para-active" : ""} ${
-        isSelected ? "outline-2 outline-offset-2 outline-(--ws-color)" : ""
+      className={`-mx-1 rounded-md px-1 ${isActive ? "para-active" : ""} ${
+        isSelected ? "bg-(--ws-color)/8" : ""
       }`}
     >
       <Block para={para} />

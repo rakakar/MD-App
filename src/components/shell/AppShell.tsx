@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { PlayerBar } from "@/components/player/PlayerBar";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
+import { isReaderRoute } from "@/lib/routes";
 import { Header } from "./Header";
 import { BottomNav, Sidebar } from "./Nav";
 import { ServiceWorker } from "./ServiceWorker";
@@ -30,18 +31,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   // auth screens are neutral chrome (PRD §4)
   const neutral = pathname === "/login" || pathname === "/signup";
+  // the reader owns the viewport: it has its own back, contents and settings,
+  // and app chrome on top of it costs a quarter of a phone screen
+  const reader = isReaderRoute(pathname);
+  const bare = neutral || reader;
 
   return (
     <AuthProvider>
       <WorkspaceProvider>
         <PlayerProvider>
-          {!neutral && <Header />}
-          {!neutral && <Sidebar />}
+          {!bare && <Header />}
+          {!bare && <Sidebar />}
           <CommandK />
           <ServiceWorker />
           <main
             className={
-              neutral
+              bare
                 ? "min-h-dvh"
                 : // clears the bottom nav plus the home-indicator inset
                   "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-60"
@@ -50,8 +55,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             {children}
           </main>
           <PlayerBar />
-          {!neutral && <BottomNav />}
-          <ConsentBanner />
+          {!bare && <BottomNav />}
+          {!reader && <ConsentBanner />}
         </PlayerProvider>
       </WorkspaceProvider>
     </AuthProvider>

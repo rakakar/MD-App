@@ -178,3 +178,63 @@ export function DownloadIcon({ className }: { className?: string }) {
     </Svg>
   );
 }
+
+// ---- reader chrome ----
+
+export function BackIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M15 5l-7 7 7 7" />
+    </Svg>
+  );
+}
+
+export function TocIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M4 6h16M4 12h16M4 18h10" />
+    </Svg>
+  );
+}
+
+/** outline when idle, filled once the position is saved */
+export function BookmarkIcon({
+  className,
+  filled = false,
+}: {
+  className?: string;
+  filled?: boolean;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className ?? "h-5 w-5"}
+      aria-hidden="true"
+    >
+      <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4.2L6 21z" />
+    </svg>
+  );
+}
+
+export function TypeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className ?? "h-5 w-5"}
+      aria-hidden="true"
+    >
+      <text x="1" y="18" fontSize="13" fontWeight="700" fontFamily="system-ui, sans-serif">
+        A
+      </text>
+      <text x="11" y="18" fontSize="19" fontWeight="700" fontFamily="system-ui, sans-serif">
+        A
+      </text>
+    </svg>
+  );
+}

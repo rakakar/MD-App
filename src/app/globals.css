@@ -26,6 +26,30 @@
   --reader-ink: #262019;
   --reader-ink-soft: #6b6155;
   --reader-rule: #e5ddd1;
+
+  /* typography, written before first paint by the inline script in layout.tsx
+     so a saved font size / spacing never flashes at its default first */
+  --reader-font-scale: 1;
+  --reader-line-height: 1.85;
+
+  /* height of the audio player when one is mounted; lets the reader's own
+     bottom chrome stack above it without magic numbers */
+  --player-h: 0px;
+}
+
+/* Margin presets. On a phone this is mostly gutter width; on a wide screen it
+   also tightens the measure, which is what actually controls comfort there. */
+[data-reader-margin="0"] {
+  --reader-pad: 0.85rem;
+  --reader-measure: 46rem;
+}
+[data-reader-margin="1"] {
+  --reader-pad: 1.35rem;
+  --reader-measure: 40rem;
+}
+[data-reader-margin="2"] {
+  --reader-pad: 2.25rem;
+  --reader-measure: 33rem;
 }
 
 [data-reader-theme="dark"] {
@@ -55,9 +79,63 @@ body {
   line-height: 1.85;
 }
 
+/* While reading, body copy follows the user's line-spacing choice. Scoped to
+   the reader so book titles and nav labels elsewhere keep their own rhythm. */
+.reader-surface .hi {
+  line-height: var(--reader-line-height, 1.85);
+}
+
 .reader-surface {
   background: var(--reader-bg);
   color: var(--reader-ink);
+  font-size: calc(1.0625rem * var(--reader-font-scale, 1));
+}
+
+/* The text column. Width and gutters come from the margin preset. */
+.reader-content {
+  margin-inline: auto;
+  max-width: var(--reader-measure, 40rem);
+  padding-inline: var(--reader-pad, 1.35rem);
+}
+
+/* Avoid one-word last lines in long Devanagari paragraphs. */
+.reader-content p,
+.reader-content h2,
+.reader-content h3 {
+  text-wrap: pretty;
+}
+
+/* The page under the reader must not rubber-band to white on iOS. Set on
+   <html> rather than <body> so the pre-hydration script can apply it without
+   tripping a hydration mismatch. */
+html[data-reading="1"],
+html[data-reading="1"] body {
+  background: var(--reader-bg);
+}
+
+/* ---- immersive chrome ---- */
+.reader-chrome {
+  transition:
+    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease;
+}
+.reader-chrome[data-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+.reader-chrome-top[data-hidden="true"] {
+  transform: translateY(-100%);
+}
+.reader-chrome-bottom[data-hidden="true"] {
+  transform: translateY(100%);
+}
+
+/* Tapping to turn a page or reveal controls must not paint a grey flash over
+   the text, and a double-tap must not zoom. Selection stays enabled — it is
+   how the bookmark / note / copy bar is summoned. */
+.reader-content {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 /* follow-along highlight (TTS, PRD §5) */
@@ -110,6 +188,10 @@ body {
   .ws-sheet,
   .ws-sheet-backdrop {
     animation: none;
+  }
+  /* chrome still hides, it just stops sliding */
+  .reader-chrome {
+    transition: none;
   }
   * {
     transition-duration: 0.01ms !important;
