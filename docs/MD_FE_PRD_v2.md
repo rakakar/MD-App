@@ -164,10 +164,43 @@ The app has five workspaces, selected from a **header dropdown** (bottom-sheet o
 
 ## 7. Search (v1 centre slot) & assistant placeholder
 
-- `GET search?q=` — global keyword search; result component renders the **forward-compatible shape** `{type: text|audio|video, timestamp?}` even though v1 results are text-only. Text results deep-link via `canonical_ref` (§4 paragraph links).
+- `GET search?q=` — global search; result component renders the **forward-compatible shape** `{type: text|audio|video, timestamp?}` even though v1 results are text-only. Text results deep-link via `canonical_ref` (§4 paragraph links).
 - Workspace-aware filter chips (All · current workspace) using the section mapping.
 - A quiet inline banner: "स्मार्ट सहायक जल्द आ रहा है / Smart assistant coming soon."
 - **v2 upgrade path (do not build now):** same slot becomes the assistant — SSE streaming, navigation tool-calls (`{"navigate": "/books/xyz"}` → "Take me there" button), cited paribhasha answers. Keep the slot's component boundary clean so the swap is internal.
+
+### The search that shipped `[REVISED 28 Jul]`
+
+Search was built against a live endpoint that was not live. `GET search` fronted
+a Meilisearch instance whose container had never been deployed, and the view
+answers that case by returning the correct shape with zero hits — so the screen
+worked perfectly and found nothing, in production, silently. Nobody was going to
+notice from the FE side: there is no error to log when the API returns `200`.
+
+The BE repointed the URL at the retrieval engine that *is* deployed (pgvector
+semantic + Postgres full-text, the same one behind MD Chat) and kept the
+envelope identical, so this screen needed no rewrite. Three additions follow
+from what the new engine actually does — contract §9.1:
+
+1. **"Showing results for अनुभव · search for 'anubhav' instead."** The corpus is
+   Devanagari, so a Latin query is rewritten before searching. Unexplained, a
+   reader who typed `anubhav` watches Hindi results appear from nowhere, and a
+   reader whose English word was translated wrongly has no way back. The link
+   re-runs with `raw=1`.
+2. **Result count and "Show N more"** — first ten, then the rest. The whole
+   ranked set already arrived in the one response, so this costs no round-trip.
+3. **Matched words marked in the snippet**, from the response's `terms` (3+
+   characters, so particles stay unmarked). Rendered as React nodes, never
+   HTML — book text must not be able to inject markup.
+
+The assistant banner moved **below** the results. On a search with no results it
+had been the loudest thing on the page, which read as an apology for the feature
+the reader had just tried to use.
+
+**Not surfaced, deliberately:** the response's `mode` field (`hybrid` vs the
+degraded `keyword`). It is real telemetry, but "semantic search is currently
+unavailable" means nothing to a non-technical reader, who can only conclude
+something is broken when it is in fact still working.
 
 ---
 
@@ -249,6 +282,8 @@ Measured on the live page, all three themes: body 15.6 / 10.7 / 14.3, secondary 
 | 9 | Signed-in reading felt worse than signed-out | Root cause was a contract mismatch (FE sent `canonical_ref`, BE bookmarks/progress only took `target:<type>:<id>`, whose ids the read API never exposes). BE now accepts `canonical_ref` on all three (contract §6); FE made local-first so the network is never on the reading path **(approved 28 Jul)** |
 | 10 | Accent palette vs WCAG AA | Darken all five identity colours; add `--ws-ink` for accent-as-text, lifted in the dark reader **(approved 28 Jul)** — §10 Colour |
 | 11 | Devanagari sans option | Built — reader settings → Typeface, device-local, serif stays default (§5) |
+| 12 | Search found nothing in production | Root cause was infrastructure, not code: `GET search` fronted a Meilisearch container that was never deployed, and that path returns `200` with zero hits. BE repointed the URL at the deployed pgvector+FTS engine, envelope unchanged; FE added the transliteration notice, result count and highlighting **(approved 28 Jul)** — §7 |
+| 13 | Assistant vs search in the centre slot | Slot stays **Search**. The assistant's retrieval half is what readers actually need and it is now live and near-free; the answering half costs ~1000× per use, needs sign-in and a daily cap, and its quality is still only validated by ~20 invited testers. Shipping search first also produces the query log that specifies the assistant **(approved 28 Jul)** |
 | 3 | Locked-phone playback | Implement Media Session API now; device-test later (team) |
 | 4 | Navigation model | **Five workspaces** (team) — this PRD's §2; header event chip as Connect-access mitigation `[EXPERT DECISION]` |
 | 5 | Event registration | Anonymous allowed, login optional (team) |

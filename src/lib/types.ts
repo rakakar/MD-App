@@ -218,12 +218,32 @@ export interface SearchResult {
   book_title?: string;
   chapter_number?: number;
   chapter_title?: string;
+  page_number?: number;
   snippet?: string;
   text?: string;
   title?: string;
   timestamp?: number;
   section?: Section | string | null;
+  /** which leg found this: "vector" (meaning), "keyword" (words), or "both" */
+  matched?: "vector" | "keyword" | "both";
   [key: string]: unknown;
+}
+
+/**
+ * A whole search response, not just the rows. `searchedAs` and `mode` are the
+ * two things a reader is owed an explanation for: that we rewrote "anubhav"
+ * into Devanagari before searching, and that a degraded run found matches by
+ * word alone. Both are invisible without being told.
+ */
+export interface SearchResponse {
+  results: SearchResult[];
+  total: number;
+  /** Devanagari the BE actually searched; "" when the query was used as typed */
+  searchedAs: string;
+  /** "hybrid" = meaning + words; "keyword" = words only (provider unavailable) */
+  mode: "hybrid" | "keyword";
+  /** query words worth highlighting (3+ chars, longest first) */
+  terms: string[];
 }
 
 // ---- /api/v1/me/ (§6) ----

@@ -9,6 +9,7 @@ import type {
   PageResolution,
   ParaResolution,
   Playlist,
+  SearchResponse,
   SearchResult,
   Section,
   VideoItem,
@@ -183,32 +184,60 @@ export async function registerForEvent(
 
 interface SearchEnvelope {
   query: string;
+  searched_as?: string;
+  mode?: "hybrid" | "keyword";
+  terms?: string[];
   results?: Record<string, { estimated_total?: number; hits?: Record<string, unknown>[] }>;
 }
 
-// live index key → forward-compatible result type (PRD §7)
+// live index key → forward-compatible result type (PRD §7). v1 returns only
+// `paragraphs`; audio/videos come back when AV transcripts get an index.
 const SEARCH_TYPE: Record<string, SearchResult["type"]> = {
   paragraphs: "text",
   audio: "audio",
   videos: "video",
 };
 
+/**
+ * Search across published books (contract §9). Hindi, Hinglish and English
+ * queries all work — the BE rewrites Latin script to Devanagari before
+ * searching and reports what it searched in `searchedAs`.
+ *
+ * Never paginated: the BE returns the whole (small, ranked) result set in one
+ * call, so "show more" is a client-side reveal and costs no round-trip.
+ */
 export async function search(
   q: string,
-  opts: { section?: string; signal?: AbortSignal } = {}
-): Promise<SearchResult[]> {
-  const raw = await apiFetch<SearchEnvelope>(
-    `search${qs({ q, section: opts.section })}`,
+  opts: {
+    section?: string;
+    book?: string;
+    limit?: number;
+    /** search the query exactly as typed, skipping the Devanagari rewrite */
+    raw?: boolean;
+    signal?: AbortSignal;
+  } = {}
+): Promise<SearchResponse> {
+  const envelope = await apiFetch<SearchEnvelope>(
+    `search${qs({
+      q,
+      section: opts.section,
+      book: opts.book,
+      limit: opts.limit,
+      raw: opts.raw ? 1 : undefined,
+    })}`,
     { signal: opts.signal }
   );
-  const out: SearchResult[] = [];
-  for (const [index, bucket] of Object.entries(raw.results ?? {})) {
+  const results: SearchResult[] = [];
+  for (const [index, bucket] of Object.entries(envelope.results ?? {})) {
     for (const hit of bucket.hits ?? []) {
-      out.push({
-        ...hit,
-        type: SEARCH_TYPE[index] ?? "text",
-      } as SearchResult);
+      results.push({ ...hit, type: SEARCH_TYPE[index] ?? "text" } as SearchResult);
     }
   }
-  return out;
+  return {
+    results,
+    total: results.length,
+    searchedAs: envelope.searched_as ?? "",
+    mode: envelope.mode ?? "hybrid",
+    terms: envelope.terms ?? [],
+  };
 }

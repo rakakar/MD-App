@@ -278,20 +278,108 @@ exact shapes; these may still evolve, unlike §§0–8):
 | `GET audio/series/` · `GET audio/` | Discourse audio series and tracks. Filters: `?section__code=`, `?series=`. |
 | `GET videos/` · `GET playlists/` | Embedded YouTube videos and curated playlists. Filter: `?section__code=`. |
 | `GET centers/` · `GET events/` · `POST events/{id}/register/` | Centers, events, event registration. |
-| `GET search` | Keyword search over published content. |
+| `GET search` | Hybrid (semantic + keyword) search over published book paragraphs — see §9.1. |
 
 All of these follow the same rules as the reader endpoints: anonymous,
 read-only (except event register), published-only, cached.
 
 **Not yet built (planned BE work — do not code against these yet):**
 
-- **Chat assistant API** — the welfare search/ask engine currently lives at an
-  internal panel URL only. A public, rate-limited, SSE-streaming chat endpoint
-  for the FE assistant (navigation help + cited paribhasha/book search, per
-  `docs/FE_Decision_Guide.md` §4) will be added as a contract **addition**.
+- **Chat assistant API** — half of this shipped: the *retrieval* half of the
+  welfare engine is now public as §9.1, so "find me the paribhasha" is answered
+  today. What is still unbuilt is the **answering** layer — a rate-limited,
+  SSE-streaming endpoint that spends an LLM call per question
+  (`docs/FE_Decision_Guide.md` §4). It will be a contract **addition**, will
+  require sign-in and a per-day cap (an answer costs ~1000× a search), and will
+  call the same §9.1 retrieval underneath.
 - **Push notifications** — Web Push (VAPID) subscribe/unsubscribe endpoints and
   the panel-side `notifications` app (`FE_Decision_Guide.md` §6) are planned,
   not present.
 
 Both will be documented here (or in a v2 contract) when they land; nothing in
 §§0–8 will change shape because of them.
+
+---
+
+### 9.1 `GET /api/v1/search` — reader search
+
+Hybrid search (pgvector semantic + Postgres full-text, RRF-merged) over
+published book paragraphs. Anonymous, throttled, no auth of any kind.
+
+**Engine swapped 28 Jul 2026.** This URL previously fronted Meilisearch, whose
+container was never deployed — so it answered every reader query with
+`estimated_total: 0`, silently, for as long as it existed. It now runs the same
+retrieval engine MD Chat uses. The envelope was kept byte-compatible, so the
+change needed no client edit.
+
+| Param | Meaning |
+|---|---|
+| `q` **(required)** | Devanagari, Hinglish or English; 2+ characters |
+| `book` | restrict to one book code, e.g. `MVD` |
+| `section` | restrict to a section code, e.g. `originals` |
+| `limit` | max hits — default 25, max 50 |
+| `raw=1` | search exactly as typed; skip the Devanagari rewrite |
+
+```json
+{
+  "query": "anubhav",
+  "searched_as": "अनुभव",
+  "mode": "hybrid",
+  "terms": ["अनुभव"],
+  "results": {
+    "paragraphs": {
+      "estimated_total": 25,
+      "hits": [
+        {
+          "type": "text",
+          "canonical_ref": "ADVD 5.49.2",
+          "book_code": "ADVD",
+          "book_title": "अनुभवात्मक अध्यात्मवाद",
+          "chapter_number": 5,
+          "chapter_title": "सारणी - जागृत जीवन के 122 आचरण",
+          "page_number": 49,
+          "snippet": "…प्रभाव क्षेत्र वश 'अनुभव' का बोध बुद्धि में…",
+          "score": 0.015873,
+          "matched": "both"
+        }
+      ]
+    }
+  }
+}
+```
+
+Three response fields change what the UI should say:
+
+- **`searched_as`** — the books are Devanagari, so a Latin query is rewritten
+  before it is searched. Show it ("showing results for अनुभव") and offer
+  `raw=1` as the way back; a reader who typed English and got the wrong
+  translation otherwise has no escape. Empty when nothing was rewritten.
+- **`mode`** — `hybrid` = meaning + words; `keyword` = word matches only,
+  because the embedding provider was unavailable or this caller's vector budget
+  was spent. **The endpoint never fails for provider trouble, it degrades** —
+  the keyword leg is plain Postgres and is always up.
+- **`terms`** — the query words worth marking in a snippet, longest first (3+
+  characters, so particles like कि/और are excluded).
+
+`matched` on each hit is `vector` (found by meaning), `keyword` (found by
+words) or `both`.
+
+**Not paginated.** The whole ranked set returns in one call, so "show more" is
+a client-side reveal costing no round-trip. Paragraphs under 30 characters are
+never returned: they are headings, and they rank high on single-term similarity
+while telling a reader nothing.
+
+**Limits.** 30 requests/minute and 300/hour per IP (`429` past that). Past 60
+searches in an hour a single IP keeps working but loses the semantic leg — the
+embedding provider's rate limit is shared by every reader, so an abusive caller
+is degraded rather than refused.
+
+**Text only.** Audio and video are not searched; that needs transcripts. The
+`results` map and each hit's `type` are already keyed for them, so AV arrives
+as an extra key rather than a new contract.
+
+**Logging.** Every search is recorded with no identity attached — no user, no
+session, no IP (`SearchQueryLog`: query, rewrite, mode, result count,
+duration). What a reader types into a book search is corpus vocabulary, not
+personal data. Zero-result rows are the useful ones: each is either a gap in
+the corpus or a word retrieval does not understand yet.
