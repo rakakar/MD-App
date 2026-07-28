@@ -197,6 +197,32 @@ The assistant banner moved **below** the results. On a search with no results it
 had been the loudest thing on the page, which read as an apology for the feature
 the reader had just tried to use.
 
+### Results expand in place `[ADDED 28 Jul]`
+
+Tapping a result opens it where it sits instead of navigating. The median
+paragraph in this corpus is ~107 characters — these are sutras — so the
+collapsed row often cannot tell a reader whether this is the passage they
+wanted, and answering that by opening the book costs them the result list they
+were working through.
+
+Expanding shows the preceding paragraph (dimmed), the passage in full with the
+searched words marked, the following paragraph (dimmed), and then **पुस्तक में
+खोलें · Open in book** as the deliberate second step. All of it arrived with the
+search response (contract §9.1), so expanding is instant and works offline of
+any further request — deliberate, because a triage step that costs a round-trip
+on a slow phone is one nobody takes.
+
+Two details that only matter on a phone:
+
+- The citation line becomes the card's heading when open, so the passage is
+  labelled with book · page · ref before you read it, and the collapsed
+  snippet is not repeated underneath the full text.
+- An expanded passage runs over a screen tall, so there is a **समेटें ·
+  Collapse** control at the foot of the panel as well. Using it removes a
+  screenful from *above* the viewport, so the card is scrolled back into view —
+  without that, closing a long result leaves the reader looking at whatever
+  happened to fall where they were standing.
+
 **Not surfaced, deliberately:** the response's `mode` field (`hybrid` vs the
 degraded `keyword`). It is real telemetry, but "semantic search is currently
 unavailable" means nothing to a non-technical reader, who can only conclude

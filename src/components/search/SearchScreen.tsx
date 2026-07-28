@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useWorkspace } from "@/components/shell/WorkspaceProvider";
 import { Icon } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
@@ -227,14 +227,37 @@ function Highlight({ text, terms }: { text: string; terms: string[] }) {
 /**
  * Forward-compatible result renderer: handles text | audio | video with
  * optional timestamp even though v1 returns text only (PRD §3 out-scope).
+ *
+ * Tapping expands in place rather than navigating. Half these paragraphs are
+ * one-line sutras, so the collapsed card often cannot tell you whether this is
+ * the passage you wanted — and answering that by opening the book costs you
+ * the result list you were working through. Expanding is free (the passage and
+ * its neighbours already arrived with the results), so triage stays on one
+ * screen and navigation becomes the deliberate second step it should be.
  */
 function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const cardRef = useRef<HTMLLIElement>(null);
+  // Set only when collapsing from the button at the FOOT of an open panel:
+  // that removes a screenful from above the viewport, so the card has to be
+  // pulled back into view once the DOM has actually shrunk.
+  const recentreOnCollapse = useRef(false);
+
+  useEffect(() => {
+    if (open || !recentreOnCollapse.current) return;
+    recentreOnCollapse.current = false;
+    cardRef.current?.scrollIntoView({ block: "center" });
+  }, [open]);
   const ref = result.canonical_ref;
   const snippet =
     (result.snippet as string) ||
     (result.text as string) ||
     (result.text_hi as string) ||
     "";
+  const full = (result.text as string) || snippet;
+  const before = (result.context_before as string) || "";
+  const after = (result.context_after as string) || "";
   const title =
     (result.book_title as string) ||
     (result.title as string) ||
@@ -253,12 +276,27 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
           ? "/audio"
           : "/books";
 
+  const citation = (
+    <>
+      {title && <span lang="hi" className="hi">{title}</span>}
+      {result.page_number !== undefined && (
+        <span lang="hi" className="hi ml-2">पृष्ठ {result.page_number}</span>
+      )}
+      {ref && <span className="ml-2">{ref}</span>}
+    </>
+  );
+
   return (
-    <li>
-      <Link
-        href={href}
-        onClick={() => track("search_result_click", { type: result.type })}
-        className="block rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
+    <li ref={cardRef} className="overflow-hidden rounded-2xl border border-rule bg-white">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => {
+          setOpen((v) => !v);
+          if (!open) track("search_result_expand", { matched: result.matched ?? "unknown" });
+        }}
+        className="block w-full p-4 text-left"
       >
         {badge && (
           <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
@@ -266,19 +304,63 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
             {result.timestamp !== undefined && ` · ${fmtTimestamp(result.timestamp)}`}
           </span>
         )}
-        {snippet && (
+        {/* The crop around the match, while collapsed. Expanding moves the
+            passage into the panel below so it can be read in its proper order
+            — preceding paragraph, passage, following paragraph — instead of
+            being repeated here. */}
+        {!open && (
           <p lang="hi" className="hi line-clamp-3 text-[15px] leading-relaxed">
             <Highlight text={snippet} terms={terms} />
           </p>
         )}
-        <p className="mt-2 text-xs text-ink-soft">
-          {title && <span lang="hi" className="hi">{title}</span>}
-          {result.page_number !== undefined && (
-            <span lang="hi" className="hi ml-2">पृष्ठ {result.page_number}</span>
-          )}
-          {ref && <span className="ml-2">{ref}</span>}
+        <p className={`flex items-center gap-1 text-xs text-ink-soft ${open ? "" : "mt-2"}`}>
+          <span className="min-w-0 flex-1">{citation}</span>
+          <span aria-hidden className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}>
+            ⌄
+          </span>
         </p>
-      </Link>
+      </button>
+
+      <div id={panelId} hidden={!open} className="px-4 pb-4">
+        {/* Neighbours are dimmed and unhighlighted — they place the passage,
+            they are not the match. Absent at a chapter's first/last paragraph. */}
+        {before && (
+          <p lang="hi" className="hi mb-2 text-sm leading-relaxed text-ink-soft">
+            {before}
+          </p>
+        )}
+        <p lang="hi" className="hi text-[15px] leading-relaxed">
+          <Highlight text={full} terms={terms} />
+        </p>
+        {after && (
+          <p lang="hi" className="hi mt-2 text-sm leading-relaxed text-ink-soft">
+            {after}
+          </p>
+        )}
+        <Link
+          href={href}
+          onClick={() => track("search_result_click", { type: result.type })}
+          className="mt-4 block rounded-xl px-4 py-2.5 text-center text-sm font-medium text-white"
+          style={{ background: "var(--ws-color)" }}
+        >
+          <span lang="hi" className="hi">पुस्तक में खोलें</span> · Open in book
+        </Link>
+        {/* An expanded passage runs over a screen tall, which would otherwise
+            mean scrolling back up to the header just to close it. Collapsing
+            from down here removes that screenful from ABOVE the viewport, so
+            the effect above pulls the card back into view — otherwise the
+            reader is left looking at whatever fell where they were. */}
+        <button
+          type="button"
+          onClick={() => {
+            recentreOnCollapse.current = true;
+            setOpen(false);
+          }}
+          className="mt-1 block w-full px-4 py-2 text-center text-xs text-ink-soft"
+        >
+          <span lang="hi" className="hi">समेटें</span> · Collapse
+        </button>
+      </div>
     </li>
   );
 }

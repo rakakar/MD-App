@@ -219,8 +219,13 @@ export interface SearchResult {
   chapter_number?: number;
   chapter_title?: string;
   page_number?: number;
+  /** cropped around the match — what the collapsed card shows */
   snippet?: string;
+  /** the passage in full — what expanding reveals */
   text?: string;
+  /** the paragraphs either side, trimmed; "" at a chapter edge */
+  context_before?: string;
+  context_after?: string;
   title?: string;
   timestamp?: number;
   section?: Section | string | null;

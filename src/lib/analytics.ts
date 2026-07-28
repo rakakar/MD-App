@@ -25,6 +25,9 @@ export type GaEvent =
   | "audio_track_play"
   | "video_play"
   | "search"
+  // Expanding a result in place vs opening the book — the ratio tells us
+  // whether readers can judge a passage from the list, or need its context.
+  | "search_result_expand"
   | "search_result_click"
   | "bookmark_add"
   | "note_add"

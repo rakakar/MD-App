@@ -339,6 +339,9 @@ change needed no client edit.
           "chapter_title": "सारणी - जागृत जीवन के 122 आचरण",
           "page_number": 49,
           "snippet": "…प्रभाव क्षेत्र वश 'अनुभव' का बोध बुद्धि में…",
+          "text": "इसी प्रभाव क्षेत्र वश 'अनुभव' का बोध बुद्धि में …",
+          "context_before": "अस्तित्व सहज रूप में …",
+          "context_after": "अनुभव प्रमाण के रूप में …",
           "score": 0.015873,
           "matched": "both"
         }
@@ -360,6 +363,25 @@ Three response fields change what the UI should say:
   the keyword leg is plain Postgres and is always up.
 - **`terms`** — the query words worth marking in a snippet, longest first (3+
   characters, so particles like कि/और are excluded).
+
+Each hit carries the passage at three widths, because one is never enough:
+
+| Field | What it is | Where it belongs |
+|---|---|---|
+| `snippet` | ~240 chars cropped around the match | the collapsed result row |
+| `text` | the paragraph in full | shown when the reader expands it |
+| `context_before` / `context_after` | the paragraphs either side, trimmed to ~240 chars; `""` at a chapter's first/last paragraph | around the expanded passage |
+
+The neighbours are not padding. The median paragraph in this corpus is about
+**107 characters** — shorter than the snippet — because so much of it is
+sutras, and a one-line sutra read alone is frequently not judgeable. What tells
+a reader whether this is the passage they wanted is what sits either side of
+it.
+
+They ship with the results rather than being fetched on expand, which costs
+about **11 KB gzipped for a full 25-result page** (4 KB → 15 KB). Expanding is
+how a reader triages a result list, and a triage step that costs a round-trip
+on a slow phone is one nobody takes.
 
 `matched` on each hit is `vector` (found by meaning), `keyword` (found by
 words) or `both`.
