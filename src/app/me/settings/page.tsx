@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AccountSecurity } from "@/components/auth/AccountSecurity";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { applyConsent } from "@/lib/analytics";
@@ -39,7 +40,9 @@ export default function SettingsPage() {
         {loading ? null : user ? (
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{(user.email as string) ?? ""}</p>
+              <p className="truncate text-sm font-medium">
+                {(user.name as string) || (user.email as string) || ""}
+              </p>
               <p className="text-xs text-ink-soft">Bookmarks, notes and progress sync to this account.</p>
             </div>
             <button
@@ -63,6 +66,7 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      {!loading && user && <AccountSecurity />}
 
       <SectionHeading>Reading</SectionHeading>
       <div className="rounded-2xl border border-rule bg-white p-4">

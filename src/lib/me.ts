@@ -1,22 +1,37 @@
 // Session-authenticated personal API (/api/v1/me/, contract §6) and
-// django-allauth headless auth flows. All requests carry the shared-parent-
-// domain session cookie (PRD §1) — credentials: "include" everywhere.
+// django-allauth headless auth flows.
+//
+// The session travels as an `X-Session-Token` header, not a cookie. The BE is
+// on welfareinfo.net and this app is not, so a session cookie is third-party:
+// iOS Safari discards it outright and Chrome is heading the same way, which
+// would mean signed-in reading works on the desktop it was built on and
+// nowhere else. A header has no such rule. It also costs nothing on the BE —
+// allauth's `app` client is mounted alongside the cookie-based `browser` one,
+// so moving this app onto a welfareinfo.net subdomain later and switching back
+// to cookies is a change to this file alone.
+//
+// The token lives in localStorage, which is readable by any script that gets
+// injected into this origin. That is the trade for cross-device sign-in; it is
+// the reason the app renders no user-supplied HTML anywhere.
 
 import { apiBase } from "./api";
 import type { Bookmark, MeUser, Note, Progress } from "./types";
+
+const TOKEN_KEY = "md.session_token";
 
 function beOrigin(): string {
   return new URL(apiBase()).origin;
 }
 
-function csrfToken(): string | null {
-  if (typeof document === "undefined") return null;
-  return (
-    document.cookie
-      .split("; ")
-      .find((c) => c.startsWith("csrftoken="))
-      ?.split("=")[1] ?? null
-  );
+export function sessionToken(): string | null {
+  if (typeof localStorage === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function setSessionToken(token: string | null): void {
+  if (typeof localStorage === "undefined") return;
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
 }
 
 async function authedFetch<T>(
@@ -27,12 +42,12 @@ async function authedFetch<T>(
     Accept: "application/json",
     ...(init.headers as Record<string, string>),
   };
-  if (init.method && init.method !== "GET") {
-    const csrf = csrfToken();
-    if (csrf) headers["X-CSRFToken"] = csrf;
-    if (init.body) headers["Content-Type"] = "application/json";
+  const token = sessionToken();
+  if (token) headers["X-Session-Token"] = token;
+  if (init.method && init.method !== "GET" && init.body) {
+    headers["Content-Type"] = "application/json";
   }
-  const res = await fetch(url, { ...init, headers, credentials: "include" });
+  const res = await fetch(url, { ...init, headers });
   if (!res.ok) {
     const err = new Error(`Request failed: ${res.status}`) as Error & {
       status: number;
@@ -72,12 +87,25 @@ const withRef = (rows: RawRow[]): RawRow[] =>
   rows.filter((r) => typeof r.canonical_ref === "string" && r.canonical_ref !== "");
 
 export async function getMe(): Promise<MeUser | null> {
+  // No token means signed out, which is the common case — don't spend a
+  // round-trip on every cold load to be told so.
+  if (!sessionToken()) return null;
   try {
     return await authedFetch<MeUser>(meUrl(""));
-  } catch {
-    return null; // 401/403 → signed out
+  } catch (e) {
+    // A token the server refuses is worse than no token: it would ride along
+    // on every later request and keep failing. Drop it and be plainly signed
+    // out. A network failure is not the same thing — keep the token then, the
+    // reader is still signed in and simply offline.
+    const status = (e as { status?: number })?.status;
+    if (status === 401 || status === 403) setSessionToken(null);
+    return null;
   }
 }
+
+/** Set the reader's display name. */
+export const updateMe = (name: string): Promise<MeUser> =>
+  authedFetch<MeUser>(meUrl(""), { method: "PATCH", body: JSON.stringify({ name }) });
 
 export const getBookmarks = async (): Promise<Bookmark[]> =>
   withRef(unwrap(await authedFetch<RawRow[] | { results: RawRow[] }>(meUrl("bookmarks/")))).map(
@@ -144,13 +172,14 @@ export const upsertProgress = (canonical_ref: string): Promise<unknown> =>
     body: JSON.stringify({ canonical_ref }),
   });
 
-// ---- allauth headless ----
+// ---- allauth headless (`app` client) ----
 
-const ALLAUTH_BASE = "/_allauth/browser/v1";
+const ALLAUTH_BASE = "/_allauth/app/v1";
 
 interface AllauthResponse {
   status: number;
   data?: { user?: MeUser };
+  meta?: { session_token?: string };
   errors?: { message: string; param?: string }[];
 }
 
@@ -160,13 +189,12 @@ async function allauth(
   body?: Record<string, string>
 ): Promise<AllauthResponse> {
   const headers: Record<string, string> = { Accept: "application/json" };
-  const csrf = csrfToken();
-  if (csrf) headers["X-CSRFToken"] = csrf;
+  const token = sessionToken();
+  if (token) headers["X-Session-Token"] = token;
   if (body) headers["Content-Type"] = "application/json";
   const res = await fetch(`${beOrigin()}${ALLAUTH_BASE}${path}`, {
     method,
     headers,
-    credentials: "include",
     body: body ? JSON.stringify(body) : undefined,
   });
   let json: AllauthResponse;
@@ -175,10 +203,21 @@ async function allauth(
   } catch {
     json = { status: res.status };
   }
-  return { ...json, status: json.status ?? res.status };
+  const out = { ...json, status: json.status ?? res.status };
+  // A successful sign-up or sign-in hands back the token every later request
+  // is authenticated by; nothing else in the app knows it exists.
+  if (out.status === 200 && out.meta?.session_token) {
+    setSessionToken(out.meta.session_token);
+  }
+  return out;
 }
 
-/** Prime the CSRF cookie before the first mutation (Django sets it on GET). */
+/**
+ * Kept for the call site in AuthForm: with token auth there is no CSRF cookie
+ * to prime, so this is now just an early liveness check on the BE. Harmless
+ * and cheap — and it stops the first sign-in attempt from being the moment we
+ * discover the API is unreachable.
+ */
 export const primeSession = (): Promise<AllauthResponse> =>
   allauth("/auth/session", "GET");
 
@@ -188,10 +227,31 @@ export const login = (email: string, password: string): Promise<AllauthResponse>
 export const signup = (email: string, password: string): Promise<AllauthResponse> =>
   allauth("/auth/signup", "POST", { email, password });
 
-export const logout = (): Promise<AllauthResponse> =>
-  allauth("/auth/session", "DELETE");
+export async function logout(): Promise<AllauthResponse> {
+  const res = await allauth("/auth/session", "DELETE");
+  // Drop it whatever the server said. If the call failed the token is stale or
+  // the network is down; either way the reader asked to be signed out on this
+  // device and holding on to it would defy that.
+  setSessionToken(null);
+  return res;
+}
 
-/** Google sign-in: allauth's provider redirect flow (server round-trip). */
+/**
+ * Change password with the old one — no email involved, which is why this is
+ * the reader's only self-service recovery path until SMTP is configured.
+ * A reader who has forgotten their password is reset by a manager.
+ */
+export const changePassword = (
+  current_password: string,
+  new_password: string
+): Promise<AllauthResponse> =>
+  allauth("/account/password/change", "POST", { current_password, new_password });
+
+/**
+ * Google sign-in — not wired for the alpha (no Google API project yet), so the
+ * button that called this is hidden. The redirect flow needs allauth's
+ * `browser` client because it is a full page round-trip, not a fetch.
+ */
 export function googleLoginUrl(callbackPath: string): string {
   const callback = `${window.location.origin}${callbackPath}`;
   return `${beOrigin()}/accounts/google/login/?process=login&next=${encodeURIComponent(callback)}`;

@@ -7,6 +7,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { track } from "@/lib/analytics";
 import { googleLoginUrl, login, primeSession, signup } from "@/lib/me";
 
+const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
+
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const search = useSearchParams();
@@ -101,21 +103,37 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         >
           {busy ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
         </button>
+
+        {/* No self-service reset during the alpha: nothing can send mail yet,
+            and a "forgot password" link that silently goes nowhere is worse
+            than saying so. A known password can be changed in Settings. */}
+        <p className="text-xs text-ink-soft">
+          {mode === "login"
+            ? "Forgot your password? Write to us — self-service reset isn't available yet in this alpha."
+            : "Use at least 8 characters. You can change it later in Settings."}
+        </p>
       </form>
 
-      <div className="my-5 flex items-center gap-3 text-xs text-ink-soft">
-        <span className="h-px flex-1 bg-rule" /> or <span className="h-px flex-1 bg-rule" />
-      </div>
+      {/* Google sign-in is built but dark for the alpha — there is no Google
+          API project behind it yet, so the button would only ever produce an
+          error. Set NEXT_PUBLIC_GOOGLE_AUTH=true once it is configured. */}
+      {GOOGLE_ENABLED && (
+        <>
+          <div className="my-5 flex items-center gap-3 text-xs text-ink-soft">
+            <span className="h-px flex-1 bg-rule" /> or <span className="h-px flex-1 bg-rule" />
+          </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          window.location.href = googleLoginUrl(next);
-        }}
-        className="rounded-full border border-rule bg-white px-4 py-2.5 text-sm font-semibold"
-      >
-        Continue with Google
-      </button>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = googleLoginUrl(next);
+            }}
+            className="rounded-full border border-rule bg-white px-4 py-2.5 text-sm font-semibold"
+          >
+            Continue with Google
+          </button>
+        </>
+      )}
 
       <p className="mt-6 text-center text-sm text-ink-soft">
         {mode === "login" ? (
