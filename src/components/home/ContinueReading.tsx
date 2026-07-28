@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getBooks } from "@/lib/api";
 import { getProgress } from "@/lib/me";
 import { parseRef, refToHref } from "@/lib/refs";
 import { getRecentlyRead, type LocalProgress } from "@/lib/storage";
@@ -22,17 +23,21 @@ export function ContinueReading() {
   useEffect(() => {
     if (loading) return;
     if (user) {
-      getProgress()
-        .then((rows) =>
+      // me/progress carries only the book code, so titles come from the book
+      // list — a guest sees the real title here and a signed-in reader used to
+      // get a bare code like "ABVP"
+      Promise.all([getProgress(), getBooks().catch(() => [])])
+        .then(([rows, books]) => {
+          const titleOf = new Map(books.map((b) => [b.code, b.title_hi]));
           setCards(
             rows.slice(0, 4).map((p) => ({
               key: p.book_code,
-              title: p.book_code,
+              title: titleOf.get(p.book_code) ?? p.book_code,
               href: refToHref(p.canonical_ref),
-              detail: p.canonical_ref,
+              detail: `Chapter ${parseRef(p.canonical_ref)?.chapter ?? "—"}`,
             }))
-          )
-        )
+          );
+        })
         .catch(() => setCards([]));
     } else {
       setCards(

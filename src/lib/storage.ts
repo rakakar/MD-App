@@ -35,7 +35,12 @@ export type ReadingMode = "page" | "scroll";
 /** Typography steps. Exported so the reader UI, the settings page and the
  *  pre-hydration inline script all agree on the same ladder. */
 export const FONT_SCALES = [0.85, 0.95, 1, 1.1, 1.2, 1.35, 1.5, 1.7];
-export const LINE_HEIGHTS = [1.55, 1.7, 1.85, 2.05, 2.3];
+/**
+ * PRD §5 sets a floor of 1.8 for Devanagari — its matras sit above and below
+ * the line, so anything tighter collides. The ladder therefore only opens the
+ * text up, never compresses it; density is controlled with size and margins.
+ */
+export const LINE_HEIGHTS = [1.85, 2.05, 2.3];
 /** index into the margin presets defined in globals.css */
 export const MARGIN_STEPS = [0, 1, 2];
 

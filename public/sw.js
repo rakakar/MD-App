@@ -3,18 +3,21 @@
  * Web Push subscribe is a v2 addition, not a rewrite — push handlers are
  * already wired below, only the subscribe UI is missing by design.
  */
-const VERSION = "md-sw-v1";
+const VERSION = "md-sw-v2";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(PAGE_CACHE)
-      .then((cache) => cache.add(OFFLINE_URL))
-      .then(() => self.skipWaiting())
-  );
+  // Deliberately no skipWaiting() here. Activating under a live page swaps the
+  // asset caches beneath a reader that is mid-chapter, and its already-loaded
+  // chunks may no longer exist. The new worker waits; the app notices it and
+  // offers a reload, which posts SKIP_WAITING below.
+  event.waitUntil(caches.open(PAGE_CACHE).then((cache) => cache.add(OFFLINE_URL)));
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {

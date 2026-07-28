@@ -62,7 +62,9 @@
 [data-reader-theme="sepia"] {
   --reader-bg: #f4e8d3;
   --reader-ink: #3d2f1e;
-  --reader-ink-soft: #7a6a52;
+  /* was #7a6a52 — only 4.32:1 on this background, under the 4.5 AA floor the
+     PRD asks for in all three themes. #756449 measures 4.72:1. */
+  --reader-ink-soft: #756449;
   --reader-rule: #ddcdb0;
 }
 

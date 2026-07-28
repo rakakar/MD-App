@@ -32,6 +32,20 @@ export const metadata: Metadata = {
     "Read A. Nagrajji's published books (मध्यस्थ दर्शन), listen to discourses, and study translations and resources.",
   applicationName: "MD Study",
   manifest: "/manifest.webmanifest",
+  // Without these an iOS home-screen install gets a screenshot for an icon and
+  // a browser-chrome title bar — most of this audience installs from Safari.
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icon-192.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    title: "MD Study",
+    // the reader paints its own background to the top edge (viewport-fit=cover)
+    statusBarStyle: "black-translucent",
+  },
   openGraph: {
     type: "website",
     siteName: "MD Study",

@@ -16,9 +16,9 @@ const THEMES: { id: ReaderTheme; label: string; swatch: string; ring: string }[]
 ];
 
 const SPACING = [
-  { label: "Tight", value: LINE_HEIGHTS[0] },
-  { label: "Normal", value: LINE_HEIGHTS[2] },
-  { label: "Relaxed", value: LINE_HEIGHTS[4] },
+  { label: "Normal", value: LINE_HEIGHTS[0] },
+  { label: "Relaxed", value: LINE_HEIGHTS[1] },
+  { label: "Loose", value: LINE_HEIGHTS[2] },
 ];
 
 const MARGINS = [
