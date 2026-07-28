@@ -63,6 +63,8 @@ interface Toast {
   text: string;
   href?: string;
   hrefLabel?: string;
+  /** chapter to re-request when the toast's Retry is pressed */
+  retry?: { n: number; targetPage?: string; push?: boolean };
 }
 
 /** what the user has highlighted, and which paragraph it belongs to */
@@ -232,12 +234,17 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
       setChapterLoading(true);
       setSelection(null);
       pendingPage.current = opts.targetPage ?? null;
-      const payload = await loadChapter(n);
-      if (!payload) {
+      const result = await loadChapter(n);
+      if (!result.ok) {
         setChapterLoading(false);
-        showToast({ text: "Chapter unavailable offline." });
+        showToast(
+          result.reason === "offline"
+            ? { text: "You're offline and this chapter isn't downloaded." }
+            : { text: "Couldn't load this chapter.", retry: { n, ...opts } }
+        );
         return;
       }
+      const payload = result.payload;
       setChapter(payload);
       setChapterNumber(n);
       setPageIndex(0);
@@ -1210,6 +1217,19 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
               <Link href={toast.href} className="font-semibold underline underline-offset-2">
                 {toast.hrefLabel}
               </Link>
+            )}
+            {toast.retry && (
+              <button
+                type="button"
+                onClick={() => {
+                  const { n, ...opts } = toast.retry!;
+                  setToast(null);
+                  void goToChapter(n, opts);
+                }}
+                className="font-semibold underline underline-offset-2"
+              >
+                Retry
+              </button>
             )}
           </div>
         </div>
