@@ -64,7 +64,7 @@ export function Block({ para }: { para: Paragraph }) {
         <blockquote
           lang="hi"
           className={`hi my-4 border-s-2 ps-4 italic text-(--reader-ink-soft) ${align}`}
-          style={{ ...indent, borderColor: "var(--ws-color)" }}
+          style={{ ...indent, borderColor: "var(--ws-ink)" }}
         >
           <Marker marker={para.marker} />
           {para.text_hi}

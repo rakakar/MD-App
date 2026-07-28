@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getBooks } from "@/lib/api";
-import { getProgress } from "@/lib/me";
+import { localProgress, syncPersonal } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
-import { getRecentlyRead, type LocalProgress } from "@/lib/storage";
 
 interface ResumeCard {
   key: string;
@@ -15,43 +14,37 @@ interface ResumeCard {
   detail: string;
 }
 
-/** Resume cards: logged-in from me/progress, guest from localStorage. */
+/**
+ * Resume cards, from the local store in both states — so they are on screen in
+ * the first paint rather than after a round-trip, and they survive being
+ * offline. A signed-in reader additionally gets a sync that folds in whatever
+ * they were reading on another device.
+ */
 export function ContinueReading() {
   const { user, loading } = useAuth();
   const [cards, setCards] = useState<ResumeCard[]>([]);
 
+  const render = useCallback(async () => {
+    const rows = localProgress().slice(0, 4);
+    let titleOf = new Map<string, string>();
+    if (rows.some((p) => !p.book_title)) {
+      titleOf = new Map((await getBooks().catch(() => [])).map((b) => [b.code, b.title_hi]));
+    }
+    setCards(
+      rows.map((p) => ({
+        key: p.book_code,
+        title: p.book_title ?? titleOf.get(p.book_code) ?? p.book_code,
+        href: refToHref(p.canonical_ref),
+        detail: `Chapter ${parseRef(p.canonical_ref)?.chapter ?? p.chapter_number}`,
+      }))
+    );
+  }, []);
+
   useEffect(() => {
     if (loading) return;
-    if (user) {
-      // me/progress carries only the book code, so titles come from the book
-      // list — a guest sees the real title here and a signed-in reader used to
-      // get a bare code like "ABVP"
-      Promise.all([getProgress(), getBooks().catch(() => [])])
-        .then(([rows, books]) => {
-          const titleOf = new Map(books.map((b) => [b.code, b.title_hi]));
-          setCards(
-            rows.slice(0, 4).map((p) => ({
-              key: p.book_code,
-              title: titleOf.get(p.book_code) ?? p.book_code,
-              href: refToHref(p.canonical_ref),
-              detail: `Chapter ${parseRef(p.canonical_ref)?.chapter ?? "—"}`,
-            }))
-          );
-        })
-        .catch(() => setCards([]));
-    } else {
-      setCards(
-        getRecentlyRead()
-          .slice(0, 4)
-          .map((p: LocalProgress) => ({
-            key: p.book_code,
-            title: p.book_title ?? p.book_code,
-            href: refToHref(p.canonical_ref),
-            detail: `Chapter ${parseRef(p.canonical_ref)?.chapter ?? p.chapter_number}`,
-          }))
-      );
-    }
-  }, [user, loading]);
+    void render();
+    if (user) void syncPersonal().then(render);
+  }, [user, loading, render]);
 
   if (cards.length === 0) return null;
 
@@ -69,7 +62,7 @@ export function ContinueReading() {
           >
             <p lang="hi" className="hi truncate text-sm font-semibold">{c.title}</p>
             <p className="mt-1 text-xs text-ink-soft">{c.detail}</p>
-            <p className="mt-2 text-xs font-medium" style={{ color: "var(--ws-color)" }}>
+            <p className="mt-2 text-xs font-medium" style={{ color: "var(--ws-ink)" }}>
               Resume →
             </p>
           </Link>

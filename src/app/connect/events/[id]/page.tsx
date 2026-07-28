@@ -47,7 +47,7 @@ export default async function EventDetailPage({
       />
 
       {event.event_type && (
-        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-color)" }}>
+        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
           {event.event_type}
         </p>
       )}
@@ -65,7 +65,7 @@ export default async function EventDetailPage({
           target="_blank"
           rel="noopener noreferrer"
           className="mt-1 inline-block text-xs underline underline-offset-2"
-          style={{ color: "var(--ws-color)" }}
+          style={{ color: "var(--ws-ink)" }}
         >
           Open in maps
         </a>

@@ -17,6 +17,9 @@ export type GaEvent =
   | "page_turn"
   | "reader_theme_change"
   | "font_size_change"
+  // which Devanagari face readers actually choose — the answer decides
+  // whether the serif stays the default
+  | "reader_face_change"
   | "tts_play"
   | "tts_complete"
   | "audio_track_play"

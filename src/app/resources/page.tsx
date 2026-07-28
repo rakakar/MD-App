@@ -28,7 +28,7 @@ export default async function ResourcesHome() {
           <Link
             href="/books?ws=resources"
             className="text-xs font-medium"
-            style={{ color: "var(--ws-color)" }}
+            style={{ color: "var(--ws-ink)" }}
           >
             Browse all →
           </Link>

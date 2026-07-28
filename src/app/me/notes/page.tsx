@@ -1,70 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState, PageContainer } from "@/components/ui";
-import { deleteNote, getNotes } from "@/lib/me";
+import { localNotes, syncPersonal, unsaveNote } from "@/lib/personal";
 import { refToHref } from "@/lib/refs";
-import { getGuestStore, removeLocalNote } from "@/lib/storage";
-
-interface Row {
-  id?: number;
-  ref: string;
-  text: string;
-  updated?: string;
-}
+import type { LocalNote } from "@/lib/storage";
 
 export default function NotesPage() {
   const { user, loading } = useAuth();
-  const [rows, setRows] = useState<Row[] | null>(null);
-  const [local, setLocal] = useState(false);
+  const [rows, setRows] = useState<LocalNote[] | null>(null);
 
-  const reload = () => {
-    if (user) {
-      getNotes()
-        .then((ns) =>
-          setRows(
-            ns.map((n) => ({
-              id: n.id,
-              ref: n.canonical_ref,
-              text: n.text,
-              updated: n.updated_at ?? n.created_at,
-            }))
-          )
-        )
-        .catch(() => setRows([]));
-      setLocal(false);
-    } else {
-      setRows(
-        getGuestStore().notes.map((n) => ({
-          ref: n.canonical_ref,
-          text: n.text,
-          updated: n.updated_at,
-        }))
-      );
-      setLocal(true);
-    }
-  };
+  const reload = useCallback(() => setRows(localNotes()), []);
 
   useEffect(() => {
-    if (!loading) reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading]);
+    if (loading) return;
+    reload();
+    if (user) void syncPersonal().then(reload);
+  }, [user, loading, reload]);
 
-  const remove = async (row: Row) => {
-    if (user && row.id !== undefined) {
-      await deleteNote(row.id).catch(() => undefined);
-    } else {
-      removeLocalNote(row.ref);
-    }
+  const remove = (ref: string) => {
+    unsaveNote(ref, !!user);
     reload();
   };
 
   return (
     <PageContainer>
       <h1 className="text-xl font-bold">Notes</h1>
-      {local && rows !== null && rows.length > 0 && (
+      {!loading && !user && rows !== null && rows.length > 0 && (
         <p className="mt-1 text-xs text-ink-soft">
           इसी device पर saved ·{" "}
           <Link href="/login?next=/me/notes" className="underline">
@@ -77,25 +41,36 @@ export default function NotesPage() {
         {rows === null ? null : rows.length === 0 ? (
           <EmptyState
             title="No notes yet"
-            hint="Tap any paragraph in the reader and choose Note."
+            hint="Select any passage in the reader and choose Note."
           />
         ) : (
           <ul className="flex flex-col gap-3">
-            {rows.map((r) => (
-              <li key={r.ref} className="rounded-2xl border border-rule bg-white p-4">
-                <p className="whitespace-pre-wrap text-sm">{r.text}</p>
+            {rows.map((n) => (
+              <li key={n.canonical_ref} className="rounded-2xl border border-rule bg-white p-4">
+                {/* the passage first, then what you said about it — a note
+                    without its subject is hard to place months later */}
+                {n.text_hi && (
+                  <p
+                    lang="hi"
+                    className="hi mb-3 line-clamp-2 border-s-2 ps-3 text-sm leading-relaxed text-ink-soft"
+                    style={{ borderColor: "var(--ws-color)" }}
+                  >
+                    {n.text_hi}
+                  </p>
+                )}
+                <p className="whitespace-pre-wrap text-sm">{n.text}</p>
                 <div className="mt-3 flex items-center justify-between">
                   <Link
-                    href={refToHref(r.ref)}
+                    href={refToHref(n.canonical_ref)}
                     className="text-xs font-medium underline-offset-2 hover:underline"
-                    style={{ color: "var(--ws-color)" }}
+                    style={{ color: "var(--ws-ink)" }}
                   >
-                    {r.ref} →
+                    {n.canonical_ref} →
                   </Link>
                   <button
                     type="button"
-                    onClick={() => void remove(r)}
-                    aria-label={`Delete note on ${r.ref}`}
+                    onClick={() => remove(n.canonical_ref)}
+                    aria-label={`Delete note on ${n.canonical_ref}`}
                     className="rounded-full px-2 py-1 text-xs text-ink-soft hover:bg-black/5"
                   >
                     Delete

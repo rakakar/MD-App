@@ -37,7 +37,7 @@ export function RegisterForm({ eventId, open }: { eventId: number; open: boolean
   if (status === "done") {
     return (
       <div role="status" className="rounded-xl border border-rule bg-white px-4 py-4 text-center">
-        <p className="text-sm font-semibold" style={{ color: "var(--ws-color)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--ws-ink)" }}>
           You&apos;re registered ✓
         </p>
         <p className="mt-1 text-xs text-ink-soft">We look forward to seeing you.</p>

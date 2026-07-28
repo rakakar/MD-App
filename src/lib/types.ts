@@ -236,11 +236,14 @@ export interface MeUser {
   [key: string]: unknown;
 }
 
-// /me/ rows expose the anchor as `target` (live schema); the client
-// normalises to canonical_ref — see lib/me.ts.
+// /me/ rows (contract §6). All three are anchored to canonical_ref and carry
+// the Hindi text or book title alongside, so a saved list can be rendered
+// without a second round of lookups.
 export interface Bookmark {
   id: number;
   canonical_ref: string;
+  /** the bookmarked line */
+  text_hi?: string;
   title?: string;
   created_at?: string;
   [key: string]: unknown;
@@ -249,6 +252,8 @@ export interface Bookmark {
 export interface Note {
   id: number;
   canonical_ref: string;
+  /** the passage the note is about */
+  text_hi?: string;
   text: string;
   created_at?: string;
   updated_at?: string;
@@ -258,6 +263,7 @@ export interface Note {
 export interface Progress {
   id?: number;
   book_code: string;
+  book_title?: string;
   canonical_ref: string;
   completed?: boolean;
   updated_at?: string;

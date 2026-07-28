@@ -16,19 +16,24 @@ import {
   TypeIcon,
 } from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
-import { createBookmark, createNote, upsertProgress } from "@/lib/me";
+import {
+  flushProgress,
+  localProgressFor,
+  saveBookmark,
+  saveNote,
+  saveProgress as savePersonalProgress,
+  syncPersonal,
+} from "@/lib/personal";
 import { citationText, paraAnchorId } from "@/lib/refs";
 import {
-  addLocalBookmark,
-  addLocalNote,
-  getGuestStore,
   getPrefs,
   nearestStep,
   resolveTheme,
-  setLocalProgress,
   setPrefs,
   FONT_SCALES,
+  FONT_FACES,
   LINE_HEIGHTS,
+  type ReaderFace,
   type ReaderTheme,
   type ReadingMode,
 } from "@/lib/storage";
@@ -65,6 +70,14 @@ interface Selection {
   text: string;
 }
 
+/** an offer to jump to a saved position in another chapter */
+interface ResumeHint {
+  chapter: number;
+  ref: string;
+  /** where it came from — worth saying, because one of them is surprising */
+  kind: "saved" | "other-device";
+}
+
 /** matches the swatches in SettingsSheet */
 const THEME_BG: Record<string, string> = {
   light: "#fdfbf7",
@@ -84,6 +97,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const [mode, setMode] = useState<ReadingMode>(book.book_type === "print" ? "page" : "scroll");
   const [theme, setTheme] = useState<ReaderTheme>("system");
   const [fontScale, setFontScale] = useState(1);
+  const [face, setFace] = useState<ReaderFace>("serif");
   const [lineHeight, setLineHeight] = useState(1.85);
   const [margin, setMargin] = useState(1);
   const [tapZones, setTapZones] = useState(true);
@@ -98,7 +112,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const [gotoOpen, setGotoOpen] = useState(false);
   const [gotoValue, setGotoValue] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
-  const [resumeHint, setResumeHint] = useState<{ chapter: number; ref: string } | null>(null);
+  const [resumeHint, setResumeHint] = useState<ResumeHint | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
   const [hint, setHint] = useState(false);
@@ -139,6 +153,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     const p = getPrefs();
     setTheme(p.theme);
     setFontScale(nearestStep(FONT_SCALES, p.fontScale));
+    setFace(FONT_FACES.includes(p.face) ? p.face : "serif");
     setLineHeight(nearestStep(LINE_HEIGHTS, p.lineHeight));
     setMargin(p.margin);
     setTapZones(p.tapZones);
@@ -185,7 +200,8 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     root.style.setProperty("--reader-font-scale", String(fontScale));
     root.style.setProperty("--reader-line-height", String(lineHeight));
     root.setAttribute("data-reader-margin", String(margin));
-  }, [fontScale, lineHeight, margin, prefsLoaded]);
+    root.setAttribute("data-reader-face", face);
+  }, [fontScale, lineHeight, margin, face, prefsLoaded]);
 
   // reading takes over the whole page: no white rubber-band, no light
   // scrollbars, and the app's own chrome colours are restored on the way out
@@ -196,7 +212,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
       root.removeAttribute("data-reading");
       root.style.colorScheme = "";
       const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-      if (meta) meta.content = "#C8621A";
+      if (meta) meta.content = "#A54F14";
     };
   }, []);
 
@@ -279,8 +295,30 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     [pages, mode]
   );
 
+  /** Go to a saved ref, or offer it as a banner when it lives elsewhere. */
+  const restoreRef = useCallback(
+    (ref: string, hint: ResumeHint["kind"]) => {
+      const m = ref.match(/^\S+\s+([^.]+)\.([^.]+)\.([^.]+)$/);
+      if (!m) return;
+      const refChapter = m[1] === "fm" ? null : Number(m[1]);
+      if (refChapter === chapterNumber || (m[1] === "fm" && isFrontMatter)) {
+        jumpToPage(m[2], Number(m[3]) || undefined);
+      } else if (refChapter !== null) {
+        setResumeHint({ chapter: refChapter, ref, kind: hint });
+      }
+    },
+    [chapterNumber, isFrontMatter, jumpToPage]
+  );
+
+  // Resume, identical whether or not anyone is signed in: the position is read
+  // from the local store, which is where every reader's writes land first. No
+  // auth check, no await, no network — so it is instant and it works offline.
+  // `restored` also gates the first progress write below, so opening at page 1
+  // cannot overwrite the place we are about to jump to.
+  const restored = useRef(false);
   useEffect(() => {
-    if (pages.length === 0) return;
+    if (pages.length === 0 || restored.current) return;
+    restored.current = true;
     // 1. explicit deep link #p-{page}-{para}
     const hash = window.location.hash.match(/^#p-([^-]+)-(.+)$/);
     if (hash) {
@@ -293,69 +331,78 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
       pendingPage.current = null;
       return;
     }
-    // 3. resume position (guest localStorage; logged-in progress read on open)
-    const restore = (ref: string) => {
-      const m = ref.match(/^\S+\s+([^.]+)\.([^.]+)\.([^.]+)$/);
-      if (!m) return;
-      const refChapter = m[1] === "fm" ? null : Number(m[1]);
-      if (refChapter === chapterNumber || (m[1] === "fm" && isFrontMatter)) {
-        jumpToPage(m[2], Number(m[3]) || undefined);
-      } else if (refChapter !== null) {
-        setResumeHint({ chapter: refChapter, ref });
-      }
-    };
-    if (!authLoading && !user) {
-      const local = getGuestStore().progress[book.code];
-      if (local) restore(local.canonical_ref);
-    }
+    // 3. saved position
+    const local = localProgressFor(book.code);
+    if (local) restoreRef(local.canonical_ref, "saved");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pages, authLoading]);
+  }, [pages]);
 
-  // logged-in resume: read progress once auth resolves
-  const serverResumeChecked = useRef(false);
+  // The one thing an account genuinely adds: a position set on another device.
+  // It arrives late by nature, so it is offered rather than applied — nobody
+  // wants the page yanked out from under them two seconds into a paragraph.
+  const otherDeviceChecked = useRef(false);
   useEffect(() => {
-    if (authLoading || !user || serverResumeChecked.current || pages.length === 0) return;
-    serverResumeChecked.current = true;
+    if (authLoading || !user || otherDeviceChecked.current || pages.length === 0) return;
+    otherDeviceChecked.current = true;
     if (window.location.hash) return;
-    import("@/lib/me").then(({ getProgress }) =>
-      getProgress()
-        .then((rows) => {
-          const mine = rows.find((r) => r.book_code === book.code);
-          if (!mine) return;
-          const m = mine.canonical_ref.match(/^\S+\s+([^.]+)\.([^.]+)\.([^.]+)$/);
-          if (!m) return;
-          const refChapter = m[1] === "fm" ? null : Number(m[1]);
-          if (refChapter === chapterNumber) {
-            jumpToPage(m[2], Number(m[3]) || undefined);
-          } else if (refChapter !== null) {
-            setResumeHint({ chapter: refChapter, ref: mine.canonical_ref });
-          }
-        })
-        .catch(() => undefined)
-    );
-  }, [authLoading, user, pages, book.code, chapterNumber, jumpToPage]);
+    const before = localProgressFor(book.code)?.canonical_ref;
+    void syncPersonal().then(() => {
+      const after = localProgressFor(book.code);
+      if (!after || after.canonical_ref === before) return;
+      restoreRef(after.canonical_ref, "other-device");
+    });
+  }, [authLoading, user, pages, book.code, restoreRef]);
 
   // ---- progress write-behind (debounced; top visible ref) ----
+  // One path for everyone: the local store takes it immediately, and the sync
+  // layer carries it to the server in the background when there is an account
+  // behind it. Held until the restore above has run, so the position we open
+  // at cannot overwrite the position we are restoring to.
   const progressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingProgress = useRef<{ ref: string; chapter: number } | null>(null);
+
+  const commitProgress = useCallback(() => {
+    const p = pendingProgress.current;
+    if (!p) return;
+    pendingProgress.current = null;
+    if (progressTimer.current) clearTimeout(progressTimer.current);
+    savePersonalProgress(
+      {
+        book_code: book.code,
+        book_title: book.title_hi,
+        canonical_ref: p.ref,
+        chapter_number: p.chapter,
+      },
+      !!user
+    );
+  }, [user, book.code, book.title_hi]);
+
   const saveProgress = useCallback(
     (ref: string) => {
       setCurrentRef(ref);
+      if (!restored.current) return;
+      pendingProgress.current = { ref, chapter: chapterNumber };
       if (progressTimer.current) clearTimeout(progressTimer.current);
-      progressTimer.current = setTimeout(() => {
-        if (user) {
-          void upsertProgress(book.code, ref).catch(() => undefined);
-        } else {
-          setLocalProgress({
-            book_code: book.code,
-            book_title: book.title_hi,
-            canonical_ref: ref,
-            chapter_number: chapterNumber,
-          });
-        }
-      }, 1500);
+      progressTimer.current = setTimeout(commitProgress, 1500);
     },
-    [user, book.code, book.title_hi, chapterNumber]
+    [chapterNumber, commitProgress]
   );
+
+  // Leaving the reader. The debounce above is still counting when someone taps
+  // Back a second after turning a page, so commit it by hand rather than let
+  // the timer die with the component — losing the last page turn is exactly
+  // the case resume exists for.
+  useEffect(() => {
+    const flush = () => {
+      commitProgress();
+      flushProgress(!!user);
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [user, commitProgress]);
 
   // page mode: current page's first para is the position
   useEffect(() => {
@@ -625,37 +672,43 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   }, [paraByRef]);
 
   // ---- selection actions ----
-  const nudgeSync = useCallback(() => {
-    const p = getPrefs();
-    if (!p.syncNudgeShown) {
-      setPrefs({ syncNudgeShown: true });
-      showToast({
-        text: "Saved on this device.",
-        href: "/login",
-        hrefLabel: "Sign in to sync",
-      });
-    } else {
-      showToast({ text: "Saved." });
-    }
-  }, [showToast]);
+  // Saving always succeeds and always feels instant, because it is a local
+  // write; the account only decides whether it also travels. The old code
+  // could tell a signed-in reader "Couldn't save bookmark" and drop it, which
+  // is the one outcome a reading app must never produce.
+  const confirmSaved = useCallback(
+    (what: string) => {
+      const p = getPrefs();
+      if (!user && !p.syncNudgeShown) {
+        setPrefs({ syncNudgeShown: true });
+        showToast({
+          text: `${what} — saved on this device.`,
+          href: "/login",
+          hrefLabel: "Sign in to sync",
+        });
+      } else {
+        showToast({ text: `${what}.` });
+      }
+    },
+    [user, showToast]
+  );
 
   const doBookmark = useCallback(
-    async (ref: string) => {
+    (ref: string) => {
       track("bookmark_add");
-      if (user) {
-        try {
-          await createBookmark(ref);
-          showToast({ text: "Bookmarked." });
-        } catch {
-          showToast({ text: "Couldn't save bookmark." });
-        }
-      } else {
-        addLocalBookmark(ref, book.code);
-        nudgeSync();
-      }
+      saveBookmark(
+        {
+          canonical_ref: ref,
+          book_code: book.code,
+          book_title: book.title_hi,
+          text_hi: paraByRef.get(ref)?.text_hi,
+        },
+        !!user
+      );
+      confirmSaved("Bookmarked");
       clearSelection();
     },
-    [user, book.code, nudgeSync, showToast, clearSelection]
+    [user, book.code, book.title_hi, paraByRef, confirmSaved, clearSelection]
   );
 
   const doCopy = useCallback(
@@ -673,25 +726,25 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     [showToast, clearSelection]
   );
 
-  const saveNote = useCallback(async () => {
+  const commitNote = useCallback(() => {
     if (!noteTarget || !noteText.trim()) return;
     track("note_add");
-    if (user) {
-      try {
-        await createNote(noteTarget.para.canonical_ref, noteText.trim());
-        showToast({ text: "Note saved." });
-      } catch {
-        showToast({ text: "Couldn't save note." });
-      }
-    } else {
-      addLocalNote(noteTarget.para.canonical_ref, book.code, noteText.trim());
-      nudgeSync();
-    }
+    saveNote(
+      {
+        canonical_ref: noteTarget.para.canonical_ref,
+        book_code: book.code,
+        book_title: book.title_hi,
+        text_hi: noteTarget.para.text_hi,
+      },
+      noteText.trim(),
+      !!user
+    );
+    confirmSaved("Note saved");
     setNoteOpen(false);
     setNoteText("");
     setNoteTarget(null);
     clearSelection();
-  }, [noteTarget, noteText, user, book.code, nudgeSync, showToast, clearSelection]);
+  }, [noteTarget, noteText, user, book.code, book.title_hi, confirmSaved, clearSelection]);
 
   // ---- go to page ----
   const goToPrintedPage = useCallback(
@@ -722,6 +775,11 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     setFontScale(s);
     setPrefs({ fontScale: s });
     track("font_size_change", { scale: s });
+  };
+  const changeFace = (v: ReaderFace) => {
+    setFace(v);
+    setPrefs({ face: v });
+    track("reader_face_change", { face: v });
   };
   const changeLineHeight = (v: number) => {
     setLineHeight(v);
@@ -804,7 +862,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
           covers the line you are reading */}
       <div className="pt-[calc(3.5rem+env(safe-area-inset-top))]">
         {resumeHint && (
-          <div className="reader-content pt-2">
+          <div className="reader-content flex items-center gap-2 pt-2">
             <button
               type="button"
               onClick={() => {
@@ -812,9 +870,20 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
                 void goToChapter(resumeHint.chapter, { targetPage: m?.[1] });
                 setResumeHint(null);
               }}
-              className="w-full rounded-xl border border-(--reader-rule) px-4 py-2.5 text-left text-sm"
+              className="min-w-0 flex-1 rounded-xl border border-(--reader-rule) px-4 py-2.5 text-left text-sm"
             >
-              Resume where you left off — chapter {resumeHint.chapter} →
+              {resumeHint.kind === "other-device"
+                ? "Continue from your other device"
+                : "Resume where you left off"}{" "}
+              — chapter {resumeHint.chapter} →
+            </button>
+            <button
+              type="button"
+              onClick={() => setResumeHint(null)}
+              aria-label="Dismiss resume suggestion"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-(--reader-ink-soft) active:bg-current/10"
+            >
+              ✕
             </button>
           </div>
         )}
@@ -907,7 +976,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
       >
         <div
           className="h-full transition-[width] duration-200"
-          style={{ width: `${progress * 100}%`, background: "var(--ws-color)", opacity: 0.75 }}
+          style={{ width: `${progress * 100}%`, background: "var(--ws-ink)", opacity: 0.75 }}
         />
       </div>
 
@@ -923,7 +992,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
             <TocIcon className="h-5 w-5" />
           </ChromeBtn>
           <ChromeBtn
-            onClick={() => currentRef && void doBookmark(currentRef)}
+            onClick={() => currentRef && doBookmark(currentRef)}
             label="Bookmark this position"
             disabled={!currentRef}
           >
@@ -965,7 +1034,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
           className="fixed inset-x-0 z-50 mx-auto flex w-fit max-w-[95vw] items-center gap-0.5 rounded-full border border-(--reader-rule) bg-(--reader-bg) px-1.5 py-1 shadow-xl"
           style={{ bottom: `calc(${bottomOffset} + 3.5rem)` }}
         >
-          <ActionBtn onClick={() => void doBookmark(selection.para.canonical_ref)}>Bookmark</ActionBtn>
+          <ActionBtn onClick={() => doBookmark(selection.para.canonical_ref)}>Bookmark</ActionBtn>
           <ActionBtn
             onClick={() => {
               setNoteTarget(selection);
@@ -997,6 +1066,8 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
         onClose={() => setSettingsOpen(false)}
         fontScale={fontScale}
         onFontScale={changeFontScale}
+        face={face}
+        onFace={changeFace}
         lineHeight={lineHeight}
         onLineHeight={changeLineHeight}
         margin={margin}
@@ -1036,7 +1107,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
               onChange={(e) => setNoteText(e.target.value)}
               rows={4}
               placeholder="Your note…"
-              className="mt-3 w-full rounded-xl border border-(--reader-rule) bg-transparent p-3 text-base outline-none focus:border-(--ws-color)"
+              className="mt-3 w-full rounded-xl border border-(--reader-rule) bg-transparent p-3 text-base outline-none focus:border-(--ws-ink)"
             />
             <div className="mt-3 flex justify-end gap-2">
               <button
@@ -1052,7 +1123,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
               </button>
               <button
                 type="button"
-                onClick={() => void saveNote()}
+                onClick={commitNote}
                 disabled={!noteText.trim()}
                 className="min-h-11 rounded-full px-5 text-sm font-semibold text-white disabled:opacity-50"
                 style={{ background: "var(--ws-color)" }}
@@ -1080,7 +1151,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
             aria-label="Printed page number"
             value={gotoValue}
             onChange={(e) => setGotoValue(e.target.value.replace(/\D/g, ""))}
-            className="w-full rounded-xl border border-(--reader-rule) bg-transparent p-3 text-base outline-none focus:border-(--ws-color)"
+            className="w-full rounded-xl border border-(--reader-rule) bg-transparent p-3 text-base outline-none focus:border-(--ws-ink)"
             placeholder="e.g. 142"
           />
           <button
@@ -1133,7 +1204,7 @@ function ChromeBtn({
       aria-label={label}
       disabled={disabled}
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:bg-current/10 disabled:opacity-35"
-      style={active ? { color: "var(--ws-color)" } : undefined}
+      style={active ? { color: "var(--ws-ink)" } : undefined}
     >
       {children}
     </button>

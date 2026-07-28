@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Noto_Serif_Devanagari } from "next/font/google";
+import { Geist, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
 import { Analytics } from "@/components/consent/ConsentBanner";
 import { InlineScript } from "@/components/InlineScript";
 import { AppShell } from "@/components/shell/AppShell";
@@ -18,6 +18,17 @@ const notoSerifDevanagari = Noto_Serif_Devanagari({
   weight: ["400", "600", "700"],
   display: "swap",
   preload: true,
+});
+
+// The alternate reading face (settings → Typeface). Not preloaded: most
+// readers never switch, and preloading both would cost every first paint a
+// second Devanagari download for a face it will not use.
+const notoSansDevanagari = Noto_Sans_Devanagari({
+  variable: "--font-noto-sans-devanagari",
+  subsets: ["devanagari", "latin"],
+  weight: ["400", "600", "700"],
+  display: "swap",
+  preload: false,
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://welfareinfo.net";
@@ -54,7 +65,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#C8621A",
+  themeColor: "#A54F14",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -74,6 +85,7 @@ if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"lig
 var d=document.documentElement;
 d.setAttribute("data-reader-theme",t);
 d.setAttribute("data-reader-margin",String(p.margin==null?1:p.margin));
+d.setAttribute("data-reader-face",p.face||"serif");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
 if(/^\\/books\\/[^/]+\\/\\d+$/.test(location.pathname)){
@@ -92,8 +104,9 @@ export default function RootLayout({
       lang="en"
       data-reader-theme="light"
       data-reader-margin="1"
+      data-reader-face="serif"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${notoSerifDevanagari.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${notoSerifDevanagari.variable} ${notoSansDevanagari.variable} h-full antialiased`}
     >
       <head>
         <InlineScript html={THEME_SCRIPT} />

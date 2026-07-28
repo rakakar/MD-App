@@ -138,9 +138,11 @@ The app has five workspaces, selected from a **header dropdown** (bottom-sheet o
 
 **Controls:** font-size slider · light/dark/sepia themes · page-mode ⇄ continuous-scroll (default: print→page, digital→scroll; user override persisted) · go-to-page (TOC `start_page`/`end_page` lookup client-side; the resolver endpoint is only for cold SSR entry).
 
-**Resume:** guest → localStorage per book (top visible `canonical_ref`); logged-in → `me/progress` (debounced write-behind, read on open); merge on login.
+**Resume `[REVISED 28 Jul]`:** localStorage per book (top visible `canonical_ref`), **for everyone**, read synchronously on open. Logged-in additionally syncs to `me/progress` in the background. See §9 "One reading experience".
 
-**Selection actions:** select a paragraph → Bookmark · Note · Copy-with-citation (appends "— {canonical_ref}"). Guest: bookmark/note stored locally (feeds guest My Journey) with a one-time "sign in to sync" nudge; never a blocking login wall.
+**Selection actions:** select a paragraph → Bookmark · Note · Copy-with-citation (appends "— {canonical_ref}"). Bookmark/note are stored locally first in both states, with a one-time "sign in to sync" nudge for signed-out readers; never a blocking login wall, and never a failure the reader has to retry.
+
+**Typeface `[ADDED 28 Jul]`:** Noto Serif Devanagari (default, matches the printed books) ⇄ Noto Sans Devanagari, device-local, in the reader settings sheet. The sans exists because the serif's thin strokes and stacked matras go muddy on low-DPI Android screens at small sizes; the serif stays the default and `reader_face_change` tells us whether that is right.
 
 **Read-aloud in reader:** if `audio_renditions[]` non-empty → listen button; default `audio_renditions[0]` (fresh-first per contract); voice picker via `voice_label`; surface `is_stale` subtly. **Follow-along:** highlight + auto-scroll the paragraph whose `[start_ms,end_ms]` (from the **playing rendition's** `para_timings`, keyed by `sequence`) brackets current time; paragraphs absent from timings are skipped. **Play-from-here:** tap a para while the player is open → seek to its `start_ms`. Voice switch re-resolves position by paragraph, not timestamp.
 
@@ -182,10 +184,43 @@ The app has five workspaces, selected from a **header dropdown** (bottom-sheet o
 
 - Headless allauth flows (email/password + Google); session cookies; same-parent-domain (§1).
 - **Public users never see panel** — no admin affordances anywhere.
-- Preferences (font size, theme, reading mode, workspace last-used): localStorage always; mirrored to server when logged in.
-- **My Journey, logged-in:** overview (resume cards from `progress`, counts), `/me/bookmarks`, `/me/notes` — all `canonical_ref`-anchored, each item deep-links into the reader.
-- **My Journey, guest `[EXPERT DECISION]`:** device-local overview (recently read from localStorage resume data, local bookmarks/notes) + persistent sync CTA; clearly labelled "इसी device पर saved". Login → merge (union by `canonical_ref`, server wins) → clear local.
+- Preferences (font size, typeface, theme, reading mode, workspace last-used): localStorage always; mirrored to server when logged in.
+- **My Journey:** overview (resume cards, counts), `/me/bookmarks`, `/me/notes` — all `canonical_ref`-anchored, each item deep-links into the reader, each row showing the saved passage rather than the reference it is filed under.
 - Login prompts appear **only at first benefit** (first bookmark/note, sync attempt, or My Journey visit) — never a gate on reading.
+
+### One reading experience `[REVISED 28 Jul — supersedes the guest/logged-in split above]`
+
+**Signing in must not change how reading feels. It adds reach, nothing else.**
+
+The original design gave the two states different machinery: guests wrote to
+localStorage, signed-in readers wrote to the API. That made the account the
+*worse* deal — a bookmark cost a round-trip and failed offline, and a resume
+position could not be restored without one. (In practice it was worse still:
+the FE sent `canonical_ref` to two endpoints that only accepted
+`target: "<type>:<id>"`, so every signed-in bookmark and every signed-in resume
+write returned 400 and was dropped. Fixed on both sides — contract §6.)
+
+The rule now:
+
+1. **Every write lands in localStorage first, synchronously, for everyone.** A
+   save always succeeds and always feels instant. There is no "couldn't save"
+   state, because there is no network on the path.
+2. **Reads come from the local store in both states**, so resume, Continue
+   Reading and the saved lists paint on first render and work offline.
+3. **Signing in attaches a background sync** (`lib/personal.ts`): pending rows
+   go up, the server's rows fold in, retried on reconnect. The reader never
+   waits on it.
+4. **Merge-on-login is not a special case** — whatever was saved beforehand is
+   already in the local store, so the ordinary sync pass pushes it. Union by
+   `canonical_ref`; for progress, the newest position wins.
+5. Local rows are cleared on **sign-out** (they belong to the account, and a
+   shared phone must not show them to the next reader), not on sign-in.
+
+**The one difference that remains**, because it is a genuine technical limit
+and not a design choice: a position set on another device. It cannot arrive
+synchronously, so it is *offered* — a "Continue from your other device" banner
+— rather than applied, which would yank the page out from under someone two
+seconds into a paragraph.
 
 ---
 
@@ -195,6 +230,12 @@ The app has five workspaces, selected from a **header dropdown** (bottom-sheet o
 **PWA:** manifest + icons; offline shell + downloaded books; push-ready SW skeleton (no subscribe UI).
 **GA4 events:** `workspace_switch` (from,to) · `book_open` · `chapter_read` · `page_turn` (bucketed) · `reader_theme_change` · `font_size_change` · `tts_play` (voice) · `tts_complete` · `audio_track_play` · `video_play` · `search` (query length only) · `search_result_click` · `bookmark_add` · `note_add` · `sutra_view` · `sutra_share` · `event_view` · `event_register` (auth state) · `login` · `signup` · `book_download_offline` · `install_pwa` · `header_event_chip_tap`. No PII in params; consent-gated.
 **Accessibility:** WCAG AA in all three themes; keyboard page-turn (←/→); focus management on workspace switch; labelled media controls; 200% zoom test on Devanagari.
+
+**Colour `[REVISED 28 Jul]`.** The §2 identity colours are one step deeper than the original palette (Originals `#C8621A` → `#A54F14`, and likewise across the five). The originals failed AA in the two ways the palette is actually used: white label text on an accent fill measured 4.02:1, and the accent as text 3.89:1 on light and 4.32:1 on sepia — across some 33 filled controls.
+
+A second token, `--ws-ink`, carries the accent when it is **text or a hairline** rather than a fill. No single colour can clear 4.5:1 on both a near-white page and the near-black dark reader; the darkened accents land at 2.3–3.3:1 there. So inside `.reader-surface` in the dark theme, `--ws-ink` lifts the accent toward the reader's own ink. Fills keep `--ws-color` — there the accent is the background, and the theme cannot change it.
+
+Measured on the live page, all three themes: body 15.6 / 10.7 / 14.3, secondary 5.9 / 4.7 / 6.6, accent-as-text 5.5 / 4.7 / 6.7, white-on-accent 5.6 (light / sepia / dark).
 **Performance:** budgets per §5; Lighthouse ≥90 on chapter pages; Next image optimization for covers; below-fold base64 figures lazy-rendered.
 
 ---
@@ -204,7 +245,10 @@ The app has five workspaces, selected from a **header dropdown** (bottom-sheet o
 | # | Question | Resolution |
 |---|---|---|
 | 1 | Sutra of the day source | BE endpoint **later** (team). V1: config list of `canonical_ref`s via live `paras/` endpoint behind a `SutraSource` interface `[EXPERT DECISION]` |
-| 2 | My Journey history | Logged-in from BE (`/me/` trio); guest = device-local view + sync-on-login `[EXPERT DECISION]` |
+| 2 | My Journey history | ~~Logged-in from BE; guest = device-local~~ **Superseded 28 Jul:** local-first for both, background sync when signed in — §9 "One reading experience" |
+| 9 | Signed-in reading felt worse than signed-out | Root cause was a contract mismatch (FE sent `canonical_ref`, BE bookmarks/progress only took `target:<type>:<id>`, whose ids the read API never exposes). BE now accepts `canonical_ref` on all three (contract §6); FE made local-first so the network is never on the reading path **(approved 28 Jul)** |
+| 10 | Accent palette vs WCAG AA | Darken all five identity colours; add `--ws-ink` for accent-as-text, lifted in the dark reader **(approved 28 Jul)** — §10 Colour |
+| 11 | Devanagari sans option | Built — reader settings → Typeface, device-local, serif stays default (§5) |
 | 3 | Locked-phone playback | Implement Media Session API now; device-test later (team) |
 | 4 | Navigation model | **Five workspaces** (team) — this PRD's §2; header event chip as Connect-access mitigation `[EXPERT DECISION]` |
 | 5 | Event registration | Anonymous allowed, login optional (team) |

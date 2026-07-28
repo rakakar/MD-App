@@ -41,7 +41,7 @@ export function BottomNav() {
           href={nav.href}
           aria-current={active ? "page" : undefined}
           className="flex min-h-13 flex-col items-center justify-center gap-0.5 px-1 pb-1.5 pt-2 text-[11px] font-medium transition-colors active:bg-black/5"
-          style={{ color: active ? "var(--ws-color)" : "var(--color-ink-soft)" }}
+          style={{ color: active ? "var(--ws-ink)" : "var(--color-ink-soft)" }}
         >
           <Icon name={nav.icon} className="h-5 w-5" strokeWidth={active ? 2.2 : 1.8} />
           <span className="max-w-full truncate">{nav.label}</span>

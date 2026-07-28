@@ -1,11 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ws-originals: #c8621a;
-  --color-ws-translations: #1a6b5c;
-  --color-ws-resources: #3b6b9e;
-  --color-ws-journey: #534ab7;
-  --color-ws-connect: #b8452e;
+  /* Workspace identity colours (PRD §2), each darkened ~10% from the original
+     palette. They are used two ways the lighter values could not carry:
+     as a background under white label text, and as text on the page. At
+     #c8621a, white-on-accent measured 4.02:1 and the accent as text 3.89:1 —
+     both under the 4.5:1 AA floor PRD §10 sets for every theme, across some
+     33 filled controls. Same hues, one step deeper, all now ≥4.7:1. */
+  --color-ws-originals: #a54f14;
+  --color-ws-translations: #17604f;
+  --color-ws-resources: #35608e;
+  --color-ws-journey: #4b42a5;
+  --color-ws-connect: #a53d29;
 
   --color-surface: #faf7f2;
   --color-ink: #262019;
@@ -14,12 +20,22 @@
 
   --font-devanagari: var(--font-noto-serif-devanagari), "Noto Serif Devanagari",
     serif;
+  --font-devanagari-sans: var(--font-noto-sans-devanagari),
+    "Noto Sans Devanagari", sans-serif;
   --font-ui: var(--font-geist-sans), system-ui, sans-serif;
 }
 
 :root {
   /* active workspace identity colour — set inline by the shell */
-  --ws-color: #c8621a;
+  --ws-color: #a54f14;
+  /* The same accent, but for text and hairlines rather than fills. A single
+     colour cannot be legible on both a near-white page and a near-black one:
+     these accents clear AA as text on the light and sepia surfaces and land
+     around 2.5–3.3:1 on the dark reader, which is unreadable. So the dark
+     reader lifts the accent toward its own ink instead. Fills keep using
+     --ws-color — white on the accent passes in every theme, because there the
+     accent is the background and the theme cannot change it. */
+  --ws-ink: var(--ws-color);
 
   /* reader theme tokens (light default) */
   --reader-bg: #fdfbf7;
@@ -59,6 +75,20 @@
   --reader-rule: #2e2921;
 }
 
+/* The workspace scope declares --ws-ink so the mix below can see the
+   workspace's own --ws-color; declaring it on :root would freeze it at the
+   default saffron for every workspace. */
+[data-ws] {
+  --ws-ink: var(--ws-color);
+}
+
+/* Dark reader only — the app shell outside the reader stays on a light
+   surface whatever the reader theme is, so the accent must not be lifted
+   there. 55% accent keeps the hue recognisable and measures 5.8–6.6:1. */
+html[data-reader-theme="dark"] .reader-surface {
+  --ws-ink: color-mix(in srgb, var(--ws-color) 55%, var(--reader-ink));
+}
+
 [data-reader-theme="sepia"] {
   --reader-bg: #f4e8d3;
   --reader-ink: #3d2f1e;
@@ -79,6 +109,12 @@ body {
 .hi {
   font-family: var(--font-devanagari);
   line-height: 1.85;
+}
+
+/* Reader typeface choice. Only the book text follows it — titles and nav
+   labels elsewhere stay in the serif, which is the app's voice. */
+html[data-reader-face="sans"] .reader-surface .hi {
+  font-family: var(--font-devanagari-sans);
 }
 
 /* While reading, body copy follows the user's line-spacing choice. Scoped to

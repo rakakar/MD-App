@@ -54,17 +54,17 @@ export default async function CentersPage() {
                   <div className="mt-2 flex flex-wrap gap-3 text-sm">
                     {c.contact_name && <span className="text-ink-soft">{c.contact_name}</span>}
                     {c.contact_phone && (
-                      <a href={`tel:${c.contact_phone}`} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-color)" }}>
+                      <a href={`tel:${c.contact_phone}`} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-ink)" }}>
                         {c.contact_phone}
                       </a>
                     )}
                     {c.contact_email && (
-                      <a href={`mailto:${c.contact_email}`} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-color)" }}>
+                      <a href={`mailto:${c.contact_email}`} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-ink)" }}>
                         {c.contact_email}
                       </a>
                     )}
                     {c.map_url && (
-                      <a href={c.map_url} target="_blank" rel="noopener noreferrer" className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-color)" }}>
+                      <a href={c.map_url} target="_blank" rel="noopener noreferrer" className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-ink)" }}>
                         Map ↗
                       </a>
                     )}

@@ -191,7 +191,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="-ml-1 flex min-h-10 items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-black/5 active:bg-black/10"
-        style={{ color: "var(--ws-color)" }}
+        style={{ color: "var(--ws-ink)" }}
       >
         <span
           className="h-2.5 w-2.5 rounded-full"

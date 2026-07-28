@@ -59,7 +59,7 @@ export function TocSheet({
         >
           <span
             className="w-6 shrink-0 text-right text-sm font-semibold tabular-nums"
-            style={{ color: active ? "var(--ws-color)" : "var(--reader-ink-soft)" }}
+            style={{ color: active ? "var(--ws-ink)" : "var(--reader-ink-soft)" }}
           >
             {ch.number}
           </span>

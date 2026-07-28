@@ -3,6 +3,7 @@
 import {
   FONT_SCALES,
   LINE_HEIGHTS,
+  type ReaderFace,
   type ReaderTheme,
   type ReadingMode,
 } from "@/lib/storage";
@@ -13,6 +14,11 @@ const THEMES: { id: ReaderTheme; label: string; swatch: string; ring: string }[]
   { id: "light", label: "Light", swatch: "#fdfbf7", ring: "#262019" },
   { id: "sepia", label: "Sepia", swatch: "#f4e8d3", ring: "#3d2f1e" },
   { id: "dark", label: "Dark", swatch: "#17140f", ring: "#e8e2d8" },
+];
+
+const FACES: { id: ReaderFace; label: string; stack: string }[] = [
+  { id: "serif", label: "Serif", stack: "var(--font-devanagari)" },
+  { id: "sans", label: "Sans", stack: "var(--font-devanagari-sans)" },
 ];
 
 const SPACING = [
@@ -32,6 +38,8 @@ interface SettingsSheetProps {
   onClose: () => void;
   fontScale: number;
   onFontScale: (v: number) => void;
+  face: ReaderFace;
+  onFace: (v: ReaderFace) => void;
   lineHeight: number;
   onLineHeight: (v: number) => void;
   margin: number;
@@ -84,6 +92,45 @@ export function SettingsSheet(p: SettingsSheetProps) {
           </div>
         </Row>
 
+        <Row label="Typeface">
+          {/* Each option is set in the face it selects — the sample is the
+              only description that actually tells you anything here. */}
+          <div
+            role="radiogroup"
+            aria-label="Typeface"
+            className="flex overflow-hidden rounded-xl border border-(--reader-rule)"
+          >
+            {FACES.map((f, i) => {
+              const active = p.face === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={f.label}
+                  onClick={() => p.onFace(f.id)}
+                  className={`min-h-11 flex-1 py-1.5 transition-colors ${
+                    active ? "text-white" : "text-(--reader-ink-soft)"
+                  } ${i > 0 ? "border-s border-(--reader-rule)" : ""}`}
+                  style={active ? { background: "var(--ws-color)" } : undefined}
+                >
+                  <span
+                    lang="hi"
+                    className="block text-lg leading-tight"
+                    style={{ fontFamily: f.stack }}
+                  >
+                    सत्य
+                  </span>
+                  <span className={`block text-[11px] ${active ? "font-semibold" : ""}`}>
+                    {f.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Row>
+
         <Row label="Line spacing">
           <Segmented
             ariaLabel="Line spacing"
@@ -120,8 +167,8 @@ export function SettingsSheet(p: SettingsSheetProps) {
                     className="h-11 w-full rounded-xl border transition-shadow"
                     style={{
                       background: t.swatch,
-                      borderColor: active ? "var(--ws-color)" : "var(--reader-rule)",
-                      boxShadow: active ? "0 0 0 2px var(--ws-color)" : undefined,
+                      borderColor: active ? "var(--ws-ink)" : "var(--reader-rule)",
+                      boxShadow: active ? "0 0 0 2px var(--ws-ink)" : undefined,
                     }}
                     aria-hidden
                   />

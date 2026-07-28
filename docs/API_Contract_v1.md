@@ -222,6 +222,28 @@ Under `/api/v1/me/` (session auth via allauth login at `/accounts/`): `me`,
 para, bookmark a `canonical_ref`, resume where you left off). Anchor all of
 them to `canonical_ref`, not to positions.
 
+**Addressing (v1.1, backward-compatible).** All three accept `canonical_ref`
+on write and return it on read:
+
+| Endpoint | Write | Read adds |
+|---|---|---|
+| `POST me/notes/` | `{canonical_ref, text}` | `canonical_ref`, `text_hi` |
+| `POST me/bookmarks/` | `{canonical_ref}` | `canonical_ref`, `text_hi` |
+| `POST me/progress/` | `{canonical_ref}` | `canonical_ref`, `book_code`, `book_title` |
+
+`text_hi` is the paragraph the row is anchored to, so a saved list renders the
+passage itself instead of a bare reference.
+
+`POST me/progress/` with a `canonical_ref` upserts **one row per book** — the
+ref's book is the target and `position` is set to the paragraph's `sequence`.
+Sending a newer ref for the same book replaces the previous position.
+
+The older `target: "<type>:<id>"` form still works and is still the only way to
+address audio and video, which have no `canonical_ref`. It is not usable for
+reader content: this API deliberately never exposes paragraph or book primary
+keys, so a client holding a `canonical_ref` cannot construct one. Rows whose
+target has no `canonical_ref` return it as `""`.
+
 ---
 
 ## 7. Frontend stack note (recommendation, FE dev decides)

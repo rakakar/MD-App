@@ -49,7 +49,9 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "originals",
     name: "Originals",
     nameHi: "मूल ग्रंथ",
-    color: "#C8621A",
+    // one step deeper than the other four: saffron is the lightest of the
+    // five, and #B45817 still measured 3.98:1 as text on the sepia page
+    color: "#A54F14",
     home: "/",
     nav: [
       { label: "Home", href: "/", icon: "home" },
@@ -62,7 +64,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "translations",
     name: "Translations",
     nameHi: "अनुवाद",
-    color: "#1A6B5C",
+    color: "#17604F",
     home: "/translations",
     nav: [
       { label: "Home", href: "/translations", icon: "home" },
@@ -74,7 +76,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "resources",
     name: "Resources",
     nameHi: "संसाधन",
-    color: "#3B6B9E",
+    color: "#35608E",
     home: "/resources",
     nav: [
       { label: "Home", href: "/resources", icon: "home" },
@@ -87,7 +89,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "journey",
     name: "My Journey",
     nameHi: "मेरी यात्रा",
-    color: "#534AB7",
+    color: "#4B42A5",
     home: "/me",
     nav: [
       { label: "Overview", href: "/me", icon: "overview" },
@@ -100,7 +102,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "connect",
     name: "Connect",
     nameHi: "संपर्क",
-    color: "#B8452E",
+    color: "#A53D29",
     home: "/connect",
     nav: [
       { label: "Events", href: "/connect", icon: "events" },

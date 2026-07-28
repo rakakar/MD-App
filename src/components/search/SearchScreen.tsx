@@ -175,7 +175,7 @@ function ResultCard({ result }: { result: SearchResult }) {
         className="block rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
       >
         {badge && (
-          <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-color)" }}>
+          <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
             {badge}
             {result.timestamp !== undefined && ` · ${fmtTimestamp(result.timestamp)}`}
           </span>

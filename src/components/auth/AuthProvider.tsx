@@ -5,10 +5,13 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { getMe, logout as apiLogout, mergeGuestData } from "@/lib/me";
+import { getMe, logout as apiLogout } from "@/lib/me";
+import { syncPersonal, watchConnectivity } from "@/lib/personal";
+import { clearLocalStore } from "@/lib/storage";
 import type { MeUser } from "@/lib/types";
 
 interface AuthState {
@@ -41,11 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const me = await getMe();
     setUser(me);
     setLoading(false);
-    if (me) {
-      // covers the Google-redirect return path too: mergeGuestData no-ops
-      // when there is no local data, and clears local after a merge
-      void mergeGuestData().catch(() => undefined);
-    }
+    // Covers the Google-redirect return path too. Whatever was saved while
+    // signed out is already in the local store, so this one call is both the
+    // merge and the pull — there is no separate migration step (lib/personal).
+    if (me) void syncPersonal();
     return me;
   }, []);
 
@@ -53,21 +55,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  // pending writes go up as soon as the network returns. The listener outlives
+  // any one render, so it reads the current user through a ref rather than
+  // being torn down and rebuilt on every sign-in.
+  const userRef = useRef<MeUser | null>(null);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+  useEffect(() => watchConnectivity(() => userRef.current !== null), []);
+
   const onAuthenticated = useCallback(async () => {
-    // guest→login merge: union by canonical_ref, server wins, clear local
-    try {
-      await mergeGuestData();
-    } catch {
-      // merge is best-effort; server data remains authoritative
-    }
     await refresh();
   }, [refresh]);
 
   const logout = useCallback(async () => {
     try {
+      // last chance to push anything still pending, while the cookie is valid
+      await syncPersonal();
+    } catch {
+      // best effort — the server copy is the one that survives a sign-out
+    }
+    try {
       await apiLogout();
     } finally {
       setUser(null);
+      // The rows belong to the account, not the device. Leaving them behind
+      // would show one person's bookmarks to whoever reads next on a shared
+      // phone — and they are safe on the server either way.
+      clearLocalStore();
     }
   }, []);
 

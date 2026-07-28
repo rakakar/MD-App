@@ -3,10 +3,6 @@
 // domain session cookie (PRD §1) — credentials: "include" everywhere.
 
 import { apiBase } from "./api";
-import {
-  clearGuestStore,
-  getGuestStore,
-} from "./storage";
 import type { Bookmark, MeUser, Note, Progress } from "./types";
 
 function beOrigin(): string {
@@ -62,75 +58,90 @@ function unwrap<T>(data: T[] | { results: T[] }): T[] {
   return Array.isArray(data) ? data : (data?.results ?? []);
 }
 
-// ---- /me/ trio ----
-// The live serializers expose the anchor as a read-only `target` string;
-// normalise every row to `canonical_ref` and send both keys on writes so
-// the client keeps working whichever name the write serializer accepts.
+// ---- /me/ trio (contract §6) ----
+// Every row is anchored to canonical_ref, on the way in and on the way out.
+//
+// Rows without one are dropped rather than shown. A bookmark on an audio track
+// has no canonical_ref and no reader location to open; a row from a BE too old
+// to send the field would otherwise render as a link to nowhere. Silence beats
+// a dead link in a saved list.
 
 type RawRow = Record<string, unknown>;
 
-function anchorOf(row: RawRow): string {
-  return (row.canonical_ref as string) ?? (row.target as string) ?? "";
-}
+const withRef = (rows: RawRow[]): RawRow[] =>
+  rows.filter((r) => typeof r.canonical_ref === "string" && r.canonical_ref !== "");
 
 export async function getMe(): Promise<MeUser | null> {
   try {
     return await authedFetch<MeUser>(meUrl(""));
   } catch {
-    return null; // 401/403 → guest
+    return null; // 401/403 → signed out
   }
 }
 
 export const getBookmarks = async (): Promise<Bookmark[]> =>
-  unwrap(await authedFetch<RawRow[] | { results: RawRow[] }>(meUrl("bookmarks/"))).map(
-    (r) => ({ ...r, id: r.id as number, canonical_ref: anchorOf(r) })
+  withRef(unwrap(await authedFetch<RawRow[] | { results: RawRow[] }>(meUrl("bookmarks/")))).map(
+    (r) => ({
+      ...r,
+      id: r.id as number,
+      canonical_ref: r.canonical_ref as string,
+      text_hi: (r.text_hi as string) || undefined,
+    })
   );
 
-export const createBookmark = (canonical_ref: string): Promise<unknown> =>
-  authedFetch(meUrl("bookmarks/"), {
+export const createBookmark = (canonical_ref: string): Promise<{ id: number }> =>
+  authedFetch<{ id: number }>(meUrl("bookmarks/"), {
     method: "POST",
-    body: JSON.stringify({ canonical_ref, target: canonical_ref }),
+    body: JSON.stringify({ canonical_ref }),
   });
 
 export const deleteBookmark = (id: number): Promise<void> =>
   authedFetch<void>(meUrl(`bookmarks/${id}/`), { method: "DELETE" });
 
 export const getNotes = async (): Promise<Note[]> =>
-  unwrap(await authedFetch<RawRow[] | { results: RawRow[] }>(meUrl("notes/"))).map(
+  withRef(unwrap(await authedFetch<RawRow[] | { results: RawRow[] }>(meUrl("notes/")))).map(
     (r) => ({
       ...r,
       id: r.id as number,
-      canonical_ref: anchorOf(r),
+      canonical_ref: r.canonical_ref as string,
+      text_hi: (r.text_hi as string) || undefined,
       text: (r.text as string) ?? "",
     })
   );
 
-export const createNote = (canonical_ref: string, text: string): Promise<unknown> =>
-  authedFetch(meUrl("notes/"), {
+export const createNote = (canonical_ref: string, text: string): Promise<{ id: number }> =>
+  authedFetch<{ id: number }>(meUrl("notes/"), {
     method: "POST",
-    body: JSON.stringify({ canonical_ref, target: canonical_ref, text }),
+    body: JSON.stringify({ canonical_ref, text }),
+  });
+
+export const updateNote = (id: number, text: string): Promise<unknown> =>
+  authedFetch(meUrl(`notes/${id}/`), {
+    method: "PATCH",
+    body: JSON.stringify({ text }),
   });
 
 export const deleteNote = (id: number): Promise<void> =>
   authedFetch<void>(meUrl(`notes/${id}/`), { method: "DELETE" });
 
 export const getProgress = async (): Promise<Progress[]> =>
-  unwrap(await authedFetch<RawRow[] | { results: RawRow[] }>(meUrl("progress/"))).map(
+  withRef(unwrap(await authedFetch<RawRow[] | { results: RawRow[] }>(meUrl("progress/")))).map(
     (r) => {
-      const ref = anchorOf(r);
+      const ref = r.canonical_ref as string;
       return {
         ...r,
         canonical_ref: ref,
         // canonical_ref format: "{code} {chapter}.{page}.{para}" (contract §5)
-        book_code: (r.book_code as string) ?? ref.split(" ")[0] ?? "",
+        book_code: (r.book_code as string) || ref.split(" ")[0] || "",
+        book_title: (r.book_title as string) || undefined,
       };
     }
   );
 
-export const upsertProgress = (book_code: string, canonical_ref: string): Promise<unknown> =>
+export const upsertProgress = (canonical_ref: string): Promise<unknown> =>
   authedFetch(meUrl("progress/"), {
     method: "POST",
-    body: JSON.stringify({ book_code, canonical_ref, target: canonical_ref }),
+    body: JSON.stringify({ canonical_ref }),
   });
 
 // ---- allauth headless ----
@@ -186,44 +197,6 @@ export function googleLoginUrl(callbackPath: string): string {
   return `${beOrigin()}/accounts/google/login/?process=login&next=${encodeURIComponent(callback)}`;
 }
 
-// ---- guest → account merge (PRD §9: union by canonical_ref, server wins,
-// then clear local) ----
-
-export async function mergeGuestData(): Promise<void> {
-  const store = getGuestStore();
-  const hasData =
-    store.bookmarks.length > 0 ||
-    store.notes.length > 0 ||
-    Object.keys(store.progress).length > 0;
-  if (!hasData) return;
-
-  const [serverBookmarks, serverNotes, serverProgress] = await Promise.all([
-    getBookmarks().catch(() => [] as Bookmark[]),
-    getNotes().catch(() => [] as Note[]),
-    getProgress().catch(() => [] as Progress[]),
-  ]);
-
-  const bookmarkRefs = new Set(serverBookmarks.map((b) => b.canonical_ref));
-  const noteRefs = new Set(serverNotes.map((n) => n.canonical_ref));
-  const progressBooks = new Set(serverProgress.map((p) => p.book_code));
-
-  const ops: Promise<unknown>[] = [];
-  for (const b of store.bookmarks) {
-    if (!bookmarkRefs.has(b.canonical_ref)) {
-      ops.push(createBookmark(b.canonical_ref).catch(() => undefined));
-    }
-  }
-  for (const n of store.notes) {
-    // server wins on conflict — only push notes the server doesn't have
-    if (!noteRefs.has(n.canonical_ref)) {
-      ops.push(createNote(n.canonical_ref, n.text).catch(() => undefined));
-    }
-  }
-  for (const p of Object.values(store.progress)) {
-    if (!progressBooks.has(p.book_code)) {
-      ops.push(upsertProgress(p.book_code, p.canonical_ref).catch(() => undefined));
-    }
-  }
-  await Promise.all(ops);
-  clearGuestStore();
-}
+// Merge-on-login is not a special case any more — signing in just gives the
+// local store somewhere to sync to, and the ordinary sync pass in
+// lib/personal.ts pushes whatever was saved beforehand. See syncPersonal().

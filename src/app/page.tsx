@@ -33,7 +33,7 @@ export default async function OriginalsHome() {
 
       <SectionHeading
         action={
-          <Link href="/books" className="text-xs font-medium" style={{ color: "var(--ws-color)" }}>
+          <Link href="/books" className="text-xs font-medium" style={{ color: "var(--ws-ink)" }}>
             All books →
           </Link>
         }

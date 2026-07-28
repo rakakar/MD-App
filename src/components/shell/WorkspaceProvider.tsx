@@ -77,7 +77,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <WorkspaceContext.Provider value={value}>
+      {/* data-ws is what globals.css hangs --ws-ink off: the accent as *text*
+          has to be derived here, where the workspace's own colour is in scope */}
       <div
+        data-ws={active}
         style={{ "--ws-color": WORKSPACES[active].color } as React.CSSProperties}
         className="min-h-dvh"
       >

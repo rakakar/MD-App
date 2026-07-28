@@ -189,7 +189,7 @@ function PlayerBarInner() {
             type="button"
             onClick={() => setMenuOpen(menuOpen === "sleep" ? null : "sleep")}
             className={`rounded-full border border-rule px-2 py-1 text-xs font-medium ${
-              player.sleepRemainingMs !== null ? "text-(--ws-color)" : ""
+              player.sleepRemainingMs !== null ? "text-(--ws-ink)" : ""
             }`}
             aria-haspopup="menu"
             aria-expanded={menuOpen === "sleep"}

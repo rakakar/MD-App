@@ -147,7 +147,7 @@ export default async function BookDetailPage({
             >
               <span
                 className="w-7 shrink-0 text-right text-sm font-semibold tabular-nums"
-                style={{ color: "var(--ws-color)" }}
+                style={{ color: "var(--ws-ink)" }}
               >
                 {ch.number}
               </span>
