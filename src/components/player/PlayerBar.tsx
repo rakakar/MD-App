@@ -54,11 +54,18 @@ function PlayerBarInner() {
   if (!source) return null;
 
   const rendition = activeRendition(source);
-  const title = source.kind === "tts" ? source.chapterTitle : source.title;
+  const device = source.kind === "device";
+  const title =
+    source.kind === "track" ? source.title : source.chapterTitle;
   const subtitle =
     source.kind === "tts"
       ? `${source.bookTitle}${rendition ? ` · ${rendition.voice_label}` : ""}`
-      : (source.subtitle ?? "");
+      : source.kind === "device"
+        ? `${source.bookTitle} · डिवाइस की आवाज़`
+        : (source.subtitle ?? "");
+  const paraProgress = device
+    ? `${Math.min(player.deviceParaIndex + 1, source.paras.length)} / ${source.paras.length}`
+    : null;
 
   return (
     <div
@@ -71,21 +78,40 @@ function PlayerBarInner() {
           : "bottom-[calc(3.4rem+env(safe-area-inset-bottom))] border-rule bg-white/95 lg:bottom-0 lg:left-60"
       }`}
     >
-      {/* seek bar */}
-      <input
-        type="range"
-        aria-label="Seek"
-        min={0}
-        max={player.durationMs || 1}
-        value={Math.min(player.positionMs, player.durationMs || 0)}
-        onChange={(e) => player.seekMs(Number(e.target.value))}
-        className="block h-1 w-full cursor-pointer appearance-none bg-transparent align-top accent-(--ws-color)"
-        style={{
-          background: `linear-gradient(to right, var(--ws-color) ${
-            player.durationMs ? (player.positionMs / player.durationMs) * 100 : 0
-          }%, var(--color-rule) 0)`,
-        }}
-      />
+      {/* Progress. The device voice exposes no timeline, so it gets a
+          paragraph-based bar with no scrubbing rather than a dead seek bar. */}
+      {device ? (
+        <div
+          className="h-1 w-full"
+          role="progressbar"
+          aria-label="Reading progress"
+          aria-valuemin={0}
+          aria-valuemax={source.paras.length}
+          aria-valuenow={player.deviceParaIndex + 1}
+          style={{
+            background: `linear-gradient(to right, var(--ws-color) ${
+              source.paras.length
+                ? ((player.deviceParaIndex + 1) / source.paras.length) * 100
+                : 0
+            }%, var(--color-rule) 0)`,
+          }}
+        />
+      ) : (
+        <input
+          type="range"
+          aria-label="Seek"
+          min={0}
+          max={player.durationMs || 1}
+          value={Math.min(player.positionMs, player.durationMs || 0)}
+          onChange={(e) => player.seekMs(Number(e.target.value))}
+          className="block h-1 w-full cursor-pointer appearance-none bg-transparent align-top accent-(--ws-color)"
+          style={{
+            background: `linear-gradient(to right, var(--ws-color) ${
+              player.durationMs ? (player.positionMs / player.durationMs) * 100 : 0
+            }%, var(--color-rule) 0)`,
+          }}
+        />
+      )}
       <div className="flex items-center gap-3 px-3 py-2">
         <button
           type="button"
@@ -110,7 +136,7 @@ function PlayerBarInner() {
         </div>
 
         <span className="hidden text-xs tabular-nums text-ink-soft sm:block">
-          {fmt(player.positionMs)} / {fmt(player.durationMs)}
+          {device ? `पैरा ${paraProgress}` : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
         </span>
 
         {/* voice picker (TTS only, multiple renditions) */}

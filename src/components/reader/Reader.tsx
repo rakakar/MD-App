@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { spokenParas } from "@/components/player/deviceSpeech";
 import {
   activeRendition,
   paraAtPosition,
@@ -571,12 +572,22 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   }, [mode, chapter, loadChapter, pages]);
 
   // ---- TTS follow-along (PRD §5) ----
-  const ttsActive =
-    player.source?.kind === "tts" &&
+  const isThisChapter =
+    (player.source?.kind === "tts" || player.source?.kind === "device") &&
     player.source.bookCode === book.code &&
     player.source.chapterNumber === chapterNumber;
+  const ttsActive = isThisChapter && player.source?.kind === "tts";
+  // Device-voice fallback for chapters with no generated audio yet.
+  const deviceActive = isThisChapter && player.source?.kind === "device";
+  const listening = ttsActive || deviceActive;
   const rendition = ttsActive ? activeRendition(player.source) : null;
-  const activeSeq = rendition ? paraAtPosition(rendition.para_timings, player.positionMs) : null;
+  // Generated audio locates the paragraph by timestamp; the device voice
+  // reports it directly (the Web Speech API has no timeline).
+  const activeSeq = rendition
+    ? paraAtPosition(rendition.para_timings, player.positionMs)
+    : deviceActive
+      ? player.deviceParaSeq
+      : null;
 
   useEffect(() => {
     if (activeSeq === null || !player.playing) return;
@@ -597,19 +608,25 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
 
   const startListening = useCallback(
     (fromSeq?: number) => {
-      if (!chapter || chapter.audio_renditions.length === 0) return;
-      const def = chapter.audio_renditions[0];
-      const startMs =
-        fromSeq !== undefined ? (def.para_timings[String(fromSeq)]?.[0] ?? 0) : 0;
-      player.playTts(
-        {
-          bookCode: book.code,
-          chapterNumber,
-          chapterTitle: chapter.title_hi,
-          bookTitle: book.title_hi,
-          renditions: chapter.audio_renditions,
-        },
-        { startMs }
+      if (!chapter) return;
+      const common = {
+        bookCode: book.code,
+        chapterNumber,
+        chapterTitle: chapter.title_hi,
+        bookTitle: book.title_hi,
+      };
+      if (chapter.audio_renditions.length > 0) {
+        const def = chapter.audio_renditions[0];
+        const startMs =
+          fromSeq !== undefined ? (def.para_timings[String(fromSeq)]?.[0] ?? 0) : 0;
+        player.playTts({ ...common, renditions: chapter.audio_renditions }, { startMs });
+        return;
+      }
+      // No generated rendition — read it with the device's own Hindi voice.
+      if (!player.deviceVoiceAvailable) return;
+      player.playDeviceTts(
+        { ...common, paras: spokenParas(chapter.paragraphs) },
+        { fromSequence: fromSeq }
       );
     },
     [chapter, player, book.code, book.title_hi, chapterNumber]
@@ -626,6 +643,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
         const t = rendition.para_timings[String(p.sequence)];
         if (t) player.seekMs(t[0]);
       } else {
+        // Device mode has no seek — restart the queue at this paragraph.
         startListening(p.sequence);
       }
       clearSelection();
@@ -801,6 +819,10 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   // ---- render ----
   const page = pages[pageIndex];
   const hasAudio = (chapter?.audio_renditions.length ?? 0) > 0;
+  // Without a generated rendition we can still read aloud, but only if this
+  // device has a Hindi voice — an English engine on Devanagari is gibberish.
+  const deviceFallback = !hasAudio && player.deviceVoiceAvailable;
+  const canListen = hasAudio || deviceFallback;
   const progress =
     mode === "page"
       ? pages.length > 0
@@ -1001,13 +1023,25 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
           <span className="flex-1 truncate text-center text-xs tabular-nums text-(--reader-ink-soft)">
             {positionLabel}
           </span>
-          {hasAudio && (
+          {canListen && (
             <ChromeBtn
-              onClick={() => (ttsActive ? player.toggle() : startListening())}
-              label="Listen to this chapter"
-              active={ttsActive}
+              onClick={() => (listening ? player.toggle() : startListening())}
+              label={
+                deviceFallback
+                  ? "Listen with this device's voice (no recorded audio yet)"
+                  : "Listen to this chapter"
+              }
+              active={listening}
             >
-              <HeadphonesIcon className="h-5 w-5" />
+              <span className="relative">
+                <HeadphonesIcon className="h-5 w-5" />
+                {deviceFallback && (
+                  <span
+                    aria-hidden
+                    className="absolute -end-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-(--reader-ink-soft)"
+                  />
+                )}
+              </span>
             </ChromeBtn>
           )}
           <ChromeBtn onClick={() => setSettingsOpen(true)} label="Reading settings">
@@ -1044,7 +1078,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
             Note
           </ActionBtn>
           <ActionBtn onClick={() => void doCopy(selection)}>Copy</ActionBtn>
-          {hasAudio && (
+          {canListen && (
             <ActionBtn onClick={() => playFromPara(selection.para)}>▶ Here</ActionBtn>
           )}
           <ActionBtn onClick={clearSelection} ariaLabel="Dismiss">✕</ActionBtn>
