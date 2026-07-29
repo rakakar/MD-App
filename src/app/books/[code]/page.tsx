@@ -89,13 +89,21 @@ export default async function BookDetailPage({
   };
 
   return (
-    <PageContainer>
+    <PageContainer size="shelf">
       <WorkspaceScope ws={ws} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
+      {/*
+        One column on a phone, the spec's two from lg (1C desktop): the hero
+        becomes a fixed 340px rail and the chapter list becomes the page's main
+        content. Stacked at this width the hero would be a 1088px band with a
+        book's worth of empty colour in it, and the chapters — the thing anyone
+        came here to choose from — would start below the fold.
+      */}
+      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start lg:gap-8">
       {/* Cover-tinted hero (design 1C): a full-bleed panel in the book's own
           colour, carrying everything needed to decide where to enter — then
           the page returns to plain paper for the chapter list.
@@ -184,6 +192,9 @@ export default async function BookDetailPage({
         />
       </div>
 
+      {/* In two columns this column starts at the top, so whatever happens to
+          be first in it drops its stacked-layout top margin. */}
+      <div className="min-w-0 lg:[&>*:first-child]:mt-0">
       {book.description && (
         <p lang="hi" className="hi mt-6 text-sm leading-relaxed text-ink-soft">
           {book.description}
@@ -300,6 +311,8 @@ export default async function BookDetailPage({
           );
         })}
       </ol>
+      </div>
+      </div>
     </PageContainer>
   );
 }

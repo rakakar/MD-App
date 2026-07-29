@@ -79,7 +79,8 @@ export function Sidebar() {
   const pathname = usePathname() ?? "/";
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-rule bg-white lg:flex">
+    // 256px, the width every desktop panel in the spec is drawn against
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-rule bg-white lg:flex">
       <div className="flex flex-col gap-2 border-b border-rule p-3">
         <WorkspaceSwitcher variant="popover" />
         <EventChip />

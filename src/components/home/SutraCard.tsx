@@ -120,9 +120,12 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
       </div>
 
       <div aria-live="polite" className={busy ? "opacity-50 transition-opacity" : "transition-opacity"}>
+        {/* On desktop the verse grows but the measure is capped at the spec's
+            46ch (1A desktop). Across a 1088px page an uncapped line of
+            Devanagari is unreadable however large the type is. */}
         <blockquote
           lang="hi"
-          className="hi mt-3 text-[19px] leading-[1.75] text-[#2E2419]"
+          className="hi mt-3 max-w-[46ch] text-[19px] leading-[1.75] text-[#2E2419] lg:text-2xl"
         >
           {sutra.text_hi}
         </blockquote>

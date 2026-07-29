@@ -40,78 +40,98 @@ export default async function OriginalsHome() {
   const shivirs = upcomingEvents(events).slice(0, 2);
 
   return (
-    <PageContainer>
+    <PageContainer size="shelf">
       <h1 className="sr-only">Originals — मूल ग्रंथ</h1>
 
       {sutra && <SutraCard sutra={sutra} />}
 
-      <ContinueReading />
+      {/*
+        One column on a phone; from lg, the spec's three (1A desktop). Home is
+        a page of short, unrelated sections — stacked at 1088px each one is a
+        stripe with a screenful of dead space beside it, and the शिविर at the
+        bottom fall below the fold on a screen that has room for everything.
 
-      <SectionHeading
-        action={books.length > 0 ? <SeeAll href="/books">All {books.length}</SeeAll> : undefined}
-      >
-        Books · <span lang="hi" className="hi">ग्रंथ</span>
-      </SectionHeading>
-      {books.length > 0 ? (
-        <BookRail books={books} />
-      ) : (
-        <EmptyState title="No books available yet" hint="Published books will appear here." />
-      )}
+        `items-start` so a tall section does not stretch its neighbours, and
+        each child is a plain <section>: the columns are a layout, not a
+        regrouping, so the reading order stays the order on the phone.
+      */}
+      <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-6">
+        <section>
+          <ContinueReading layout="stack" />
+        </section>
 
-      {/* The media pair carries no heading — the spec runs it straight on from
-          the rail, because these two are the same kind of thing as the covers
-          above them, in a different medium. */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <MediaTile
-          href="/audio"
-          icon="audio"
-          title="Discourse audio"
-          hint="Plays as you read."
-        />
-        <MediaTile href="/videos" icon="video" title="Videos" hint="Talks & playlists." />
-      </div>
-
-      <SectionHeading>Explore workspaces</SectionHeading>
-      <ExploreWorkspaces current="originals" />
-
-      {shivirs.length > 0 && (
-        <>
-          <SectionHeading tier="title" action={<SeeAll href="/connect">See all</SeeAll>}>
-            Upcoming <span lang="hi" className="hi">शिविर</span>
+        <section>
+          <SectionHeading
+            action={
+              books.length > 0 ? <SeeAll href="/books">All {books.length}</SeeAll> : undefined
+            }
+          >
+            Books · <span lang="hi" className="hi">ग्रंथ</span>
           </SectionHeading>
-          <ul className="flex flex-col gap-2">
-            {shivirs.map((e) => {
-              const d = eventStart(e);
-              return (
-                <li key={e.id}>
-                  <Link
-                    href={`/connect/events/${e.id}`}
-                    className="flex items-center gap-3 rounded-2xl border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span lang="hi" className="hi block truncate text-sm font-semibold">
-                        {eventTitle(e)}
-                      </span>
-                      <span className="mt-1 flex items-center gap-1 text-[11.5px] text-ink-soft">
-                        <span aria-hidden className="shrink-0">
-                          <PinIcon />
+          {books.length > 0 ? (
+            <BookRail books={books} />
+          ) : (
+            <EmptyState title="No books available yet" hint="Published books will appear here." />
+          )}
+
+          {/* The media pair carries no heading — the spec runs it straight on
+              from the rail, because these two are the same kind of thing as
+              the covers above them, in a different medium. */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <MediaTile
+              href="/audio"
+              icon="audio"
+              title="Discourse audio"
+              hint="Plays as you read."
+            />
+            <MediaTile href="/videos" icon="video" title="Videos" hint="Talks & playlists." />
+          </div>
+        </section>
+
+        <section>
+          <SectionHeading>Explore workspaces</SectionHeading>
+          <ExploreWorkspaces current="originals" />
+
+          {shivirs.length > 0 && (
+            <>
+              <SectionHeading tier="title" action={<SeeAll href="/connect">See all</SeeAll>}>
+                Upcoming <span lang="hi" className="hi">शिविर</span>
+              </SectionHeading>
+              <ul className="flex flex-col gap-2">
+                {shivirs.map((e) => {
+                  const d = eventStart(e);
+                  return (
+                    <li key={e.id}>
+                      <Link
+                        href={`/connect/events/${e.id}`}
+                        className="flex items-center gap-3 rounded-2xl border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span lang="hi" className="hi block truncate text-sm font-semibold">
+                            {eventTitle(e)}
+                          </span>
+                          <span className="mt-1 flex items-center gap-1 text-[11.5px] text-ink-soft">
+                            <span aria-hidden className="shrink-0">
+                              <PinIcon />
+                            </span>
+                            <span className="truncate">
+                              {eventLocation(e) || "—"}
+                              {d ? ` · ${shortDate(d)}` : ""}
+                            </span>
+                          </span>
                         </span>
-                        <span className="truncate">
-                          {eventLocation(e) || "—"}
-                          {d ? ` · ${shortDate(d)}` : ""}
+                        <span aria-hidden className="shrink-0 text-muted">
+                          <ChevronRight />
                         </span>
-                      </span>
-                    </span>
-                    <span aria-hidden className="shrink-0 text-muted">
-                      <ChevronRight />
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </section>
+      </div>
     </PageContainer>
   );
 }

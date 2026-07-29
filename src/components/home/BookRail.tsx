@@ -18,9 +18,17 @@ export function BookRail({ books }: { books: BookSummary[] }) {
     // than stopping short. scroll-pl matches the padding: without it the first
     // snap point sits at the content edge, and the rail silently scrolls its
     // own gutter away on load.
-    <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
+    // From lg the rail becomes a two-up grid: on desktop it lives in a column
+    // of the Home grid (1A desktop), where covers scrolling sideways out of a
+    // 340px column would hide most of the shelf behind a gesture.
+    //
+    // And there it stops at four. A rail can hold the whole shelf because a
+    // swipe costs nothing; a grid cannot, and fourteen covers stacked 2-up
+    // would run three screens down a column whose neighbours end in one. Four
+    // is what the spec's desktop card shows, with the rest behind "All N →".
+    <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:[&>li:nth-child(n+5)]:hidden">
       {books.map((b) => (
-        <li key={b.code} className="w-[6.5rem] shrink-0 snap-start">
+        <li key={b.code} className="w-[6.5rem] shrink-0 snap-start lg:w-full">
           <Link href={`/books/${encodeURIComponent(b.code)}`} className="group block">
             <CoverTile book={b} size="rail" caption="title" />
             {b.page_count ? (

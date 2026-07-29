@@ -1,14 +1,29 @@
 import Link from "next/link";
 
+/**
+ * Page gutters and measure.
+ *
+ * Two widths, because the pages want different things. `text` keeps a reading
+ * measure for pages that are mostly prose. `shelf` is the spec's 1088px
+ * content max (1B) — the width the desktop panels are drawn at, and what a
+ * 4-up cover grid or a two-column book page needs to exist at all.
+ *
+ * Desktop gutters step up to 32px to match the spec's panels; at 24px the
+ * content sat too close to the sidebar rule.
+ */
 export function PageContainer({
   children,
-  wide = false,
+  size = "text",
 }: {
   children: React.ReactNode;
-  wide?: boolean;
+  size?: "text" | "shelf";
 }) {
   return (
-    <div className={`mx-auto w-full ${wide ? "max-w-5xl" : "max-w-3xl"} px-4 py-5 sm:px-6`}>
+    <div
+      className={`mx-auto w-full ${
+        size === "shelf" ? "max-w-[1088px]" : "max-w-3xl"
+      } px-4 py-5 sm:px-6 lg:px-8`}
+    >
       {children}
     </div>
   );

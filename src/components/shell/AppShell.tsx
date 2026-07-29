@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               bare
                 ? "min-h-dvh"
                 : // clears the bottom nav plus the home-indicator inset
-                  "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-60"
+                  "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-64"
             }
           >
             {children}

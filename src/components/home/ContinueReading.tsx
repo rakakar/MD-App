@@ -37,9 +37,17 @@ interface ResumeCard {
 export function ContinueReading({
   limit = 3,
   heading = "Continue reading",
+  layout = "rail",
 }: {
   limit?: number;
   heading?: string;
+  /**
+   * A rail on every screen (`rail`, the shelf — 1B desktop keeps the row of
+   * 340px cards), or a rail on a phone that stacks from lg (`stack`, Home —
+   * where the cards sit inside one column of the desktop grid and a sideways
+   * scroller inside it would be a scrollbar nobody finds).
+   */
+  layout?: "rail" | "stack";
 }) {
   const { user, loading } = useAuth();
   const [cards, setCards] = useState<ResumeCard[]>([]);
@@ -94,9 +102,18 @@ export function ContinueReading({
           vertically pushed the ग्रंथ shelf below the fold on a phone. The rail
           bleeds to the screen edge so the second card peeks — which is what
           says "there are more" without a control saying it. */}
-      <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
+      <ul
+        className={`-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 ${
+          layout === "stack" ? "lg:flex-col lg:overflow-visible" : ""
+        }`}
+      >
         {cards.map((c) => (
-          <li key={c.key} className="w-[17.5rem] shrink-0 snap-start sm:w-72">
+          <li
+            key={c.key}
+            className={`w-[17.5rem] shrink-0 snap-start sm:w-[340px] ${
+              layout === "stack" ? "lg:w-full lg:shrink" : ""
+            }`}
+          >
             <Link
               href={c.href}
               className="flex h-full items-center gap-3.5 rounded-[20px] border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"

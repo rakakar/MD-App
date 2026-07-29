@@ -19,7 +19,7 @@ export default async function VideosPage() {
   ]);
 
   return (
-    <PageContainer wide>
+    <PageContainer size="shelf">
       <ListenHeader active="videos" />
 
       {playlists.length > 0 &&
