@@ -12,6 +12,7 @@ import type {
   SearchResponse,
   SearchResult,
   Section,
+  SutraOfTheDay,
   VideoItem,
 } from "./types";
 
@@ -120,6 +121,20 @@ export async function resolvePage(code: string, page: number): Promise<PageResol
 
 export async function resolvePara(canonicalRef: string): Promise<ParaResolution> {
   return apiFetch<ParaResolution>(`paras/${encodeURIComponent(canonicalRef)}/`);
+}
+
+/**
+ * Sutra of the day (contract §2.6). A 404 is the documented "nothing curated
+ * for today" answer, not a failure — it becomes null so the home page simply
+ * renders no card. Every other error still throws.
+ */
+export async function getSutraOfTheDay(): Promise<SutraOfTheDay | null> {
+  try {
+    return await apiFetch<SutraOfTheDay>("sutra/today/");
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
 }
 
 // ---- §9 live endpoints ----

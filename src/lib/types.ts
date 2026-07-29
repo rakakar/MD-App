@@ -122,6 +122,15 @@ export interface ParaResolution extends Paragraph {
   chapter_title: string;
 }
 
+/**
+ * sutra/today/ (contract §2.6) — the curated Sutra of the day. Same shape as a
+ * deep-link resolution, so SutraCard renders it unchanged; `text_hi` may be the
+ * curator's trimmed line while `canonical_ref` still cites the whole paragraph.
+ */
+export interface SutraOfTheDay extends ParaResolution {
+  sutra_date: string; // the local (IST) date this pick belongs to
+}
+
 // ---- §9 live endpoints (shapes may still evolve; keep fields optional) ----
 
 // Shapes below verified against the live drf-spectacular schema

@@ -4,13 +4,13 @@ import { SutraCard } from "@/components/home/SutraCard";
 import { BookCard, EmptyState, PageContainer, SectionHeading } from "@/components/ui";
 import { getBooks } from "@/lib/api";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
-import type { BookSummary, ParaResolution } from "@/lib/types";
+import type { BookSummary, SutraOfTheDay } from "@/lib/types";
 
 export const revalidate = 900;
 
 async function loadHome(): Promise<{
   books: BookSummary[];
-  sutra: ParaResolution | null;
+  sutra: SutraOfTheDay | null;
 }> {
   // section code === workspace id (contract §10)
   const [books, sutra] = await Promise.all([
