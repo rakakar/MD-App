@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WorkspaceIcon } from "@/components/shell/icons";
 import { WORKSPACE_ORDER, WORKSPACES, type WorkspaceId } from "@/lib/workspaceConfig";
 
 /**
@@ -10,8 +11,9 @@ import { WORKSPACE_ORDER, WORKSPACES, type WorkspaceId } from "@/lib/workspaceCo
  * the discovery surface for readers who never touch the switcher, which on a
  * phone is most of them.
  *
- * Each tile carries its hue as a swatch and its Hindi name, never colour
- * alone — the name and description do the work if the hue is invisible.
+ * Each tile is a glyph in the workspace's hue plus its name. The glyph is
+ * decoration — it is the name that identifies the workspace, so nothing here
+ * depends on telling four coloured squares apart.
  */
 export function ExploreWorkspaces({ current }: { current: WorkspaceId }) {
   const others = WORKSPACE_ORDER.filter((id) => id !== current);
@@ -24,18 +26,19 @@ export function ExploreWorkspaces({ current }: { current: WorkspaceId }) {
           <li key={id}>
             <Link
               href={ws.home}
-              className="flex h-full items-center gap-3 rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
+              className="flex h-full flex-col gap-3 rounded-2xl border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
             >
               <span
                 aria-hidden
-                className="h-8 w-8 shrink-0 rounded-lg"
-                style={{ background: ws.color }}
-              />
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold">{ws.name}</span>
-                <span lang="hi" className="hi block truncate text-xs text-ink-soft">
-                  {ws.nameHi}
-                </span>
+                className="flex h-9 w-9 items-center justify-center rounded-[10px] text-white"
+                style={{
+                  background: `linear-gradient(150deg, color-mix(in srgb, ${ws.color} 82%, #fff), ${ws.color})`,
+                }}
+              >
+                <WorkspaceIcon id={id} />
+              </span>
+              <span className="text-[13.5px] font-semibold tracking-[-0.01em]">
+                {ws.name}
               </span>
             </Link>
           </li>

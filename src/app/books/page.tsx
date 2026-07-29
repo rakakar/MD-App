@@ -51,12 +51,11 @@ export default async function BooksPage({
   return (
     <PageContainer>
       <WorkspaceScope ws={isTranslations ? "translations" : "originals"} />
-      <h1 className="font-display text-2xl font-medium">
-        {isTranslations ? (
-          <>Translations · <span lang="hi" className="hi">अनुवाद</span></>
-        ) : (
-          <>Originals · <span lang="hi" className="hi">मूल ग्रंथ</span></>
-        )}
+      {/* "Read", not "Originals" (design 1B): this is the Read tab, the
+          workspace is already named in the app bar right above it, and the
+          spec puts the shelf's identity in the summary line underneath. */}
+      <h1 className="font-display text-[26px] font-medium tracking-[-0.015em]">
+        {isTranslations ? "Translations" : "Read"}
       </h1>
       {all.length > 0 && (
         <p className="mt-1 text-sm text-ink-soft">

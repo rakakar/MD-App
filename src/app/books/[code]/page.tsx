@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DownloadButton } from "@/components/reader/DownloadButton";
-import { ResumeButton } from "@/components/reader/ResumeButton";
+import { BookHeroActions } from "@/components/books/BookHeroActions";
 import { CoverTile } from "@/components/shelf/CoverTile";
+import { BackIcon, ChevronRight } from "@/components/shell/icons";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { ApiError, getBook, getBookGenres, getBooks } from "@/lib/api";
+import { bookHue } from "@/lib/bookHue";
 import { sectionCode } from "@/lib/types";
 import { workspaceForSection } from "@/lib/workspaceConfig";
 
@@ -56,6 +57,9 @@ export default async function BookDetailPage({
   }
 
   const ws = workspaceForSection(sectionCode(book.section));
+  // the same hue the cover carries everywhere else, so the hero reads as this
+  // book's surface rather than as a second colour it happens to be sitting on
+  const hue = bookHue(book.code);
 
   // `genre` arrives as a code ("parichay"); the chip has to read as a name.
   // A missing genres list just drops the chip rather than printing the slug.
@@ -92,79 +96,92 @@ export default async function BookDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Cover-tinted hero (design 1C): the workspace hue washes behind the
-          cover and title so the book announces itself, then the page returns
-          to plain paper for the chapter list. */}
+      {/* Cover-tinted hero (design 1C): a full-bleed panel in the book's own
+          colour, carrying everything needed to decide where to enter — then
+          the page returns to plain paper for the chapter list.
+
+          Full-bleed and dark, not a wash: the hero is the book's own surface,
+          which is what makes one ग्रंथ feel unlike the next when they are
+          otherwise identical rows of Devanagari on the same paper. */}
       <div
-        className="-mx-4 flex gap-5 px-4 pb-5 pt-1 sm:-mx-6 sm:px-6"
+        // Full-bleed on a phone, where the hero *is* the top of the screen; a
+        // rounded panel from sm up, where a band running the full width of a
+        // desktop window would read as a site header rather than as this book.
+        className="-mx-4 -mt-5 px-4 pb-5 pt-4 sm:mx-0 sm:mt-0 sm:rounded-3xl sm:p-6"
         style={{
-          background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--ws-color) 10%, transparent) 0%, transparent 100%)",
+          background: `linear-gradient(165deg, ${hue.from}, ${hue.to} 70%, color-mix(in srgb, ${hue.to} 82%, #000))`,
         }}
       >
-        <CoverTile book={book} size="lg" />
-        <div className="min-w-0">
-          <h1 lang="hi" className="hi text-2xl font-bold leading-snug">
-            {book.title_hi}
-          </h1>
-          {book.subtitle_hi && (
-            <p lang="hi" className="hi mt-1 text-base text-ink-soft">
-              {book.subtitle_hi}
-            </p>
-          )}
-          {/*
-            On a translation the author is still ए. नागराज — the words are his,
-            the rendering is not. Naming the translator on the same line, in the
-            same weight, is what keeps the page from crediting him with someone
-            else's English.
-          */}
-          {book.translation_of && book.translator && (
-            <p className="mt-2 text-sm">
-              <span lang="hi" className="hi text-ink-soft">अनुवाद:</span>{" "}
-              <span className="font-semibold text-ink">{book.translator}</span>
-              {book.language_label && (
-                <span lang="hi" className="hi text-ink-soft"> · {book.language_label}</span>
+        <Link
+          href="/books"
+          aria-label="Back to shelf"
+          className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
+        >
+          <BackIcon />
+        </Link>
+
+        <div className="flex items-end gap-4">
+          <CoverTile book={book} size="lg" />
+          <div className="min-w-0 flex-1 pb-1">
+            <h1 lang="hi" className="hi text-[21px] font-semibold leading-tight text-white">
+              {book.title_hi}
+            </h1>
+            {book.subtitle_hi && (
+              <p lang="hi" className="hi mt-1 text-sm text-white/75">
+                {book.subtitle_hi}
+              </p>
+            )}
+            <p className="mt-2 text-[12.5px] font-medium text-white/75">
+              <span lang="hi" className="hi">{book.author}</span>
+              {mainChapters.length > 0 && (
+                <span lang="hi" className="hi"> · {mainChapters.length} अध्याय</span>
               )}
+              {book.page_count ? ` · ${book.page_count} pages` : ""}
             </p>
-          )}
-          <p className="mt-2 text-sm text-ink-soft">
-            <span lang="hi" className="hi">{book.author}</span>
-            {mainChapters.length > 0 && (
-              <span lang="hi" className="hi"> · {mainChapters.length} अध्याय</span>
+            {/*
+              On a translation the author is still ए. नागराज — the words are
+              his, the rendering is not. Naming the translator right under him,
+              in the same weight, is what keeps the page from crediting him
+              with someone else's English.
+            */}
+            {book.translation_of && book.translator && (
+              <p className="mt-1 text-[12.5px] text-white/75">
+                <span lang="hi" className="hi">अनुवाद:</span>{" "}
+                <span className="font-semibold text-white">{book.translator}</span>
+                {book.language_label && (
+                  <span lang="hi" className="hi"> · {book.language_label}</span>
+                )}
+              </p>
             )}
-            {book.page_count ? ` · ${book.page_count} pages` : ""}
-          </p>
 
-          {/* Fact chips (design 1C). Each is a fact the BE actually carries —
-              nothing here is decorative, so a missing chip means a missing
-              fact rather than a hidden one. */}
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {!book.translation_of && (
-              <Chip>
-                <span lang="hi" className="hi">मूल ग्रंथ</span>
-              </Chip>
-            )}
-            {genreLabel && (
-              <Chip>
-                <span lang="hi" className="hi">{genreLabel}</span>
-              </Chip>
-            )}
-            {book.edition && <Chip>{book.edition}</Chip>}
-            {book.publication_year && <Chip>{book.publication_year}</Chip>}
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <ResumeButton
-              bookCode={book.code}
-              firstChapterHref={
-                firstChapter
-                  ? `/books/${encodeURIComponent(book.code)}/${firstChapter.number}`
-                  : null
-              }
-            />
-            <DownloadButton book={book} />
+            {/* Fact chips (design 1C). Each is a fact the BE actually carries —
+                nothing here is decorative, so a missing chip means a missing
+                fact rather than a hidden one. */}
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {!book.translation_of && (
+                <Chip>
+                  <span lang="hi" className="hi">मूल ग्रंथ</span>
+                </Chip>
+              )}
+              {genreLabel && (
+                <Chip>
+                  <span lang="hi" className="hi">{genreLabel}</span>
+                </Chip>
+              )}
+              {book.edition && <Chip>{book.edition}</Chip>}
+              {book.publication_year && <Chip>{book.publication_year}</Chip>}
+            </div>
           </div>
         </div>
+
+        <BookHeroActions
+          book={book}
+          firstChapterHref={
+            firstChapter
+              ? `/books/${encodeURIComponent(book.code)}/${firstChapter.number}`
+              : null
+          }
+        />
       </div>
 
       {book.description && (
@@ -226,51 +243,57 @@ export default async function BookDetailPage({
         </>
       )}
 
-      {/* अध्याय सूची with its own count (design 1C) */}
-      <SectionHeading
-        action={
-          mainChapters.length > 0 ? (
-            <span
-              className="rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums text-white"
-              style={{ background: "var(--ws-color)" }}
-            >
-              {mainChapters.length}
-            </span>
-          ) : undefined
-        }
-      >
-        <span lang="hi" className="hi">अध्याय सूची</span> · Contents
-      </SectionHeading>
-      <ol className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+      {/* अध्याय सूची with its own count (design 1C). A plain list on paper,
+          not a card: the hero above is the page's one object, and boxing the
+          contents made the chapters read as a second, competing one. */}
+      <div className="mt-7 flex items-center gap-2.5 border-b border-rule pb-3">
+        <h2 lang="hi" className="hi text-[15px] font-semibold">
+          अध्याय सूची
+        </h2>
+        {mainChapters.length > 0 && (
+          <span className="rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold tabular-nums text-ink-soft">
+            {mainChapters.length}
+          </span>
+        )}
+      </div>
+      <ol className="pt-1">
         {frontMatter.length > 0 && (
-          <li className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+          <li className="px-3.5 pt-2 pb-1 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
             Front matter
           </li>
         )}
-        {[...frontMatter, ...mainChapters].map((ch) => {
+        {[...frontMatter, ...mainChapters].map((ch, i) => {
           // Span, not range — the spec's row reads "8 pages", which is what a
           // reader is deciding on. The printed range stays available to anyone
           // who needs it via the reader's own page markers.
           const pages = ch.end_page - ch.start_page + 1;
           return (
             <li key={`${ch.is_front_matter}-${ch.number}`}>
+              {/* Hairline inset past the number chip (spec 1C), so the rule
+                  separates the titles and the numbers read as one column. */}
+              {i > 0 && <div aria-hidden className="ms-14 h-px bg-rule" />}
               <Link
                 href={`/books/${encodeURIComponent(book.code)}/${ch.number}`}
-                className="flex items-baseline gap-3 px-4 py-3.5 transition-colors hover:bg-black/[.03]"
+                className="flex items-center gap-3 rounded-[14px] px-3.5 py-3 transition-colors hover:bg-black/[.04]"
               >
-                <span
-                  className="w-7 shrink-0 text-right text-sm font-semibold tabular-nums"
-                  style={{ color: "var(--ws-ink)" }}
-                >
+                <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-canvas text-[12.5px] font-bold tabular-nums text-ink-soft">
                   {ch.number}
                 </span>
-                <span lang="hi" className="hi min-w-0 flex-1 text-[15px] font-medium">
-                  {ch.title_hi}
+                <span className="min-w-0 flex-1">
+                  <span
+                    lang="hi"
+                    className="hi block truncate text-[14.5px] font-medium leading-snug"
+                  >
+                    {ch.title_hi}
+                  </span>
+                  {Number.isFinite(pages) && pages > 0 && (
+                    <span className="mt-0.5 block text-[11.5px] font-medium text-ink-soft">
+                      {pages} {pages === 1 ? "page" : "pages"}
+                    </span>
+                  )}
                 </span>
-                <span className="shrink-0 text-xs tabular-nums text-ink-soft">
-                  {Number.isFinite(pages) && pages > 0
-                    ? `${pages} ${pages === 1 ? "page" : "pages"}`
-                    : ""}
+                <span aria-hidden className="shrink-0 text-muted">
+                  <ChevronRight />
                 </span>
               </Link>
             </li>
@@ -281,9 +304,10 @@ export default async function BookDetailPage({
   );
 }
 
+/** A fact chip on the tinted hero (design 1C) — translucent white, not paper. */
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-rule bg-white px-2.5 py-1 text-[11px] font-medium text-ink-soft">
+    <span className="rounded-[7px] bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white/90">
       {children}
     </span>
   );

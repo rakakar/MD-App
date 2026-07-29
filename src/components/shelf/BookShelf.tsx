@@ -1,4 +1,6 @@
-import { BookCard, EmptyState, FilterChips } from "@/components/ui";
+import Link from "next/link";
+import { CoverTile } from "@/components/shelf/CoverTile";
+import { EmptyState, FilterChips } from "@/components/ui";
 import { getBookGenres, getBooks } from "@/lib/api";
 import type { BookGenre, BookSummary } from "@/lib/types";
 
@@ -57,11 +59,17 @@ export async function BookShelf({
       />
 
       {books.length > 0 ? (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        // 2-up covers (design 1B), not full-width rows. On a shelf, the cover
+        // is how a book is recognised and the fastest thing to scan; the rows
+        // this replaced spent most of their width on an author repeated
+        // identically down the page.
+        <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {books.map((b) => (
-            <BookCard key={b.code} book={b} />
+            <li key={b.code}>
+              <ShelfCard book={b} />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <div className="mt-5">
           <EmptyState
@@ -75,6 +83,41 @@ export async function BookShelf({
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * One cover card on the shelf (design 1B).
+ *
+ * A translation keeps its translator on the card. `author` stays ए. नागराज on
+ * a translation — the words are his, the rendering is not — so a card showing
+ * only the author would credit him with a student's English.
+ */
+function ShelfCard({ book }: { book: BookSummary }) {
+  return (
+    <Link
+      href={`/books/${encodeURIComponent(book.code)}`}
+      className="group flex h-full flex-col gap-2.5 rounded-[18px] border border-rule bg-white p-3 transition-shadow hover:shadow-md"
+    >
+      <CoverTile book={book} size="grid" />
+      <span
+        lang="hi"
+        className="hi line-clamp-2 text-[13.5px] font-semibold leading-snug group-hover:underline"
+      >
+        {book.title_hi}
+      </span>
+      <span className="mt-auto block text-[11px] font-medium text-ink-soft">
+        {book.translation_of && book.language_label ? (
+          <span lang="hi" className="hi">{book.language_label} · </span>
+        ) : null}
+        {book.page_count ? `${book.page_count} pages` : book.author}
+      </span>
+      {book.translation_of && book.translator && (
+        <span className="-mt-1.5 block truncate text-[11px] text-ink-soft">
+          <span lang="hi" className="hi">अनुवाद:</span> {book.translator}
+        </span>
+      )}
+    </Link>
   );
 }
 

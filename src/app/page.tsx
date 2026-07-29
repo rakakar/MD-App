@@ -3,7 +3,8 @@ import { BookRail } from "@/components/home/BookRail";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
 import { SutraCard } from "@/components/home/SutraCard";
-import { EmptyState, PageContainer, SectionHeading } from "@/components/ui";
+import { ChevronRight, Icon, PinIcon, WaveformIcon } from "@/components/shell/icons";
+import { EmptyState, PageContainer, SectionHeading, SeeAll } from "@/components/ui";
 import { getBooks, getEvents } from "@/lib/api";
 import { eventLocation, eventStart, eventTitle, shortDate, upcomingEvents } from "@/lib/events";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
@@ -47,13 +48,7 @@ export default async function OriginalsHome() {
       <ContinueReading />
 
       <SectionHeading
-        action={
-          books.length > 0 ? (
-            <Link href="/books" className="text-xs font-medium" style={{ color: "var(--ws-ink)" }}>
-              All {books.length} →
-            </Link>
-          ) : undefined
-        }
+        action={books.length > 0 ? <SeeAll href="/books">All {books.length}</SeeAll> : undefined}
       >
         Books · <span lang="hi" className="hi">ग्रंथ</span>
       </SectionHeading>
@@ -63,22 +58,17 @@ export default async function OriginalsHome() {
         <EmptyState title="No books available yet" hint="Published books will appear here." />
       )}
 
-      <SectionHeading>Listen &amp; watch</SectionHeading>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Link
+      {/* The media pair carries no heading — the spec runs it straight on from
+          the rail, because these two are the same kind of thing as the covers
+          above them, in a different medium. */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <MediaTile
           href="/audio"
-          className="rounded-2xl border border-rule bg-white p-5 transition-shadow hover:shadow-md"
-        >
-          <p className="text-base font-semibold">Discourse audio</p>
-          <p className="mt-1 text-sm text-ink-soft">Plays as you read.</p>
-        </Link>
-        <Link
-          href="/videos"
-          className="rounded-2xl border border-rule bg-white p-5 transition-shadow hover:shadow-md"
-        >
-          <p className="text-base font-semibold">Videos</p>
-          <p className="mt-1 text-sm text-ink-soft">Talks &amp; playlists.</p>
-        </Link>
+          icon="audio"
+          title="Discourse audio"
+          hint="Plays as you read."
+        />
+        <MediaTile href="/videos" icon="video" title="Videos" hint="Talks & playlists." />
       </div>
 
       <SectionHeading>Explore workspaces</SectionHeading>
@@ -86,13 +76,7 @@ export default async function OriginalsHome() {
 
       {shivirs.length > 0 && (
         <>
-          <SectionHeading
-            action={
-              <Link href="/connect" className="text-xs font-medium" style={{ color: "var(--ws-ink)" }}>
-                See all →
-              </Link>
-            }
-          >
+          <SectionHeading tier="title" action={<SeeAll href="/connect">See all</SeeAll>}>
             Upcoming <span lang="hi" className="hi">शिविर</span>
           </SectionHeading>
           <ul className="flex flex-col gap-2">
@@ -102,19 +86,24 @@ export default async function OriginalsHome() {
                 <li key={e.id}>
                   <Link
                     href={`/connect/events/${e.id}`}
-                    className="flex items-center gap-3 rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
+                    className="flex items-center gap-3 rounded-2xl border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
                   >
                     <span className="min-w-0 flex-1">
                       <span lang="hi" className="hi block truncate text-sm font-semibold">
                         {eventTitle(e)}
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-ink-soft">
-                        {eventLocation(e) || "—"}
-                        {d ? ` · ${shortDate(d)}` : ""}
+                      <span className="mt-1 flex items-center gap-1 text-[11.5px] text-ink-soft">
+                        <span aria-hidden className="shrink-0">
+                          <PinIcon />
+                        </span>
+                        <span className="truncate">
+                          {eventLocation(e) || "—"}
+                          {d ? ` · ${shortDate(d)}` : ""}
+                        </span>
                       </span>
                     </span>
-                    <span aria-hidden className="shrink-0 text-ink-soft">
-                      →
+                    <span aria-hidden className="shrink-0 text-muted">
+                      <ChevronRight />
                     </span>
                   </Link>
                 </li>
@@ -124,5 +113,35 @@ export default async function OriginalsHome() {
         </>
       )}
     </PageContainer>
+  );
+}
+
+/** One of the two media cards under the ग्रंथ rail (design 1A). */
+function MediaTile({
+  href,
+  icon,
+  title,
+  hint,
+}: {
+  href: string;
+  icon: "audio" | "video";
+  title: string;
+  hint: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex flex-col gap-2.5 rounded-[18px] border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
+    >
+      <span
+        aria-hidden
+        className="flex h-9 w-9 items-center justify-center rounded-[11px]"
+        style={{ background: "var(--color-accent-tint)", color: "var(--color-accent-deep)" }}
+      >
+        {icon === "audio" ? <WaveformIcon /> : <Icon name="av" className="h-4.5 w-4.5" />}
+      </span>
+      <span className="block text-sm font-semibold">{title}</span>
+      <span className="-mt-1.5 block text-xs text-ink-soft">{hint}</span>
+    </Link>
   );
 }

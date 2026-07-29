@@ -2,19 +2,23 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BookmarkIcon, ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
 import { citationText, refToHref } from "@/lib/refs";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { SutraOfTheDay } from "@/lib/types";
 
 /**
- * Sutra of the day — verse gets typographic ceremony (PRD §5 verse styling).
+ * Sutra of the day (design 1A) — the one tinted surface on Home, so the verse
+ * reads as the day's ceremony rather than as the first of several white cards.
  *
  * The arrows walk the curated sequence (contract §2.6) rather than shuffling:
  * ← then → has to land back where it started, or the arrows are lying. The
  * card always *opens* on today's pick — the server renders offset 0 — so
  * however far a reader browsed yesterday, today's verse is the same one
- * everyone else sees.
+ * everyone else sees. The spec draws no arrows; they live as small chevrons in
+ * the label row so browsing stays available without competing with Share,
+ * which is the action the design puts its weight behind.
  */
 /** "2026-07-29" → "२९ जुलाई". Returns "" on anything unparseable. */
 function hindiDate(iso: string): string {
@@ -64,77 +68,108 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
   };
 
   const arrow =
-    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-rule " +
-    "text-ink-soft transition hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent";
+    "flex h-7 w-7 items-center justify-center rounded-full text-[#8A6A4E] transition " +
+    "hover:bg-white/60 disabled:opacity-25 disabled:hover:bg-transparent";
 
   return (
     <figure
-      className="rounded-2xl border border-rule px-6 py-8 text-center shadow-sm"
+      className="rounded-3xl p-5"
       style={{
-        borderTopColor: "var(--ws-color)",
-        borderTopWidth: 3,
-        // The hero is the one tinted surface on Home (design 1A) — a wash of
-        // the workspace hue over paper, so the सूत्र reads as the day's
-        // ceremony rather than as the first of several white cards.
-        background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--ws-color) 7%, #fff) 0%, #fff 60%)",
+        // the spec's own peach ramp (1A) — a warm surface of its own rather
+        // than a wash of the workspace hue, because the सूत्र belongs to the
+        // day, not to whichever workspace the reader happens to be in
+        background: "linear-gradient(165deg, #FFF8F1, #FDEEE0 70%, #FAE3CE)",
       }}
     >
-      <div className="flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => go(sutra.offset - 1)}
-          disabled={!sutra.has_prev || busy}
-          aria-label="पिछला सूत्र"
-          className={arrow}
+      <div className="flex items-center gap-2">
+        <span aria-hidden style={{ color: "var(--color-accent-deep)" }}>
+          <SunIcon />
+        </span>
+        <figcaption
+          className="text-[11px] font-bold uppercase tracking-[0.09em]"
+          style={{ color: "var(--color-accent-deep)" }}
         >
-          ←
-        </button>
-        <p className="text-[11px] font-bold uppercase tracking-[0.09em]" style={{ color: "var(--ws-ink)" }}>
-          <span lang="hi" className="hi">{browsing ? "सूत्र" : "आज का सूत्र"}</span>
-        </p>
-        <button
-          type="button"
-          onClick={() => go(sutra.offset + 1)}
-          disabled={!sutra.has_next || busy}
-          aria-label="अगला सूत्र"
-          className={arrow}
-        >
-          →
-        </button>
-      </div>
-      {/* The date comes from the payload, not a client clock: the pick belongs
-          to an IST date, and a device in another timezone must not relabel it. */}
-      <p lang="hi" className="hi mt-1 text-xs text-ink-soft">
-        {hindiDate(sutra.sutra_date)}
-      </p>
+          <span lang="hi" className="hi">
+            {browsing ? "सूत्र" : "आज का सूत्र"}
+          </span>
+        </figcaption>
 
-      <div aria-live="polite" className={busy ? "opacity-50 transition-opacity" : "transition-opacity"}>
-        <blockquote lang="hi" className="hi mx-auto mt-4 max-w-xl text-xl leading-loose">
-          {sutra.text_hi}
-        </blockquote>
-        <figcaption className="mt-4 text-xs text-ink-soft">
-          <Link href={refToHref(sutra.canonical_ref)} className="underline-offset-2 hover:underline">
-            <span lang="hi" className="hi">{sutra.book_title}</span> · {sutra.canonical_ref}
-          </Link>
+        <span className="ml-auto flex items-center gap-0.5">
           <button
             type="button"
-            onClick={share}
-            className="ml-3 rounded-full border border-rule px-2.5 py-0.5 text-xs font-medium hover:bg-black/5"
+            onClick={() => go(sutra.offset - 1)}
+            disabled={!sutra.has_prev || busy}
+            aria-label="पिछला सूत्र"
+            className={arrow}
           >
-            Share
+            <ChevronDown className="h-4 w-4 rotate-90" />
           </button>
-          {browsing && (
+          <span lang="hi" className="hi text-[11px] font-semibold text-[#B08968]">
+            {hindiDate(sutra.sutra_date)}
+          </span>
+          <button
+            type="button"
+            onClick={() => go(sutra.offset + 1)}
+            disabled={!sutra.has_next || busy}
+            aria-label="अगला सूत्र"
+            className={arrow}
+          >
+            <ChevronDown className="h-4 w-4 -rotate-90" />
+          </button>
+        </span>
+      </div>
+
+      <div aria-live="polite" className={busy ? "opacity-50 transition-opacity" : "transition-opacity"}>
+        <blockquote
+          lang="hi"
+          className="hi mt-3 text-[19px] leading-[1.75] text-[#2E2419]"
+        >
+          {sutra.text_hi}
+        </blockquote>
+
+        <div
+          aria-hidden
+          className="my-4 h-px"
+          style={{ background: "linear-gradient(90deg, #EEDAC4, rgba(238,218,196,0))" }}
+        />
+
+        <div className="flex items-center gap-3">
+          <Link
+            href={refToHref(sutra.canonical_ref)}
+            className="min-w-0 flex-1 text-xs font-medium text-[#8A6A4E] underline-offset-2 hover:underline"
+          >
+            <span lang="hi" className="hi">{sutra.book_title}</span> · {sutra.canonical_ref}
+          </Link>
+
+          {browsing ? (
             <button
               type="button"
               onClick={() => go(0)}
               disabled={busy}
-              className="ml-2 rounded-full border border-rule px-2.5 py-0.5 text-xs font-medium hover:bg-black/5"
+              className="flex h-9 items-center rounded-xl bg-white/75 px-3 text-xs font-semibold text-[#8A6A4E] transition hover:bg-white"
             >
-              आज का सूत्र
+              <span lang="hi" className="hi">आज का सूत्र</span>
             </button>
+          ) : (
+            <Link
+              href="/me/bookmarks"
+              aria-label="सहेजे गए"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/75 text-[#8A6A4E] transition hover:bg-white"
+            >
+              <BookmarkIcon className="h-4 w-4" />
+            </Link>
           )}
-        </figcaption>
+
+          <button
+            type="button"
+            onClick={share}
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ background: "var(--color-accent)" }}
+          >
+            <ShareIcon className="h-3.5 w-3.5" />
+            Share
+          </button>
+        </div>
       </div>
     </figure>
   );

@@ -20,7 +20,14 @@ type Status = "idle" | "downloading" | "done";
  * the reader serves cache transparently offline. Figures are inline base64,
  * so a downloaded book is self-contained.
  */
-export function DownloadButton({ book }: { book: BookDetail }) {
+export function DownloadButton({
+  book,
+  variant = "pill",
+}: {
+  book: BookDetail;
+  /** `hero` is the 46px icon square inside the tinted book header (design 1C) */
+  variant?: "pill" | "hero";
+}) {
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
 
@@ -69,6 +76,44 @@ export function DownloadButton({ book }: { book: BookDetail }) {
     await removeDownload(book.code);
     setStatus("idle");
   };
+
+  if (variant === "hero") {
+    // On the hero the button is an icon square, so its state has to be legible
+    // without the words the pill uses: a tick over the arrow when the book is
+    // downloaded, the running percentage while it is downloading. The label is
+    // still spelled out for anyone not reading the glyph.
+    const label =
+      status === "done"
+        ? "Downloaded — tap to remove"
+        : status === "downloading"
+          ? `Downloading ${progress}%`
+          : "Download for offline";
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        onClick={status === "done" ? remove : download}
+        disabled={status === "downloading"}
+        className="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] border border-white/25 bg-white/12 text-white transition-colors hover:bg-white/20 disabled:opacity-70"
+      >
+        {status === "downloading" ? (
+          <span className="text-[11px] font-bold tabular-nums">{progress}%</span>
+        ) : (
+          <DownloadIcon className="h-5 w-5" />
+        )}
+        {status === "done" && (
+          <span
+            aria-hidden
+            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-black/20"
+            style={{ background: "var(--color-accent)" }}
+          >
+            ✓
+          </span>
+        )}
+      </button>
+    );
+  }
 
   if (status === "done") {
     return (

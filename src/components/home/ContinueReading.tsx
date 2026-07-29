@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { CoverTile, ProgressRing } from "@/components/shelf/CoverTile";
+import { CoverTile, ProgressBar } from "@/components/shelf/CoverTile";
 import { getBooks } from "@/lib/api";
 import { localProgress, syncPersonal } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
@@ -86,22 +86,30 @@ export function ContinueReading({
 
   return (
     <section aria-label={heading}>
-      <h2 className="mb-3 mt-8 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+      <h2 className="mb-3 mt-7 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
         {heading}
       </h2>
-      <ul className="flex flex-col gap-2">
+      {/* A snapping rail rather than a stack (design 1A/1B): the card a reader
+          wants is nearly always the first one, and laying three of them out
+          vertically pushed the ग्रंथ shelf below the fold on a phone. The rail
+          bleeds to the screen edge so the second card peeks — which is what
+          says "there are more" without a control saying it. */}
+      <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
         {cards.map((c) => (
-          <li key={c.key}>
+          <li key={c.key} className="w-[17.5rem] shrink-0 snap-start sm:w-72">
             <Link
               href={c.href}
-              className="flex items-center gap-4 rounded-2xl border border-rule bg-white p-3 transition-shadow hover:shadow-md"
+              className="flex h-full items-center gap-3.5 rounded-[20px] border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
             >
-              <CoverTile book={{ title_hi: c.title, cover_image: c.cover }} size="sm" />
+              <CoverTile
+                book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}
+                size="sm"
+              />
               <span className="min-w-0 flex-1">
                 <span lang="hi" className="hi block truncate text-[15px] font-semibold">
                   {c.title}
                 </span>
-                <span className="mt-0.5 block text-xs text-ink-soft">
+                <span className="mt-0.5 block truncate text-xs font-medium text-ink-soft">
                   <span lang="hi" className="hi">
                     अध्याय {c.chapter}
                   </span>
@@ -115,17 +123,17 @@ export function ContinueReading({
                     </>
                   )}
                 </span>
+                {c.percent !== null ? (
+                  <ProgressBar percent={c.percent} className="mt-2" />
+                ) : (
+                  <span
+                    className="mt-2 block text-xs font-semibold"
+                    style={{ color: "var(--ws-ink)" }}
+                  >
+                    Resume →
+                  </span>
+                )}
               </span>
-              {c.percent !== null ? (
-                <ProgressRing percent={c.percent} />
-              ) : (
-                <span
-                  className="shrink-0 text-xs font-semibold"
-                  style={{ color: "var(--ws-ink)" }}
-                >
-                  Resume →
-                </span>
-              )}
             </Link>
           </li>
         ))}

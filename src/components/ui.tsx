@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { BookSummary } from "@/lib/types";
 
 export function PageContainer({
   children,
@@ -15,20 +14,54 @@ export function PageContainer({
   );
 }
 
+/**
+ * Section headings come in two tiers, which the spec is consistent about and
+ * which carry different meaning:
+ *
+ * - `eyebrow` (11px / 700 / uppercase) labels a shelf of things that belong to
+ *   the page — CONTINUE READING, BOOKS · ग्रंथ, EXPLORE WORKSPACES. It is a
+ *   caption; the covers under it are the content.
+ * - `title` (17px, sentence case, full ink) heads a section that is its own
+ *   subject — News & updates, Upcoming shivirs.
+ *
+ * A single middle tier for both, which is what this used to be, made the page
+ * read as one flat list of equal things.
+ */
 export function SectionHeading({
   children,
   action,
+  tier = "eyebrow",
 }: {
   children: React.ReactNode;
   action?: React.ReactNode;
+  tier?: "eyebrow" | "title";
 }) {
   return (
-    <div className="mb-3 mt-8 flex items-baseline justify-between first:mt-0">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-soft">
+    <div className="mb-3 mt-7 flex items-center justify-between gap-3 first:mt-0">
+      <h2
+        className={
+          tier === "title"
+            ? "text-[17px] font-semibold tracking-[-0.01em] text-ink"
+            : "text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft"
+        }
+      >
         {children}
       </h2>
       {action}
     </div>
+  );
+}
+
+/** The "All 6 →" / "See all →" link the spec pairs with a section heading. */
+export function SeeAll({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="shrink-0 text-xs font-semibold transition-opacity hover:opacity-75"
+      style={{ color: "var(--ws-ink)" }}
+    >
+      {children} →
+    </Link>
   );
 }
 
@@ -112,72 +145,6 @@ export function SegmentedNav({
         </Link>
       ))}
     </nav>
-  );
-}
-
-export function BookCard({ book }: { book: BookSummary }) {
-  // `author` stays ए. नागराज on a translation, so a card that showed only the
-  // author would credit him with a student's rendering. The translator is the
-  // one fact a translation row must not bury.
-  const isTranslation = Boolean(book.translation_of);
-  return (
-    <Link
-      href={`/books/${encodeURIComponent(book.code)}`}
-      className="group flex gap-4 rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
-    >
-      {book.cover_image ? (
-        // covers come from the BE media host; plain img keeps it simple and
-        // avoids configuring remote patterns for an evolving host
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={book.cover_image}
-          alt=""
-          className="h-24 w-16 shrink-0 rounded-md object-cover shadow-sm"
-          loading="lazy"
-        />
-      ) : (
-        <div
-          className="flex h-24 w-16 shrink-0 items-center justify-center rounded-md text-white shadow-sm"
-          style={{ background: "var(--ws-color)" }}
-          aria-hidden
-        >
-          <span className="hi text-lg font-bold">{book.title_hi?.[0] ?? "ग्र"}</span>
-        </div>
-      )}
-      <div className="min-w-0">
-        <h3 lang="hi" className="hi text-base font-semibold leading-snug group-hover:underline">
-          {book.title_hi}
-        </h3>
-        {book.subtitle_hi && (
-          <p lang="hi" className="hi mt-0.5 truncate text-sm text-ink-soft">
-            {book.subtitle_hi}
-          </p>
-        )}
-        {isTranslation && (
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            {book.language_label && (
-              <span
-                lang="hi"
-                className="hi rounded-full border border-rule px-2 py-0.5 font-medium"
-                style={{ color: "var(--ws-ink)" }}
-              >
-                {book.language_label}
-              </span>
-            )}
-            {book.translator && (
-              <span className="font-medium text-ink">
-                <span lang="hi" className="hi text-ink-soft">अनुवाद:</span> {book.translator}
-              </span>
-            )}
-          </p>
-        )}
-        <p className="mt-1 text-xs text-ink-soft">
-          {book.author}
-          {book.publication_year ? ` · ${book.publication_year}` : ""}
-          {book.page_count ? ` · ${book.page_count} pages` : ""}
-        </p>
-      </div>
-    </Link>
   );
 }
 

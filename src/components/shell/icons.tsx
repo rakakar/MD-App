@@ -102,6 +102,107 @@ export function Icon({ name, ...props }: IconProps & { name: NavIcon }) {
   }
 }
 
+/** workspace glyphs for the "Explore workspaces" tiles (design 1A) */
+export function WorkspaceIcon({
+  id,
+  className,
+}: {
+  id: string;
+  className?: string;
+}) {
+  const cls = className ?? "h-4.5 w-4.5";
+  switch (id) {
+    case "translations":
+      // the spec's translate mark: lines with a downward arrow
+      return (
+        <Svg className={cls} strokeWidth={2}>
+          <path d="M4 6h10M4 11h7M4 16h10" />
+          <path d="M18 5v14m0 0 3-3m-3 3-3-3" />
+        </Svg>
+      );
+    case "connect":
+      return (
+        <Svg className={cls} strokeWidth={2}>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3 20c1-3.5 3.2-5 6-5s5 1.5 6 5" />
+          <path d="M16 5.5a3 3 0 0 1 0 5.5M18 20c-.4-2-1-3.4-2-4.4" />
+        </Svg>
+      );
+    case "journey":
+      return (
+        <Svg className={cls} strokeWidth={2}>
+          <path d="m12 3 2 5.2 5.2 2-5.2 2L12 17.4 10 12.2 4.8 10.2 10 8.2 12 3Z" />
+          <path d="M18.5 16.5 19.4 19l2.1.9-2.1.9-.9 2.1-.9-2.1L15.5 20l2.1-.9.9-2.6Z" />
+        </Svg>
+      );
+    case "resources":
+      return (
+        <Svg className={cls} strokeWidth={2}>
+          <path d="M4 6h16M4 11h16M4 16h10" />
+        </Svg>
+      );
+    default:
+      return (
+        <Svg className={cls} strokeWidth={2}>
+          <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4z" />
+          <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6z" />
+        </Svg>
+      );
+  }
+}
+
+/** waveform — discourse audio, as distinct from the video play-rectangle */
+export function WaveformIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4.5 w-4.5"} strokeWidth={2}>
+      <path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 10.5v3" />
+    </Svg>
+  );
+}
+
+export function SunIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4 w-4"} strokeWidth={1.9}>
+      <circle cx="12" cy="12" r="3.6" />
+      <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
+    </Svg>
+  );
+}
+
+export function ShareIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4 w-4"}>
+      <path d="M12 16V4m0 0L8 8m4-4 4 4" />
+      <path d="M4 14v4.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V14" />
+    </Svg>
+  );
+}
+
+export function PinIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-3.5 w-3.5"}>
+      <path d="M12 21s6-5.3 6-9.5a6 6 0 1 0-12 0C6 15.7 12 21 12 21Z" />
+      <circle cx="12" cy="11" r="2" />
+    </Svg>
+  );
+}
+
+export function FilterIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4 w-4"}>
+      <path d="M4 6h16M6.5 12h11M10 18h4" />
+    </Svg>
+  );
+}
+
+export function ChevronRight({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4 w-4"}>
+      <path d="m9 5 7 7-7 7" />
+    </Svg>
+  );
+}
+
 export function CalendarChipIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-4 w-4"}>
