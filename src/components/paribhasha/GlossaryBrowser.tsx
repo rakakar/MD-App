@@ -220,7 +220,7 @@ function LetterChip({
  * inside them. Nesting those in a card-wide button would be invalid markup and
  * would swallow every tap into "expand".
  */
-function WordRow({ word }: { word: ParibhashaWord }) {
+export function WordRow({ word }: { word: ParibhashaWord }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const many = word.definitions.length > 1;

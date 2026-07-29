@@ -3,12 +3,18 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { WordRow } from "@/components/paribhasha/GlossaryBrowser";
 import { Icon } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
 import { track } from "@/lib/analytics";
-import { search } from "@/lib/api";
+import { getParibhasha, search } from "@/lib/api";
 import { refToHref } from "@/lib/refs";
-import type { ParibhashaHit, SearchResponse, SearchResult } from "@/lib/types";
+import type {
+  ParibhashaHit,
+  ParibhashaWord,
+  SearchResponse,
+  SearchResult,
+} from "@/lib/types";
 
 /**
  * v1 centre-slot Search (PRD §7). This component boundary is the future
@@ -19,11 +25,22 @@ import type { ParibhashaHit, SearchResponse, SearchResult } from "@/lib/types";
 // all, so "show more" is a reveal, not a fetch.
 const FIRST_PAGE = 10;
 
+/**
+ * What the one box searches (design 2A). "All" is the ranked passage search
+ * with the definition card on top; "परिभाषा" turns the same box into the
+ * dictionary — live per keystroke, every matching word listed, nothing else.
+ */
+type SearchMode = "all" | "paribhasha";
+
 export function SearchScreen() {
   const router = useRouter();
   const params = useSearchParams();
   const initialQ = params.get("q") ?? "";
   const [q, setQ] = useState(initialQ);
+  const [mode, setMode] = useState<SearchMode>(
+    params.get("mode") === "paribhasha" ? "paribhasha" : "all"
+  );
+  const [words, setWords] = useState<ParibhashaWord[] | null>(null);
   // "search as typed" — skips the BE's Hinglish→Devanagari rewrite. Resets on
   // every new query, because it is a correction to one rewrite, not a setting.
   const [raw, setRaw] = useState(false);
@@ -40,6 +57,7 @@ export function SearchScreen() {
 
   useEffect(() => {
     const query = q.trim();
+    if (mode !== "all") return;
     if (query.length < 2) {
       setResponse(null);
       return;
@@ -64,7 +82,41 @@ export function SearchScreen() {
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, raw]);
+  }, [q, raw, mode]);
+
+  // Dictionary mode: shorter debounce and a 1-character floor, because this
+  // behaves like a dictionary's own search box, not a passage query. The BE
+  // folds Roman spellings itself, so the box works from either keyboard.
+  useEffect(() => {
+    const query = q.trim();
+    if (mode !== "paribhasha") return;
+    if (query.length < 1) {
+      setWords(null);
+      return;
+    }
+    const t = setTimeout(async () => {
+      abortRef.current?.abort();
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
+      setBusy(true);
+      setError(false);
+      try {
+        const page = await getParibhasha({ q: query });
+        setWords(page.results);
+        track("search", { query_length: query.length, results: page.results.length, mode: "paribhasha" });
+        router.replace(
+          `/search?mode=paribhasha&q=${encodeURIComponent(query)}`,
+          { scroll: false }
+        );
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") setError(true);
+      } finally {
+        setBusy(false);
+      }
+    }, 150);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, mode]);
 
   const results = response?.results ?? [];
   const shown = expanded ? results : results.slice(0, FIRST_PAGE);
@@ -88,6 +140,72 @@ export function SearchScreen() {
         />
       </div>
 
+      {/* Mode chips (design 2A). Two questions, one box: "where is this
+          discussed" (All) and "what does this word mean" (परिभाषा). The mode
+          rides in the URL so a shared dictionary search reopens as one. */}
+      <div className="mt-3 flex gap-2" role="radiogroup" aria-label="Search mode">
+        {(
+          [
+            ["all", <span key="a">All results</span>],
+            ["paribhasha", <span key="p" lang="hi" className="hi">परिभाषा</span>],
+          ] as const
+        ).map(([m, label]) => (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={mode === m}
+            onClick={() => {
+              setMode(m);
+              setError(false);
+              inputRef.current?.focus();
+            }}
+            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
+              mode === m ? "border-transparent text-white" : "border-rule bg-white text-ink"
+            }`}
+            style={mode === m ? { background: "var(--ws-color)" } : undefined}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "paribhasha" && (
+        <>
+          <p className="mt-3 text-xs text-ink-soft">
+            <span lang="hi" className="hi">हिंदी या रोमन, दोनों चलेंगे</span> · Dictionary
+            search, live as you type ·{" "}
+            <Link href="/paribhasha" className="underline underline-offset-2">
+              Browse the full <span lang="hi" className="hi">शब्दकोश</span>
+            </Link>
+          </p>
+          <div className="mt-5">
+            {busy && words === null && (
+              <p className="text-center text-sm text-ink-soft">खोजा जा रहा है…</p>
+            )}
+            {error && (
+              <p className="text-center text-sm text-ink-soft">
+                शब्दकोश अभी उपलब्ध नहीं है।
+              </p>
+            )}
+            {!error && words !== null && words.length === 0 && (
+              <p lang="hi" className="hi text-center text-sm text-ink-soft">
+                “{q.trim()}” शब्दकोश में नहीं मिला।
+              </p>
+            )}
+            {words !== null && words.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {words.map((w) => (
+                  <WordRow key={w.id} word={w} />
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
+
+      {mode === "paribhasha" ? null : (
+      <>
       {/*
         Search covers **originals only**, permanently: retrieval is tuned for
         Devanagari, and a citation has to be quotable back to A. Nagraj ji
@@ -189,6 +307,8 @@ export function SearchScreen() {
         <span lang="hi" className="hi">स्मार्ट सहायक जल्द आ रहा है</span> · Smart assistant
         coming soon
       </p>
+      </>
+      )}
     </PageContainer>
   );
 }
