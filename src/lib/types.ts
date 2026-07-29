@@ -468,6 +468,56 @@ export interface Progress {
   [key: string]: unknown;
 }
 
+// ---- /api/v1/chat/ — MD Chat, the assistant's answer mode ----
+
+export interface ChatQuota {
+  /** null for managers, who are uncapped */
+  limit: number | null;
+  remaining: number | null;
+  capped: boolean;
+}
+
+/**
+ * A citation the BE verified against a passage actually retrieved. Invented
+ * refs never reach here — they are flagged inside `answer` instead — so every
+ * one of these is safe to render as a link into the reader.
+ */
+export interface ChatCitation {
+  canonical_ref: string;
+  book: string | null;
+  chapter: string | null;
+}
+
+export interface ChatFeedback {
+  is_positive: boolean;
+  category?: string;
+  note?: string;
+}
+
+export interface ChatAnswer {
+  id: number;
+  asked_at: string;
+  query: string;
+  /**
+   * Non-empty only when a follow-up was rewritten into a standalone question.
+   * Worth showing: an answer that looks like it missed the point usually
+   * means the rewrite did, and hiding it makes that undiagnosable.
+   */
+  rewritten_query: string;
+  /** "not_found" is an honest answer, not a failure — the books do not say. */
+  status: "ok" | "not_found" | "error";
+  answer: string;
+  citations: ChatCitation[];
+  feedback: ChatFeedback | null;
+}
+
+export interface ChatSession {
+  quota: ChatQuota;
+  modes: ("quick" | "deep")[];
+  feedback_categories: { value: string; label: string }[];
+  recent: ChatAnswer[];
+}
+
 /** Section code carried on any §9 object — objects may embed section as code string or object. */
 export function sectionCode(section: Section | string | null | undefined): string | null {
   if (!section) return null;

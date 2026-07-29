@@ -34,7 +34,12 @@ function setSessionToken(token: string | null): void {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
-async function authedFetch<T>(
+/**
+ * Exported because /me/ is no longer the only signed-in surface — the chat
+ * endpoints authenticate the same way, and a second copy of this would be a
+ * second place to forget the header when the auth scheme changes.
+ */
+export async function authedFetch<T>(
   url: string,
   init: RequestInit = {}
 ): Promise<T> {

@@ -54,7 +54,7 @@ structure.
 
 | Badge | Screen | Route today | Data |
 |---|---|---|---|
-| 2A | Assistant — Search mode & Chat mode | — | **blocked** |
+| 2A | Assistant — Search mode & Chat mode | `/search` (search half) | ready |
 | 3A | Audio · प्रवचन + persistent player | `/audio` | ready |
 | 3B | Settings & the Originals workspace switcher | `/me/settings` | ready |
 | 4A | Translations workspace — मूल + English reader | `/translations` | empty |
@@ -77,22 +77,44 @@ one from nothing. Read the route before you design anything, and preserve what
 is already right — a rewrite that loses working data plumbing is a regression
 even if it matches the spec more closely.
 
-### The two blocked screens
+### The blocked screen
 
-Do not start these, and do not fill the gap with invented data — raise them with
-me instead.
+- **8A My journey.** `../MDApp/apps/accounts/models.py` has `Note`, `Bookmark`
+  and `Progress` — and nothing for streaks, goals or a practice log. Roughly
+  half of 8A has no field to render. Do not start it and do not fill the gap
+  with invented data; raise it with me. 8B, by contrast, is entirely backed by
+  the existing notes and bookmarks endpoints, so it is the half of "My journey"
+  that can be built today.
 
-- **2A Assistant.** There is chat in the backend, but it is
-  `ChatView` in `../MDApp/apps/feapp/views.py` — a server-rendered Django page
-  for testers: session-based, login-required, daily-capped, HTML not JSON. It is
-  **not** on `/api/v1/`, so the frontend's API client cannot reach it. 2A needs a
-  backend API endpoint first; that is a backend task, not something to fake in
-  the frontend.
-- **8A My journey.** `../MDApp/apps/api/models.py` has `Note`, `Bookmark` and
-  `Progress` — and nothing for streaks, goals or a practice log. Roughly half of
-  8A has no field to render. 8B, by contrast, is entirely backed by the existing
-  notes and bookmarks endpoints, so it is the half of "My journey" that can be
-  built today.
+### 2A, and the API that was just built for it
+
+2A has two modes and they are different animals. **Search mode** is anonymous,
+cheap and already live at `/api/v1/search` (`search()` in `src/lib/api.ts`),
+driving `/search`. **Chat mode** is signed-in, costs an LLM call per question,
+and until now existed only as a server-rendered tester page inside
+`../MDApp/apps/feapp` that this frontend could not reach.
+
+It is now a JSON API — `/api/v1/chat/` (`../MDApp/apps/welfaresearch/chat_api.py`),
+with the client already written as `src/lib/chat.ts` and typed in
+`src/lib/types.ts`. Four things about it shape the screen:
+
+- **It is metered.** Every response carries `quota` — 30 questions a day per
+  reader, managers exempt. Show what is left; do not let a reader discover the
+  limit by being refused. A 429 is the cap (its `detail` is already worded for
+  the reader, in Hindi and English); a 503 is the answer service being down, and
+  the question was not spent.
+- **Answers cite, and the citations are verified.** `citations[]` only ever
+  contains refs that matched a real retrieved passage, so each one is safe to
+  render as a link into the reader. Refs the model invented are flagged inside
+  the answer text instead — do not parse them back out.
+- **Follow-ups pass `continueFrom`**, the id of the answer being followed up
+  on; the backend rebuilds the conversation from that reader's own stored
+  questions. A new conversation is simply not passing it, so "clear context"
+  needs no button wired to anything.
+- **`status` can be `not_found`.** "The books do not say" is an answer, not an
+  error, and the spec's States card should be read with that in mind.
+
+Sign-in is a real part of this screen: chat requires it and search does not.
 
 Partial: **9A**'s Events and Centres are backed (`events/`, `centers/`); "News &
 updates" has no feed and is the standing example of what not to invent.
@@ -210,6 +232,10 @@ order — and tell me if your own audit disagrees, with the reason:
 3. **3A and 5A** — audio and videos, including the persistent player. Do these
    together: 5A lives inside the audio tab and shares its chrome.
 4. **8B**, then **9A** and **4A** — the last two build to their empty states.
+5. **2A** last of the unblocked set. Not because it is least important, but
+   because it is the only one with a brand-new API behind it and real signed-in,
+   metered and error states to get right; do it when the token system and the
+   shared components have stopped moving under you.
 
-That leaves 2A and 8A, which are backend-blocked (see above), and the final
-desktop pass.
+That leaves 8A, which is backend-blocked (see above), and the final desktop
+pass.
