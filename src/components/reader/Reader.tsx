@@ -41,8 +41,9 @@ import {
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import type { Matcher, Segment } from "@/lib/paribhasha";
 import { Block } from "./blocks";
+import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
-import { ParibhashaSheet } from "./ParibhashaSheet";
+
 import { Sheet } from "./Sheet";
 import { SettingsSheet } from "./SettingsSheet";
 import { TocSheet } from "./TocSheet";
@@ -1171,7 +1172,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
       )}
 
       {/* ---- sheets ---- */}
-      <ParibhashaSheet word={defineWord} onClose={() => setDefineWord(null)} />
+      {/* The same परिभाषा card the शब्दकोश uses — recursive underlines and
+          the trail included, so a word means the same thing wherever it is
+          tapped. */}
+      <ParibhashaTrailSheet word={defineWord} onClose={() => setDefineWord(null)} />
 
       <TocSheet
         open={tocOpen}

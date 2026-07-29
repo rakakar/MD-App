@@ -14,43 +14,54 @@ import type { ParibhashaWord } from "@/lib/types";
  * A definition written in the vocabulary it defines is only usable if you can
  * follow it, and following it is how a reader gets lost — three taps in, the
  * word you started from is gone. So the path is kept and shown: every step is
- * on screen, every step is a way back, and closing the sheet returns to the
- * list rather than to some middle of the chain.
+ * on screen, every step is a way back, and closing the sheet returns to where
+ * you started rather than to some middle of the chain.
  *
- * The stack lives here, above the sheet, so it survives the sheet's own
- * re-renders and so any part of the page — a row, a definition, a nested
- * definition inside the sheet — reaches the same one.
+ * **This is the only परिभाषा card in the app.** The reader used to carry a
+ * second, simpler one that printed definitions as plain text — so the same
+ * word gave a different answer depending on whether you tapped it in a chapter
+ * or in the शब्दकोश, and only one of the two let you follow the vocabulary.
+ * The sheet is controlled by whoever opens it, which is what lets the reader
+ * keep the open word in its own state (it drives the reader's chrome) while
+ * still rendering this component.
  */
-export function WordTrailProvider({ children }: { children: ReactNode }) {
-  const [trail, setTrail] = useState<string[]>([]);
-
-  const open = useCallback((word: string) => {
-    const next = word.normalize("NFC").trim();
-    // Tapping the word you are already reading is a no-op, not a repeat: it
-    // would otherwise put the same headword on the trail twice and make the
-    // back step do nothing visible.
-    setTrail((t) => (t[t.length - 1] === next ? t : [...t, next]));
-  }, []);
-
-  const value = useMemo(() => ({ open }), [open]);
-
-  return (
-    <TrailContext.Provider value={value}>
-      {children}
-      <TrailSheet trail={trail} setTrail={setTrail} />
-    </TrailContext.Provider>
-  );
-}
-
-function TrailSheet({
-  trail,
-  setTrail,
+export function ParibhashaTrailSheet({
+  word,
+  onClose,
 }: {
-  trail: string[];
-  setTrail: (fn: (t: string[]) => string[]) => void;
+  /** the headword to open; null closes the sheet */
+  word: string | null;
+  onClose: () => void;
 }) {
   const { lookup } = useGlossary();
+
+  // Words followed *from* `word`. Seeded rather than owned so the caller
+  // stays the authority on whether the sheet is open at all.
+  const [pushed, setPushed] = useState<string[]>([]);
+  const [seed, setSeed] = useState<string | null>(word);
+  if (seed !== word) {
+    // A new entry word replaces the chain — adjusting state during render is
+    // the supported way to reset on a prop change, and avoids a frame showing
+    // the previous word's trail under the new headword.
+    setSeed(word);
+    setPushed([]);
+  }
+
+  const trail = word === null ? [] : [word, ...pushed];
   const current = trail[trail.length - 1] ?? null;
+
+  const push = useCallback(
+    (next: string) => {
+      const w = next.normalize("NFC").trim();
+      // Tapping the word already on screen is a no-op, not a repeat: it would
+      // put the same headword on the trail twice and make back do nothing.
+      if (w === current) return;
+      setPushed((p) => [...p, w]);
+    },
+    [current]
+  );
+
+  const trailValue = useMemo(() => ({ open: push }), [push]);
 
   // The answer carries the word it answers, so "still loading" is simply
   // "what I have is not about the word on screen" — the same trick the
@@ -80,12 +91,16 @@ function TrailSheet({
   const definitions = entry?.definitions ?? [];
   const segments = useDefinitionSegments(definitions, entry?.hindi ?? current ?? undefined);
 
-  const close = () => setTrail(() => []);
-  const back = () => setTrail((t) => t.slice(0, -1));
-  const trimTo = (i: number) => setTrail((t) => t.slice(0, i + 1));
+  // Back steps within the chain; at the first word there is nothing behind it
+  // in this sheet, so back is the same as closing.
+  const back = () => (pushed.length > 0 ? setPushed((p) => p.slice(0, -1)) : onClose());
+  const trimTo = (i: number) => setPushed((p) => p.slice(0, i));
 
   return (
-    <Sheet open={current !== null} onClose={close} title="परिभाषा">
+    <Sheet open={current !== null} onClose={onClose} title="परिभाषा">
+      {/* Definitions rendered below reach *this* trail, so following a word
+          inside the sheet extends the chain instead of starting a new one. */}
+      <TrailContext.Provider value={trailValue}>
       <div className="px-5 pb-2">
         {/* The path so far. It appears only once there is a path — a single
             word has no history worth a row of chrome. */}
@@ -164,7 +179,29 @@ function TrailSheet({
           )}
         </div>
       </div>
+      </TrailContext.Provider>
     </Sheet>
+  );
+}
+
+/**
+ * Page-level entry point: anything inside can call `open(word)` to raise the
+ * sheet. Used by the शब्दकोश list and by a single-word page, where the opener
+ * is a row rather than a piece of reader chrome.
+ *
+ * The sheet installs its own trail context over this one, so a tap on the page
+ * starts a chain and a tap inside the sheet continues it.
+ */
+export function WordTrailProvider({ children }: { children: ReactNode }) {
+  const [seed, setSeed] = useState<string | null>(null);
+  const open = useCallback((word: string) => setSeed(word.normalize("NFC").trim()), []);
+  const value = useMemo(() => ({ open }), [open]);
+
+  return (
+    <TrailContext.Provider value={value}>
+      {children}
+      <ParibhashaTrailSheet word={seed} onClose={() => setSeed(null)} />
+    </TrailContext.Provider>
   );
 }
 
