@@ -63,7 +63,10 @@ export default async function BookDetailPage({
     "@type": "Book",
     name: book.title_hi,
     author: { "@type": "Person", name: book.author },
-    inLanguage: ws === "translations" ? "en" : "hi",
+    inLanguage: book.language || "hi",
+    translator: book.translator
+      ? { "@type": "Person", name: book.translator }
+      : undefined,
     bookEdition: book.edition || undefined,
     datePublished: book.publication_year ? String(book.publication_year) : undefined,
     description: book.description || undefined,
@@ -105,6 +108,21 @@ export default async function BookDetailPage({
               {book.subtitle_hi}
             </p>
           )}
+          {/*
+            On a translation the author is still ए. नागराज — the words are his,
+            the rendering is not. Naming the translator on the same line, in the
+            same weight, is what keeps the page from crediting him with someone
+            else's English.
+          */}
+          {book.translation_of && book.translator && (
+            <p className="mt-2 text-sm">
+              <span lang="hi" className="hi text-ink-soft">अनुवाद:</span>{" "}
+              <span className="font-semibold text-ink">{book.translator}</span>
+              {book.language_label && (
+                <span lang="hi" className="hi text-ink-soft"> · {book.language_label}</span>
+              )}
+            </p>
+          )}
           <p className="mt-2 text-sm text-ink-soft">
             {book.author}
             {book.edition ? ` · ${book.edition}` : ""}
@@ -130,6 +148,59 @@ export default async function BookDetailPage({
         <p lang="hi" className="hi mt-6 text-sm leading-relaxed text-ink-soft">
           {book.description}
         </p>
+      )}
+
+      {/*
+        Back to the original — the whole book, never a paragraph. MVD-EN 3.42.5
+        is not the same passage as MVD 3.42.5: the printed pages differ, so a
+        canonical ref does not survive being carried across languages. The book
+        is the largest unit that does.
+      */}
+      {book.translation_of && (
+        <p className="mt-6 rounded-2xl border border-rule bg-white p-4 text-sm">
+          <span lang="hi" className="hi text-ink-soft">यह एक अनुवाद है ·</span>{" "}
+          <Link
+            href={`/books/${encodeURIComponent(book.translation_of)}`}
+            className="font-semibold underline underline-offset-2"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            <span lang="hi" className="hi">मूल पुस्तक देखें</span>
+          </Link>
+        </p>
+      )}
+
+      {book.translations.length > 0 && (
+        <>
+          <SectionHeading>इस पुस्तक के अनुवाद</SectionHeading>
+          <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+            {book.translations.map((t) => (
+              <li key={t.code}>
+                <Link
+                  href={`/books/${encodeURIComponent(t.code)}`}
+                  className="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-black/[.03]"
+                >
+                  <span className="flex items-baseline gap-2">
+                    <span
+                      lang="hi"
+                      className="hi text-sm font-semibold"
+                      style={{ color: "var(--ws-ink)" }}
+                    >
+                      {t.language_label}
+                    </span>
+                    <span lang="hi" className="hi min-w-0 flex-1 truncate text-[15px]">
+                      {t.title_hi}
+                    </span>
+                  </span>
+                  {t.translator && (
+                    <span className="text-xs text-ink-soft">
+                      <span lang="hi" className="hi">अनुवाद:</span> {t.translator}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <SectionHeading>विषय-सूची · Contents</SectionHeading>

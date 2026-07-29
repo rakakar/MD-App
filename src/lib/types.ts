@@ -25,6 +25,32 @@ export interface Section {
   [key: string]: unknown;
 }
 
+/**
+ * book-genres/ — the Originals shelf's filter chips (contract §10.3).
+ *
+ * A manager-editable table, never a constant in here: it exists so a new kind
+ * of writing (Notes, Letters, a compilation) reaches the shelf without a
+ * frontend deploy. Hardcoding it would silently drop those books off it.
+ */
+export interface BookGenre {
+  code: string;
+  name_hi: string;
+  name_en: string;
+  description: string;
+  ordering: number;
+  /** published books filed under this genre, translations included */
+  book_count: number;
+}
+
+/** a published translation as listed on the original's page (contract §11) */
+export interface TranslationRef {
+  code: string;
+  title_hi: string;
+  language: string;
+  language_label: string;
+  translator: string;
+}
+
 export interface BookSummary {
   code: string;
   title_hi: string;
@@ -32,6 +58,25 @@ export interface BookSummary {
   author: string;
   section: Section | string | null;
   book_type: BookType;
+  /**
+   * What kind of writing this is — the Originals chips. Distinct from
+   * `book_type` (print/digital), which only decides how loudly to show page
+   * numbers: a handwritten diary is genre "diary" AND book_type "digital".
+   * Already resolved by the BE, including on a translation, which inherits
+   * the original's genre. Null until a manager files the book.
+   */
+  genre: string | null;
+  /** ISO 639-1; originals are always "hi" */
+  language: string;
+  /** ready to display, e.g. "English", "मराठी (Marathi)" */
+  language_label: string;
+  /**
+   * Who translated *this* edition. `author` stays ए. नागराज on a translation,
+   * so a card showing only `author` misattributes a student's work to him.
+   */
+  translator: string;
+  /** the original's code, e.g. "MVD"; null on an original */
+  translation_of: string | null;
   edition: string;
   publication_year: number | null;
   description: string;
@@ -52,6 +97,12 @@ export interface ChapterTocEntry {
 
 export interface BookDetail extends BookSummary {
   chapters: ChapterTocEntry[];
+  /**
+   * Published translations of this book, `[]` when there are none — and always
+   * `[]` on a translation itself, because chains don't exist. The same book
+   * rendered by three students is three separate rows here.
+   */
+  translations: TranslationRef[];
 }
 
 export interface FigureExtra {
@@ -132,6 +183,57 @@ export interface SutraOfTheDay extends ParaResolution {
   offset: number; // steps from today's pick; 0 is always today
   has_prev: boolean;
   has_next: boolean;
+}
+
+// ---- Resources library (contract §§12–13) ----
+//
+// A file library, not books. Documents have no chapters, no paragraphs and no
+// canonical refs, so nothing here ever routes into the reader.
+
+/** folders/ — one node of the Resources tree */
+export interface Folder {
+  id: number;
+  name: string;
+  parent: number | null;
+  section: string;
+  description: string;
+  ordering: number;
+  /** the ancestor chain, root first; [] at the root level */
+  breadcrumb: { id: number; name: string }[];
+  /** what sits *directly* inside — documents counted published-only */
+  folder_count: number;
+  document_count: number;
+}
+
+export type DocumentKind = "pdf" | "audio" | "image" | "other";
+
+export interface ResourceDocument {
+  id: number;
+  title: string;
+  folder: number;
+  folder_name: string;
+  section: string;
+  kind: DocumentKind;
+  kind_label: string;
+  /**
+   * Always present and absolute on a published document — publish is blocked
+   * without a file or a link behind it, so no row is ever dead. It may point
+   * at our media host or at wherever the file still lives during the
+   * migration; both are opened the same way, with no host special-casing.
+   */
+  url: string;
+  description: string;
+  author: string;
+  language: string;
+  language_label: string;
+  /** bytes; null for a catalogued file whose bytes haven't moved yet */
+  file_size: number | null;
+  /** PDFs only */
+  page_count: number | null;
+  /** audio only */
+  duration_seconds: number | null;
+  tags: string[];
+  updated_at: string;
 }
 
 // ---- §9 live endpoints (shapes may still evolve; keep fields optional) ----

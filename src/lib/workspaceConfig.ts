@@ -78,9 +78,11 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     nameHi: "संसाधन",
     color: "#35608E",
     home: "/resources",
+    // Three slots, not four. Resources holds files rather than books, so the
+    // old "Browse" — a books shelf filtered to this section — pointed at
+    // nothing; the library itself is the browse surface.
     nav: [
-      { label: "Home", href: "/resources", icon: "home" },
-      { label: "Browse", href: "/books?ws=resources", icon: "browse" },
+      { label: "Library", href: "/resources", icon: "browse" },
       { label: "Search", href: "/search", icon: "search", isSearch: true },
       { label: "Saved", href: "/me/bookmarks", icon: "saved" },
     ],

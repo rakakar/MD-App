@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useWorkspace } from "@/components/shell/WorkspaceProvider";
 import { Icon } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
 import { track } from "@/lib/analytics";
 import { search } from "@/lib/api";
 import { refToHref } from "@/lib/refs";
 import type { SearchResponse, SearchResult } from "@/lib/types";
-import { isContentWorkspace } from "@/lib/workspaceConfig";
 
 /**
  * v1 centre-slot Search (PRD §7). This component boundary is the future
@@ -24,10 +22,8 @@ const FIRST_PAGE = 10;
 export function SearchScreen() {
   const router = useRouter();
   const params = useSearchParams();
-  const { workspace } = useWorkspace();
   const initialQ = params.get("q") ?? "";
   const [q, setQ] = useState(initialQ);
-  const [scope, setScope] = useState<"all" | "workspace">("all");
   // "search as typed" — skips the BE's Hinglish→Devanagari rewrite. Resets on
   // every new query, because it is a correction to one rewrite, not a setting.
   const [raw, setRaw] = useState(false);
@@ -42,9 +38,6 @@ export function SearchScreen() {
     inputRef.current?.focus();
   }, []);
 
-  // Journey and Connect have no section, so they get no scope chips (PRD §7)
-  const contentWorkspace = isContentWorkspace(workspace.id);
-
   useEffect(() => {
     const query = q.trim();
     if (query.length < 2) {
@@ -58,9 +51,7 @@ export function SearchScreen() {
       setBusy(true);
       setError(false);
       try {
-        // ?section= takes a section code, which is the workspace id (contract §10)
-        const section = scope === "workspace" && contentWorkspace ? workspace.id : undefined;
-        const res = await search(query, { section, raw, signal: ctrl.signal });
+        const res = await search(query, { raw, signal: ctrl.signal });
         setResponse(res);
         setExpanded(false);
         track("search", { query_length: query.length, results: res.total, mode: res.mode });
@@ -73,7 +64,7 @@ export function SearchScreen() {
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, scope, raw]);
+  }, [q, raw]);
 
   const results = response?.results ?? [];
   const shown = expanded ? results : results.slice(0, FIRST_PAGE);
@@ -96,30 +87,23 @@ export function SearchScreen() {
         />
       </div>
 
-      {contentWorkspace && (
-        <div className="mt-3 flex gap-2" role="radiogroup" aria-label="Search scope">
-          {(
-            [
-              ["all", "All"],
-              ["workspace", workspace.name],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={scope === value}
-              onClick={() => setScope(value)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                scope === value ? "border-transparent text-white" : "border-rule bg-white"
-              }`}
-              style={scope === value ? { background: "var(--ws-color)" } : undefined}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/*
+        Search covers **originals only**, permanently: retrieval is tuned for
+        Devanagari, and a citation has to be quotable back to A. Nagraj ji
+        rather than to a student's rendering. Resource documents have no
+        paragraphs to index at all.
+
+        So there are no scope chips — a "Translations" or "Resources" option
+        would come back empty every single time, and an originals-only pair
+        would be one live choice next to a dead one. Stating the boundary once
+        is what a filter would have been pretending to offer. It is said
+        unconditionally rather than only outside Originals: it is equally news
+        to a reader here that the resource PDFs are not in these results.
+      */}
+      <p className="mt-3 text-xs text-ink-soft">
+        <span lang="hi" className="hi">खोज केवल मूल ग्रंथों में</span> · Searches A. Nagraj
+        ji&apos;s original works.
+      </p>
 
       {/*
         The books are in Devanagari, so a Latin query is rewritten before it is

@@ -1,39 +1,39 @@
 import type { Metadata } from "next";
-import { BookCard, EmptyState, PageContainer, SectionHeading } from "@/components/ui";
-import { getBooks } from "@/lib/api";
-import type { BookSummary } from "@/lib/types";
+import { BookShelf } from "@/components/shelf/BookShelf";
+import { PageContainer } from "@/components/ui";
 
 export const revalidate = 900;
 
 export const metadata: Metadata = {
   title: "Translations · अनुवाद",
-  description: "English translations of A. Nagrajji's works.",
+  description: "A. Nagraj ji's works rendered into other languages.",
 };
 
-export default async function TranslationsHome() {
-  // section code === workspace id (contract §10)
-  const books = await getBooks("translations").catch(() => [] as BookSummary[]);
+export default async function TranslationsHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ language?: string }>;
+}) {
+  const { language } = await searchParams;
 
   return (
     <PageContainer>
       <h1 className="text-xl font-bold">Translations · अनुवाद</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        English translations, read in the same reader.
+        The same works in other languages, read in the same reader. Each edition
+        names its translator.
       </p>
 
-      <SectionHeading>Books</SectionHeading>
-      {books.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {books.map((b) => (
-            <BookCard key={b.code} book={b} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          title="Translations are on their way"
-          hint="Published translations will appear here."
-        />
-      )}
+      {/*
+        Language, not genre: this shelf is one body of writing rendered many
+        ways, so what a reader is choosing between here is the rendering.
+      */}
+      <BookShelf
+        section="translations"
+        axis="language"
+        basePath="/translations"
+        selected={language}
+      />
     </PageContainer>
   );
 }

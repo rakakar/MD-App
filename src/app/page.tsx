@@ -14,7 +14,7 @@ async function loadHome(): Promise<{
 }> {
   // section code === workspace id (contract §10)
   const [books, sutra] = await Promise.all([
-    getBooks("originals").catch(() => [] as BookSummary[]),
+    getBooks({ section: "originals" }).catch(() => [] as BookSummary[]),
     ACTIVE_SUTRA_SOURCE.getToday().catch(() => null),
   ]);
   return { books, sutra };

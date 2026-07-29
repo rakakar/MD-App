@@ -2,13 +2,17 @@ import type {
   AudioSeries,
   AudioTrack,
   BookDetail,
+  BookGenre,
   BookSummary,
   CenterItem,
   ChapterPayload,
+  DocumentKind,
   EventItem,
+  Folder,
   PageResolution,
   ParaResolution,
   Playlist,
+  ResourceDocument,
   SearchResponse,
   SearchResult,
   Section,
@@ -97,12 +101,34 @@ function unwrapList<T>(data: T[] | { results: T[] }): T[] {
 
 // ---- Reader contract (§§2–5, frozen) ----
 
-export async function getBooks(sectionCode?: string): Promise<BookSummary[]> {
+/**
+ * Published books, narrowed by whichever axis the shelf is organized on
+ * (contract §10.3). Originals filter by `genre`, Translations by `language`;
+ * they are deliberately different axes, not one shared control.
+ *
+ * `genre` matches a translation through its original, so ?genre=darshan
+ * returns the English MVD too. That is intended.
+ */
+export async function getBooks(
+  opts: { section?: string; genre?: string; language?: string } = {}
+): Promise<BookSummary[]> {
   return unwrapList(
     await apiFetch<BookSummary[] | { results: BookSummary[] }>(
-      `books/${qs({ section__code: sectionCode })}`
+      `books/${qs({
+        section__code: opts.section,
+        genre: opts.genre,
+        language: opts.language,
+      })}`
     )
   );
+}
+
+/**
+ * The Originals shelf's chips. Manager-editable, so it is always fetched —
+ * see the note on BookGenre for why a constant here would lose books.
+ */
+export async function getBookGenres(): Promise<BookGenre[]> {
+  return unwrapList(await apiFetch<BookGenre[] | { results: BookGenre[] }>("book-genres/"));
 }
 
 export async function getBook(code: string): Promise<BookDetail> {
@@ -144,6 +170,37 @@ export async function getSutraOfTheDay(offset = 0): Promise<SutraOfTheDay | null
 
 export async function getSections(): Promise<Section[]> {
   return unwrapList(await apiFetch<Section[] | { results: Section[] }>("sections/"));
+}
+
+// ---- Resources library (§§12–13) ----
+
+/**
+ * One level of the Resources tree. No `parent` is the root level.
+ *
+ * A folder with nothing published anywhere beneath it is not returned at all
+ * — the library is still being migrated — so navigation never lands in an
+ * empty branch and no empty-folder state is needed.
+ */
+export async function getFolders(parent?: number): Promise<Folder[]> {
+  return unwrapList(
+    await apiFetch<Folder[] | { results: Folder[] }>(`folders/${qs({ parent })}`)
+  );
+}
+
+/** Published documents, normally the ones sitting directly in one folder. */
+export async function getDocuments(
+  opts: { folder?: number; kind?: DocumentKind; language?: string; section?: string } = {}
+): Promise<ResourceDocument[]> {
+  return unwrapList(
+    await apiFetch<ResourceDocument[] | { results: ResourceDocument[] }>(
+      `documents/${qs({
+        folder: opts.folder,
+        kind: opts.kind,
+        language: opts.language,
+        section__code: opts.section,
+      })}`
+    )
+  );
 }
 
 export async function getAudioSeries(sectionCode?: string): Promise<AudioSeries[]> {
@@ -220,6 +277,12 @@ const SEARCH_TYPE: Record<string, SearchResult["type"]> = {
  * Search across published books (contract §9). Hindi, Hinglish and English
  * queries all work — the BE rewrites Latin script to Devanagari before
  * searching and reports what it searched in `searchedAs`.
+ *
+ * **Originals only.** Translations and resource documents are not indexed and
+ * never will be: retrieval is tuned for Devanagari, and a citation has to be
+ * quotable back to A. Nagraj ji rather than to a student's rendering. So
+ * `section` can only ever narrow originals — never offer it as a way to reach
+ * the other two shelves, because there is nothing there to reach.
  *
  * Never paginated: the BE returns the whole (small, ranked) result set in one
  * call, so "show more" is a client-side reveal and costs no round-trip.

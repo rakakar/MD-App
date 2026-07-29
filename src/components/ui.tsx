@@ -32,7 +32,62 @@ export function SectionHeading({
   );
 }
 
+/**
+ * A row of filter chips rendered as links, so a filtered shelf is a real URL
+ * that can be shared, bookmarked and prerendered.
+ *
+ * Deliberately unopinionated about *what* it filters: Originals pass genres,
+ * Translations pass languages. The three workspaces hold different kinds of
+ * thing, so they never share one control — only this presentation.
+ */
+export function FilterChips({
+  label,
+  allHref,
+  options,
+  active,
+}: {
+  label: string;
+  /** where the "सभी" chip goes — clearing the filter */
+  allHref: string;
+  options: { value: string; label: string; href: string }[];
+  /** the selected value; undefined means "सभी" */
+  active?: string;
+}) {
+  if (options.length === 0) return null;
+  const chip = (selected: boolean) =>
+    `rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+      selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
+    }`;
+  return (
+    <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={label}>
+      <Link
+        href={allHref}
+        aria-current={active ? undefined : "true"}
+        className={chip(!active)}
+        style={!active ? { background: "var(--ws-color)" } : undefined}
+      >
+        <span lang="hi" className="hi">सभी</span>
+      </Link>
+      {options.map((o) => (
+        <Link
+          key={o.value}
+          href={o.href}
+          aria-current={active === o.value ? "true" : undefined}
+          className={chip(active === o.value)}
+          style={active === o.value ? { background: "var(--ws-color)" } : undefined}
+        >
+          <span lang="hi" className="hi">{o.label}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export function BookCard({ book }: { book: BookSummary }) {
+  // `author` stays ए. नागराज on a translation, so a card that showed only the
+  // author would credit him with a student's rendering. The translator is the
+  // one fact a translation row must not bury.
+  const isTranslation = Boolean(book.translation_of);
   return (
     <Link
       href={`/books/${encodeURIComponent(book.code)}`}
@@ -64,6 +119,24 @@ export function BookCard({ book }: { book: BookSummary }) {
         {book.subtitle_hi && (
           <p lang="hi" className="hi mt-0.5 truncate text-sm text-ink-soft">
             {book.subtitle_hi}
+          </p>
+        )}
+        {isTranslation && (
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            {book.language_label && (
+              <span
+                lang="hi"
+                className="hi rounded-full border border-rule px-2 py-0.5 font-medium"
+                style={{ color: "var(--ws-ink)" }}
+              >
+                {book.language_label}
+              </span>
+            )}
+            {book.translator && (
+              <span className="font-medium text-ink">
+                <span lang="hi" className="hi text-ink-soft">अनुवाद:</span> {book.translator}
+              </span>
+            )}
           </p>
         )}
         <p className="mt-1 text-xs text-ink-soft">
