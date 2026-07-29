@@ -52,23 +52,53 @@ structure.
 
 ## Screens still to build
 
-| Badge | Screen |
-|---|---|
-| 2A | Assistant — Search mode & Chat mode |
-| 3A | Audio · प्रवचन + persistent player |
-| 3B | Settings & the Originals workspace switcher |
-| 4A | Translations workspace — मूल + English reader |
-| 5A | Videos — within the Audio tab |
-| 6A | Tokens & components |
-| 7A | Study resources workspace — Home (category tiles) |
-| 7B | Study resources — Browse (drive-style folder navigation) |
-| 7C | Study resources — Saved (downloaded materials) |
-| 8A | My journey — streaks, goals & practice log |
-| 8B | My journey — highlights & notes (combined, filterable) |
-| 9A | Connect — Events, Centres & News & updates |
-| 10A | Workspace switcher — 5 workspaces, colour-coded |
+| Badge | Screen | Route today | Data |
+|---|---|---|---|
+| 2A | Assistant — Search mode & Chat mode | — | **blocked** |
+| 3A | Audio · प्रवचन + persistent player | `/audio` | ready |
+| 3B | Settings & the Originals workspace switcher | `/me/settings` | ready |
+| 4A | Translations workspace — मूल + English reader | `/translations` | empty |
+| 5A | Videos — within the Audio tab | `/videos` | ready |
+| 6A | Tokens & components | — | n/a |
+| 7A | Study resources workspace — Home (category tiles) | `/resources` | ready |
+| 7B | Study resources — Browse (drive-style folder navigation) | `/resources` | ready |
+| 7C | Study resources — Saved (downloaded materials) | `/resources` | ready |
+| 8A | My journey — streaks, goals & practice log | `/me` | **blocked** |
+| 8B | My journey — highlights & notes (combined, filterable) | `/me/notes`, `/me/bookmarks` | ready |
+| 9A | Connect — Events, Centres & News & updates | `/connect` | partial |
+| 10A | Workspace switcher — 5 workspaces, colour-coded | — | ready |
 
 Done: 1A Home, 1B Library, 1C Book detail, 1D Reader.
+
+**Most of these are not greenfield.** The "Route today" column is there to say
+so: the route, its data fetching and a first-pass UI already exist for nearly
+every screen. The work is bringing an existing screen to the spec, not building
+one from nothing. Read the route before you design anything, and preserve what
+is already right — a rewrite that loses working data plumbing is a regression
+even if it matches the spec more closely.
+
+### The two blocked screens
+
+Do not start these, and do not fill the gap with invented data — raise them with
+me instead.
+
+- **2A Assistant.** There is chat in the backend, but it is
+  `ChatView` in `../MDApp/apps/feapp/views.py` — a server-rendered Django page
+  for testers: session-based, login-required, daily-capped, HTML not JSON. It is
+  **not** on `/api/v1/`, so the frontend's API client cannot reach it. 2A needs a
+  backend API endpoint first; that is a backend task, not something to fake in
+  the frontend.
+- **8A My journey.** `../MDApp/apps/api/models.py` has `Note`, `Bookmark` and
+  `Progress` — and nothing for streaks, goals or a practice log. Roughly half of
+  8A has no field to render. 8B, by contrast, is entirely backed by the existing
+  notes and bookmarks endpoints, so it is the half of "My journey" that can be
+  built today.
+
+Partial: **9A**'s Events and Centres are backed (`events/`, `centers/`); "News &
+updates" has no feed and is the standing example of what not to invent.
+**4A**'s route and shelf exist and are correct; the translations tables in
+production are simply empty, so build to the spec's *empty* state and check it
+against real data later.
 
 **6A is not a screen** — it is the token and component sheet the other screens
 are drawn from. Read it before the rest; several of its decisions are already in
@@ -168,5 +198,18 @@ pull in different directions, mobile wins.
 
 ## Start here
 
-Read `AGENTS.md`, then 6A (tokens), then pick the screen I name — or if I
-haven't named one, tell me which you'd do first and why.
+Read `AGENTS.md`, then 6A (tokens). Then, unless I name a screen, work in this
+order — and tell me if your own audit disagrees, with the reason:
+
+1. **10A and 3B** — the workspace switcher and settings. Small, unblocked, and
+   they are how a reader reaches every other workspace, so getting them right
+   first makes the rest testable in the browser as you go.
+2. **7A / 7B / 7C** — study resources. Three screens off one pair of endpoints
+   (`folders/`, `documents/`) and one existing route, so the second and third
+   are cheap once the first is understood.
+3. **3A and 5A** — audio and videos, including the persistent player. Do these
+   together: 5A lives inside the audio tab and shares its chrome.
+4. **8B**, then **9A** and **4A** — the last two build to their empty states.
+
+That leaves 2A and 8A, which are backend-blocked (see above), and the final
+desktop pass.
