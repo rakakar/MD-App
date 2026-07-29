@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EmptyState, PageContainer, SectionHeading } from "@/components/ui";
+import { ListenHeader } from "@/components/av/ListenHeader";
+import { PageContainer, SectionHeading } from "@/components/ui";
 import { getAudioSeries } from "@/lib/api";
 import type { AudioSeries } from "@/lib/types";
 
@@ -20,11 +21,7 @@ export default async function AudioPage() {
 
   return (
     <PageContainer>
-      <h1 className="text-xl font-bold">Discourse audio</h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        Recorded discourses, played in the persistent player — keeps playing as
-        you browse and read.
-      </p>
+      <ListenHeader active="audio" />
 
       <SectionHeading>Series</SectionHeading>
       {series.length > 0 ? (
@@ -43,7 +40,24 @@ export default async function AudioPage() {
           ))}
         </div>
       ) : (
-        <EmptyState title="No audio series yet" hint="Published series will appear here." />
+        // Design 3A empty state: redirect to chapter read-aloud instead of
+        // dead-ending — read-aloud already works inside every book.
+        <div className="rounded-2xl border border-dashed border-rule bg-white/50 p-8 text-center">
+          <p className="text-sm font-medium">
+            No <span lang="hi" className="hi">प्रवचन</span> published yet
+          </p>
+          <p className="mt-1 text-xs text-ink-soft">
+            Recorded discourses will appear here and keep playing while you read.
+            Chapter read-aloud is already available inside every book.
+          </p>
+          <Link
+            href="/books"
+            className="mt-3 inline-block rounded-full px-4 py-2 text-sm font-semibold text-white"
+            style={{ background: "var(--ws-color)" }}
+          >
+            Read aloud from a book
+          </Link>
+        </div>
       )}
     </PageContainer>
   );

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ListenHeader } from "@/components/av/ListenHeader";
 import { YouTubeEmbed } from "@/components/av/YouTubeEmbed";
 import { EmptyState, PageContainer, SectionHeading } from "@/components/ui";
 import { getPlaylists, getVideos } from "@/lib/api";
@@ -19,7 +20,7 @@ export default async function VideosPage() {
 
   return (
     <PageContainer wide>
-      <h1 className="text-xl font-bold">Videos</h1>
+      <ListenHeader active="videos" />
 
       {playlists.length > 0 &&
         playlists.map((pl) => (
