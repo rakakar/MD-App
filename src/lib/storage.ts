@@ -75,6 +75,17 @@ export interface Prefs {
   readingMode: ReadingMode | null;
   /** tapping the left/right edge turns the page (Pages mode only) */
   tapZones: boolean;
+  /**
+   * Underline the words परिभाषा can define. Off by default and sticky once
+   * turned on, like every other reading preference here.
+   *
+   * Off is the default because it was measured: the glossary was compiled
+   * against these very books, so ~42% of the words in a chapter are
+   * headwords. Even filtered down to ~20% it is a marked-up page, which some
+   * readers want and most do not. Tapping a word for its meaning works either
+   * way — this setting only controls whether the page shows you in advance.
+   */
+  glossaryUnderline: boolean;
   lastWorkspace: WorkspaceId;
   consent: "granted" | "denied" | null;
   playbackRate: number;
@@ -95,6 +106,7 @@ export const DEFAULT_PREFS: Prefs = {
   theme: "system",
   readingMode: null,
   tapZones: true,
+  glossaryUnderline: false,
   lastWorkspace: "originals",
   consent: null,
   playbackRate: 1,

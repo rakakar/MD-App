@@ -321,6 +321,57 @@ export interface EventItem {
   [key: string]: unknown;
 }
 
+// ---- परिभाषा — the glossary (§14) ----
+
+/**
+ * One glossary entry. A **standalone dictionary row**, not book content: no
+ * canonical_ref, no chapter, no page. The same word carries the same meaning
+ * in every book, which is why nothing here ties it to one.
+ *
+ * `definitions` read as **one explanation in order**, not as alternatives —
+ * a manager arranged them that way. Render them stacked, never as a numbered
+ * list of competing senses.
+ */
+export interface ParibhashaWord {
+  id: number;
+  hindi: string;
+  hinglish: string;
+  definitions: string[];
+}
+
+/** a `results.paribhasha` row — a word plus how the query reached it (§9.1) */
+export interface ParibhashaHit extends ParibhashaWord {
+  /** "exact" headword, "keyword" spelling/definition text, or "vector" meaning */
+  matched?: "exact" | "keyword" | "vector";
+}
+
+/**
+ * `paribhasha/index/` — every headword and nothing else, unpaginated by
+ * design (§14.3). ~25 KB gzipped, which is what makes tap-to-define possible
+ * without a request per rendered paragraph.
+ *
+ * `version` is the newest `updated_at` in the glossary: unchanged means the
+ * cached copy is still current.
+ */
+export interface ParibhashaIndex {
+  count: number;
+  version: string;
+  words: { id: number; hindi: string }[];
+}
+
+/**
+ * `paribhasha/index/?full=1` — the same set with the definitions attached,
+ * ~143 KB gzipped. The whole dictionary in one request, which is what lets a
+ * tap be answered offline.
+ *
+ * Same `version` as the lean form, so one string governs both.
+ */
+export interface ParibhashaFullIndex {
+  count: number;
+  version: string;
+  words: ParibhashaWord[];
+}
+
 /**
  * Forward-compatible search result (PRD §7): v1 returns text only, but the
  * component must already render audio/video with optional timestamp.
@@ -357,6 +408,14 @@ export interface SearchResult {
 export interface SearchResponse {
   results: SearchResult[];
   total: number;
+  /**
+   * The परिभाषा card, shown **above** the passage hits (§9.1). Kept out of
+   * `results` on purpose: it is a different shape answering a different
+   * question ("what does this word mean", not "where is it discussed"), and
+   * flattening it in produced blank passage cards with no text and no ref.
+   * `[]` whenever the glossary knows nothing about the query.
+   */
+  paribhasha: ParibhashaHit[];
   /** Devanagari the BE actually searched; "" when the query was used as typed */
   searchedAs: string;
   /** "hybrid" = meaning + words; "keyword" = words only (provider unavailable) */

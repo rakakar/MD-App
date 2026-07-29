@@ -8,7 +8,7 @@ import { PageContainer } from "@/components/ui";
 import { track } from "@/lib/analytics";
 import { search } from "@/lib/api";
 import { refToHref } from "@/lib/refs";
-import type { SearchResponse, SearchResult } from "@/lib/types";
+import type { ParibhashaHit, SearchResponse, SearchResult } from "@/lib/types";
 
 /**
  * v1 centre-slot Search (PRD §7). This component boundary is the future
@@ -68,6 +68,7 @@ export function SearchScreen() {
 
   const results = response?.results ?? [];
   const shown = expanded ? results : results.slice(0, FIRST_PAGE);
+  const glossary = response?.paribhasha ?? [];
 
   return (
     <PageContainer>
@@ -103,6 +104,13 @@ export function SearchScreen() {
       <p className="mt-3 text-xs text-ink-soft">
         <span lang="hi" className="hi">खोज केवल मूल ग्रंथों में</span> · Searches A. Nagraj
         ji&apos;s original works.
+        {" · "}
+        {/* The glossary answers a different question from this box, and only
+            announces itself when a query happens to reach it. This is the way
+            in for a reader who wants the dictionary itself. */}
+        <Link href="/paribhasha" className="underline underline-offset-2">
+          <span lang="hi" className="hi">परिभाषा शब्दकोश</span>
+        </Link>
       </p>
 
       {/*
@@ -133,7 +141,19 @@ export function SearchScreen() {
         {error && (
           <p className="text-center text-sm text-ink-soft">Search is unavailable right now.</p>
         )}
-        {!busy && response !== null && results.length === 0 && (
+        {/*
+          The परिभाषा card, above the passages (contract §9.1). Readers use
+          one box for two questions — "where is this discussed" and "what does
+          this word mean" — and the paragraph index answers the second badly:
+          a one-word query returns the twenty places the word appears, none of
+          which is its definition. So the answer goes first, and the passages
+          follow it.
+        */}
+        {!busy && glossary[0] && (
+          <ParibhashaCard word={glossary[0]} more={glossary.length - 1} query={q.trim()} />
+        )}
+
+        {!busy && response !== null && results.length === 0 && glossary.length === 0 && (
           <p className="text-center text-sm text-ink-soft">
             No results for “{q.trim()}”.
           </p>
@@ -170,6 +190,85 @@ export function SearchScreen() {
         coming soon
       </p>
     </PageContainer>
+  );
+}
+
+/**
+ * The definition card. Deliberately a different shape from a result row: this
+ * answers the question rather than pointing at somewhere the question is
+ * discussed, so it carries no citation, no page and no "open in book".
+ *
+ * The first definition shows; the rest expand. They read as one explanation
+ * in order (§14.1), so the plain meaning is already on screen and what is
+ * hidden is elaboration — never a second competing sense.
+ */
+function ParibhashaCard({
+  word,
+  more,
+  query,
+}: {
+  word: ParibhashaHit;
+  /** other words the glossary also matched, offered as a link rather than a stack */
+  more: number;
+  query: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const rest = word.definitions.slice(1);
+
+  return (
+    <section
+      aria-label="परिभाषा"
+      className="mb-4 overflow-hidden rounded-2xl border bg-white p-4"
+      style={{ borderColor: "color-mix(in srgb, var(--ws-color) 35%, transparent)" }}
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
+        <span lang="hi" className="hi">परिभाषा</span>
+      </p>
+      <h2 lang="hi" className="hi mt-1 text-xl font-semibold leading-snug">
+        {word.hindi}
+      </h2>
+      {word.hinglish && <p className="text-xs text-ink-soft">{word.hinglish}</p>}
+
+      {word.definitions[0] && (
+        <p lang="hi" className="hi mt-2 text-[15px] leading-relaxed">
+          {word.definitions[0]}
+        </p>
+      )}
+      {open &&
+        rest.map((d, i) => (
+          <p key={i} lang="hi" className="hi mt-3 text-[15px] leading-relaxed text-ink-soft">
+            {d}
+          </p>
+        ))}
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        {rest.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            className="font-medium underline underline-offset-2"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            {open ? (
+              <span lang="hi" className="hi">समेटें</span>
+            ) : (
+              <span lang="hi" className="hi">पूरी परिभाषा</span>
+            )}
+          </button>
+        )}
+        <Link
+          href={`/paribhasha?q=${encodeURIComponent(query)}`}
+          className="text-ink-soft underline underline-offset-2"
+        >
+          {more > 0 ? (
+            <span lang="hi" className="hi">और {more} शब्द · शब्दकोश में</span>
+          ) : (
+            <span lang="hi" className="hi">शब्दकोश में देखें</span>
+          )}
+        </Link>
+      </div>
+    </section>
   );
 }
 

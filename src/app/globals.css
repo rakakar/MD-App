@@ -183,6 +183,24 @@ html[data-reading="1"] body {
   transition: background 0.3s ease;
 }
 
+/* परिभाषा — a word the glossary can define (contract §14).
+
+   Dotted rather than solid, and pushed well clear of the baseline: Devanagari
+   matras hang below the line, and a tight underline cuts straight through
+   them. Colour, not weight, is what makes it recognisable — the mark has to
+   survive appearing on a fifth of the words without turning the page grey. */
+.paribhasha-word {
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, var(--ws-ink) 55%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.32em;
+  cursor: pointer;
+}
+.paribhasha-word:active {
+  background: color-mix(in srgb, var(--ws-color) 16%, transparent);
+  border-radius: 0.25rem;
+}
+
 /* flash for #p-{page}-{para} deep links */
 :target {
   animation: ref-flash 2.4s ease-out 1;

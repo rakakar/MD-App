@@ -1,5 +1,12 @@
 import type { MetadataRoute } from "next";
-import { getAudioSeries, getBook, getBooks, getEvents, getVideos } from "@/lib/api";
+import {
+  getAudioSeries,
+  getBook,
+  getBooks,
+  getEvents,
+  getParibhashaIndex,
+  getVideos,
+} from "@/lib/api";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://welfareinfo.net";
 
@@ -12,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/resources",
     "/audio",
     "/videos",
+    "/paribhasha",
     "/connect",
     "/connect/centers",
   ].map((p) => ({ url: `${SITE_URL}${p}`, changeFrequency: "daily" as const }));
@@ -31,6 +39,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getVideos().catch(() => []),
     getEvents().catch(() => []),
   ]);
+  // Every glossary word gets a URL. It costs one request — the underlining
+  // index already carries all ~2,800 ids — and these are the pages someone
+  // searching a मध्यस्थ दर्शन term in Hindi is actually looking for.
+  const glossary = await getParibhashaIndex().catch(() => null);
+  for (const w of glossary?.words ?? []) {
+    urls.push({ url: `${SITE_URL}/paribhasha/${w.id}`, changeFrequency: "monthly" });
+  }
+
   for (const s of series) urls.push({ url: `${SITE_URL}/audio/${s.id}` });
   if (videos.length > 0) urls.push({ url: `${SITE_URL}/videos` });
   for (const e of events) urls.push({ url: `${SITE_URL}/connect/events/${e.id}` });

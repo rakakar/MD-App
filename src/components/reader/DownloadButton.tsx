@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { DownloadIcon } from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
-import { getChapter } from "@/lib/api";
+import { getChapter, getParibhashaIndex } from "@/lib/api";
+import { ensureFullGlossary } from "@/lib/glossary";
 import {
   getDownload,
   markDownloaded,
@@ -48,6 +49,19 @@ export function DownloadButton({ book }: { book: BookDetail }) {
       setStatus("done");
     } catch {
       setStatus("idle");
+      return;
+    }
+
+    // The dictionary comes along. "Available offline" has to mean the book
+    // works on a train, and a word a reader cannot look up there is exactly
+    // the gap this button is supposed to close. 143 KB against a book of
+    // several MB, fetched after the chapters so it never delays them, and a
+    // failure here leaves a perfectly good download alone.
+    try {
+      const { version } = await getParibhashaIndex();
+      await ensureFullGlossary(version);
+    } catch {
+      // the book is downloaded either way
     }
   };
 

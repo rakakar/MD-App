@@ -31,6 +31,11 @@ export type GaEvent =
   | "search_result_click"
   | "bookmark_add"
   | "note_add"
+  // Which door readers actually use for a definition — the underline they had
+  // to switch on, or pressing and holding a word. If the second carries the
+  // traffic, the underline setting is a preference and not the feature.
+  | "paribhasha_lookup"
+  | "paribhasha_underline_toggle"
   | "sutra_view"
   // Whether readers walk past today's verse at all — if nobody uses the
   // arrows, the curated pool is deeper than anyone wants it to be.

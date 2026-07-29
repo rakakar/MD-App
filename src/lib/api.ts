@@ -11,6 +11,10 @@ import type {
   Folder,
   PageResolution,
   ParaResolution,
+  ParibhashaFullIndex,
+  ParibhashaHit,
+  ParibhashaIndex,
+  ParibhashaWord,
   Playlist,
   ResourceDocument,
   SearchResponse,
@@ -257,6 +261,96 @@ export async function registerForEvent(
   });
 }
 
+// ---- परिभाषा — the glossary (§14) ----
+
+/** one screenful of glossary rows, plus the cursor for the next one */
+export interface ParibhashaPage {
+  results: ParibhashaWord[];
+  /**
+   * Cursor for the next page, or null at the end. Only `letter` browsing
+   * paginates — a `q` search answers with one screenful and stops, because a
+   * dictionary search that paginates has already failed to find the word.
+   */
+  next: string | null;
+}
+
+/**
+ * The glossary page (§14.1): `q` ranked search, `letter` for the अ आ इ index.
+ *
+ * Roman spelling is a first-class key on the BE — `anubhav`, `anubhaav` and
+ * `anubhava` all reach अनुभव — so pass whatever was typed and do no folding
+ * here. There is no Latin-keyboard special case to write.
+ */
+export async function getParibhasha(
+  opts: { q?: string; letter?: string; cursor?: string } = {}
+): Promise<ParibhashaPage> {
+  // A cursor arrives as an absolute URL. Only its query is reused, re-anchored
+  // to our own base, so a BE misconfigured with the wrong public host can
+  // never send the browser off to fetch someone else's origin.
+  const query = opts.cursor
+    ? new URL(opts.cursor).search
+    : qs({ q: opts.q, letter: opts.letter });
+  const data = await apiFetch<{ results?: ParibhashaWord[]; next?: string | null }>(
+    `paribhasha/${query}`
+  );
+  return { results: data.results ?? [], next: data.next ?? null };
+}
+
+/** One word by id (§14.2). 404 — a hidden word — becomes null. */
+export async function getParibhashaWord(id: number): Promise<ParibhashaWord | null> {
+  try {
+    return await apiFetch<ParibhashaWord>(`paribhasha/${id}/`);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
+}
+
+/**
+ * The underlining index (§14.3) — every headword, ~25 KB gzipped, cached for
+ * a day by the BE. Downloaded once and kept in IndexedDB so marking known
+ * words costs no request per paragraph, ever.
+ */
+export async function getParibhashaIndex(signal?: AbortSignal): Promise<ParibhashaIndex> {
+  return apiFetch<ParibhashaIndex>("paribhasha/index/", {
+    revalidate: 86_400,
+    signal,
+  });
+}
+
+/**
+ * The whole dictionary in one request (§14.3, `?full=1`) — every word with
+ * its definitions, ~143 KB gzipped.
+ *
+ * This is what makes a tap answerable offline. It is deliberately **not**
+ * fetched with the index: underlining needs headwords alone and is off by
+ * default, so a reader who never opens a definition should not pay for one.
+ * Call it when the glossary is actually used.
+ */
+export async function getParibhashaFull(signal?: AbortSignal): Promise<ParibhashaFullIndex> {
+  return apiFetch<ParibhashaFullIndex>("paribhasha/index/?full=1", {
+    revalidate: 86_400,
+    signal,
+  });
+}
+
+/**
+ * The tap (§14.4). Answers with **one word or 404**, never a list: the reader
+ * tapped a specific word and the popover has room for its meaning, not for a
+ * menu of guesses. A 404 is an ordinary answer here, so it becomes null.
+ */
+export async function lookupParibhasha(
+  word: string,
+  signal?: AbortSignal
+): Promise<ParibhashaWord | null> {
+  try {
+    return await apiFetch<ParibhashaWord>(`paribhasha/lookup/${qs({ word })}`, { signal });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
+}
+
 interface SearchEnvelope {
   query: string;
   searched_as?: string;
@@ -308,15 +402,25 @@ export async function search(
     })}`,
     { signal: opts.signal }
   );
+  // The glossary block is lifted out before the passage indexes are flattened.
+  // It is not a passage and must never be treated as one: its rows have no
+  // canonical_ref, no snippet and no book, so the flatten below turned each of
+  // them into a blank result card pointing at /books — and inflated the count.
+  const { paribhasha, ...passageIndexes } = envelope.results ?? {};
+
   const results: SearchResult[] = [];
-  for (const [index, bucket] of Object.entries(envelope.results ?? {})) {
+  for (const [index, bucket] of Object.entries(passageIndexes)) {
     for (const hit of bucket.hits ?? []) {
-      results.push({ ...hit, type: SEARCH_TYPE[index] ?? "text" } as SearchResult);
+      // Each hit carries its own `type`; the index map is the fallback for a
+      // bucket that predates it (contract §9.1).
+      const type = (hit.type as SearchResult["type"]) ?? SEARCH_TYPE[index] ?? "text";
+      results.push({ ...hit, type } as SearchResult);
     }
   }
   return {
     results,
     total: results.length,
+    paribhasha: (paribhasha?.hits ?? []) as unknown as ParibhashaHit[],
     searchedAs: envelope.searched_as ?? "",
     mode: envelope.mode ?? "hybrid",
     terms: envelope.terms ?? [],

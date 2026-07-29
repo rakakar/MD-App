@@ -1,3 +1,4 @@
+import type { Segment } from "@/lib/paribhasha";
 import type { Paragraph } from "@/lib/types";
 
 // Block rendering exactly per contract §3.1. Respect align + indent_level
@@ -18,10 +19,41 @@ function Marker({ marker }: { marker: string }) {
   return <span className="me-2 font-semibold text-(--reader-ink-soft)">{marker}</span>;
 }
 
+/**
+ * Book text, with परिभाषा headwords marked when the reader has asked for it.
+ *
+ * Rendered as React nodes, never as HTML — book text can never inject markup,
+ * the same rule the search snippet highlighter follows.
+ *
+ * The marks are plain spans: no `role="button"`, no tab stop. A fifth of the
+ * words on a page carry a definition, so announcing each of them as a button
+ * would make the chapter unlistenable and untabbable. The tap is picked up by
+ * one delegated handler on the content root, and readers using a keyboard or
+ * a screen reader reach the same definitions by selecting the word, which is
+ * how the bookmark / note / copy actions already work.
+ */
+function Text({ text, segments }: { text: string; segments?: Segment[] | null }) {
+  if (!segments) return <>{text}</>;
+  return (
+    <>
+      {segments.map((s, i) =>
+        s.word ? (
+          <span key={i} data-paribhasha={s.word} className="paribhasha-word">
+            {s.text}
+          </span>
+        ) : (
+          s.text
+        )
+      )}
+    </>
+  );
+}
+
 /** One paragraph block. Font sizing inherits from the reader root scale. */
-export function Block({ para }: { para: Paragraph }) {
+export function Block({ para, segments }: { para: Paragraph; segments?: Segment[] | null }) {
   const align = ALIGN[para.align] ?? "text-left";
   const indent = indentStyle(para.indent_level);
+  const text = <Text text={para.text_hi} segments={segments} />;
 
   switch (para.block_type) {
     case "heading":
@@ -42,7 +74,7 @@ export function Block({ para }: { para: Paragraph }) {
       return (
         <p lang="hi" className={`hi my-1.5 ${align}`} style={indentStyle(para.indent_level + 1)}>
           <Marker marker={para.marker} />
-          {para.text_hi}
+          {text}
         </p>
       );
     case "verse":
@@ -56,7 +88,7 @@ export function Block({ para }: { para: Paragraph }) {
           style={indent}
         >
           <Marker marker={para.marker} />
-          {para.text_hi}
+          {text}
         </p>
       );
     case "quote":
@@ -67,7 +99,7 @@ export function Block({ para }: { para: Paragraph }) {
           style={{ ...indent, borderColor: "var(--ws-ink)" }}
         >
           <Marker marker={para.marker} />
-          {para.text_hi}
+          {text}
         </blockquote>
       );
     case "figure": {
@@ -135,7 +167,7 @@ export function Block({ para }: { para: Paragraph }) {
       return (
         <p lang="hi" className={`hi my-3 ${align}`} style={indent}>
           <Marker marker={para.marker} />
-          {para.text_hi}
+          {text}
           {para.footnote_text && (
             <span className="ms-1 align-super text-[0.7em] text-(--reader-ink-soft)" title={para.footnote_text}>
               *

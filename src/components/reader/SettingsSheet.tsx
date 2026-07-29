@@ -51,6 +51,8 @@ interface SettingsSheetProps {
   tapZones: boolean;
   onTapZones: (v: boolean) => void;
   showTapZones: boolean;
+  glossaryUnderline: boolean;
+  onGlossaryUnderline: (v: boolean) => void;
   onGoToPage: () => void;
 }
 
@@ -196,32 +198,24 @@ export function SettingsSheet(p: SettingsSheetProps) {
         </Row>
 
         {p.showTapZones && (
-          <label className="flex items-center justify-between gap-4">
-            <span className="min-w-0">
-              <span className="block text-sm font-medium">Tap edges to turn pages</span>
-              <span className="block text-xs text-(--reader-ink-soft)">
-                Off: swipe to turn, tap anywhere for controls.
-              </span>
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={p.tapZones}
-              aria-label="Tap edges to turn pages"
-              onClick={() => p.onTapZones(!p.tapZones)}
-              className={`h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors ${
-                p.tapZones ? "" : "bg-current/20"
-              }`}
-              style={p.tapZones ? { background: "var(--ws-color)" } : undefined}
-            >
-              <span
-                className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                  p.tapZones ? "translate-x-5" : ""
-                }`}
-              />
-            </button>
-          </label>
+          <Toggle
+            label="Tap edges to turn pages"
+            hint="Off: swipe to turn, tap anywhere for controls."
+            checked={p.tapZones}
+            onChange={p.onTapZones}
+          />
         )}
+
+        {/* Off by default, and it stays wherever the reader leaves it. The
+            hint is the important half: with this off the definitions are
+            still there, just not advertised — so nobody has to accept a
+            marked-up page to get them. */}
+        <Toggle
+          label="परिभाषा underline दिखाएँ"
+          hint="बंद रहने पर भी: किसी शब्द को दबाकर रखें → परिभाषा।"
+          checked={p.glossaryUnderline}
+          onChange={p.onGlossaryUnderline}
+        />
 
         {p.showTapZones && (
           <button
@@ -234,6 +228,48 @@ export function SettingsSheet(p: SettingsSheetProps) {
         )}
       </div>
     </Sheet>
+  );
+}
+
+function Toggle({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between gap-4">
+      <span className="min-w-0">
+        <span lang="hi" className="hi block text-sm font-medium">
+          {label}
+        </span>
+        <span lang="hi" className="hi block text-xs text-(--reader-ink-soft)">
+          {hint}
+        </span>
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={`h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors ${
+          checked ? "" : "bg-current/20"
+        }`}
+        style={checked ? { background: "var(--ws-color)" } : undefined}
+      >
+        <span
+          className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            checked ? "translate-x-5" : ""
+          }`}
+        />
+      </button>
+    </label>
   );
 }
 

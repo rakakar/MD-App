@@ -39,7 +39,10 @@ import {
   type ReadingMode,
 } from "@/lib/storage";
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
+import type { Matcher, Segment } from "@/lib/paribhasha";
 import { Block } from "./blocks";
+import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
+import { ParibhashaSheet } from "./ParibhashaSheet";
 import { Sheet } from "./Sheet";
 import { SettingsSheet } from "./SettingsSheet";
 import { TocSheet } from "./TocSheet";
@@ -88,8 +91,22 @@ const THEME_BG: Record<string, string> = {
   dark: "#17140f",
 };
 
-export function Reader({ book, initialChapterNumber, initialChapter }: ReaderProps) {
+/**
+ * The glossary is loaded once for the whole reading session and shared by the
+ * page text, the selection bar and the definition sheet — hence the provider
+ * here rather than inside any one of them.
+ */
+export function Reader(props: ReaderProps) {
+  return (
+    <GlossaryProvider>
+      <ReaderView {...props} />
+    </GlossaryProvider>
+  );
+}
+
+function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps) {
   const { user, loading: authLoading } = useAuth();
+  const { matcher } = useGlossary();
   const player = usePlayer();
   const loadChapter = useChapterLoader(book.code);
   useSeedCache(book.code, initialChapter);
@@ -104,6 +121,9 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const [lineHeight, setLineHeight] = useState(1.85);
   const [margin, setMargin] = useState(1);
   const [tapZones, setTapZones] = useState(true);
+  const [glossaryUnderline, setGlossaryUnderline] = useState(false);
+  /** the word whose definition is open, if any */
+  const [defineWord, setDefineWord] = useState<string | null>(null);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -128,7 +148,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // any modal surface pins the chrome open
-  const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen;
+  const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
   const chrome = useReaderChrome(mode, modalOpen);
 
   const pages: ReaderPage[] = useMemo(
@@ -160,6 +180,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     setLineHeight(nearestStep(LINE_HEIGHTS, p.lineHeight));
     setMargin(p.margin);
     setTapZones(p.tapZones);
+    setGlossaryUnderline(p.glossaryUnderline);
     if (p.readingMode) setMode(p.readingMode);
     setPrefsLoaded(true);
     if (!p.immersiveHintShown) {
@@ -493,8 +514,13 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     const el = e.target as HTMLElement;
-    // never hijack a control, a link, or a horizontally scrollable table
-    if (el.closest("[data-reader-chrome],a,button,input,textarea,select,label,table")) {
+    // never hijack a control, a link, a glossary word, or a horizontally
+    // scrollable table
+    if (
+      el.closest(
+        "[data-reader-chrome],[data-paribhasha],a,button,input,textarea,select,label,table"
+      )
+    ) {
       gesture.current = null;
       return;
     }
@@ -536,6 +562,32 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     },
     [mode, tapZones, advance, chrome]
   );
+
+  /**
+   * One handler for every marked word on the page, rather than a listener per
+   * span — a page carries a few hundred of them.
+   *
+   * A tap that ends a text selection is ignored: the reader was highlighting a
+   * phrase, and yanking a dictionary over it is not what they asked for.
+   */
+  const onContentClick = useCallback((e: React.MouseEvent) => {
+    const mark = (e.target as HTMLElement).closest?.("[data-paribhasha]");
+    if (!mark) return;
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) return;
+    const word = mark.getAttribute("data-paribhasha");
+    if (!word) return;
+    track("paribhasha_lookup", { source: "underline" });
+    setDefineWord(word);
+  }, []);
+
+  /** the selection bar's परिभाषा action — shown only for an exact headword */
+  const selectedHeadword = useMemo(() => {
+    const text = selection?.text.trim();
+    if (!text || !matcher) return null;
+    const normalized = text.replace(/\s+/g, " ");
+    return matcher.has(normalized) ? normalized : null;
+  }, [selection, matcher]);
 
   // prefetch next chapter near the end of this one (PRD §0.4)
   useEffect(() => {
@@ -822,6 +874,11 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
     setTapZones(v);
     setPrefs({ tapZones: v });
   };
+  const changeGlossaryUnderline = (v: boolean) => {
+    setGlossaryUnderline(v);
+    setPrefs({ glossaryUnderline: v });
+    track("paribhasha_underline_toggle", { state: v ? "on" : "off" });
+  };
 
   // ---- render ----
   const page = pages[pageIndex];
@@ -919,6 +976,7 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
 
         <div
           ref={contentRef}
+          onClick={onContentClick}
           className="reader-content min-h-[70dvh] pb-24 pt-3"
         >
           {chapterLoading && (
@@ -928,9 +986,12 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
           {!chapterLoading && chapter && mode === "page" && page && (
             <section aria-label={`Page ${page.label}`}>
               <div className="mb-4 flex justify-center">{pageChrome(page)}</div>
-              {page.paragraphs.map((p) => (
-                <ParaWrap key={p.canonical_ref} para={p} activeSeq={activeSeq} pageKey={page.key} selectedRef={selection?.para.canonical_ref} />
-              ))}
+              <PageParas
+                page={page}
+                matcher={glossaryUnderline ? matcher : null}
+                activeSeq={activeSeq}
+                selectedRef={selection?.para.canonical_ref}
+              />
               <nav aria-label="Page navigation" className="mt-10 flex items-center justify-between text-sm">
                 <button
                   type="button"
@@ -964,9 +1025,12 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
                     {pageChrome(pg)}
                     <span className="h-px flex-1 bg-(--reader-rule)" />
                   </div>
-                  {pg.paragraphs.map((p) => (
-                    <ParaWrap key={p.canonical_ref} para={p} activeSeq={activeSeq} pageKey={pg.key} selectedRef={selection?.para.canonical_ref} />
-                  ))}
+                  <PageParas
+                    page={pg}
+                    matcher={glossaryUnderline ? matcher : null}
+                    activeSeq={activeSeq}
+                    selectedRef={selection?.para.canonical_ref}
+                  />
                 </section>
               ))}
               <nav aria-label="Chapter navigation" className="mt-12 flex items-center justify-between gap-3 text-sm">
@@ -1075,6 +1139,20 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
           className="fixed inset-x-0 z-50 mx-auto flex w-fit max-w-[95vw] items-center gap-0.5 rounded-full border border-(--reader-rule) bg-(--reader-bg) px-1.5 py-1 shadow-xl"
           style={{ bottom: `calc(${bottomOffset} + 3.5rem)` }}
         >
+          {/* The way a definition is reached with underlining off: press and
+              hold selects the word, and this appears only when the glossary
+              actually has it — so it never offers a meaning it cannot give. */}
+          {selectedHeadword && (
+            <ActionBtn
+              onClick={() => {
+                track("paribhasha_lookup", { source: "selection" });
+                setDefineWord(selectedHeadword);
+                clearSelection();
+              }}
+            >
+              <span lang="hi" className="hi">परिभाषा</span>
+            </ActionBtn>
+          )}
           <ActionBtn onClick={() => doBookmark(selection.para.canonical_ref)}>Bookmark</ActionBtn>
           <ActionBtn
             onClick={() => {
@@ -1093,6 +1171,8 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
       )}
 
       {/* ---- sheets ---- */}
+      <ParibhashaSheet word={defineWord} onClose={() => setDefineWord(null)} />
+
       <TocSheet
         open={tocOpen}
         onClose={() => setTocOpen(false)}
@@ -1120,6 +1200,8 @@ export function Reader({ book, initialChapterNumber, initialChapter }: ReaderPro
         tapZones={tapZones}
         onTapZones={changeTapZones}
         showTapZones={mode === "page"}
+        glossaryUnderline={glossaryUnderline}
+        onGlossaryUnderline={changeGlossaryUnderline}
         onGoToPage={() => {
           setSettingsOpen(false);
           setGotoOpen(true);
@@ -1286,16 +1368,71 @@ function ActionBtn({
   );
 }
 
+/**
+ * Block types that are never marked for परिभाषा: headings and subheadings are
+ * titles rather than reading, and a figure caption or table cell is too tight
+ * to carry underlines.
+ */
+const UNMARKED_BLOCKS = new Set(["heading", "subheading", "figure", "table"]);
+
+/**
+ * One display page's paragraphs, with the glossary marks worked out for the
+ * page as a whole.
+ *
+ * The page is the unit on purpose: `matcher.segment` marks each word only on
+ * its first appearance, and "first" has to mean something the reader can see.
+ * Doing it per paragraph would underline the same word six times down a page;
+ * doing it per chapter would mark a word on page 3 and leave it bare on page
+ * 40, where the reader has long since lost the definition.
+ */
+function PageParas({
+  page,
+  matcher,
+  activeSeq,
+  selectedRef,
+}: {
+  page: ReaderPage;
+  /** null when the reader has underlining off, or the index has not arrived */
+  matcher: Matcher | null;
+  activeSeq: number | null;
+  selectedRef?: string;
+}) {
+  const segments = useMemo(
+    () =>
+      matcher?.segment(
+        page.paragraphs.map((p) => (UNMARKED_BLOCKS.has(p.block_type) ? null : p.text_hi))
+      ) ?? null,
+    [matcher, page]
+  );
+
+  return (
+    <>
+      {page.paragraphs.map((p, i) => (
+        <ParaWrap
+          key={p.canonical_ref}
+          para={p}
+          pageKey={page.key}
+          activeSeq={activeSeq}
+          selectedRef={selectedRef}
+          segments={segments?.[i] ?? null}
+        />
+      ))}
+    </>
+  );
+}
+
 function ParaWrap({
   para,
   pageKey,
   activeSeq,
   selectedRef,
+  segments,
 }: {
   para: Paragraph;
   pageKey: string;
   activeSeq: number | null;
   selectedRef?: string;
+  segments?: Segment[] | null;
 }) {
   const isActive = activeSeq === para.sequence;
   const isSelected = selectedRef === para.canonical_ref;
@@ -1308,7 +1445,7 @@ function ParaWrap({
         isSelected ? "bg-(--ws-color)/8" : ""
       }`}
     >
-      <Block para={para} />
+      <Block para={para} segments={segments} />
     </div>
   );
 }
