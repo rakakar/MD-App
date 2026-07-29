@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { EventsView } from "@/components/connect/EventsView";
-import { PageContainer } from "@/components/ui";
+import { PageContainer, SegmentedNav } from "@/components/ui";
 import { getEvents } from "@/lib/api";
 import type { EventItem } from "@/lib/types";
 
@@ -17,8 +17,18 @@ export default async function ConnectPage() {
 
   return (
     <PageContainer>
-      <h1 className="text-xl font-bold">Connect · संपर्क</h1>
+      <h1 className="font-display text-2xl font-medium">Connect · <span lang="hi" className="hi">संपर्क</span></h1>
       <p className="mt-1 text-sm text-ink-soft">Upcoming shivirs, gatherings and updates.</p>
+      {/* One workspace, two sections (design 9A) — News waits on a BE feed. */}
+      <div className="mt-3">
+        <SegmentedNav
+          label="Connect sections"
+          items={[
+            { label: "Events", href: "/connect", active: true },
+            { label: "Centres", href: "/connect/centers", active: false },
+          ]}
+        />
+      </div>
       <div className="mt-4">
         <EventsView events={events} />
       </div>

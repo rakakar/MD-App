@@ -12,8 +12,21 @@ import {
 } from "@/lib/events";
 import type { EventItem } from "@/lib/types";
 
+/** Hindi labels for the BE's event_type choices (design 9A badge). */
+const TYPE_LABELS: Record<string, string> = {
+  shivir: "शिविर",
+  workshop: "कार्यशाला",
+  satsang: "सत्संग",
+  other: "अन्य",
+};
+
+export function eventTypeLabel(t: string): string {
+  return TYPE_LABELS[t] ?? t;
+}
+
 function EventRow({ e }: { e: EventItem }) {
   const d = eventStart(e);
+  const type = typeof e.event_type === "string" ? e.event_type : "";
   return (
     <Link
       href={`/connect/events/${e.id}`}
@@ -28,13 +41,29 @@ function EventRow({ e }: { e: EventItem }) {
           {d ? d.toLocaleString("en-IN", { month: "short" }) : ""}
         </span>
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p lang="hi" className="hi truncate text-sm font-semibold">{eventTitle(e)}</p>
         <p className="truncate text-xs text-ink-soft">
           {d ? longDate(d) : "Date TBD"}
           {eventLocation(e) ? ` · ${eventLocation(e)}` : ""}
         </p>
+        {type && (
+          <p lang="hi" className="hi mt-1 inline-block rounded-full border border-rule px-2 py-0.5 text-[11px] text-ink-soft">
+            {eventTypeLabel(type)}
+          </p>
+        )}
       </div>
+      {/* The design's per-card Register action. A styled span, not a nested
+          link — the whole row already navigates to the event page, where the
+          actual form lives; this badge says registration is open from here. */}
+      {e.registration_open === true && (
+        <span
+          className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
+          style={{ background: "var(--ws-color)" }}
+        >
+          Register
+        </span>
+      )}
     </Link>
   );
 }
@@ -124,35 +153,98 @@ function MonthCalendar({ events }: { events: EventItem[] }) {
 export function EventsView({ events }: { events: EventItem[] }) {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [showPast, setShowPast] = useState(false);
-  const upcoming = upcomingEvents(events);
-  const past = pastEvents(events);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+
+  // Filter chips (design 9A) for the one facet the BE actually carries:
+  // event_type. Teacher, language and mode are not model fields yet, so
+  // offering those chips would be a row of dead controls. Counts on the
+  // chips, and a chip only exists when at least one upcoming event has it.
+  const typeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of upcomingEvents(events)) {
+      const t = typeof e.event_type === "string" ? e.event_type : "";
+      if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    return counts;
+  }, [events]);
+
+  const filtered =
+    typeFilter === null ? events : events.filter((e) => e.event_type === typeFilter);
+  const upcoming = upcomingEvents(filtered);
+  const past = pastEvents(filtered);
 
   return (
     <div>
-      <div className="flex overflow-hidden rounded-full border border-rule bg-white text-xs" role="radiogroup" aria-label="View">
-        {(["list", "calendar"] as const).map((v) => (
-          <button
-            key={v}
-            type="button"
-            role="radio"
-            aria-checked={view === v}
-            onClick={() => setView(v)}
-            className={`px-4 py-1.5 capitalize ${view === v ? "font-semibold text-white" : ""}`}
-            style={view === v ? { background: "var(--ws-color)" } : undefined}
-          >
-            {v}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex overflow-hidden rounded-full border border-rule bg-white text-xs" role="radiogroup" aria-label="View">
+          {(["list", "calendar"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={view === v}
+              onClick={() => setView(v)}
+              className={`px-4 py-1.5 capitalize ${view === v ? "font-semibold text-white" : ""}`}
+              style={view === v ? { background: "var(--ws-color)" } : undefined}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+
+        {typeCounts.size > 1 && (
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Event type">
+            {[...typeCounts.entries()].map(([t, n]) => {
+              const selected = typeFilter === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setTypeFilter(selected ? null : t)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                    selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
+                  }`}
+                  style={selected ? { background: "var(--ws-color)" } : undefined}
+                >
+                  <span lang="hi" className="hi">{eventTypeLabel(t)}</span> · {n}
+                </button>
+              );
+            })}
+            {typeFilter !== null && (
+              <button
+                type="button"
+                onClick={() => setTypeFilter(null)}
+                className="text-xs text-ink-soft underline underline-offset-2"
+              >
+                Clear filter
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mt-4">
         {view === "calendar" ? (
-          <MonthCalendar events={events} />
+          <MonthCalendar events={filtered} />
         ) : upcoming.length > 0 ? (
           <div className="flex flex-col gap-3">
             {upcoming.map((e) => (
               <EventRow key={e.id} e={e} />
             ))}
+          </div>
+        ) : typeFilter !== null ? (
+          <div className="rounded-2xl border border-dashed border-rule bg-white/50 p-8 text-center">
+            <p lang="hi" className="hi text-sm font-medium">इस प्रकार का कोई आगामी आयोजन नहीं</p>
+            <button
+              type="button"
+              onClick={() => setTypeFilter(null)}
+              className="mt-2 text-xs font-medium underline underline-offset-2"
+              style={{ color: "var(--ws-ink)" }}
+            >
+              Clear filter
+            </button>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-rule bg-white/50 p-8 text-center">

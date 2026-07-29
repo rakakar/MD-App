@@ -83,6 +83,38 @@ export function FilterChips({
   );
 }
 
+/**
+ * A link-based segmented control for sibling destinations (design 5A, 9A):
+ * Events | Centres on Connect, प्रवचन | Videos on Listen. Links, not state —
+ * each segment is its own URL, so the segments survive reload and sharing.
+ */
+export function SegmentedNav({
+  label,
+  items,
+}: {
+  label: string;
+  items: { label: React.ReactNode; href: string; active: boolean }[];
+}) {
+  return (
+    <nav
+      aria-label={label}
+      className="inline-flex overflow-hidden rounded-full border border-rule bg-white text-sm"
+    >
+      {items.map((it) => (
+        <Link
+          key={it.href}
+          href={it.href}
+          aria-current={it.active ? "page" : undefined}
+          className={`px-4 py-1.5 ${it.active ? "font-semibold text-white" : "text-ink"}`}
+          style={it.active ? { background: "var(--ws-color)" } : undefined}
+        >
+          {it.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export function BookCard({ book }: { book: BookSummary }) {
   // `author` stays ए. नागराज on a translation, so a card that showed only the
   // author would credit him with a student's rendering. The translator is the

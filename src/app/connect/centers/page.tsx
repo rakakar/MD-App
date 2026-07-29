@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { EmptyState, PageContainer } from "@/components/ui";
+import { EmptyState, PageContainer, SegmentedNav } from "@/components/ui";
 import { getCenters } from "@/lib/api";
 import type { CenterItem } from "@/lib/types";
 
@@ -27,8 +27,17 @@ export default async function CentersPage() {
 
   return (
     <PageContainer>
-      <h1 className="text-xl font-bold">Centers</h1>
-      <p className="mt-1 text-sm text-ink-soft">Study centers and contacts, by region.</p>
+      <h1 className="font-display text-2xl font-medium">Centres</h1>
+      <p className="mt-1 text-sm text-ink-soft">Study centres and contacts, by region.</p>
+      <div className="mt-3">
+        <SegmentedNav
+          label="Connect sections"
+          items={[
+            { label: "Events", href: "/connect", active: false },
+            { label: "Centres", href: "/connect/centers", active: true },
+          ]}
+        />
+      </div>
 
       {centers.length === 0 ? (
         <div className="mt-5">
@@ -51,21 +60,28 @@ export default async function CentersPage() {
                   {c.activities && (
                     <p lang="hi" className="hi mt-2 text-sm">{c.activities}</p>
                   )}
-                  <div className="mt-2 flex flex-wrap gap-3 text-sm">
-                    {c.contact_name && <span className="text-ink-soft">{c.contact_name}</span>}
+                  {c.contact_name && (
+                    <p className="mt-2 text-sm text-ink-soft">
+                      <span lang="hi" className="hi">संपर्क:</span> {c.contact_name}
+                    </p>
+                  )}
+                  {/* Call / Email / Directions action chips (design 9A):
+                      icon-and-text, ≥44px tap targets, straight into the
+                      device dialer / mail app / maps — no in-app form. */}
+                  <div className="mt-3 flex flex-wrap gap-2 text-sm">
                     {c.contact_phone && (
-                      <a href={`tel:${c.contact_phone}`} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-ink)" }}>
-                        {c.contact_phone}
+                      <a href={`tel:${c.contact_phone}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-white px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
+                        <span aria-hidden>📞</span> Call
                       </a>
                     )}
                     {c.contact_email && (
-                      <a href={`mailto:${c.contact_email}`} className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-ink)" }}>
-                        {c.contact_email}
+                      <a href={`mailto:${c.contact_email}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-white px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
+                        <span aria-hidden>✉️</span> Email
                       </a>
                     )}
                     {c.map_url && (
-                      <a href={c.map_url} target="_blank" rel="noopener noreferrer" className="font-medium underline-offset-2 hover:underline" style={{ color: "var(--ws-ink)" }}>
-                        Map ↗
+                      <a href={c.map_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-white px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
+                        <span aria-hidden>📍</span> Directions
                       </a>
                     )}
                   </div>
