@@ -6,6 +6,8 @@ import { Icon } from "@/components/shell/icons";
 import { EmptyState } from "@/components/ui";
 import { getParibhasha, type ParibhashaPage } from "@/lib/api";
 import type { ParibhashaWord } from "@/lib/types";
+import { DefinitionText, useDefinitionSegments } from "./DefinitionText";
+import { DefinitionCount, DefinitionList } from "./WordTrail";
 
 /**
  * The अ आ इ index. Written out rather than derived from the data: a letter
@@ -212,11 +214,17 @@ function LetterChip({
  * One entry. It opens in place rather than navigating: this is a list people
  * scan, and paying a page load to read two lines would make scanning it
  * impossible. `/paribhasha/{id}` still exists for sharing one word.
+ *
+ * The headword is its own control rather than the whole card being one, so the
+ * definitions underneath can carry their own buttons — the glossary terms
+ * inside them. Nesting those in a card-wide button would be invalid markup and
+ * would swallow every tap into "expand".
  */
 function WordRow({ word }: { word: ParibhashaWord }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
-  const rest = word.definitions.slice(1);
+  const many = word.definitions.length > 1;
+  const segments = useDefinitionSegments(word.definitions, word.hindi);
 
   return (
     <li className="overflow-hidden rounded-2xl border border-rule bg-white">
@@ -225,41 +233,39 @@ function WordRow({ word }: { word: ParibhashaWord }) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="block w-full p-4 text-left"
+        className="flex w-full items-baseline gap-2 px-4 pt-4 text-left"
       >
-        <span className="flex items-baseline gap-2">
-          <span lang="hi" className="hi text-base font-semibold">
-            {word.hindi}
-          </span>
-          {word.hinglish && <span className="text-xs text-ink-soft">{word.hinglish}</span>}
-          {rest.length > 0 && (
+        <span lang="hi" className="hi text-base font-semibold">
+          {word.hindi}
+        </span>
+        {word.hinglish && <span className="text-xs text-ink-soft">{word.hinglish}</span>}
+        {/* Two definitions is a fact about the entry, not about the disclosure
+            state, so it is on the row whether it is open or shut. */}
+        {many && (
+          <span className="ml-auto flex shrink-0 items-center gap-2">
+            <DefinitionCount n={word.definitions.length} />
             <span
               aria-hidden
-              className={`ml-auto shrink-0 text-xs text-ink-soft transition-transform ${
-                open ? "rotate-180" : ""
-              }`}
+              className={`text-xs text-ink-soft transition-transform ${open ? "rotate-180" : ""}`}
             >
               ⌄
             </span>
-          )}
-        </span>
-        {/* The first definition is always visible — for most entries it is the
-            whole answer, and hiding it would make every row a click. */}
-        {word.definitions[0] && (
-          <span
-            lang="hi"
-            className={`hi mt-1 block text-[15px] leading-relaxed ${open ? "" : "line-clamp-3"}`}
-          >
-            {word.definitions[0]}
           </span>
         )}
       </button>
-      <div id={panelId} hidden={!open} className="px-4 pb-4">
-        {rest.map((d, i) => (
-          <p key={i} lang="hi" className="hi mt-2 text-[15px] leading-relaxed text-ink-soft">
-            {d}
-          </p>
-        ))}
+
+      <div id={panelId} className="px-4 pb-4 pt-1">
+        {/* Closed, the first definition still shows — for most entries it is
+            the whole answer, and hiding it would make every row a click. */}
+        {open || !many ? (
+          <DefinitionList definitions={word.definitions} segments={segments} />
+        ) : (
+          word.definitions[0] && (
+            <p lang="hi" className="hi line-clamp-3 text-[15px] leading-relaxed">
+              <DefinitionText text={word.definitions[0]} segments={segments[0]} />
+            </p>
+          )
+        )}
       </div>
     </li>
   );

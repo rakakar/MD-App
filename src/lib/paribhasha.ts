@@ -23,8 +23,13 @@
  * Devanagari letters and matras (U+0900–U+097F), plus ZWNJ/ZWJ which sit
  * inside a word and must not split it. Written as escapes because both
  * joiners are invisible in an editor.
+ *
+ * The two dandas (।, U+0964 and ॥, U+0965) are cut out of the middle of the
+ * range: they are the script's full stop, and inside the class they glue
+ * themselves to the last word of every sentence — "प्रमाण।" is not the
+ * headword प्रमाण, so the final word of a sentence could never be marked.
  */
-const WORD_CHARS = /[ऀ-ॿ‌‍]+/g;
+const WORD_CHARS = /[ऀ-ॣ०-ॿ‌‍]+/g;
 
 /**
  * What may sit between the words of a phrase: whitespace or a hyphen, nothing

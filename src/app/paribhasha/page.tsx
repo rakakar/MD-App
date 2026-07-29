@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { GlossaryBrowser } from "@/components/paribhasha/GlossaryBrowser";
+import { WordTrailProvider } from "@/components/paribhasha/WordTrail";
+import { GlossaryProvider } from "@/components/reader/GlossaryProvider";
 import { PageContainer } from "@/components/ui";
 import { getParibhasha } from "@/lib/api";
 
@@ -53,11 +55,19 @@ export default async function ParibhashaPage({
         </span>
       </p>
 
-      {/* Keyed on the letter so stepping to another one starts the list over
-          with the words the server just fetched, rather than reusing the
-          previous letter's rows. Typing does not change the key — that is
-          what keeps the keyboard from closing mid-word. */}
-      <GlossaryBrowser key={letter ?? "all"} initial={initial} q={q} letter={letter} />
+      {/* The same headword index the reader uses, so the words *inside* these
+          definitions are marked and tappable — the glossary is written in the
+          vocabulary it defines, and following that vocabulary is the whole
+          point of a dictionary. The trail above it remembers the path. */}
+      <GlossaryProvider>
+        <WordTrailProvider>
+          {/* Keyed on the letter so stepping to another one starts the list
+              over with the words the server just fetched, rather than reusing
+              the previous letter's rows. Typing does not change the key — that
+              is what keeps the keyboard from closing mid-word. */}
+          <GlossaryBrowser key={letter ?? "all"} initial={initial} q={q} letter={letter} />
+        </WordTrailProvider>
+      </GlossaryProvider>
     </PageContainer>
   );
 }

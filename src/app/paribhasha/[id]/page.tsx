@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { WordEntry } from "@/components/paribhasha/WordEntry";
 import { PageContainer } from "@/components/ui";
 import { getParibhashaWord } from "@/lib/api";
 
@@ -56,22 +57,10 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
       {word.hinglish && <p className="mt-0.5 text-sm text-ink-soft">{word.hinglish}</p>}
 
       {/* One explanation in the order a manager arranged it (§14.1), never a
-          numbered list of competing senses. */}
+          numbered list of competing senses — bulleted only so a second
+          definition is visibly a second one. */}
       <div className="mt-5 rounded-2xl border border-rule bg-white p-4">
-        {word.definitions.map((d, i) => (
-          <p
-            key={i}
-            lang="hi"
-            className={`hi text-[15px] leading-relaxed ${i === 0 ? "" : "mt-3 text-ink-soft"}`}
-          >
-            {d}
-          </p>
-        ))}
-        {word.definitions.length === 0 && (
-          <p lang="hi" className="hi text-sm text-ink-soft">
-            इस शब्द की परिभाषा अभी दर्ज नहीं है।
-          </p>
-        )}
+        <WordEntry word={word} />
       </div>
 
       <Link
