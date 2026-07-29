@@ -32,6 +32,9 @@ export type GaEvent =
   | "bookmark_add"
   | "note_add"
   | "sutra_view"
+  // Whether readers walk past today's verse at all — if nobody uses the
+  // arrows, the curated pool is deeper than anyone wants it to be.
+  | "sutra_browse"
   | "sutra_share"
   | "event_view"
   | "event_register"

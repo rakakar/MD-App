@@ -13,11 +13,17 @@ import type { SutraOfTheDay } from "./types";
 
 export interface SutraSource {
   getToday(): Promise<SutraOfTheDay | null>;
+  /** One step along the curated sequence, for the card's ← → arrows. */
+  getAt(offset: number): Promise<SutraOfTheDay | null>;
 }
 
 class ApiSutraSource implements SutraSource {
   getToday(): Promise<SutraOfTheDay | null> {
     return getSutraOfTheDay();
+  }
+
+  getAt(offset: number): Promise<SutraOfTheDay | null> {
+    return getSutraOfTheDay(offset);
   }
 }
 

@@ -129,6 +129,9 @@ export interface ParaResolution extends Paragraph {
  */
 export interface SutraOfTheDay extends ParaResolution {
   sutra_date: string; // the local (IST) date this pick belongs to
+  offset: number; // steps from today's pick; 0 is always today
+  has_prev: boolean;
+  has_next: boolean;
 }
 
 // ---- §9 live endpoints (shapes may still evolve; keep fields optional) ----

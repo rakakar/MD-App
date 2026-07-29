@@ -124,13 +124,16 @@ export async function resolvePara(canonicalRef: string): Promise<ParaResolution>
 }
 
 /**
- * Sutra of the day (contract §2.6). A 404 is the documented "nothing curated
- * for today" answer, not a failure — it becomes null so the home page simply
- * renders no card. Every other error still throws.
+ * Sutra of the day (contract §2.6). `offset` steps along the curated sequence
+ * for the card's ← → arrows; 0 is always today's pick.
+ *
+ * A 404 is the documented "nothing there" answer, not a failure — it becomes
+ * null so the home page simply renders no card (and a walked-off-the-end arrow
+ * renders nothing new). Every other error still throws.
  */
-export async function getSutraOfTheDay(): Promise<SutraOfTheDay | null> {
+export async function getSutraOfTheDay(offset = 0): Promise<SutraOfTheDay | null> {
   try {
-    return await apiFetch<SutraOfTheDay>("sutra/today/");
+    return await apiFetch<SutraOfTheDay>(`sutra/today/${qs({ offset: offset || undefined })}`);
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) return null;
     throw e;
