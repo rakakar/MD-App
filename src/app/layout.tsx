@@ -1,32 +1,49 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
+import {
+  Instrument_Sans,
+  Mukta,
+  Newsreader,
+  Tiro_Devanagari_Hindi,
+} from "next/font/google";
 import { Analytics } from "@/components/consent/ConsentBanner";
 import { InlineScript } from "@/components/InlineScript";
 import { AppShell } from "@/components/shell/AppShell";
 import "./globals.css";
 
-// UI chrome: Latin sans; Hindi content: Noto Serif Devanagari, self-hosted
-// via next/font and preloaded — no CLS from font swap (PRD §5).
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Type system per the design spec (design_docs/screens): Instrument Sans for
+// chrome and English, Newsreader for display/section titles, Tiro Devanagari
+// Hindi for मूल content, Mukta for Devanagari UI labels. Content faces are
+// self-hosted via next/font and preloaded — no CLS from font swap (PRD §5).
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
 });
 
-const notoSerifDevanagari = Noto_Serif_Devanagari({
-  variable: "--font-noto-serif-devanagari",
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+// Tiro ships a single 400 weight; Devanagari headings that ask for 600/700
+// render via synthesized bold, which the spec's own comps accept.
+const tiroDevanagariHindi = Tiro_Devanagari_Hindi({
+  variable: "--font-tiro-devanagari",
   subsets: ["devanagari", "latin"],
-  weight: ["400", "600", "700"],
+  weight: "400",
   display: "swap",
   preload: true,
 });
 
-// The alternate reading face (settings → Typeface). Not preloaded: most
-// readers never switch, and preloading both would cost every first paint a
-// second Devanagari download for a face it will not use.
-const notoSansDevanagari = Noto_Sans_Devanagari({
-  variable: "--font-noto-sans-devanagari",
+// Devanagari UI labels (chapter rows, tabs) and the alternate reading face
+// (settings → Typeface). Not preloaded: it appears below the fold on most
+// first paints, and preloading both Devanagari faces would cost every first
+// paint a second download.
+const mukta = Mukta({
+  variable: "--font-mukta",
   subsets: ["devanagari", "latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
   preload: false,
 });
@@ -65,7 +82,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#A54F14",
+  themeColor: "#A64E12",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -106,7 +123,7 @@ export default function RootLayout({
       data-reader-margin="1"
       data-reader-face="serif"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${notoSerifDevanagari.variable} ${notoSansDevanagari.variable} h-full antialiased`}
+      className={`${instrumentSans.variable} ${newsreader.variable} ${tiroDevanagariHindi.variable} ${mukta.variable} h-full antialiased`}
     >
       <head>
         <InlineScript html={THEME_SCRIPT} />

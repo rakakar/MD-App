@@ -49,9 +49,9 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "originals",
     name: "Originals",
     nameHi: "मूल ग्रंथ",
-    // one step deeper than the other four: saffron is the lightest of the
-    // five, and #B45817 still measured 3.98:1 as text on the sepia page
-    color: "#A54F14",
+    // designer palette (spec 10A), each hue deepened only as far as AA on the
+    // sepia reading surface requires — terracotta uses the spec's own 700
+    color: "#A64E12",
     home: "/",
     nav: [
       { label: "Home", href: "/", icon: "home" },
@@ -64,7 +64,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "translations",
     name: "Translations",
     nameHi: "अनुवाद",
-    color: "#17604F",
+    color: "#4A7260",
     home: "/translations",
     nav: [
       { label: "Home", href: "/translations", icon: "home" },
@@ -76,7 +76,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "resources",
     name: "Resources",
     nameHi: "संसाधन",
-    color: "#35608E",
+    color: "#5E5A8C",
     home: "/resources",
     // Three slots, not four. Resources holds files rather than books, so the
     // old "Browse" — a books shelf filtered to this section — pointed at
@@ -91,7 +91,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "journey",
     name: "My Journey",
     nameHi: "मेरी यात्रा",
-    color: "#4B42A5",
+    color: "#89631F",
     home: "/me",
     nav: [
       { label: "Overview", href: "/me", icon: "overview" },
@@ -104,7 +104,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "connect",
     name: "Connect",
     nameHi: "संपर्क",
-    color: "#A53D29",
+    color: "#2F6E86",
     home: "/connect",
     nav: [
       { label: "Events", href: "/connect", icon: "events" },

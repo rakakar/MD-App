@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     // browsers that support it get the edge-to-edge treatment; the rest fall
     // back down the list to plain standalone
     display_override: ["standalone", "minimal-ui"],
-    background_color: "#faf7f2",
-    theme_color: "#A54F14",
+    background_color: "#fdfbf8",
+    theme_color: "#A64E12",
     lang: "hi",
     dir: "ltr",
     categories: ["books", "education", "lifestyle"],

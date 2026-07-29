@@ -1,33 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  /* Workspace identity colours (PRD §2), each darkened ~10% from the original
-     palette. They are used two ways the lighter values could not carry:
-     as a background under white label text, and as text on the page. At
-     #c8621a, white-on-accent measured 4.02:1 and the accent as text 3.89:1 —
-     both under the 4.5:1 AA floor PRD §10 sets for every theme, across some
-     33 filled controls. Same hues, one step deeper, all now ≥4.7:1. */
-  --color-ws-originals: #a54f14;
-  --color-ws-translations: #17604f;
-  --color-ws-resources: #35608e;
-  --color-ws-journey: #4b42a5;
-  --color-ws-connect: #a53d29;
+  /* Workspace identity colours, from the design spec's five matched hues
+     (design_docs/screens 10A: Originals #C8621A · Translations #4F7A67 ·
+     Resources #5E5A8C · Journey #B9862B · Connect #2F6E86). Each is used two
+     ways: as a background under white label text, and as text on the page —
+     so each must clear the 4.5:1 AA floor PRD §10 sets both ways. Three of
+     the five do as published; Originals and Journey are one step deeper
+     (#C8621A measured 4.02:1 under white — the spec's own 700 exists for the
+     same reason), and Translations/Journey needed a nudge past the sepia
+     surface. All values here measure ≥4.55:1 as text on paper AND sepia, and
+     ≥4.6:1 under white labels. */
+  --color-ws-originals: #a64e12;
+  --color-ws-translations: #4a7260;
+  --color-ws-resources: #5e5a8c;
+  --color-ws-journey: #89631f;
+  --color-ws-connect: #2f6e86;
 
-  --color-surface: #faf7f2;
-  --color-ink: #262019;
-  --color-ink-soft: #6b6155;
-  --color-rule: #e5ddd1;
+  /* Terracotta stays the app-level accent on shared chrome (spec 10A);
+     scale from spec 6A. */
+  --color-accent: #c8621a;
+  --color-accent-deep: #a64e12;
+  --color-accent-tint: #fdf3ea;
 
-  --font-devanagari: var(--font-noto-serif-devanagari), "Noto Serif Devanagari",
+  /* Warm ink & paper neutrals (spec 6A). "Muted" #9C9187 is 2.98:1 on paper
+     — decoration only, never text; secondary text uses Body. */
+  --color-surface: #fdfbf8;
+  --color-canvas: #efeae3;
+  --color-ink: #1a1613;
+  --color-ink-soft: #4a413a;
+  --color-muted: #9c9187;
+  --color-rule: #e4dbd1;
+
+  --font-devanagari: var(--font-tiro-devanagari), "Tiro Devanagari Hindi",
     serif;
-  --font-devanagari-sans: var(--font-noto-sans-devanagari),
-    "Noto Sans Devanagari", sans-serif;
-  --font-ui: var(--font-geist-sans), system-ui, sans-serif;
+  --font-devanagari-sans: var(--font-mukta), "Mukta", sans-serif;
+  --font-ui: var(--font-instrument-sans), system-ui, sans-serif;
+  --font-display: var(--font-newsreader), Georgia, serif;
 }
 
 :root {
   /* active workspace identity colour — set inline by the shell */
-  --ws-color: #a54f14;
+  --ws-color: #a64e12;
   /* The same accent, but for text and hairlines rather than fills. A single
      colour cannot be legible on both a near-white page and a near-black one:
      these accents clear AA as text on the light and sepia surfaces and land
@@ -37,11 +51,11 @@
      accent is the background and the theme cannot change it. */
   --ws-ink: var(--ws-color);
 
-  /* reader theme tokens (light default) */
-  --reader-bg: #fdfbf7;
-  --reader-ink: #262019;
-  --reader-ink-soft: #6b6155;
-  --reader-rule: #e5ddd1;
+  /* reader theme tokens (light default) — surfaces from spec 6A */
+  --reader-bg: #fdfbf8;
+  --reader-ink: #1a1613;
+  --reader-ink-soft: #4a413a;
+  --reader-rule: #e4dbd1;
 
   /* typography, written before first paint by the inline script in layout.tsx
      so a saved font size / spacing never flashes at its default first */
@@ -69,7 +83,7 @@
 }
 
 [data-reader-theme="dark"] {
-  --reader-bg: #17140f;
+  --reader-bg: #14110f;
   --reader-ink: #e8e2d8;
   --reader-ink-soft: #a39a8c;
   --reader-rule: #2e2921;
@@ -90,7 +104,7 @@ html[data-reader-theme="dark"] .reader-surface {
 }
 
 [data-reader-theme="sepia"] {
-  --reader-bg: #f4e8d3;
+  --reader-bg: #f5ebdc;
   --reader-ink: #3d2f1e;
   /* was #7a6a52 — only 4.32:1 on this background, under the 4.5 AA floor the
      PRD asks for in all three themes. #756449 measures 4.72:1. */

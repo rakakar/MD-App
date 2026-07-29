@@ -10,10 +10,10 @@ import {
 import { Sheet } from "./Sheet";
 
 const THEMES: { id: ReaderTheme; label: string; swatch: string; ring: string }[] = [
-  { id: "system", label: "Auto", swatch: "linear-gradient(135deg,#fdfbf7 50%,#17140f 50%)", ring: "#8a8073" },
-  { id: "light", label: "Light", swatch: "#fdfbf7", ring: "#262019" },
-  { id: "sepia", label: "Sepia", swatch: "#f4e8d3", ring: "#3d2f1e" },
-  { id: "dark", label: "Dark", swatch: "#17140f", ring: "#e8e2d8" },
+  { id: "system", label: "Auto", swatch: "linear-gradient(135deg,#fdfbf8 50%,#14110f 50%)", ring: "#8a8073" },
+  { id: "light", label: "Light", swatch: "#fdfbf8", ring: "#262019" },
+  { id: "sepia", label: "Sepia", swatch: "#f5ebdc", ring: "#3d2f1e" },
+  { id: "dark", label: "Dark", swatch: "#14110f", ring: "#e8e2d8" },
 ];
 
 const FACES: { id: ReaderFace; label: string; stack: string }[] = [

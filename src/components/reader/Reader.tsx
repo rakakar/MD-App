@@ -86,9 +86,9 @@ interface ResumeHint {
 
 /** matches the swatches in SettingsSheet */
 const THEME_BG: Record<string, string> = {
-  light: "#fdfbf7",
-  sepia: "#f4e8d3",
-  dark: "#17140f",
+  light: "#fdfbf8",
+  sepia: "#f5ebdc",
+  dark: "#14110f",
 };
 
 /**
@@ -236,7 +236,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
       root.removeAttribute("data-reading");
       root.style.colorScheme = "";
       const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-      if (meta) meta.content = "#A54F14";
+      if (meta) meta.content = "#A64E12";
     };
   }, []);
 
