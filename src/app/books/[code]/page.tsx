@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DownloadButton } from "@/components/reader/DownloadButton";
+import { ResumeButton } from "@/components/reader/ResumeButton";
+import { CoverTile } from "@/components/shelf/CoverTile";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer, SectionHeading } from "@/components/ui";
-import { ApiError, getBook, getBooks } from "@/lib/api";
+import { ApiError, getBook, getBookGenres, getBooks } from "@/lib/api";
 import { sectionCode } from "@/lib/types";
 import { workspaceForSection } from "@/lib/workspaceConfig";
 
@@ -54,6 +56,14 @@ export default async function BookDetailPage({
   }
 
   const ws = workspaceForSection(sectionCode(book.section));
+
+  // `genre` arrives as a code ("parichay"); the chip has to read as a name.
+  // A missing genres list just drops the chip rather than printing the slug.
+  const genreLabel = book.genre
+    ? await getBookGenres()
+        .then((gs) => gs.find((g) => g.code === book.genre)?.name_hi ?? null)
+        .catch(() => null)
+    : null;
   const frontMatter = book.chapters.filter((c) => c.is_front_matter);
   const mainChapters = book.chapters.filter((c) => !c.is_front_matter);
   const firstChapter = book.chapters[0];
@@ -82,23 +92,17 @@ export default async function BookDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="flex gap-5">
-        {book.cover_image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={book.cover_image}
-            alt={`Cover of ${book.title_hi}`}
-            className="h-40 w-28 shrink-0 rounded-lg object-cover shadow-md"
-          />
-        ) : (
-          <div
-            className="flex h-40 w-28 shrink-0 items-center justify-center rounded-lg text-white shadow-md"
-            style={{ background: "var(--ws-color)" }}
-            aria-hidden
-          >
-            <span className="hi text-3xl font-bold">{book.title_hi?.[0]}</span>
-          </div>
-        )}
+      {/* Cover-tinted hero (design 1C): the workspace hue washes behind the
+          cover and title so the book announces itself, then the page returns
+          to plain paper for the chapter list. */}
+      <div
+        className="-mx-4 flex gap-5 px-4 pb-5 pt-1 sm:-mx-6 sm:px-6"
+        style={{
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--ws-color) 10%, transparent) 0%, transparent 100%)",
+        }}
+      >
+        <CoverTile book={book} size="lg" />
         <div className="min-w-0">
           <h1 lang="hi" className="hi text-2xl font-bold leading-snug">
             {book.title_hi}
@@ -124,21 +128,40 @@ export default async function BookDetailPage({
             </p>
           )}
           <p className="mt-2 text-sm text-ink-soft">
-            {book.author}
-            {book.edition ? ` · ${book.edition}` : ""}
-            {book.publication_year ? ` · ${book.publication_year}` : ""}
+            <span lang="hi" className="hi">{book.author}</span>
+            {mainChapters.length > 0 && (
+              <span lang="hi" className="hi"> · {mainChapters.length} अध्याय</span>
+            )}
             {book.page_count ? ` · ${book.page_count} pages` : ""}
           </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {firstChapter && (
-              <Link
-                href={`/books/${encodeURIComponent(book.code)}/${firstChapter.number}`}
-                className="rounded-full px-4 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ background: "var(--ws-color)" }}
-              >
-                Start reading
-              </Link>
+
+          {/* Fact chips (design 1C). Each is a fact the BE actually carries —
+              nothing here is decorative, so a missing chip means a missing
+              fact rather than a hidden one. */}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {!book.translation_of && (
+              <Chip>
+                <span lang="hi" className="hi">मूल ग्रंथ</span>
+              </Chip>
             )}
+            {genreLabel && (
+              <Chip>
+                <span lang="hi" className="hi">{genreLabel}</span>
+              </Chip>
+            )}
+            {book.edition && <Chip>{book.edition}</Chip>}
+            {book.publication_year && <Chip>{book.publication_year}</Chip>}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <ResumeButton
+              bookCode={book.code}
+              firstChapterHref={
+                firstChapter
+                  ? `/books/${encodeURIComponent(book.code)}/${firstChapter.number}`
+                  : null
+              }
+            />
             <DownloadButton book={book} />
           </div>
         </div>
@@ -203,37 +226,65 @@ export default async function BookDetailPage({
         </>
       )}
 
-      <SectionHeading>विषय-सूची · Contents</SectionHeading>
+      {/* अध्याय सूची with its own count (design 1C) */}
+      <SectionHeading
+        action={
+          mainChapters.length > 0 ? (
+            <span
+              className="rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums text-white"
+              style={{ background: "var(--ws-color)" }}
+            >
+              {mainChapters.length}
+            </span>
+          ) : undefined
+        }
+      >
+        <span lang="hi" className="hi">अध्याय सूची</span> · Contents
+      </SectionHeading>
       <ol className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
         {frontMatter.length > 0 && (
-          <li className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
+          <li className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
             Front matter
           </li>
         )}
-        {[...frontMatter, ...mainChapters].map((ch) => (
-          <li key={`${ch.is_front_matter}-${ch.number}`}>
-            <Link
-              href={`/books/${encodeURIComponent(book.code)}/${ch.number}`}
-              className="flex items-baseline gap-3 px-4 py-3 transition-colors hover:bg-black/[.03]"
-            >
-              <span
-                className="w-7 shrink-0 text-right text-sm font-semibold tabular-nums"
-                style={{ color: "var(--ws-ink)" }}
+        {[...frontMatter, ...mainChapters].map((ch) => {
+          // Span, not range — the spec's row reads "8 pages", which is what a
+          // reader is deciding on. The printed range stays available to anyone
+          // who needs it via the reader's own page markers.
+          const pages = ch.end_page - ch.start_page + 1;
+          return (
+            <li key={`${ch.is_front_matter}-${ch.number}`}>
+              <Link
+                href={`/books/${encodeURIComponent(book.code)}/${ch.number}`}
+                className="flex items-baseline gap-3 px-4 py-3.5 transition-colors hover:bg-black/[.03]"
               >
-                {ch.number}
-              </span>
-              <span lang="hi" className="hi min-w-0 flex-1 text-[15px]">
-                {ch.title_hi}
-              </span>
-              <span className="shrink-0 text-xs tabular-nums text-ink-soft">
-                {book.book_type === "print"
-                  ? `पृ ${ch.start_page}–${ch.end_page}`
-                  : `${ch.start_page}–${ch.end_page}`}
-              </span>
-            </Link>
-          </li>
-        ))}
+                <span
+                  className="w-7 shrink-0 text-right text-sm font-semibold tabular-nums"
+                  style={{ color: "var(--ws-ink)" }}
+                >
+                  {ch.number}
+                </span>
+                <span lang="hi" className="hi min-w-0 flex-1 text-[15px] font-medium">
+                  {ch.title_hi}
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-ink-soft">
+                  {Number.isFinite(pages) && pages > 0
+                    ? `${pages} ${pages === 1 ? "page" : "pages"}`
+                    : ""}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
       </ol>
     </PageContainer>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full border border-rule bg-white px-2.5 py-1 text-[11px] font-medium text-ink-soft">
+      {children}
+    </span>
   );
 }

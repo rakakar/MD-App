@@ -16,6 +16,13 @@ import type { SutraOfTheDay } from "@/lib/types";
  * however far a reader browsed yesterday, today's verse is the same one
  * everyone else sees.
  */
+/** "2026-07-29" → "२९ जुलाई". Returns "" on anything unparseable. */
+function hindiDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  if (isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("hi-IN", { day: "numeric", month: "long" }).format(d);
+}
+
 export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
   const [sutra, setSutra] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -62,8 +69,16 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
 
   return (
     <figure
-      className="rounded-2xl border border-rule bg-white px-6 py-8 text-center shadow-sm"
-      style={{ borderTopColor: "var(--ws-color)", borderTopWidth: 3 }}
+      className="rounded-2xl border border-rule px-6 py-8 text-center shadow-sm"
+      style={{
+        borderTopColor: "var(--ws-color)",
+        borderTopWidth: 3,
+        // The hero is the one tinted surface on Home (design 1A) — a wash of
+        // the workspace hue over paper, so the सूत्र reads as the day's
+        // ceremony rather than as the first of several white cards.
+        background:
+          "linear-gradient(180deg, color-mix(in srgb, var(--ws-color) 7%, #fff) 0%, #fff 60%)",
+      }}
     >
       <div className="flex items-center justify-center gap-3">
         <button
@@ -75,8 +90,8 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
         >
           ←
         </button>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-soft">
-          {browsing ? "सूत्र" : "आज का सूत्र"}
+        <p className="text-[11px] font-bold uppercase tracking-[0.09em]" style={{ color: "var(--ws-ink)" }}>
+          <span lang="hi" className="hi">{browsing ? "सूत्र" : "आज का सूत्र"}</span>
         </p>
         <button
           type="button"
@@ -88,6 +103,11 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
           →
         </button>
       </div>
+      {/* The date comes from the payload, not a client clock: the pick belongs
+          to an IST date, and a device in another timezone must not relabel it. */}
+      <p lang="hi" className="hi mt-1 text-xs text-ink-soft">
+        {hindiDate(sutra.sutra_date)}
+      </p>
 
       <div aria-live="polite" className={busy ? "opacity-50 transition-opacity" : "transition-opacity"}>
         <blockquote lang="hi" className="hi mx-auto mt-4 max-w-xl text-xl leading-loose">

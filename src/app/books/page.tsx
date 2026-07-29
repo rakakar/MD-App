@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
+import { getBooks } from "@/lib/api";
+import type { BookSummary } from "@/lib/types";
 
 export const revalidate = 900;
 
@@ -38,6 +41,13 @@ export default async function BooksPage({
 
   const isTranslations = ws === "translations";
 
+  // The shelf's own summary line (design 1B: "6 ग्रंथ · 760 pages · ए. नागराज").
+  // Unfiltered, so it describes the library rather than the current chips.
+  const all = await getBooks({
+    section: isTranslations ? "translations" : "originals",
+  }).catch(() => [] as BookSummary[]);
+  const pages = all.reduce((n, b) => n + (b.page_count ?? 0), 0);
+
   return (
     <PageContainer>
       <WorkspaceScope ws={isTranslations ? "translations" : "originals"} />
@@ -48,6 +58,21 @@ export default async function BooksPage({
           <>Originals · <span lang="hi" className="hi">मूल ग्रंथ</span></>
         )}
       </h1>
+      {all.length > 0 && (
+        <p className="mt-1 text-sm text-ink-soft">
+          <span lang="hi" className="hi">{all.length} ग्रंथ</span>
+          {pages > 0 && ` · ${pages} pages`}
+          {" · "}
+          <span lang="hi" className="hi">{all[0].author}</span>
+        </p>
+      )}
+
+      {/* Resume rows sit above the shelf (design 1B): someone opening "Read"
+          mid-book is far likelier to want the page they left than the grid.
+          Originals only — the store keeps one position per book across every
+          workspace, so on the Translations shelf these rows would mostly be
+          Hindi originals, which is not what that shelf is for. */}
+      {!isTranslations && <ContinueReading limit={3} />}
 
       <BookShelf
         section={isTranslations ? "translations" : "originals"}

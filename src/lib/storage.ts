@@ -99,7 +99,9 @@ export const PREFS_KEY = "md.prefs.v1";
 export const DEFAULT_PREFS: Prefs = {
   fontScale: 1,
   face: "serif",
-  lineHeight: 1.85,
+  // matches --reader-line-height in globals.css; the spec asks for 2.0 and
+  // this is the nearest preset (LINE_HEIGHTS[1])
+  lineHeight: 2.05,
   margin: 1,
   // a reader that opens bright at night is the single most common complaint
   // about reading apps — follow the OS unless the user says otherwise
