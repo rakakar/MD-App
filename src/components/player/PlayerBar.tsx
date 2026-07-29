@@ -2,9 +2,15 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CloseIcon, PauseIcon, PlayIcon } from "@/components/shell/icons";
+import {
+  CloseIcon,
+  PauseIcon,
+  PlayIcon,
+  SkipBackIcon,
+  SkipForwardIcon,
+} from "@/components/shell/icons";
 import { isReaderRoute } from "@/lib/routes";
-import { activeRendition, usePlayer } from "./PlayerProvider";
+import { SKIP_SECONDS, activeRendition, usePlayer } from "./PlayerProvider";
 
 const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
 const SLEEP_OPTIONS = [10, 20, 30, 45, 60];
@@ -112,7 +118,19 @@ function PlayerBarInner() {
           }}
         />
       )}
-      <div className="flex items-center gap-3 px-3 py-2">
+      <div className="flex items-center gap-1.5 px-3 py-2 sm:gap-3">
+        {/* Skip flanks play, as it does on every player people already use.
+            The device voice has no timeline, so there the same two buttons
+            step a paragraph — the label says so, and the icon shows ¶. */}
+        <button
+          type="button"
+          onClick={() => player.skipSeconds(-SKIP_SECONDS)}
+          aria-label={device ? "पिछला पैरा" : `${SKIP_SECONDS} सेकंड पीछे`}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-black/5"
+        >
+          <SkipBackIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
+        </button>
+
         <button
           type="button"
           onClick={player.toggle}
@@ -121,6 +139,15 @@ function PlayerBarInner() {
           style={{ background: "var(--ws-color)" }}
         >
           {player.playing ? <PauseIcon className="h-4.5 w-4.5" /> : <PlayIcon className="h-4.5 w-4.5" />}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => player.skipSeconds(SKIP_SECONDS)}
+          aria-label={device ? "अगला पैरा" : `${SKIP_SECONDS} सेकंड आगे`}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-black/5"
+        >
+          <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
         </button>
 
         <div className="min-w-0 flex-1">

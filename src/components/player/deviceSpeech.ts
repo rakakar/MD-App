@@ -149,6 +149,27 @@ export class DeviceSpeaker {
     this.speakCurrentPara();
   }
 
+  /**
+   * Step whole paragraphs — this mode's answer to a ±10s skip. There is no
+   * position to move by seconds, and a paragraph is the unit the reader can
+   * actually see move: the read-along highlight jumps with it.
+   *
+   * Returns the paragraph landed on, or null if there was nowhere to go.
+   */
+  jumpParas(delta: number): number | null {
+    if (this.stopped || !this.paras.length) return null;
+    const next = Math.min(Math.max(this.index + delta, 0), this.paras.length - 1);
+    if (next === this.index && delta !== 0) return null;
+    this.index = next;
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    // cancel() while paused leaves the engine paused, and the next speak()
+    // would queue silently behind it.
+    if (synth.paused) synth.resume();
+    this.speakCurrentPara();
+    return this.paras[this.index]?.sequence ?? null;
+  }
+
   pause() {
     if (!speechAvailable()) return;
     window.speechSynthesis.pause();

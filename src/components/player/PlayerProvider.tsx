@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { track as ga } from "@/lib/analytics";
-import { getPrefs, setPrefs } from "@/lib/storage";
+import { clearListeningPosition, getPrefs, setListeningPosition, setPrefs } from "@/lib/storage";
 import type { AudioRendition, ParaTimings } from "@/lib/types";
 import { DeviceSpeaker, hindiVoice, onVoicesChanged, type SpokenPara } from "./deviceSpeech";
 
@@ -71,10 +71,23 @@ interface PlayerState {
   switchVoice: (voiceKey: string) => void;
   toggle: () => void;
   seekMs: (ms: number) => void;
+  /**
+   * Jump by seconds, signed. In device-voice mode there is no timeline to move
+   * along, so the sign is taken as one paragraph back or forward — see
+   * `DeviceSpeaker.jumpParas`.
+   */
+  skipSeconds: (seconds: number) => void;
   setRate: (rate: number) => void;
   setSleepTimer: (minutes: number | null) => void;
   close: () => void;
 }
+
+/**
+ * The skip step, in seconds. Ten is the podcast convention, and it is the
+ * right size for these texts too: a सूत्र runs 15–40 seconds spoken, so ten
+ * seconds re-hears a clause without losing the sentence.
+ */
+export const SKIP_SECONDS = 10;
 
 const PlayerContext = createContext<PlayerState | null>(null);
 
@@ -308,6 +321,27 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [audio]
   );
 
+  const skipSeconds = useCallback(
+    (seconds: number) => {
+      if (source?.kind === "device") {
+        const seq = speaker.current?.jumpParas(seconds < 0 ? -1 : 1) ?? null;
+        if (seq !== null) {
+          setDeviceParaSeq(seq);
+          setDeviceParaIndex(speaker.current?.paraIndex ?? 0);
+          setPlaying(true);
+        }
+        return;
+      }
+      const el = audio();
+      // Clamped at both ends: skipping past the end of a chapter would fire
+      // `ended` and look like the reader finished it.
+      const max = el.duration ? el.duration - 0.25 : Infinity;
+      el.currentTime = Math.min(Math.max(0, el.currentTime + seconds), max);
+      setPositionMs(el.currentTime * 1000);
+    },
+    [audio, source?.kind]
+  );
+
   const setRate = useCallback(
     (r: number) => {
       setRateState(r);
@@ -328,6 +362,59 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setSleepRemaining(minutes * 60_000);
     }
   }, []);
+
+  /**
+   * Remember the playhead, so the next tap on 🎧 continues instead of starting
+   * the chapter again. Written from the audio element rather than `positionMs`
+   * state: that is a 4Hz render signal, and this wants the truth at the moment
+   * of asking.
+   *
+   * A finished chapter clears its entry — resuming 3 seconds before the end is
+   * the one place "continue" is worse than "start again".
+   */
+  const remember = useCallback(() => {
+    const src = source;
+    // Tracks are their own content with their own position; this playhead is
+    // about a chapter of a book, which is the thing a reader returns to.
+    if (!src || src.kind === "track") return;
+    const el = audio();
+    if (src.kind !== "device" && el.duration && el.currentTime >= el.duration - 1) {
+      clearListeningPosition(src.bookCode);
+      return;
+    }
+    const positionMs = src.kind === "device" ? 0 : el.currentTime * 1000;
+    const rendition = activeRendition(src);
+    const paraSeq =
+      src.kind === "device"
+        ? deviceParaSeq
+        : rendition
+          ? paraAtPosition(rendition.para_timings, positionMs)
+          : null;
+    setListeningPosition({
+      book_code: src.bookCode,
+      chapter_number: src.chapterNumber,
+      position_ms: Math.round(positionMs),
+      para_seq: paraSeq,
+      voice_key: src.kind === "tts" ? src.voiceKey : undefined,
+    });
+  }, [source, audio, deviceParaSeq]);
+
+  // While playing, every few seconds; and whenever playback stops, the tab
+  // hides, or this effect tears down — a killed tab is the commonest way a
+  // listening session ends, and it fires no pause.
+  useEffect(() => {
+    if (!playing) {
+      remember();
+      return;
+    }
+    const id = setInterval(remember, 5000);
+    window.addEventListener("pagehide", remember);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("pagehide", remember);
+      remember();
+    };
+  }, [playing, remember]);
 
   const close = useCallback(() => {
     speaker.current?.stop();
@@ -364,12 +451,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const el = audio();
     ms.setActionHandler("play", () => void el.play().catch(() => undefined));
     ms.setActionHandler("pause", () => el.pause());
-    ms.setActionHandler("seekbackward", () => {
-      el.currentTime = Math.max(0, el.currentTime - 10);
-    });
-    ms.setActionHandler("seekforward", () => {
-      el.currentTime = el.currentTime + 10;
-    });
+    // Same 10s the bar's own buttons use, and the same clamping — the lock
+    // screen should not be able to do something the app cannot.
+    ms.setActionHandler("seekbackward", (d) => skipSeconds(-(d.seekOffset ?? SKIP_SECONDS)));
+    ms.setActionHandler("seekforward", (d) => skipSeconds(d.seekOffset ?? SKIP_SECONDS));
     try {
       ms.setActionHandler("seekto", (d) => {
         if (d.seekTime !== undefined && d.seekTime !== null) el.currentTime = d.seekTime;
@@ -388,7 +473,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // ignore
       }
     };
-  }, [source, audio]);
+  }, [source, audio, skipSeconds]);
 
   const value = useMemo<PlayerState>(
     () => ({
@@ -408,6 +493,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       switchVoice,
       toggle,
       seekMs,
+      skipSeconds,
       setRate,
       setSleepTimer,
       close,
@@ -428,6 +514,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       switchVoice,
       toggle,
       seekMs,
+      skipSeconds,
       setRate,
       setSleepTimer,
       close,

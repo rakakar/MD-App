@@ -261,6 +261,51 @@ export function PauseIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Skip back / forward, with the step written into the icon. The circling
+ * arrow alone is read as "replay" or "loop" by about as many people as read it
+ * as "back ten seconds", and this player's step is a decision worth showing:
+ * in device-voice mode the same control moves a whole paragraph instead.
+ */
+function SkipIcon({ className, seconds, back }: { className?: string; seconds: number | string; back: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className ?? "h-5 w-5"}
+      aria-hidden="true"
+    >
+      <g transform={back ? undefined : "scale(-1,1) translate(-24,0)"}>
+        <path d="M12 5.5a7.5 7.5 0 1 0 7.2 5.4" />
+        <path d="M12 2.2 8.8 5.5 12 8.8" />
+      </g>
+      <text
+        x="12"
+        y="16.4"
+        textAnchor="middle"
+        fontSize="8"
+        fontWeight="700"
+        stroke="none"
+        fill="currentColor"
+      >
+        {seconds}
+      </text>
+    </svg>
+  );
+}
+
+export function SkipBackIcon(props: { className?: string; seconds: number | string }) {
+  return <SkipIcon {...props} back />;
+}
+
+export function SkipForwardIcon(props: { className?: string; seconds: number | string }) {
+  return <SkipIcon {...props} back={false} />;
+}
+
 export function HeadphonesIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

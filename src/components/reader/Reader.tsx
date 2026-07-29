@@ -27,6 +27,7 @@ import {
 } from "@/lib/personal";
 import { citationText, paraAnchorId } from "@/lib/refs";
 import {
+  getListeningPosition,
   getPrefs,
   nearestStep,
   resolveTheme,
@@ -666,6 +667,26 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
     }
   }, [activeSeq, player.playing, mode, pages, pageIndex]);
 
+  /**
+   * Where a previous listening session stopped in *this* chapter, or null.
+   *
+   * Scoped to the chapter on purpose. The playhead is stored per book, so a
+   * reader who listened to chapter 3 and then opened chapter 1 would otherwise
+   * be thrown into chapter 3 by a button that says "listen to this". Returning
+   * to a book at large is what the resume card on Home is for; this button
+   * only ever means "read me this page".
+   *
+   * The paragraph wins over the milliseconds when both are on offer: a
+   * regenerated rendition moves every timestamp, and a paragraph boundary is
+   * also a better place to be dropped back into than mid-clause.
+   */
+  const savedListening = useCallback((): { startMs?: number; fromSeq?: number } | null => {
+    const saved = getListeningPosition(book.code);
+    if (!saved || saved.chapter_number !== chapterNumber) return null;
+    if (saved.para_seq !== null) return { fromSeq: saved.para_seq };
+    return saved.position_ms > 0 ? { startMs: saved.position_ms } : null;
+  }, [book.code, chapterNumber]);
+
   const startListening = useCallback(
     (fromSeq?: number) => {
       if (!chapter) return;
@@ -675,10 +696,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
         chapterTitle: chapter.title_hi,
         bookTitle: book.title_hi,
       };
+      // An explicit paragraph — "play from here" — always beats the playhead.
+      const resume = fromSeq === undefined ? savedListening() : null;
+      const seq = fromSeq ?? resume?.fromSeq;
       if (chapter.audio_renditions.length > 0) {
         const def = chapter.audio_renditions[0];
         const startMs =
-          fromSeq !== undefined ? (def.para_timings[String(fromSeq)]?.[0] ?? 0) : 0;
+          seq !== undefined
+            ? (def.para_timings[String(seq)]?.[0] ?? 0)
+            : (resume?.startMs ?? 0);
         player.playTts({ ...common, renditions: chapter.audio_renditions }, { startMs });
         return;
       }
@@ -686,10 +712,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
       if (!player.deviceVoiceAvailable) return;
       player.playDeviceTts(
         { ...common, paras: spokenParas(chapter.paragraphs) },
-        { fromSequence: fromSeq }
+        { fromSequence: seq }
       );
     },
-    [chapter, player, book.code, book.title_hi, chapterNumber]
+    [chapter, player, book.code, book.title_hi, chapterNumber, savedListening]
   );
 
   const clearSelection = useCallback(() => {

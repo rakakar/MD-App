@@ -317,6 +317,60 @@ export function getLocalProgress(bookCode: string): LocalProgress | null {
   return getLocalStore().progress[bookCode] ?? null;
 }
 
+// ---- Listening positions ----
+//
+// Where the audio stopped, kept apart from `progress` on purpose. Reading
+// progress is one place per book, anchored to a canonical_ref, and syncs to
+// the account; this is a playhead — millisecond-precise, per chapter, and only
+// meaningful on the rendition it was measured against. Folding a playhead into
+// the reading position would either coarsen it to a paragraph or push
+// device-local audio state into a synced row that other clients cannot use.
+//
+// Listening still moves reading progress, but through the reader: the
+// read-along scroll advances the paragraph, and that is what gets saved and
+// synced. So the account keeps the place; this keeps the seconds.
+
+export interface ListeningPosition {
+  book_code: string;
+  chapter_number: number;
+  /** ms into the rendition. 0 in device-voice mode, which has no timeline. */
+  position_ms: number;
+  /**
+   * The paragraph being spoken. Survives what `position_ms` does not: a
+   * regenerated rendition shifts every timestamp, and switching voice changes
+   * them outright, but the paragraph is the same paragraph.
+   */
+  para_seq: number | null;
+  /** which rendition the ms were measured against */
+  voice_key?: string;
+  updated_at: string;
+}
+
+const LISTENING_KEY = "md.listening.v1";
+
+/** keyed by book code — one playhead per book, as with the resume position */
+type ListeningStore = Record<string, ListeningPosition>;
+
+export function setListeningPosition(
+  p: Omit<ListeningPosition, "updated_at">
+): void {
+  if (!isBrowser) return;
+  const store = read<ListeningStore>(LISTENING_KEY, {});
+  store[p.book_code] = { ...p, updated_at: new Date().toISOString() };
+  write(LISTENING_KEY, store);
+}
+
+export function getListeningPosition(bookCode: string): ListeningPosition | null {
+  return read<ListeningStore>(LISTENING_KEY, {})[bookCode] ?? null;
+}
+
+export function clearListeningPosition(bookCode: string): void {
+  if (!isBrowser) return;
+  const store = read<ListeningStore>(LISTENING_KEY, {});
+  delete store[bookCode];
+  write(LISTENING_KEY, store);
+}
+
 /** recently-read list, newest first */
 export function getRecentlyRead(): LocalProgress[] {
   return Object.values(getLocalStore().progress).sort((a, b) =>
@@ -329,4 +383,5 @@ export function clearLocalStore(): void {
   if (!isBrowser) return;
   window.localStorage.removeItem(STORE_KEY);
   window.localStorage.removeItem(LEGACY_KEY);
+  window.localStorage.removeItem(LISTENING_KEY);
 }
