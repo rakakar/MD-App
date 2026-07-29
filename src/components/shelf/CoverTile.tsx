@@ -5,15 +5,25 @@ import type { BookSummary } from "@/lib/types";
  * A book's cover, at four densities (design 1A rail, 1B grid, 1C hero, plus
  * the small tile the resume cards use).
  *
- * Most ग्रंथ have no cover image on the BE, and the spec draws the fallback not
- * as a grey placeholder but as a *designed object*: a 150° gradient in the
- * book's own hue, the title's first अक्षर set large in the top-left, and a
- * short white rule at the foot standing in for a spine band. So the letter
- * tile is the normal case here, not the error case.
+ * Where a ग्रंथ has no cover image, the spec draws the fallback not as a grey
+ * placeholder but as a *designed object*: a 150° gradient in the book's own
+ * hue, the title's first अक्षर set large in the top-left, and a short white
+ * rule at the foot standing in for a spine band.
  *
- * `caption="title"` puts the title inside the tile — the Home rail draws it
- * that way, over a scrim so small white type keeps its contrast on an image
- * cover as well as on a gradient.
+ * Where it does have one, the cover is shown and the fallback gets out of the
+ * way. The spec draws the अक्षर and a full-height scrim over image covers too,
+ * and this used to follow it — but the spec's covers are abstract textures,
+ * and A. Nagraj ji's are photographs of printed covers that already carry the
+ * title, the author and the publisher in type. Over those, the scrim muted the
+ * artwork and the अक्षर landed on the printed title, so a real cover came out
+ * looking worse than the fallback invented to stand in for it. Nothing is
+ * drawn on top of a cover now — which is also why no caption sits inside the
+ * tile any more, and why the Home rail captions underneath as the shelf grid
+ * already did.
+ *
+ * Covers are contained rather than cropped. A printed cover is portrait and
+ * these boxes are not; `object-cover` on the square shelf tile threw away the
+ * publisher's block and half the title.
  */
 type Size = "sm" | "rail" | "grid" | "lg";
 
@@ -38,68 +48,61 @@ export function CoverTile({
 }: {
   book: Pick<BookSummary, "title_hi" | "cover_image"> & { code?: string };
   size?: Size;
-  /** what sits at the foot of the tile: the spine rule, the title, or nothing */
-  caption?: "dash" | "title" | "none";
+  /** what sits at the foot of the tile: the spine rule, or nothing */
+  caption?: "dash" | "none";
 }) {
   const hue = bookHue(book.code ?? book.title_hi);
-  const showTitle = caption === "title" && size !== "sm";
-  const showDash = caption === "dash" && size !== "sm";
+  const hasCover = Boolean(book.cover_image);
+  const showDash = caption === "dash" && size !== "sm" && !hasCover;
 
   return (
     <div
       className={`${BOX[size]} relative flex shrink-0 flex-col justify-between overflow-hidden border border-white/15 shadow-[0_10px_22px_-12px_rgba(20,15,10,.55)]`}
-      style={
-        book.cover_image
-          ? undefined
-          : { background: coverGradient(hue) }
-      }
+      style={{ background: coverGradient(hue) }}
     >
       {book.cover_image && (
         <>
           {/* covers come from the BE media host; a plain img avoids configuring
               remote patterns for a host that is still moving */}
+          {/* The same cover, blown out and blurred, filling the bars a portrait
+              cover leaves in a square tile. The book's hue was the obvious
+              ground and the wrong one: a hue derived from the book's *code*
+              has no relation to the artwork, so a lavender cover sat in a teal
+              surround and the tile read as two objects. Its own colours always
+              agree with it. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={book.cover_image}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            className="absolute inset-0 h-full w-full scale-125 object-cover blur-xl saturate-125"
+          />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={book.cover_image}
             alt=""
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          {/* The spec's own scrim over image covers (1A/1B), so the अक्षर and
-              any title on top of them read at the same contrast they do on a
-              gradient — an unknown photograph cannot be trusted to be dark. */}
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(rgba(20,15,10,.18), rgba(20,15,10,.62))",
-            }}
+            className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_4px_12px_rgba(20,15,10,.35)]"
           />
         </>
       )}
 
-      <span
-        aria-hidden
-        lang="hi"
-        className={`hi relative leading-none text-white/90 ${LETTER[size]}`}
-      >
-        {book.title_hi?.[0] ?? "ग्र"}
-      </span>
+      {!hasCover && (
+        <span
+          aria-hidden
+          lang="hi"
+          className={`hi relative leading-none text-white/90 ${LETTER[size]}`}
+        >
+          {book.title_hi?.[0] ?? "ग्र"}
+        </span>
+      )}
 
       {showDash && (
         <span
           aria-hidden
-          className="relative h-0.5 w-5 rounded-full bg-white/55"
+          className="relative mt-auto h-0.5 w-5 rounded-full bg-white/55"
         />
-      )}
-      {showTitle && (
-        <span
-          lang="hi"
-          className="hi relative line-clamp-2 text-xs font-semibold leading-snug text-white/95"
-        >
-          {book.title_hi}
-        </span>
       )}
     </div>
   );

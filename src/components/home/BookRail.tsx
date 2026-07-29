@@ -8,9 +8,11 @@ import type { BookSummary } from "@/lib/types";
  * re-enter the practice, so the books are a glance across what exists, and
  * the full shelf is one tap away at "All N →".
  *
- * The title sits *inside* the cover here and below it on the shelf. On the
- * rail the covers are the row, so a caption under each one would double the
- * rail's height for a title the cover is already carrying.
+ * The title sits under the cover, as it does on the shelf grid. The spec draws
+ * it inside the tile, which worked while every tile was a coloured gradient
+ * the app drew itself. Real covers arrived carrying their own printed title,
+ * and a second title laid over it was both unreadable and redundant — so the
+ * caption moved out, and the rail now captions the way 1B's grid already did.
  */
 export function BookRail({ books }: { books: BookSummary[] }) {
   return (
@@ -30,9 +32,15 @@ export function BookRail({ books }: { books: BookSummary[] }) {
       {books.map((b) => (
         <li key={b.code} className="w-[6.5rem] shrink-0 snap-start lg:w-full">
           <Link href={`/books/${encodeURIComponent(b.code)}`} className="group block">
-            <CoverTile book={b} size="rail" caption="title" />
+            <CoverTile book={b} size="rail" />
+            <span
+              lang="hi"
+              className="hi mt-2 block line-clamp-2 text-[12px] font-semibold leading-snug group-hover:underline"
+            >
+              {b.title_hi}
+            </span>
             {b.page_count ? (
-              <span className="mt-2 block text-[11px] font-medium text-ink-soft">
+              <span className="mt-0.5 block text-[11px] font-medium text-ink-soft">
                 {b.page_count} pages
               </span>
             ) : null}
