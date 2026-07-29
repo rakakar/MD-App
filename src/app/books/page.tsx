@@ -41,8 +41,12 @@ export default async function BooksPage({
   return (
     <PageContainer>
       <WorkspaceScope ws={isTranslations ? "translations" : "originals"} />
-      <h1 className="text-xl font-bold">
-        {isTranslations ? "Translations · अनुवाद" : "Originals · मूल ग्रंथ"}
+      <h1 className="font-display text-2xl font-medium">
+        {isTranslations ? (
+          <>Translations · <span lang="hi" className="hi">अनुवाद</span></>
+        ) : (
+          <>Originals · <span lang="hi" className="hi">मूल ग्रंथ</span></>
+        )}
       </h1>
 
       <BookShelf

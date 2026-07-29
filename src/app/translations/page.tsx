@@ -18,7 +18,7 @@ export default async function TranslationsHome({
 
   return (
     <PageContainer>
-      <h1 className="text-xl font-bold">Translations · अनुवाद</h1>
+      <h1 className="font-display text-2xl font-medium">Translations · <span lang="hi" className="hi">अनुवाद</span></h1>
       <p className="mt-1 text-sm text-ink-soft">
         The same works in other languages, read in the same reader. Each edition
         names its translator.

@@ -27,7 +27,7 @@ export default function NotesPage() {
 
   return (
     <PageContainer>
-      <h1 className="text-xl font-bold">Notes</h1>
+      <h1 className="font-display text-2xl font-medium">Notes</h1>
       {!loading && !user && rows !== null && rows.length > 0 && (
         <p className="mt-1 text-xs text-ink-soft">
           इसी device पर saved ·{" "}

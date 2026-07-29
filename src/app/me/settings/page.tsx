@@ -32,8 +32,11 @@ export default function SettingsPage() {
   if (!prefs) return null;
 
   return (
+    // The one screen on the recessed canvas (design 3B): the darker warm
+    // ground makes the white grouped cards read as raised inset lists.
+    <div className="min-h-full bg-canvas">
     <PageContainer>
-      <h1 className="text-xl font-bold">Settings</h1>
+      <h1 className="font-display text-2xl font-medium">Settings</h1>
 
       <SectionHeading>Account</SectionHeading>
       <div className="rounded-2xl border border-rule bg-white p-4">
@@ -173,5 +176,6 @@ export default function SettingsPage() {
         </button>
       </div>
     </PageContainer>
+    </div>
   );
 }

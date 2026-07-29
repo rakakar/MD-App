@@ -72,7 +72,7 @@ export default function MyJourneyPage() {
 
   return (
     <PageContainer>
-      <h1 className="text-xl font-bold">My Journey · मेरी यात्रा</h1>
+      <h1 className="font-display text-2xl font-medium">My Journey · <span lang="hi" className="hi">मेरी यात्रा</span></h1>
       {!loading && !user && (
         <div className="mt-4">
           <SyncCta />

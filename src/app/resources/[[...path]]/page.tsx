@@ -46,7 +46,7 @@ export default async function ResourcesPage({
   // folder (its name and its ancestors), and this folder's own, which is the
   // level being shown. Both are ISR-cached and shared with the pages either
   // side of this one, so walking the tree re-fetches almost nothing.
-  const [siblings, children, documents] = await Promise.all([
+  const [siblings, children, documents, recent] = await Promise.all([
     currentId === undefined
       ? Promise.resolve([] as Folder[])
       : getFolders(ids.at(-2)).catch(() => [] as Folder[]),
@@ -54,7 +54,18 @@ export default async function ResourcesPage({
     currentId === undefined
       ? Promise.resolve([] as ResourceDocument[])
       : getDocuments({ folder: currentId }).catch(() => [] as ResourceDocument[]),
+    // Root only: the whole published library, for a "recently added" list
+    // (design 7A). The BE has no recency ordering, so sort here — the library
+    // is a few hundred rows at most, and the call is ISR-cached like the rest.
+    currentId === undefined
+      ? getDocuments().catch(() => [] as ResourceDocument[])
+      : Promise.resolve([] as ResourceDocument[]),
   ]);
+
+  const recentlyAdded = [...recent]
+    .filter((d) => d.updated_at)
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+    .slice(0, 5);
 
   let current: Folder | undefined;
   if (currentId !== undefined) {
@@ -156,6 +167,19 @@ export default async function ResourcesPage({
         </ul>
       )}
 
+      {recentlyAdded.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-soft">
+            Recently added
+          </h2>
+          <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+            {recentlyAdded.map((d) => (
+              <DocumentRow key={d.id} doc={d} />
+            ))}
+          </ul>
+        </section>
+      )}
+
       {documents.length > 0 && (
         <ul className="mt-4 divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
           {documents.map((d) => (
@@ -169,7 +193,7 @@ export default async function ResourcesPage({
         is never returned in the first place, so there is no empty branch to
         land in — this is the "the library hasn't started arriving" state.
       */}
-      {children.length === 0 && documents.length === 0 && (
+      {children.length === 0 && documents.length === 0 && recentlyAdded.length === 0 && (
         <div className="mt-5">
           <EmptyState
             title="संसाधन अभी आ रहे हैं"
