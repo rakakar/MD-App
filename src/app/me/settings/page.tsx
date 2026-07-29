@@ -69,7 +69,7 @@ export default function SettingsPage() {
       {!loading && user && <AccountSecurity />}
 
       <SectionHeading>Reading</SectionHeading>
-      <div className="rounded-2xl border border-rule bg-white p-4">
+      <div className="rounded-2xl  border border-rule bg-white p-4">
         <p className="text-sm font-medium">Theme</p>
         <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Reader theme">
           {(["system", "light", "sepia", "dark"] as ReaderTheme[]).map((t) => (
