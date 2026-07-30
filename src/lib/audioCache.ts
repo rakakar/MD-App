@@ -109,27 +109,89 @@ export async function isAudioSaved(url: string): Promise<boolean> {
   }
 }
 
-/** Save one chapter's audio. Resolves false when the device or the network
- *  said no — the caller shows that, and playback carries on streaming. */
-export async function saveAudio(entry: Omit<SavedAudio, "saved_at">): Promise<boolean> {
+/**
+ * Save one chapter's audio. Resolves false when the device or the network said
+ * no — the caller shows that, and playback carries on streaming.
+ *
+ * `onProgress` is called with 0…1 while the bytes arrive, or with `null` once
+ * if this download cannot be counted. Two routes, and which one runs is not
+ * ours to choose — it depends on whether the media host sends CORS headers:
+ *
+ *   readable  — the bytes stream through us, so progress is real and the
+ *               stored size is the true one.
+ *   opaque    — `no-cors`, the browser's escape hatch for a host that does not
+ *               permit reading. Cache Storage still takes the response; we
+ *               simply cannot see inside it, hence `null` and the estimate.
+ *
+ * The fallback is not legacy code to delete once the header ships: any CDN or
+ * bucket this media later moves to can drop it again, and a reader whose
+ * download stops working is a worse outcome than one without a percentage.
+ */
+export async function saveAudio(
+  entry: Omit<SavedAudio, "saved_at">,
+  onProgress?: (fraction: number | null) => void
+): Promise<boolean> {
   if (!audioSupported()) return false;
   try {
     const cache = await caches.open(AUDIO_CACHE);
-    // no-cors: the media host sends no CORS headers, so this is an opaque
-    // response. Cache Storage takes it; nothing may read it but the browser.
-    const res = await fetch(entry.url, { mode: "no-cors", cache: "no-store" });
-    // An opaque response reports status 0 and a redirect would report a status
-    // we cannot see either — the only failure this can catch is a real one.
-    if (res.type !== "opaque" && !res.ok) return false;
-    await cache.put(entry.url, res);
+    const saved = await readable(entry, cache, onProgress);
+    if (saved === null) {
+      onProgress?.(null);
+      // An opaque response reports status 0, and a redirect would report a
+      // status we cannot see either — the only failure this can catch is real.
+      const res = await fetch(entry.url, { mode: "no-cors", cache: "no-store" });
+      if (res.type !== "opaque" && !res.ok) return false;
+      await cache.put(entry.url, res);
+    }
     const rows = readLedger().filter((r) => r.url !== entry.url);
-    rows.push({ ...entry, saved_at: Date.now() });
+    rows.push({ ...entry, bytes: saved ?? entry.bytes, saved_at: Date.now() });
     writeLedger(rows);
     return true;
   } catch {
     // quota exceeded, offline, or the fetch was refused
     return false;
   }
+}
+
+/**
+ * The counted route: fetch normally, report progress, store the assembled
+ * body. Returns the true byte count, or null when the host would not let us
+ * read it — which the caller answers by falling back to `no-cors`.
+ */
+async function readable(
+  entry: Omit<SavedAudio, "saved_at">,
+  cache: Cache,
+  onProgress?: (fraction: number | null) => void
+): Promise<number | null> {
+  let res: Response;
+  try {
+    res = await fetch(entry.url, { cache: "no-store" });
+  } catch {
+    return null; // CORS refusal lands here, indistinguishable from offline
+  }
+  if (!res.ok || !res.body) return null;
+  // Content-Length needs to be in the response's expose list to be visible
+  // here; when it isn't, the duration estimate is the honest denominator.
+  const total = Number(res.headers.get("content-length")) || entry.bytes;
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  const reader = res.body.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    onProgress?.(Math.min(received / total, 0.999));
+  }
+  const body = new Blob(chunks as BlobPart[], {
+    type: res.headers.get("content-type") ?? "audio/mpeg",
+  });
+  // Re-wrapped rather than cached directly: the response's body is already
+  // spent by the read above. Content-Type is carried across because the
+  // worker hands this to a media element, which believes it.
+  await cache.put(entry.url, new Response(body, { headers: { "Content-Type": body.type } }));
+  onProgress?.(1);
+  return received;
 }
 
 export async function removeAudio(url: string): Promise<void> {

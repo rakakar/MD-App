@@ -518,6 +518,8 @@ function SaveChapterButton({
   const [state, setState] = useState<"idle" | "confirm" | "saving" | "saved" | "removing" | "failed">(
     "idle"
   );
+  /** 0…1 while the bytes arrive; null when this host won't let us count them */
+  const [progress, setProgress] = useState<number | null>(null);
   const bytes = renditionBytes(rendition);
   const url = rendition.audio_url;
 
@@ -552,15 +554,19 @@ function SaveChapterButton({
       return;
     }
     setState("saving");
-    void saveAudio({
-      url,
-      book_code: source.bookCode,
-      book_title: source.bookTitle,
-      chapter_number: source.chapterNumber,
-      chapter_title: source.chapterTitle,
-      voice_label: rendition.voice_label,
-      bytes,
-    }).then((ok) => setState(ok ? "saved" : "failed"));
+    setProgress(0);
+    void saveAudio(
+      {
+        url,
+        book_code: source.bookCode,
+        book_title: source.bookTitle,
+        chapter_number: source.chapterNumber,
+        chapter_title: source.chapterTitle,
+        voice_label: rendition.voice_label,
+        bytes,
+      },
+      setProgress
+    ).then((ok) => setState(ok ? "saved" : "failed"));
   };
 
   const label =
@@ -569,7 +575,11 @@ function SaveChapterButton({
       : state === "removing"
         ? "मिटाएँ?"
         : state === "saving"
-          ? "सेव हो रहा है…"
+          ? // A percentage where the bytes can be counted, and a plain "saving"
+            // where they cannot — never a number this button had to invent.
+            progress === null
+            ? "सेव हो रहा है…"
+            : `${Math.round(progress * 100)}%`
           : state === "confirm"
             ? `${size} — पक्का?`
             : state === "failed"
