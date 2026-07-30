@@ -92,8 +92,13 @@ export async function BookShelf({
  * A translation keeps its translator on the card. `author` stays ए. नागराज on
  * a translation — the words are his, the rendering is not — so a card showing
  * only the author would credit him with a student's English.
+ *
+ * Exported because the Resources shelf's पुस्तकें tab is the same object on a
+ * different shelf: a section is a shelf, not a treatment (PRD v2 §5.0.1), so a
+ * book filed under संसाधन is still a book and must not look like a second kind
+ * of card.
  */
-function ShelfCard({ book }: { book: BookSummary }) {
+export function ShelfCard({ book }: { book: BookSummary }) {
   return (
     <Link
       href={`/books/${encodeURIComponent(book.code)}`}
@@ -106,6 +111,14 @@ function ShelfCard({ book }: { book: BookSummary }) {
       >
         {book.title_hi}
       </span>
+      {/* Said on the shelf, not only on the book's own page: a reader who taps
+          a cover expecting the reader and gets a scanned PDF has been misled
+          by the card, and the fact is one word long. */}
+      {book.is_pdf_only && (
+        <span className="-mt-1.5 block text-[10.5px] font-bold uppercase tracking-wide text-ink-soft">
+          PDF
+        </span>
+      )}
       <span className="mt-auto block text-[11px] font-medium text-ink-soft">
         {book.translation_of && book.language_label ? (
           <span lang="hi" className="hi">{book.language_label} · </span>

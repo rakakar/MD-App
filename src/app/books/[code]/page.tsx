@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookHeroActions } from "@/components/books/BookHeroActions";
+import { PdfView } from "@/components/resources/PdfView";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { BackIcon, ChevronRight } from "@/components/shell/icons";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer, SectionHeading } from "@/components/ui";
-import { ApiError, getBook, getBookGenres, getBooks } from "@/lib/api";
+import { ApiError, bookPdfUrl, getBook, getBookGenres, getBooks } from "@/lib/api";
 import { bookHue } from "@/lib/bookHue";
 import { sectionCode } from "@/lib/types";
 import { workspaceForSection } from "@/lib/workspaceConfig";
@@ -166,6 +167,11 @@ export default async function BookDetailPage({
                 nothing here is decorative, so a missing chip means a missing
                 fact rather than a hidden one. */}
             <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {/* First, because it changes what this page even is. A PDF-only
+                  book has arrived before the pipeline did (§13.9): a reader
+                  who expects the reflowable reader here should learn that from
+                  the chip, not from its absence. */}
+              {book.is_pdf_only && <Chip>PDF-only</Chip>}
               {!book.translation_of && (
                 <Chip>
                   <span lang="hi" className="hi">मूल ग्रंथ</span>
@@ -182,14 +188,30 @@ export default async function BookDetailPage({
           </div>
         </div>
 
-        <BookHeroActions
-          book={book}
-          firstChapterHref={
-            firstChapter
-              ? `/books/${encodeURIComponent(book.code)}/${firstChapter.number}`
-              : null
-          }
-        />
+        {/*
+          A PDF-only book has no chapters to resume into and nothing to cache
+          for offline reading, so the whole action row is replaced rather than
+          disabled: Resume would point at a chapter that does not exist, and
+          the offline download would fetch an empty table of contents.
+        */}
+        {book.is_pdf_only ? (
+          <a
+            href="#pdf"
+            className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold sm:max-w-sm"
+            style={{ color: hue.to }}
+          >
+            <span lang="hi" className="hi">PDF पढ़ें</span>
+          </a>
+        ) : (
+          <BookHeroActions
+            book={book}
+            firstChapterHref={
+              firstChapter
+                ? `/books/${encodeURIComponent(book.code)}/${firstChapter.number}`
+                : null
+            }
+          />
+        )}
       </div>
 
       {/* In two columns this column starts at the top, so whatever happens to
@@ -254,6 +276,30 @@ export default async function BookDetailPage({
         </>
       )}
 
+      {/*
+        The whole reading experience for a PDF-only book (contract §13.9).
+        Stated plainly rather than left to be discovered: there is no
+        reflowable reader, no citation, no read-aloud here yet — and "yet" is
+        the operative word, because the flag flips off by itself when the book
+        is pipelined and this very URL becomes the full reader. Nobody's link
+        or bookmark breaks on that day.
+      */}
+      {book.is_pdf_only ? (
+        <section id="pdf" className="mt-7 scroll-mt-4">
+          <p className="rounded-2xl border border-rule bg-white p-4 text-sm text-ink-soft">
+            <span lang="hi" className="hi font-semibold text-ink">
+              यह पुस्तक अभी PDF रूप में है।
+            </span>{" "}
+            The scanned book is readable and downloadable here. Chapter-by-chapter reading,
+            citations and read-aloud arrive when it goes through the pipeline — this page
+            becomes the full reader then, and every link to it keeps working.
+          </p>
+          <div className="mt-3">
+            <PdfView url={bookPdfUrl(book.code)} title={book.title_hi} expanded />
+          </div>
+        </section>
+      ) : (
+        <>
       {/* अध्याय सूची with its own count (design 1C). A plain list on paper,
           not a card: the hero above is the page's one object, and boxing the
           contents made the chapters read as a second, competing one. */}
@@ -311,6 +357,8 @@ export default async function BookDetailPage({
           );
         })}
       </ol>
+        </>
+      )}
       </div>
       </div>
     </PageContainer>

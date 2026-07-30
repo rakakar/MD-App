@@ -11,7 +11,14 @@ import {
   type ReactNode,
 } from "react";
 import { track as ga } from "@/lib/analytics";
-import { clearListeningPosition, getPrefs, setListeningPosition, setPrefs } from "@/lib/storage";
+import {
+  clearListeningPosition,
+  clearPlayhead,
+  getPrefs,
+  setListeningPosition,
+  setPlayhead,
+  setPrefs,
+} from "@/lib/storage";
 import type { AudioRendition, ParaTimings } from "@/lib/types";
 import { DeviceSpeaker, hindiVoice, onVoicesChanged, type SpokenPara } from "./deviceSpeech";
 
@@ -50,6 +57,13 @@ export interface TrackSource {
   url: string;
   durationMs?: number;
   coverImage?: string | null;
+  /**
+   * Where to remember this playhead, if it is worth remembering — set by the
+   * surface that knows the track has an identity to return to (a संसाधन
+   * collection's items do; an ad-hoc URL does not). Absent means "play it, but
+   * do not keep a place for it", which is the old behaviour of every track.
+   */
+  resumeKey?: string;
 }
 
 export type PlayerSource = TtsSource | DeviceTtsSource | TrackSource;
@@ -82,7 +96,7 @@ interface PlayerState {
   deviceVoiceLabel: string | null;
   playTts: (src: Omit<TtsSource, "kind" | "voiceKey">, opts?: { voiceKey?: string; startMs?: number }) => void;
   playDeviceTts: (src: Omit<DeviceTtsSource, "kind">, opts?: { fromSequence?: number }) => void;
-  playTrack: (src: Omit<TrackSource, "kind">) => void;
+  playTrack: (src: Omit<TrackSource, "kind">, opts?: { startMs?: number }) => void;
   /** switch voice, re-resolving position by paragraph (PRD §5) */
   switchVoice: (voiceKey: string) => void;
   toggle: () => void;
@@ -307,10 +321,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const playTrack: PlayerState["playTrack"] = useCallback(
-    (src) => {
+    (src, opts = {}) => {
       setSource({ kind: "track", ...src });
       if (src.durationMs) setDurationMs(src.durationMs);
-      load(src.url, 0);
+      load(src.url, opts.startMs ?? 0);
       ga("audio_track_play");
     },
     [load]
@@ -424,9 +438,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
    */
   const remember = useCallback(() => {
     const src = source;
-    // Tracks are their own content with their own position; this playhead is
-    // about a chapter of a book, which is the thing a reader returns to.
-    if (!src || src.kind === "track") return;
+    if (!src) return;
+    // A track keeps its place only when the surface that started it gave it a
+    // key to keep it under — a संसाधन collection's items do, so a 90-minute
+    // shivir recording resumes instead of restarting.
+    if (src.kind === "track") {
+      if (!src.resumeKey) return;
+      const el = audio();
+      if (el.duration && el.currentTime >= el.duration - 1) clearPlayhead(src.resumeKey);
+      else setPlayhead(src.resumeKey, el.currentTime * 1000);
+      return;
+    }
     const el = audio();
     if (src.kind !== "device" && el.duration && el.currentTime >= el.duration - 1) {
       clearListeningPosition(src.bookCode);

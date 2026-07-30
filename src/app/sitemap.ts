@@ -3,8 +3,10 @@ import {
   getAudioSeries,
   getBook,
   getBooks,
+  getCollections,
   getEvents,
   getParibhashaIndex,
+  getResourceDoors,
   getVideos,
 } from "@/lib/api";
 
@@ -17,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/books",
     "/translations",
     "/resources",
+    "/vani",
     "/audio",
     "/videos",
     "/paribhasha",
@@ -45,6 +48,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const glossary = await getParibhashaIndex().catch(() => null);
   for (const w of glossary?.words ?? []) {
     urls.push({ url: `${SITE_URL}/paribhasha/${w.id}`, changeFrequency: "monthly" });
+  }
+
+  // The resources shelf as a reader browses it — doors and collection albums.
+  // The folder tree is deliberately absent: it is a second address for the
+  // same files, and it is marked noindex for that reason.
+  const [doors, collections] = await Promise.all([
+    getResourceDoors().catch(() => []),
+    getCollections().then((r) => r.results).catch(() => []),
+  ]);
+  for (const d of doors) {
+    urls.push({
+      url: `${SITE_URL}/resources/doors/${encodeURIComponent(d.code)}`,
+      changeFrequency: "weekly",
+    });
+  }
+  for (const c of collections) {
+    urls.push({ url: `${SITE_URL}/resources/collections/${c.id}`, changeFrequency: "monthly" });
   }
 
   for (const s of series) urls.push({ url: `${SITE_URL}/audio/${s.id}` });

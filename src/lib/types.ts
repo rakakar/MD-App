@@ -83,6 +83,14 @@ export interface BookSummary {
   cover_image: string | null;
   page_count: number | null;
   tags: string[];
+  /**
+   * The book arrived before the pipeline did (contract §13.9): a PDF, a cover
+   * and metadata, with no chapters or paragraphs behind it yet. Its whole
+   * reading experience is the PDF viewer — no reflowable reader, no citations,
+   * no read-aloud — and the flag flips off by itself once it is pipelined, so
+   * nothing about the URL or anyone's links changes when it does.
+   */
+  is_pdf_only: boolean;
 }
 
 export interface ChapterTocEntry {
@@ -185,12 +193,116 @@ export interface SutraOfTheDay extends ParaResolution {
   has_next: boolean;
 }
 
-// ---- Resources library (contract §§12–13) ----
+// ---- Resources — collections behind purpose doors (contract §13) ----
 //
-// A file library, not books. Documents have no chapters, no paragraphs and no
-// canonical refs, so nothing here ever routes into the reader.
+// The unit of this shelf is the **collection** — one shivir bundle, one संकलन,
+// one chart set — never the file. An item inside one is filed, not processed:
+// no chapters, no paragraphs, no canonical refs, so nothing here ever routes
+// into the reader.
 
-/** folders/ — one node of the Resources tree */
+/**
+ * Whose word is it (contract §13, D14). The badge this drives is an epistemic
+ * requirement rather than decoration — the reader has to see at a glance
+ * whether a page is प्रमाण or someone's understanding.
+ *
+ * `""` is a legacy row nobody has judged yet; the badge is hidden then, never
+ * guessed at.
+ */
+export type Provenance = "moola" | "sankalan" | "adhyayan" | "";
+
+/**
+ * A purpose door on the Resources landing page, or a विषय chip inside one —
+ * one shape, two manager-editable tables.
+ *
+ * Never hardcoded, for the same reason as the genre chips: both exist so a new
+ * door or topic reaches the shelf without a frontend deploy, and a constant
+ * here would silently hide whatever a manager added.
+ */
+export interface ResourceFacet {
+  code: string;
+  name_hi: string;
+  description: string;
+  ordering: number;
+  /** servable collections behind it — published, with ≥1 openable item */
+  collection_count: number;
+}
+
+export type ResourceKind = "pdf" | "audio" | "image" | "other";
+
+/** one card on the shelf (contract §13.3) */
+export interface ResourceCollection {
+  id: number;
+  title_hi: string;
+  section: string;
+  door: string;
+  door_name_hi: string;
+  description: string;
+  cover_url: string | null;
+  provenance: Provenance;
+  provenance_hi: string;
+  /** विषय codes, matching resources/topics/ */
+  topics: string[];
+  tags: string[];
+  /** approximate allowed, e.g. "2005" or "2005-03"; "" when unknown */
+  year: string;
+  place: string;
+  /** speakers/authors involved, comma-separated */
+  people: string;
+  language: string;
+  language_label: string;
+  /** published items only — safe to print */
+  item_count: number;
+  /** the kinds its published items are, so a card can say "14 ऑडियो · 1 PDF" */
+  kinds: ResourceKind[];
+  updated_at: string;
+}
+
+/** one file inside a collection (contract §13.4) */
+export interface ResourceItem {
+  id: number;
+  collection: number;
+  collection_title: string;
+  title: string;
+  kind: ResourceKind;
+  kind_label: string;
+  /**
+   * Always present and absolute on a published item — publish is blocked
+   * without a file or a link behind it, so no row is ever dead. It may point
+   * at our media host or at wherever the file still lives during the
+   * migration; both are opened the same way, with no host special-casing.
+   */
+  url: string;
+  sequence: number;
+  description: string;
+  /** already the *effective* one — the item's override, else its collection's */
+  provenance: Provenance;
+  provenance_hi: string;
+  /** bytes; null for a catalogued file whose bytes haven't moved yet */
+  file_size: number | null;
+  /** PDFs only */
+  page_count: number | null;
+  /** audio only */
+  duration_seconds: number | null;
+  updated_at: string;
+}
+
+/** the album view — the card plus its published items in `sequence` order */
+export interface ResourceCollectionDetail extends ResourceCollection {
+  items: ResourceItem[];
+}
+
+/**
+ * `resources/search/` and `vani/` answer in the same three labelled lists
+ * (contract §13.5–13.6). The FE renders them as ONE संसाधन lane — they are
+ * three shapes of the same answer, not three results tabs.
+ */
+export interface ResourceLane {
+  collections: ResourceCollection[];
+  audio: AudioTrack[];
+  video: VideoItem[];
+}
+
+/** folders/ — one node of the archivist's fallback tree (contract §13.7) */
 export interface Folder {
   id: number;
   name: string;
@@ -200,40 +312,9 @@ export interface Folder {
   ordering: number;
   /** the ancestor chain, root first; [] at the root level */
   breadcrumb: { id: number; name: string }[];
-  /** what sits *directly* inside — documents counted published-only */
+  /** what sits *directly* inside — items counted published-only */
   folder_count: number;
-  document_count: number;
-}
-
-export type DocumentKind = "pdf" | "audio" | "image" | "other";
-
-export interface ResourceDocument {
-  id: number;
-  title: string;
-  folder: number;
-  folder_name: string;
-  section: string;
-  kind: DocumentKind;
-  kind_label: string;
-  /**
-   * Always present and absolute on a published document — publish is blocked
-   * without a file or a link behind it, so no row is ever dead. It may point
-   * at our media host or at wherever the file still lives during the
-   * migration; both are opened the same way, with no host special-casing.
-   */
-  url: string;
-  description: string;
-  author: string;
-  language: string;
-  language_label: string;
-  /** bytes; null for a catalogued file whose bytes haven't moved yet */
-  file_size: number | null;
-  /** PDFs only */
-  page_count: number | null;
-  /** audio only */
-  duration_seconds: number | null;
-  tags: string[];
-  updated_at: string;
+  item_count: number;
 }
 
 // ---- §9 live endpoints (shapes may still evolve; keep fields optional) ----
@@ -265,6 +346,9 @@ export interface AudioTrack {
   archive_org_url?: string;
   categories?: string[];
   tags?: string[];
+  /** whose word it is (§13) — `""` on a legacy row, where the badge is hidden */
+  provenance?: Provenance;
+  provenance_hi?: string;
   [key: string]: unknown;
 }
 
@@ -279,6 +363,9 @@ export interface VideoItem {
   description?: string;
   categories?: string[];
   tags?: string[];
+  /** whose word it is (§13) — `""` on a legacy row, where the badge is hidden */
+  provenance?: Provenance;
+  provenance_hi?: string;
   [key: string]: unknown;
 }
 

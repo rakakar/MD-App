@@ -371,6 +371,37 @@ export function clearListeningPosition(bookCode: string): void {
   write(LISTENING_KEY, store);
 }
 
+// ---- Track playheads ----
+//
+// The same idea as a listening position, for content that is not a chapter of
+// a book: a संसाधन collection's audio, played in album mode. Kept in its own
+// store because it is keyed by the thing played rather than by a book code,
+// and carries no paragraph — there is nothing to re-resolve against, so the
+// milliseconds are the whole of it.
+
+const PLAYHEAD_KEY = "md.playhead.v1";
+
+type PlayheadStore = Record<string, { position_ms: number; updated_at: string }>;
+
+/** `key` is stable per playable item, e.g. `collection-item:88` */
+export function setPlayhead(key: string, positionMs: number): void {
+  if (!isBrowser) return;
+  const store = read<PlayheadStore>(PLAYHEAD_KEY, {});
+  store[key] = { position_ms: Math.round(positionMs), updated_at: new Date().toISOString() };
+  write(PLAYHEAD_KEY, store);
+}
+
+export function getPlayhead(key: string): number | null {
+  return read<PlayheadStore>(PLAYHEAD_KEY, {})[key]?.position_ms ?? null;
+}
+
+export function clearPlayhead(key: string): void {
+  if (!isBrowser) return;
+  const store = read<PlayheadStore>(PLAYHEAD_KEY, {});
+  delete store[key];
+  write(PLAYHEAD_KEY, store);
+}
+
 /** recently-read list, newest first */
 export function getRecentlyRead(): LocalProgress[] {
   return Object.values(getLocalStore().progress).sort((a, b) =>
@@ -384,4 +415,5 @@ export function clearLocalStore(): void {
   window.localStorage.removeItem(STORE_KEY);
   window.localStorage.removeItem(LEGACY_KEY);
   window.localStorage.removeItem(LISTENING_KEY);
+  window.localStorage.removeItem(PLAYHEAD_KEY);
 }

@@ -157,7 +157,15 @@ export function workspaceForSection(sectionCode: string | null | undefined): Con
 }
 
 export function workspaceForPath(path: string): WorkspaceId | null {
-  if (path === "/" || path.startsWith("/audio") || path.startsWith("/videos"))
+  // /vani is deliberately Originals chrome, not Resources: it is the home
+  // page's door onto his own words, and the reader is never told that the
+  // resources shelf holds most of what is behind it (contract §13.6).
+  if (
+    path === "/" ||
+    path.startsWith("/audio") ||
+    path.startsWith("/videos") ||
+    path.startsWith("/vani")
+  )
     return "originals";
   if (path.startsWith("/translations")) return "translations";
   if (path.startsWith("/resources")) return "resources";

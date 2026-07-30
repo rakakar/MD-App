@@ -6,7 +6,6 @@ import type {
   BookSummary,
   CenterItem,
   ChapterPayload,
-  DocumentKind,
   EventItem,
   Folder,
   PageResolution,
@@ -16,7 +15,12 @@ import type {
   ParibhashaIndex,
   ParibhashaWord,
   Playlist,
-  ResourceDocument,
+  ResourceCollection,
+  ResourceCollectionDetail,
+  ResourceFacet,
+  ResourceItem,
+  ResourceKind,
+  ResourceLane,
   SearchResponse,
   SearchResult,
   Section,
@@ -176,10 +180,123 @@ export async function getSections(): Promise<Section[]> {
   return unwrapList(await apiFetch<Section[] | { results: Section[] }>("sections/"));
 }
 
-// ---- Resources library (§§12–13) ----
+// ---- Resources — collections behind purpose doors (§13) ----
+//
+// The old `documents/` endpoint is gone. The shelf's unit is now the
+// collection, and browsing is doors → facet chips → cards → album page; the
+// folder tree below survives only as the archivist's "सभी फ़ाइलें" fallback.
 
 /**
- * One level of the Resources tree. No `parent` is the root level.
+ * The Resources landing page's doors, in `ordering` order.
+ *
+ * Manager-editable, so it is always fetched and never a constant here — same
+ * rule as the genre chips. A door with nothing servable behind it is already
+ * left out by the BE, so every row that arrives is worth rendering as-is.
+ */
+export async function getResourceDoors(): Promise<ResourceFacet[]> {
+  return unwrapList(await apiFetch<ResourceFacet[] | { results: ResourceFacet[] }>(
+    "resources/doors/"
+  ));
+}
+
+/**
+ * The विषय chips. Unlike doors, *all* topics are returned — the FE hides the
+ * zero-count ones, because a chip that filters to nothing is a dead control.
+ */
+export async function getResourceTopics(): Promise<ResourceFacet[]> {
+  return unwrapList(await apiFetch<ResourceFacet[] | { results: ResourceFacet[] }>(
+    "resources/topics/"
+  ));
+}
+
+export interface CollectionFilters {
+  door?: string;
+  topic?: string;
+  /** prefix match, so "2005" also matches "2005-03" */
+  year?: string;
+  place?: string;
+  person?: string;
+  language?: string;
+  kind?: ResourceKind;
+  provenance?: string;
+  section?: string;
+}
+
+/** one page of cards, plus the cursor for the next one */
+interface CollectionPage {
+  results: ResourceCollection[];
+  next: string | null;
+}
+
+async function collectionPage(
+  filters: CollectionFilters,
+  cursor?: string
+): Promise<CollectionPage> {
+  // A cursor arrives as an absolute URL. Only its query is reused, re-anchored
+  // to our own base, so a BE misconfigured with the wrong public host can never
+  // send us off to fetch someone else's origin (same rule as paribhasha/).
+  const query = cursor
+    ? new URL(cursor).search
+    : qs({
+        door: filters.door,
+        topic: filters.topic,
+        year: filters.year,
+        place: filters.place,
+        person: filters.person,
+        language: filters.language,
+        kind: filters.kind,
+        provenance: filters.provenance,
+        section__code: filters.section,
+      });
+  const data = await apiFetch<{ results?: ResourceCollection[]; next?: string | null }>(
+    `resources/collections/${query}`
+  );
+  return { results: data.results ?? [], next: data.next ?? null };
+}
+
+/**
+ * The cards behind a door or a facet.
+ *
+ * The endpoint is cursor-paginated at 50, and a door page needs the whole set
+ * anyway: the वर्ष/स्थान/व्यक्ति/भाषा chips are *derived* from the collections
+ * themselves (there is no facet-values endpoint), so a half-read list would
+ * quietly offer half the chips. Pages are therefore followed to the end,
+ * bounded — a door that has grown past the cap renders what arrived and says
+ * so rather than walking a shelf of unknown size on every request.
+ */
+export const COLLECTION_PAGE_CAP = 4;
+
+export async function getCollections(
+  filters: CollectionFilters = {},
+  maxPages = COLLECTION_PAGE_CAP
+): Promise<{ results: ResourceCollection[]; truncated: boolean }> {
+  const results: ResourceCollection[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < maxPages; page += 1) {
+    const { results: rows, next } = await collectionPage(filters, cursor);
+    results.push(...rows);
+    if (!next) return { results, truncated: false };
+    cursor = next;
+  }
+  return { results, truncated: true };
+}
+
+/**
+ * The album view (§13.4) — the card plus its published items in `sequence`
+ * order. A 404 means the collection is unpublished or has nothing openable
+ * behind it, which is an ordinary answer here, so it becomes null.
+ */
+export async function getCollection(id: number): Promise<ResourceCollectionDetail | null> {
+  try {
+    return await apiFetch<ResourceCollectionDetail>(`resources/collections/${id}/`);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
+}
+
+/**
+ * One level of the archivist's fallback tree. No `parent` is the root level.
  *
  * A folder with nothing published anywhere beneath it is not returned at all
  * — the library is still being migrated — so navigation never lands in an
@@ -191,20 +308,63 @@ export async function getFolders(parent?: number): Promise<Folder[]> {
   );
 }
 
-/** Published documents, normally the ones sitting directly in one folder. */
-export async function getDocuments(
-  opts: { folder?: number; kind?: DocumentKind; language?: string; section?: string } = {}
-): Promise<ResourceDocument[]> {
+/** The published items sitting in one folder — the "सभी फ़ाइलें" view only. */
+export async function getResourceItems(
+  opts: { folder?: number; kind?: ResourceKind } = {}
+): Promise<ResourceItem[]> {
   return unwrapList(
-    await apiFetch<ResourceDocument[] | { results: ResourceDocument[] }>(
-      `documents/${qs({
-        folder: opts.folder,
-        kind: opts.kind,
-        language: opts.language,
-        section__code: opts.section,
-      })}`
+    await apiFetch<ResourceItem[] | { results: ResourceItem[] }>(
+      `resources/items/${qs({ folder: opts.folder, kind: opts.kind })}`
     )
   );
+}
+
+/**
+ * The संसाधन lane (§13.5). **Metadata only** — titles, descriptions, topics,
+ * tags, people, place, year, source path. File contents are never indexed and
+ * never will be, which is exactly why these hits are rendered in their own
+ * lane: a citation is quotable back to A. Nagraj ji, a metadata match is not.
+ */
+export async function searchResources(
+  q: string,
+  signal?: AbortSignal
+): Promise<ResourceLane> {
+  const data = await apiFetch<Partial<ResourceLane>>(
+    `resources/search/${qs({ q })}`,
+    { signal }
+  );
+  return {
+    collections: data.collections ?? [],
+    audio: data.audio ?? [],
+    video: data.video ?? [],
+  };
+}
+
+/**
+ * "नागराज जी की वाणी" (§13.6) — everything published with provenance = मूल,
+ * across *all* sections. The reader never needs to know that resources holds
+ * most of it underneath.
+ */
+export async function getVani(): Promise<ResourceLane> {
+  const data = await apiFetch<Partial<ResourceLane>>("vani/");
+  return {
+    collections: data.collections ?? [],
+    audio: data.audio ?? [],
+    video: data.video ?? [],
+  };
+}
+
+/**
+ * A book's original PDF (§13.9) — the whole reading experience for a PDF-only
+ * book, and the fidelity download for a pipelined one.
+ *
+ * Handed to the browser as a URL rather than fetched: the endpoint answers 302
+ * to a short-lived signed URL, so following it here would bake an expiring
+ * link into an ISR-cached page. Letting the viewer or the download follow the
+ * redirect itself means the signature is always minted fresh.
+ */
+export function bookPdfUrl(code: string): string {
+  return new URL(`books/${encodeURIComponent(code)}/pdf/`, apiBase()).toString();
 }
 
 export async function getAudioSeries(sectionCode?: string): Promise<AudioSeries[]> {

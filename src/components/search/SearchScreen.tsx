@@ -4,14 +4,16 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { WordRow } from "@/components/paribhasha/GlossaryBrowser";
+import { ResourceLaneView } from "@/components/resources/ResourceLaneView";
 import { Icon } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
 import { track } from "@/lib/analytics";
-import { getParibhasha, search } from "@/lib/api";
+import { getParibhasha, search, searchResources } from "@/lib/api";
 import { refToHref } from "@/lib/refs";
 import type {
   ParibhashaHit,
   ParibhashaWord,
+  ResourceLane,
   SearchResponse,
   SearchResult,
 } from "@/lib/types";
@@ -45,6 +47,12 @@ export function SearchScreen() {
   // every new query, because it is a correction to one rewrite, not a setting.
   const [raw, setRaw] = useState(false);
   const [response, setResponse] = useState<SearchResponse | null>(null);
+  /**
+   * The संसाधन lane's own answer (contract §13.5). Kept in its own piece of
+   * state, never folded into `response`, because the two are different kinds
+   * of claim — see the note where the lane is rendered.
+   */
+  const [resources, setResources] = useState<ResourceLane | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -60,6 +68,7 @@ export function SearchScreen() {
     if (mode !== "all") return;
     if (query.length < 2) {
       setResponse(null);
+      setResources(null);
       return;
     }
     const t = setTimeout(async () => {
@@ -68,17 +77,33 @@ export function SearchScreen() {
       abortRef.current = ctrl;
       setBusy(true);
       setError(false);
-      try {
-        const res = await search(query, { raw, signal: ctrl.signal });
-        setResponse(res);
-        setExpanded(false);
-        track("search", { query_length: query.length, results: res.total, mode: res.mode });
-        router.replace(`/search?q=${encodeURIComponent(query)}`, { scroll: false });
-      } catch (e) {
-        if ((e as Error).name !== "AbortError") setError(true);
-      } finally {
-        setBusy(false);
+      // Two independent endpoints, settled independently: the संसाधन lane is
+      // a metadata scan and the citation lane a retrieval engine, and one of
+      // them being down is no reason to show the reader nothing.
+      const [passages, lane] = await Promise.allSettled([
+        search(query, { raw, signal: ctrl.signal }),
+        searchResources(query, ctrl.signal),
+      ]);
+      if (
+        (passages.status === "rejected" && (passages.reason as Error)?.name === "AbortError") ||
+        (lane.status === "rejected" && (lane.reason as Error)?.name === "AbortError")
+      ) {
+        return; // superseded by a newer keystroke; leave the screen alone
       }
+      if (passages.status === "fulfilled") {
+        setResponse(passages.value);
+        setExpanded(false);
+        track("search", {
+          query_length: query.length,
+          results: passages.value.total,
+          mode: passages.value.mode,
+        });
+      } else {
+        setError(true);
+      }
+      setResources(lane.status === "fulfilled" ? lane.value : null);
+      setBusy(false);
+      router.replace(`/search?q=${encodeURIComponent(query)}`, { scroll: false });
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,6 +146,9 @@ export function SearchScreen() {
   const results = response?.results ?? [];
   const shown = expanded ? results : results.slice(0, FIRST_PAGE);
   const glossary = response?.paribhasha ?? [];
+  const resourceHits = resources
+    ? resources.collections.length + resources.audio.length + resources.video.length
+    : 0;
 
   return (
     <PageContainer>
@@ -207,21 +235,26 @@ export function SearchScreen() {
       {mode === "paribhasha" ? null : (
       <>
       {/*
-        Search covers **originals only**, permanently: retrieval is tuned for
-        Devanagari, and a citation has to be quotable back to A. Nagraj ji
-        rather than to a student's rendering. Resource documents have no
-        paragraphs to index at all.
+        **Citation search covers originals only, permanently**: retrieval is
+        tuned for Devanagari, and a citation has to be quotable back to A.
+        Nagraj ji rather than to a student's rendering. Translations are not
+        indexed and never will be.
 
-        So there are no scope chips — a "Translations" or "Resources" option
-        would come back empty every single time, and an originals-only pair
-        would be one live choice next to a dead one. Stating the boundary once
-        is what a filter would have been pretending to offer. It is said
-        unconditionally rather than only outside Originals: it is equally news
-        to a reader here that the resource PDFs are not in these results.
+        The संसाधन lane below the results is not an exception to that rule,
+        it is the shape the rule takes: resources are searched by *metadata*
+        only — titles, topics, people, places, filenames — never by what is
+        inside a file, because nothing in that library has paragraphs to index
+        (contract §13.5). Two lanes, two different claims, never merged.
+
+        So there are still no scope chips. A "Translations" option would come
+        back empty every time, and a "Resources" one would promise that these
+        two kinds of hit are the same kind of thing. Stating the boundary once
+        is what a filter would only have pretended to offer.
       */}
       <p className="mt-3 text-xs text-ink-soft">
-        <span lang="hi" className="hi">खोज केवल मूल ग्रंथों में</span> · Searches A. Nagraj
-        ji&apos;s original works.
+        <span lang="hi" className="hi">उद्धरण केवल मूल ग्रंथों से</span> · Citations come from
+        A. Nagraj ji&apos;s original works; <span lang="hi" className="hi">संसाधन</span> are
+        matched on their metadata.
         {" · "}
         {/* The glossary answers a different question from this box, and only
             announces itself when a query happens to reach it. This is the way
@@ -271,15 +304,28 @@ export function SearchScreen() {
           <ParibhashaCard word={glossary[0]} more={glossary.length - 1} query={q.trim()} />
         )}
 
-        {!busy && response !== null && results.length === 0 && glossary.length === 0 && (
-          <p className="text-center text-sm text-ink-soft">
-            No results for “{q.trim()}”.
-          </p>
-        )}
+        {!busy &&
+          response !== null &&
+          results.length === 0 &&
+          glossary.length === 0 &&
+          resourceHits === 0 && (
+            <p className="text-center text-sm text-ink-soft">
+              No results for “{q.trim()}”.
+            </p>
+          )}
         {results.length > 0 && (
           <>
-            <p className="mb-3 px-1 text-xs text-ink-soft">
-              {results.length === 1 ? "1 result" : `${results.length} results`}
+            {/*
+              The citation lane, named. It only needs a name now that a second
+              lane sits below it — and naming it is what keeps the promise
+              legible: everything under this heading is quotable back to A.
+              Nagraj ji by canonical ref, and nothing under संसाधन is.
+            */}
+            <p className="mb-3 flex flex-wrap items-baseline gap-x-2 px-1 text-xs text-ink-soft">
+              <span className="text-[11px] font-bold uppercase tracking-[0.09em]">
+                <span lang="hi" className="hi">पुस्तकों में</span>
+              </span>
+              <span>{results.length === 1 ? "1 result" : `${results.length} results`}</span>
             </p>
             <ul className="flex flex-col gap-3">
               {shown.map((r, i) => (
@@ -298,6 +344,15 @@ export function SearchScreen() {
             )}
           </>
         )}
+
+        {/*
+          The संसाधन lane, always its own lane and never merged into the
+          results above (contract §13.5). A citation is quotable back to A.
+          Nagraj ji; a metadata hit is a title or a tag that happened to
+          contain the word, and folding the two together would let a folder's
+          name pass for evidence.
+        */}
+        {!busy && resources && <ResourceLaneView lane={resources} />}
       </div>
 
       {/* assistant placeholder — quiet inline banner (PRD §7). It sits below
