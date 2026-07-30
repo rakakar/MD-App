@@ -1,8 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
+  ChevronDown,
   CloseIcon,
   PauseIcon,
   PlayIcon,
@@ -36,6 +37,7 @@ export function PlayerBar() {
 
 function PlayerBarInner() {
   const player = usePlayer();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState<"rate" | "sleep" | "voice" | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   // no bottom nav to clear inside the reader, and the reader stacks its own
@@ -71,6 +73,26 @@ function PlayerBarInner() {
         : (source.subtitle ?? "");
   const paraProgress = device
     ? `${Math.min(player.deviceParaIndex + 1, source.paras.length)} / ${source.paras.length}`
+    : null;
+
+  /**
+   * Back up to the full listening screen. Audio Mode is drawn by the reader
+   * (it follows the chapter's text), so from anywhere else this first goes to
+   * the chapter that is playing and lets the reader put it up on arrival —
+   * which is also the honest thing for the tap to do: it takes you to what you
+   * are listening to.
+   */
+  const chapter =
+    source.kind === "tts" || source.kind === "device"
+      ? { code: source.bookCode, number: source.chapterNumber }
+      : null;
+  const expand = chapter
+    ? () => {
+        if (!reader) {
+          router.push(`/books/${encodeURIComponent(chapter.code)}/${chapter.number}`);
+        }
+        player.openAudioMode();
+      }
     : null;
 
   return (
@@ -150,17 +172,30 @@ function PlayerBarInner() {
           <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
         </button>
 
-        <div className="min-w-0 flex-1">
-          <p className="hi truncate text-sm font-medium leading-tight">{title}</p>
-          <p className="truncate text-xs text-ink-soft">
-            {subtitle}
-            {rendition?.is_stale && (
-              <span className="ml-1 text-[10px] text-ink-soft/80" title="Text was edited after this audio was generated">
-                · पुराना audio
-              </span>
-            )}
-          </p>
-        </div>
+        {/* The title is the way back into Audio Mode — the whole strip, not a
+            5mm chevron, because that is the target a thumb actually finds. */}
+        <button
+          type="button"
+          onClick={expand ?? undefined}
+          disabled={!expand}
+          aria-label={expand ? "Open audio mode" : undefined}
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left disabled:cursor-default"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="hi block truncate text-sm font-medium leading-tight">{title}</span>
+            <span className="block truncate text-xs text-ink-soft">
+              {subtitle}
+              {rendition?.is_stale && (
+                <span className="ml-1 text-[10px] text-ink-soft/80" title="Text was edited after this audio was generated">
+                  · पुराना audio
+                </span>
+              )}
+            </span>
+          </span>
+          {expand && (
+            <ChevronDown className="h-4 w-4 shrink-0 rotate-180 text-ink-soft" />
+          )}
+        </button>
 
         <span className="hidden text-xs tabular-nums text-ink-soft sm:block">
           {device ? `पैरा ${paraProgress}` : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}

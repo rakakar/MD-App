@@ -21,6 +21,8 @@ export interface TtsSource {
   chapterNumber: number;
   chapterTitle: string;
   bookTitle: string;
+  /** the book's cover, for the lock screen and for Audio Mode */
+  coverImage?: string | null;
   renditions: AudioRendition[];
   voiceKey: string;
 }
@@ -36,6 +38,7 @@ export interface DeviceTtsSource {
   chapterNumber: number;
   chapterTitle: string;
   bookTitle: string;
+  coverImage?: string | null;
   paras: SpokenPara[];
 }
 
@@ -46,9 +49,22 @@ export interface TrackSource {
   subtitle?: string;
   url: string;
   durationMs?: number;
+  coverImage?: string | null;
 }
 
 export type PlayerSource = TtsSource | DeviceTtsSource | TrackSource;
+
+/**
+ * What "previous" and "next" mean for whatever is playing — supplied by the
+ * surface that knows (the reader knows its chapter neighbours; a track list
+ * would know its queue). Used in three places at once: the lock screen's
+ * ⏮/⏭, Audio Mode's chapter buttons, and the auto-advance at the end of a
+ * chapter, which is what makes listening hands-free.
+ */
+export interface ChapterNav {
+  prev: (() => void) | null;
+  next: (() => void) | null;
+}
 
 interface PlayerState {
   source: PlayerSource | null;
@@ -80,6 +96,13 @@ interface PlayerState {
   setRate: (rate: number) => void;
   setSleepTimer: (minutes: number | null) => void;
   close: () => void;
+  /** whether the full-screen Audio Mode surface is showing */
+  audioModeOpen: boolean;
+  openAudioMode: () => void;
+  closeAudioMode: () => void;
+  chapterNav: ChapterNav | null;
+  /** memoize the object, or this re-registers the OS handlers every render */
+  setChapterNav: (nav: ChapterNav | null) => void;
 }
 
 /**
@@ -124,12 +147,27 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [deviceParaIndex, setDeviceParaIndex] = useState(0);
   const [deviceVoice, setDeviceVoice] = useState<SpeechSynthesisVoice | null>(null);
   const speaker = useRef<DeviceSpeaker | null>(null);
+  const [audioModeOpen, setAudioModeOpen] = useState(false);
+  const [chapterNav, setChapterNav] = useState<ChapterNav | null>(null);
+  // Read by the element's `ended` handler and by the OS handlers, both of
+  // which are registered once and would otherwise close over a stale nav.
+  const navRef = useRef<ChapterNav | null>(null);
+  useEffect(() => {
+    navRef.current = chapterNav;
+  }, [chapterNav]);
 
   // one <audio> element for the whole app — survives route changes
   const audio = useCallback((): HTMLAudioElement => {
     if (!audioRef.current) {
       const el = new Audio();
       el.preload = "metadata";
+      // Safari only treats an element as the page's media — the thing it hands
+      // to Now Playing and the lock screen — when it is in the document and
+      // allowed to play inline. A detached `new Audio()` plays sound and the
+      // OS never learns who is making it.
+      el.setAttribute("playsinline", "");
+      el.setAttribute("aria-hidden", "true");
+      if (typeof document !== "undefined") document.body.appendChild(el);
       audioRef.current = el;
     }
     return audioRef.current;
@@ -189,6 +227,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const onEnded = () => {
       setPlaying(false);
       ga("tts_complete");
+      // Hands-free is the whole point of listening: a finished chapter rolls
+      // into the next one when the surface has told us what "next" is.
+      navRef.current?.next?.();
     };
     el.addEventListener("timeupdate", onTime);
     el.addEventListener("play", onPlay);
@@ -247,6 +288,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           setPlaying(false);
           setDeviceParaSeq(null);
           ga("tts_complete");
+          navRef.current?.next?.();
         },
         onError: () => {
           setPlaying(false);
@@ -430,10 +472,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setDurationMs(0);
     sleepUntil.current = null;
     setSleepRemaining(null);
+    setAudioModeOpen(false);
   }, [audio]);
 
-  // Media Session API — lock-screen controls (PRD §6; iOS testing tracked
-  // separately, not blocking)
+  const openAudioMode = useCallback(() => setAudioModeOpen(true), []);
+  const closeAudioMode = useCallback(() => setAudioModeOpen(false), []);
+
+  // ---- Media Session: the lock screen and the notification shade ----
+  //
+  // Three things have to be true before an OS draws a player there, and
+  // missing any one of them looks the same from inside the app — sound plays
+  // and no controls appear: metadata (with artwork), live position state, and
+  // a playbackState the OS can trust. All three are set below.
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
     const ms = navigator.mediaSession;
@@ -443,10 +493,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       ms.metadata = null;
       return;
     }
+    const artwork: MediaImage[] = [];
+    if (source.coverImage) artwork.push({ src: source.coverImage, sizes: "512x512" });
+    // Always keep a local fallback last: a cover that 404s or is slow leaves
+    // an OS widget with an empty square, which reads as a broken app.
+    artwork.push(
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png" }
+    );
     ms.metadata = new MediaMetadata(
       source.kind === "tts"
-        ? { title: source.chapterTitle, artist: source.bookTitle, album: "MD Study" }
-        : { title: source.title, artist: source.subtitle ?? "", album: "MD Study" }
+        ? { title: source.chapterTitle, artist: source.bookTitle, album: "मध्यस्थ दर्शन", artwork }
+        : { title: source.title, artist: source.subtitle ?? "", album: "मध्यस्थ दर्शन", artwork }
     );
     const el = audio();
     ms.setActionHandler("play", () => void el.play().catch(() => undefined));
@@ -455,6 +513,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     // screen should not be able to do something the app cannot.
     ms.setActionHandler("seekbackward", (d) => skipSeconds(-(d.seekOffset ?? SKIP_SECONDS)));
     ms.setActionHandler("seekforward", (d) => skipSeconds(d.seekOffset ?? SKIP_SECONDS));
+    // Registered only when they lead somewhere: an inert ⏭ on the lock screen
+    // is worse than no ⏭.
+    ms.setActionHandler("previoustrack", chapterNav?.prev ? () => navRef.current?.prev?.() : null);
+    ms.setActionHandler("nexttrack", chapterNav?.next ? () => navRef.current?.next?.() : null);
     try {
       ms.setActionHandler("seekto", (d) => {
         if (d.seekTime !== undefined && d.seekTime !== null) el.currentTime = d.seekTime;
@@ -467,13 +529,46 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       ms.setActionHandler("pause", null);
       ms.setActionHandler("seekbackward", null);
       ms.setActionHandler("seekforward", null);
+      ms.setActionHandler("previoustrack", null);
+      ms.setActionHandler("nexttrack", null);
       try {
         ms.setActionHandler("seekto", null);
       } catch {
         // ignore
       }
     };
-  }, [source, audio, skipSeconds]);
+  }, [source, audio, skipSeconds, chapterNav?.prev, chapterNav?.next]);
+
+  // Play/pause icon on the lock screen. Without this the OS keeps showing
+  // whatever it last inferred, so pausing from inside the app leaves a ▶ that
+  // is already playing — or the reverse.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = !source
+      ? "none"
+      : playing
+        ? "playing"
+        : "paused";
+  }, [source, playing]);
+
+  // The lock screen's own scrub bar and its counting clock. It does not read
+  // our element; it reads this.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const ms = navigator.mediaSession;
+    if (!ms.setPositionState) return;
+    if (!source || source.kind === "device" || durationMs <= 0) return;
+    const duration = durationMs / 1000;
+    try {
+      ms.setPositionState({
+        duration,
+        position: Math.min(Math.max(0, positionMs / 1000), duration),
+        playbackRate: rate > 0 ? rate : 1,
+      });
+    } catch {
+      // some engines reject a state that disagrees with their own reading
+    }
+  }, [source, positionMs, durationMs, rate]);
 
   const value = useMemo<PlayerState>(
     () => ({
@@ -497,6 +592,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setRate,
       setSleepTimer,
       close,
+      audioModeOpen,
+      openAudioMode,
+      closeAudioMode,
+      chapterNav,
+      setChapterNav,
     }),
     [
       source,
@@ -518,6 +618,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setRate,
       setSleepTimer,
       close,
+      audioModeOpen,
+      openAudioMode,
+      closeAudioMode,
+      chapterNav,
     ]
   );
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { AudioMode } from "@/components/player/AudioMode";
 import { spokenParas } from "@/components/player/deviceSpeech";
 import {
   activeRendition,
@@ -55,6 +56,8 @@ export interface ReaderBook {
   code: string;
   title_hi: string;
   book_type: "print" | "digital";
+  /** shown in Audio Mode and on the lock screen */
+  cover_image?: string | null;
   chapters: ChapterTocEntry[];
 }
 
@@ -253,7 +256,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
 
   // ---- chapter switching (client-side; URL kept in sync) ----
   const goToChapter = useCallback(
-    async (n: number, opts: { targetPage?: string; push?: boolean } = {}) => {
+    async (
+      n: number,
+      opts: { targetPage?: string; push?: boolean } = {}
+    ): Promise<ChapterPayload | null> => {
       setChapterLoading(true);
       setSelection(null);
       pendingPage.current = opts.targetPage ?? null;
@@ -265,7 +271,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
             ? { text: "You're offline and this chapter isn't downloaded." }
             : { text: "Couldn't load this chapter.", retry: { n, ...opts } }
         );
-        return;
+        return null;
       }
       const payload = result.payload;
       setChapter(payload);
@@ -276,6 +282,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
         window.history.pushState(null, "", `/books/${encodeURIComponent(book.code)}/${n}`);
       }
       window.scrollTo({ top: 0 });
+      return payload;
     },
     [book.code, loadChapter, showToast]
   );
@@ -687,36 +694,105 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
     return saved.position_ms > 0 ? { startMs: saved.position_ms } : null;
   }, [book.code, chapterNumber]);
 
-  const startListening = useCallback(
-    (fromSeq?: number) => {
-      if (!chapter) return;
+  /**
+   * Start (or restart) listening to a chapter payload.
+   *
+   * Takes the payload rather than reading `chapter` state so that auto-advance
+   * can play the chapter it has just fetched: the state setter has not landed
+   * yet at that point, and playing "the current chapter" would replay the one
+   * that just finished.
+   */
+  // Destructured, not reached through `player`: the context value is a new
+  // object on every position tick, and a nav callback that depends on it would
+  // be re-registered 4× a second — which, with registration living in an
+  // effect, is a render loop rather than a slow render.
+  const { playTts, playDeviceTts, deviceVoiceAvailable, setChapterNav } = player;
+
+  const startListeningFor = useCallback(
+    (payload: ChapterPayload, opts: { fromSeq?: number; resume?: boolean } = {}) => {
       const common = {
         bookCode: book.code,
-        chapterNumber,
-        chapterTitle: chapter.title_hi,
+        chapterNumber: payload.number,
+        chapterTitle: payload.title_hi,
         bookTitle: book.title_hi,
+        coverImage: book.cover_image ?? null,
       };
-      // An explicit paragraph — "play from here" — always beats the playhead.
-      const resume = fromSeq === undefined ? savedListening() : null;
-      const seq = fromSeq ?? resume?.fromSeq;
-      if (chapter.audio_renditions.length > 0) {
-        const def = chapter.audio_renditions[0];
+      // An explicit paragraph — "play from here" — always beats the playhead,
+      // and so does rolling into a fresh chapter, which starts at its top.
+      const resume =
+        opts.fromSeq === undefined && opts.resume !== false ? savedListening() : null;
+      const seq = opts.fromSeq ?? resume?.fromSeq;
+      if (payload.audio_renditions.length > 0) {
+        const def = payload.audio_renditions[0];
         const startMs =
           seq !== undefined
             ? (def.para_timings[String(seq)]?.[0] ?? 0)
             : (resume?.startMs ?? 0);
-        player.playTts({ ...common, renditions: chapter.audio_renditions }, { startMs });
+        playTts({ ...common, renditions: payload.audio_renditions }, { startMs });
         return;
       }
       // No generated rendition — read it with the device's own Hindi voice.
-      if (!player.deviceVoiceAvailable) return;
-      player.playDeviceTts(
-        { ...common, paras: spokenParas(chapter.paragraphs) },
+      if (!deviceVoiceAvailable) return;
+      playDeviceTts(
+        { ...common, paras: spokenParas(payload.paragraphs) },
         { fromSequence: seq }
       );
     },
-    [chapter, player, book.code, book.title_hi, chapterNumber, savedListening]
+    [
+      playTts,
+      playDeviceTts,
+      deviceVoiceAvailable,
+      book.code,
+      book.title_hi,
+      book.cover_image,
+      savedListening,
+    ]
   );
+
+  const startListening = useCallback(
+    (fromSeq?: number) => {
+      if (chapter) startListeningFor(chapter, { fromSeq });
+    },
+    [chapter, startListeningFor]
+  );
+
+  /**
+   * Move listening to another chapter: turn the page *and* keep the voice
+   * going. This is what ⏮/⏭ mean on the lock screen and in Audio Mode, and
+   * what the end of a chapter does on its own — the listener's hands may be
+   * nowhere near the phone.
+   */
+  const listenToChapter = useCallback(
+    async (n: number) => {
+      const payload = await goToChapter(n);
+      if (payload) startListeningFor(payload, { resume: false });
+    },
+    [goToChapter, startListeningFor]
+  );
+
+  // What ⏮/⏭ mean while this chapter is the one playing — registered only then,
+  // so the lock screen of a chapter nobody is listening to grows no buttons.
+  const chapterNav = useMemo(() => {
+    if (!listening || !chapter) return null;
+    const prev = chapter.prev;
+    const next = chapter.next;
+    return {
+      prev: prev ? () => void listenToChapter(prev.number) : null,
+      next: next ? () => void listenToChapter(next.number) : null,
+    };
+  }, [listening, chapter, listenToChapter]);
+
+  useEffect(() => {
+    setChapterNav(chapterNav);
+    return () => setChapterNav(null);
+  }, [chapterNav, setChapterNav]);
+
+  /** 🎧 — start if silent, and either way show the listening screen. */
+  const openListening = useCallback(() => {
+    if (!listening) startListening();
+    player.openAudioMode();
+    track("audio_mode_open");
+  }, [listening, startListening, player]);
 
   const clearSelection = useCallback(() => {
     window.getSelection()?.removeAllRanges();
@@ -1123,7 +1199,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
           </span>
           {canListen && (
             <ChromeBtn
-              onClick={() => (listening ? player.toggle() : startListening())}
+              onClick={openListening}
               label={
                 deviceFallback
                   ? "Listen with this device's voice (no recorded audio yet)"
@@ -1195,6 +1271,22 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
           )}
           <ActionBtn onClick={clearSelection} ariaLabel="Dismiss">✕</ActionBtn>
         </div>
+      )}
+
+      {/* ---- Audio Mode ----
+          Rendered here, by the reader, because it is the reader that holds the
+          chapter's paragraphs — the text Audio Mode follows. Only for the
+          chapter actually playing: with two reader tabs open, the silent one
+          must not put up a player. */}
+      {player.audioModeOpen && listening && chapter && (
+        <AudioMode
+          paragraphs={chapter.paragraphs}
+          activeSeq={activeSeq}
+          onSeekPara={playFromPara}
+          prevChapterTitle={chapter.prev?.title_hi}
+          nextChapterTitle={chapter.next?.title_hi}
+          onOpenContents={() => setTocOpen(true)}
+        />
       )}
 
       {/* ---- sheets ---- */}

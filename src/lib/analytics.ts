@@ -22,6 +22,9 @@ export type GaEvent =
   | "reader_face_change"
   | "tts_play"
   | "tts_complete"
+  // Whether listening is a mode people *stay* in (Audio Mode) or a background
+  // tap they leave running while reading — the two want different screens.
+  | "audio_mode_open"
   | "audio_track_play"
   | "video_play"
   | "search"

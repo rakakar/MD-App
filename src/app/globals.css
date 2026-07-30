@@ -245,6 +245,36 @@ html[data-reading="1"] body {
   }
 }
 
+/* Audio Mode's scrub bar. The bottom bar's seek line is 1px and thumbless on
+   purpose — it is a progress hairline you *can* drag. This one is the main
+   control on the screen and is dragged blind, one-handed, so it gets a real
+   grab handle and a 24px hit band around a 4px track. */
+.audio-scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  /* the fill comes in as an inline gradient; hold it to a 4px band in the
+     middle so the element can stay finger-tall without a fat track */
+  background-size: 100% 4px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+.audio-scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #f7f2e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+.audio-scrub::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 0;
+  border-radius: 50%;
+  background: #f7f2e8;
+}
+
 /* bottom sheets (workspace switcher) */
 .ws-sheet {
   animation: sheet-up 0.22s cubic-bezier(0.22, 1, 0.36, 1) 1;
