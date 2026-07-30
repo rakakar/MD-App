@@ -2,13 +2,13 @@
  * Offline listening — saving a chapter's audio onto the device.
  *
  * Why this is not part of "Download for offline" (which fetches a whole book's
- * text into IndexedDB): the BE serves renditions as **WAV**, at 48 kB per
- * second of speech. One 24-minute chapter is 70 MB, and मानव व्यवहार दर्शन
- * entire is most of a gigabyte. A one-tap whole-book audio download would
- * quietly eat a reader's phone and their mobile data, so audio is saved one
- * chapter at a time, always deliberately, always with the size shown first.
- * (When the BE grows an mp3/opus rendition — a tenth of the bytes — this file
- * needs no change beyond `BYTES_PER_SECOND`.)
+ * text into IndexedDB): audio is heavy in a way text never is. The renditions
+ * generated before the BE had ffmpeg are **WAV**, 48 kB per second — one
+ * 24-minute chapter is 70 MB, and मानव व्यवहार दर्शन entire most of a
+ * gigabyte. mp3 renditions are 6× lighter, but a whole book is still
+ * a hundred-plus megabytes, so the shape stands either way: audio is saved
+ * one chapter at a time, always deliberately, always with the size shown
+ * first (`bytesPerSecond` reads which kind each URL is).
  *
  * Mechanics: the file is fetched `no-cors` (the media host sends no CORS
  * headers) and put in a Cache Storage bucket the service worker reads on the
@@ -24,8 +24,13 @@ import type { AudioRendition } from "./types";
  *  own caches, and a reader's saved audio must survive a deploy. */
 export const AUDIO_CACHE = "md-audio-v1";
 
-/** 24 kHz, 16-bit, mono — measured against the served files, not guessed. */
-const BYTES_PER_SECOND = 48_000;
+/** Bytes per second of speech, by what the URL says the file is. WAV is the
+ *  BE's no-ffmpeg fallback (24 kHz 16-bit mono = 48 kB/s, measured); anything
+ *  compressed the BE makes is 64 kbps mono (mp3 today, opus in an older
+ *  TechSpec) = 8 kB/s. Constant-bitrate both, so these are real numbers. */
+function bytesPerSecond(url: string): number {
+  return /\.wav($|\?)/i.test(url) ? 48_000 : 8_000;
+}
 
 /** The ledger. Opaque responses report no size, so what a reader has saved and
  *  what it cost is remembered here rather than read back from the cache. */
@@ -46,10 +51,9 @@ export function audioSupported(): boolean {
   return typeof window !== "undefined" && "caches" in window;
 }
 
-/** Estimated bytes for a rendition. WAV is a constant bitrate, so this is the
- *  real number, not a guess; anything else is left to the ledger's honesty. */
+/** Estimated bytes for a rendition — duration × the URL's constant bitrate. */
 export function renditionBytes(rendition: AudioRendition): number {
-  return Math.round((rendition.duration_ms / 1000) * BYTES_PER_SECOND);
+  return Math.round((rendition.duration_ms / 1000) * bytesPerSecond(rendition.audio_url));
 }
 
 export function formatBytes(bytes: number): string {
