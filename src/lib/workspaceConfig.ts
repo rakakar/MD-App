@@ -39,6 +39,14 @@ export interface Workspace {
   nameHi: string;
   /** identity colour (PRD §2 table) */
   color: string;
+  /**
+   * One line on what the workspace holds, shown under its name in the
+   * switcher sheet (design 10A). It carries the accessible label too — the
+   * spec asks that choosing correctly never depend on telling five hues
+   * apart — so it must describe what is actually behind the row, and no row
+   * may promise a surface that is not built yet.
+   */
+  tagline: string;
   home: string;
   nav: NavItem[];
 }
@@ -52,6 +60,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     // designer palette (spec 10A), each hue deepened only as far as AA on the
     // sepia reading surface requires — terracotta uses the spec's own 700
     color: "#A64E12",
+    tagline: "ग्रंथ · daily सूत्र · प्रवचन",
     home: "/",
     nav: [
       { label: "Home", href: "/", icon: "home" },
@@ -65,6 +74,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     name: "Translations",
     nameHi: "अनुवाद",
     color: "#4A7260",
+    tagline: "English · side-by-side with the मूल",
     home: "/translations",
     nav: [
       { label: "Home", href: "/translations", icon: "home" },
@@ -77,6 +87,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     name: "Resources",
     nameHi: "संसाधन",
     color: "#5E5A8C",
+    tagline: "Shivir notes · presentations · Yojana",
     home: "/resources",
     // Three slots, not four. Resources holds files rather than books, so the
     // old "Browse" — a books shelf filtered to this section — pointed at
@@ -92,6 +103,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     name: "My Journey",
     nameHi: "मेरी यात्रा",
     color: "#89631F",
+    tagline: "Where you left off · bookmarks · notes",
     home: "/me",
     nav: [
       { label: "Overview", href: "/me", icon: "overview" },
@@ -105,6 +117,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     name: "Connect",
     nameHi: "संपर्क",
     color: "#2F6E86",
+    tagline: "शिविर calendar · JV centres",
     home: "/connect",
     nav: [
       { label: "Events", href: "/connect", icon: "events" },

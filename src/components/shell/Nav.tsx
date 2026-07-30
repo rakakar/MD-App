@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AvatarMenu, EventChip, WorkspaceSwitcher } from "./Header";
 import { useWorkspace } from "./WorkspaceProvider";
-import { Icon } from "./icons";
+import { BrandMark, Icon } from "./icons";
 import type { NavItem } from "@/lib/workspaceConfig";
 
 function isActive(item: NavItem, pathname: string): boolean {
@@ -81,7 +81,17 @@ export function Sidebar() {
   return (
     // 256px, the width every desktop panel in the spec is drawn against
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-rule bg-white lg:flex">
-      <div className="flex flex-col gap-2 border-b border-rule p-3">
+      {/* brand row, then the switcher under its own label (design 10A desktop):
+          the pill alone read as a filter on the nav below it rather than as the
+          thing that changes what the nav is */}
+      <div className="flex items-center gap-2.5 border-b border-rule px-4 py-4">
+        <BrandMark className="h-7.5 w-7.5" />
+        <span className="text-sm font-semibold tracking-[-0.01em]">MD Study</span>
+      </div>
+      <div className="flex flex-col gap-1.5 border-b border-rule p-3">
+        <p className="px-2 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+          Workspace
+        </p>
         <WorkspaceSwitcher variant="popover" />
         <EventChip />
       </div>

@@ -151,6 +151,38 @@ export function WorkspaceIcon({
   }
 }
 
+/**
+ * The app mark that opens the app bar (design 10A / every mobile screen).
+ * Drawn rather than loaded from /icon-192.png: it is the same geometry —
+ * measured off that file — and inline it survives offline, needs no request,
+ * and stays crisp at the 30px the sidebar uses.
+ *
+ * Terracotta, not the workspace hue: the mark is app identity, and 10A keeps
+ * terracotta on shared chrome while the hue moves only through the switcher.
+ */
+export function BrandMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className ?? "h-8 w-8"} aria-hidden="true">
+      <rect width="48" height="48" rx="15" fill="#c8621a" />
+      <path d="M23.4 17v16.6H9.75V20z" fill="#faf7f2" />
+      <path d="M24.6 17v16.6h13.65V20z" fill="#faf7f2" />
+    </svg>
+  );
+}
+
+/**
+ * The switcher pill's glyph (design 10A app bar). One mark in every
+ * workspace — it says "this opens a list", not "this is Originals"; only its
+ * tint follows the active hue.
+ */
+export function SwitcherIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-3 w-3"} strokeWidth={2.4}>
+      <path d="M5 6h14M5 12h14M5 18h9" />
+    </Svg>
+  );
+}
+
 /** waveform — discourse audio, as distinct from the video play-rectangle */
 export function WaveformIcon({ className }: { className?: string }) {
   return (

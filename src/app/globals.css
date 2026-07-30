@@ -140,6 +140,16 @@ body {
   font-family: var(--font-devanagari-sans);
 }
 
+/* A UI line that interleaves both scripts ("ग्रंथ · daily सूत्र · प्रवचन").
+   Elsewhere each script gets its own span, but these strings alternate too
+   often for that, so the stack switches per glyph instead: Latin from the UI
+   sans, Devanagari from Mukta — which is the 6A face for Devanagari UI labels,
+   and keeps the device's own fallback out of it. */
+.ui-hi {
+  font-family: var(--font-instrument-sans), var(--font-mukta), "Mukta",
+    system-ui, sans-serif;
+}
+
 /* Reader typeface choice. Only the book text follows it — titles and nav
    labels elsewhere stay in the serif, which is the app's voice. */
 html[data-reader-face="sans"] .reader-surface .hi {

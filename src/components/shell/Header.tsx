@@ -8,14 +8,29 @@ import { track } from "@/lib/analytics";
 import { getEvents } from "@/lib/api";
 import { eventStart, shortDate, upcomingEvents } from "@/lib/events";
 import type { EventItem } from "@/lib/types";
-import { WORKSPACES, WORKSPACE_ORDER } from "@/lib/workspaceConfig";
+import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceConfig";
 import { useWorkspace } from "./WorkspaceProvider";
-import { CalendarChipIcon, CheckIcon, ChevronDown, CloseIcon } from "./icons";
+import {
+  BrandMark,
+  CalendarChipIcon,
+  CheckIcon,
+  ChevronDown,
+  CloseIcon,
+  SwitcherIcon,
+  UserIcon,
+  WorkspaceIcon,
+} from "./icons";
 
 /**
- * Workspace picker (PRD §2). Two variants rather than one component that
- * swaps at a breakpoint: the header renders `sheet`, the desktop sidebar
- * renders `popover`.
+ * Workspace picker (PRD §2, design 10A). Two variants rather than one
+ * component that swaps at a breakpoint: the header renders `sheet`, the
+ * desktop sidebar renders `popover`.
+ *
+ * The trigger is the design's app-bar pill — a tinted tile, the name, a
+ * chevron. The tile's tint is the only part that carries the workspace hue;
+ * 10A holds terracotta on shared chrome and moves the hue through the
+ * switcher, hero and selection state, and it cross-fades over 180ms rather
+ * than cutting.
  *
  * The sheet is portalled to <body> on purpose. The header sets backdrop-blur,
  * and a backdrop-filter makes an element the containing block for its
@@ -56,95 +71,104 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
     };
   }, [open, variant]);
 
-  function list(compact: boolean) {
+  function choose(id: WorkspaceId) {
+    select(id);
+    setOpen(false);
+  }
+
+  /**
+   * Sheet row (10A): the workspace's own glyph on a gradient tile, its name
+   * with the Devanagari, and the one line on what is inside. Selection is
+   * never colour-only — the check and the 2px ring carry it too — and the ring
+   * is drawn as a border plus an inset shadow so selecting a row cannot shift
+   * the rows below it by a pixel.
+   */
+  function sheetRow(id: WorkspaceId) {
+    const ws = WORKSPACES[id];
+    const active = ws.id === workspace.id;
     return (
-      <ul role="listbox" aria-label="Workspaces" className="flex flex-col">
-        {WORKSPACE_ORDER.map((id) => {
-          const ws = WORKSPACES[id];
-          const active = ws.id === workspace.id;
-          return (
-            <li key={id}>
-              <Link
-                href={ws.home}
-                role="option"
-                aria-selected={active}
-                onClick={() => {
-                  select(id);
-                  setOpen(false);
-                }}
-                className={
-                  compact
-                    ? `flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-black/5 ${
-                        active ? "font-semibold" : ""
-                      }`
-                    : "flex min-h-14 items-center gap-3.5 px-5 py-2.5 transition-colors active:bg-black/5"
+      <li key={id}>
+        <Link
+          href={ws.home}
+          role="radio"
+          aria-checked={active}
+          aria-label={`${ws.name} — ${ws.tagline}`}
+          onClick={() => choose(id)}
+          className="flex min-h-14 items-center gap-3 rounded-2xl border bg-white p-3 transition-colors active:bg-black/[0.03]"
+          style={
+            active
+              ? {
+                  borderColor: ws.color,
+                  boxShadow: `inset 0 0 0 1px ${ws.color}`,
+                  background: `color-mix(in srgb, ${ws.color} 7%, #fff)`,
                 }
-                style={
-                  !compact && active
-                    ? { background: `color-mix(in srgb, ${ws.color} 8%, transparent)` }
-                    : undefined
-                }
-              >
-                <span
-                  className={
-                    compact
-                      ? "h-2.5 w-2.5 shrink-0 rounded-full"
-                      : "flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                  }
-                  style={
-                    compact
-                      ? { background: ws.color }
-                      : { background: `color-mix(in srgb, ${ws.color} 15%, transparent)` }
-                  }
-                  aria-hidden
-                >
-                  {!compact && (
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ background: ws.color }}
-                    />
-                  )}
-                </span>
+              : { borderColor: "var(--color-rule)" }
+          }
+        >
+          <span
+            aria-hidden
+            className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-[11px] text-white"
+            style={{
+              background: `linear-gradient(150deg, color-mix(in srgb, ${ws.color} 78%, #fff), ${ws.color})`,
+            }}
+          >
+            <WorkspaceIcon id={id} />
+          </span>
 
-                {compact ? (
-                  // baseline row: .hi sets line-height 1.85, so centring the
-                  // boxes leaves the Devanagari riding above the Latin text
-                  <span className="flex flex-1 items-baseline gap-2">
-                    <span>{ws.name}</span>
-                    <span className="hi text-xs text-ink-soft" style={{ lineHeight: 1 }}>
-                      {ws.nameHi}
-                    </span>
-                  </span>
-                ) : (
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className={`block text-[15px] leading-tight ${
-                        active ? "font-semibold" : "font-medium"
-                      }`}
-                    >
-                      {ws.name}
-                    </span>
-                    <span className="hi block text-xs leading-tight text-ink-soft">
-                      {ws.nameHi}
-                    </span>
-                  </span>
-                )}
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold leading-tight">
+              {ws.name}
+              <span className="hi font-medium text-ink-soft"> — {ws.nameHi}</span>
+            </span>
+            <span className="ui-hi mt-0.5 block text-[12.5px] leading-snug text-ink-soft">
+              {ws.tagline}
+            </span>
+          </span>
 
-                {active &&
-                  (compact ? (
-                    <span className="ml-auto text-xs" style={{ color: ws.color }}>
-                      ●
-                    </span>
-                  ) : (
-                    <span className="ml-auto shrink-0" style={{ color: ws.color }} aria-hidden>
-                      <CheckIcon className="h-5 w-5" />
-                    </span>
-                  ))}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+          {active && (
+            <span className="shrink-0" style={{ color: ws.color }} aria-hidden>
+              <CheckIcon className="h-4.5 w-4.5" />
+            </span>
+          )}
+        </Link>
+      </li>
+    );
+  }
+
+  /** Popover row (10A desktop): dot, name, check — the compact form. */
+  function popoverRow(id: WorkspaceId) {
+    const ws = WORKSPACES[id];
+    const active = ws.id === workspace.id;
+    return (
+      <li key={id}>
+        <Link
+          href={ws.home}
+          role="option"
+          aria-selected={active}
+          aria-label={`${ws.name} — ${ws.tagline}`}
+          onClick={() => choose(id)}
+          className={`flex items-center gap-2.5 rounded-[10px] px-2.5 py-2.5 text-[13px] transition-colors ${
+            active ? "font-semibold" : "font-medium text-ink-soft hover:bg-canvas/60"
+          }`}
+          style={
+            active
+              ? { background: `color-mix(in srgb, ${ws.color} 8%, #fff)` }
+              : undefined
+          }
+        >
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ background: ws.color }}
+            aria-hidden
+          />
+          <span className="flex-1 truncate">{ws.name}</span>
+          {active && (
+            <span style={{ color: ws.color }} aria-hidden>
+              <CheckIcon className="h-3.5 w-3.5" />
+            </span>
+          )}
+        </Link>
+      </li>
     );
   }
 
@@ -155,58 +179,94 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
       className="fixed inset-0 z-60 lg:hidden"
       role="dialog"
       aria-modal="true"
-      aria-label="Switch workspace"
+      aria-labelledby="ws-sheet-title"
     >
       <button
         type="button"
         aria-label="Close"
-        className="ws-sheet-backdrop absolute inset-0 bg-black/45"
+        className="ws-sheet-backdrop absolute inset-0 bg-black/40"
         onClick={() => setOpen(false)}
       />
-      <div className="ws-sheet absolute inset-x-0 bottom-0 rounded-t-3xl bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl">
-        <div className="mx-auto mt-2.5 h-1 w-9 rounded-full bg-black/15" aria-hidden />
-        <div className="flex items-center justify-between px-5 pt-3 pb-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
-            Workspaces
-          </p>
+      {/* five rows fit any phone held upright; in landscape they do not, and a
+          row you cannot reach is a row you cannot choose */}
+      <div className="ws-sheet absolute inset-x-0 bottom-0 max-h-[calc(100dvh-2.5rem)] overflow-y-auto overscroll-contain rounded-t-[26px] border-t border-rule bg-surface px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-20px_44px_-20px_rgba(26,22,19,.4)]">
+        <div className="mx-auto h-1 w-10 rounded-full bg-rule" aria-hidden />
+        <div className="mt-4 flex items-start justify-between gap-3">
+          <div>
+            <p id="ws-sheet-title" className="text-[17px] font-semibold tracking-[-0.01em]">
+              Choose a workspace
+            </p>
+            <p className="mt-1 text-[13px] leading-snug text-ink-soft">
+              Each workspace changes the home feed, colour and menu — the four tabs stay put.
+            </p>
+          </div>
           <button
             type="button"
             aria-label="Close"
             onClick={() => setOpen(false)}
-            className="-mr-2 rounded-full p-2 text-ink-soft active:bg-black/5"
+            className="-mr-2 -mt-1 shrink-0 rounded-full p-2 text-ink-soft active:bg-black/5"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
         </div>
-        {list(false)}
+        <ul role="radiogroup" aria-label="Workspaces" className="mt-4 flex flex-col gap-2">
+          {WORKSPACE_ORDER.map(sheetRow)}
+        </ul>
       </div>
     </div>
   );
 
+  // 10A pins the current workspace to the top of the desktop dropdown, with a
+  // divider before the rest — on a menu you reopen all day, the row you last
+  // chose should be where you last saw it.
+  const rest = WORKSPACE_ORDER.filter((id) => id !== workspace.id);
+
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative min-w-0">
       <button
         type="button"
-        aria-haspopup="listbox"
+        aria-haspopup={variant === "sheet" ? "dialog" : "listbox"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="-ml-1 flex min-h-10 items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-black/5 active:bg-black/10"
-        style={{ color: "var(--ws-ink)" }}
+        className={`flex min-h-10 items-center gap-2 rounded-xl border bg-white pl-1.5 pr-2.5 text-left shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors ${
+          variant === "popover" ? "w-full" : "max-w-full"
+        } ${open ? "" : "hover:bg-accent-tint"}`}
+        style={
+          open
+            ? {
+                borderColor: "var(--ws-color)",
+                boxShadow: `0 0 0 3px color-mix(in srgb, var(--ws-color) 12%, transparent)`,
+              }
+            : { borderColor: "var(--color-rule)" }
+        }
       >
         <span
-          className="h-2.5 w-2.5 rounded-full"
-          style={{ background: "var(--ws-color)" }}
           aria-hidden
-        />
-        {workspace.name}
+          className="flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-[7px] transition-colors duration-[180ms]"
+          style={{
+            background: "color-mix(in srgb, var(--ws-color) 12%, #fff)",
+            color: "var(--ws-ink)",
+          }}
+        >
+          <SwitcherIcon className="h-3.5 w-3.5" />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-[-0.01em]">
+          {workspace.name}
+        </span>
         <ChevronDown
-          className={`h-4 w-4 opacity-60 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-3 w-3 shrink-0 text-ink-soft/70 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
         />
       </button>
 
       {open && variant === "popover" && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-xl border border-rule bg-white shadow-lg">
-          {list(true)}
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-56 rounded-[14px] border border-rule bg-white p-1.5 shadow-[0_20px_44px_-16px_rgba(26,22,19,.35)]">
+          <ul role="listbox" aria-label="Workspaces" className="flex flex-col gap-0.5">
+            {popoverRow(workspace.id)}
+            <li aria-hidden className="my-1 h-px bg-rule" />
+            {rest.map(popoverRow)}
+          </ul>
         </div>
       )}
 
@@ -266,7 +326,7 @@ function AvatarMenu() {
   }, [open]);
 
   if (loading) {
-    return <div className="h-8 w-8 rounded-full bg-black/5" aria-hidden />;
+    return <div className="h-10 w-10 rounded-xl bg-black/5" aria-hidden />;
   }
 
   if (!user) {
@@ -281,23 +341,21 @@ function AvatarMenu() {
     );
   }
 
-  const initial =
-    (user.name as string)?.[0]?.toUpperCase() ??
-    (user.email as string)?.[0]?.toUpperCase() ??
-    "•";
-
   return (
     <div ref={ref} className="relative">
+      {/* 10A draws this as a bordered white square with a person glyph, not a
+          coloured initial: the app bar already carries the workspace hue on
+          the switcher tile, and a second hue-filled circle next to it read as
+          a second piece of chrome competing for the same meaning. */}
       <button
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white"
-        style={{ background: "var(--ws-color)" }}
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-rule bg-white text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
-        {initial}
+        <UserIcon className="h-4.5 w-4.5" />
       </button>
       {open && (
         <div
@@ -339,13 +397,24 @@ function AvatarMenu() {
 }
 
 export function Header() {
+  const { workspace } = useWorkspace();
+
   return (
     // pt-safe: installed as a PWA the viewport is viewport-fit=cover, so
     // without it the bar sits under the status bar / notch.
-    <header className="sticky top-0 z-40 border-b border-rule bg-surface/90 pt-[env(safe-area-inset-top)] backdrop-blur lg:hidden">
-      <div className="flex h-13 items-center justify-between gap-2 px-3">
+    <header className="sticky top-0 z-40 border-b border-rule bg-surface/85 pt-[env(safe-area-inset-top)] backdrop-blur-lg lg:hidden">
+      <div className="flex items-center gap-2.5 px-4 py-2">
+        {/* the mark is a way home as well as identity — from four levels deep
+            in a book list, the tab bar's Home is the only other route back */}
+        <Link
+          href={workspace.home}
+          aria-label={`${workspace.name} home`}
+          className="shrink-0 rounded-[10px] transition-opacity active:opacity-80"
+        >
+          <BrandMark className="h-8 w-8" />
+        </Link>
         <WorkspaceSwitcher />
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <EventChip />
           <AvatarMenu />
         </div>
