@@ -384,6 +384,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [audio, source?.kind]
   );
 
+  // The OS's ⏪/⏩ call through this ref, so registering those handlers does not
+  // have to depend on `skipSeconds` — re-registering them is what loses the
+  // Android notification.
+  const skipRef = useRef(skipSeconds);
+  useEffect(() => {
+    skipRef.current = skipSeconds;
+  }, [skipSeconds]);
+
   const setRate = useCallback(
     (r: number) => {
       setRateState(r);
@@ -480,43 +488,68 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   // ---- Media Session: the lock screen and the notification shade ----
   //
-  // Three things have to be true before an OS draws a player there, and
-  // missing any one of them looks the same from inside the app — sound plays
-  // and no controls appear: metadata (with artwork), live position state, and
-  // a playbackState the OS can trust. All three are set below.
+  // Four things have to be true before an OS draws a player there, and missing
+  // any one of them looks identical from inside the app — sound plays and no
+  // controls appear: an in-document media element, metadata with artwork, a
+  // live position state, and a playbackState the OS can trust.
+  //
+  // They are set in *four separate effects* on purpose. Android's notification
+  // is torn down and rebuilt when the transport handlers are unregistered, and
+  // Chrome does not always rebuild it — so a single effect that also depended
+  // on the chapter neighbours (which arrive a beat after playback starts, and
+  // again on every chapter change) produced exactly what a Moto reader
+  // reported: controls the first time, then nothing. Metadata churn, handler
+  // churn, position churn and state churn are now independent, and only the
+  // one that actually changed re-runs.
+
+  // 1. Who is playing. Depends on the *values*, not on the source object: that
+  //    object is replaced whenever the voice or the playhead moves.
+  const msTitle = !source ? null : source.kind === "track" ? source.title : source.chapterTitle;
+  const msArtist = !source
+    ? null
+    : source.kind === "track"
+      ? (source.subtitle ?? "")
+      : source.bookTitle;
+  const msCover = source?.kind === "device" ? null : (source?.coverImage ?? null);
+  const msSilent = !source || source.kind === "device";
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
     const ms = navigator.mediaSession;
     // Device speech doesn't run through the audio element, so the OS has no
     // media session to attach to — no lock-screen controls in that mode.
-    if (!source || source.kind === "device") {
+    if (msSilent || msTitle === null) {
       ms.metadata = null;
       return;
     }
     const artwork: MediaImage[] = [];
-    if (source.coverImage) artwork.push({ src: source.coverImage, sizes: "512x512" });
+    if (msCover) artwork.push({ src: msCover, sizes: "512x512" });
     // Always keep a local fallback last: a cover that 404s or is slow leaves
     // an OS widget with an empty square, which reads as a broken app.
     artwork.push(
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" }
     );
-    ms.metadata = new MediaMetadata(
-      source.kind === "tts"
-        ? { title: source.chapterTitle, artist: source.bookTitle, album: "मध्यस्थ दर्शन", artwork }
-        : { title: source.title, artist: source.subtitle ?? "", album: "मध्यस्थ दर्शन", artwork }
-    );
+    ms.metadata = new MediaMetadata({
+      title: msTitle,
+      artist: msArtist ?? "",
+      album: "मध्यस्थ दर्शन",
+      artwork,
+    });
+  }, [msSilent, msTitle, msArtist, msCover]);
+
+  // 2. The transport. Registered once for as long as something is playing and
+  //    never re-registered — see the note above.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    if (msSilent) return;
+    const ms = navigator.mediaSession;
     const el = audio();
     ms.setActionHandler("play", () => void el.play().catch(() => undefined));
     ms.setActionHandler("pause", () => el.pause());
     // Same 10s the bar's own buttons use, and the same clamping — the lock
     // screen should not be able to do something the app cannot.
-    ms.setActionHandler("seekbackward", (d) => skipSeconds(-(d.seekOffset ?? SKIP_SECONDS)));
-    ms.setActionHandler("seekforward", (d) => skipSeconds(d.seekOffset ?? SKIP_SECONDS));
-    // Registered only when they lead somewhere: an inert ⏭ on the lock screen
-    // is worse than no ⏭.
-    ms.setActionHandler("previoustrack", chapterNav?.prev ? () => navRef.current?.prev?.() : null);
-    ms.setActionHandler("nexttrack", chapterNav?.next ? () => navRef.current?.next?.() : null);
+    ms.setActionHandler("seekbackward", (d) => skipRef.current(-(d.seekOffset ?? SKIP_SECONDS)));
+    ms.setActionHandler("seekforward", (d) => skipRef.current(d.seekOffset ?? SKIP_SECONDS));
     try {
       ms.setActionHandler("seekto", (d) => {
         if (d.seekTime !== undefined && d.seekTime !== null) el.currentTime = d.seekTime;
@@ -529,15 +562,31 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       ms.setActionHandler("pause", null);
       ms.setActionHandler("seekbackward", null);
       ms.setActionHandler("seekforward", null);
-      ms.setActionHandler("previoustrack", null);
-      ms.setActionHandler("nexttrack", null);
       try {
         ms.setActionHandler("seekto", null);
       } catch {
         // ignore
       }
     };
-  }, [source, audio, skipSeconds, chapterNav?.prev, chapterNav?.next]);
+  }, [msSilent, audio]);
+
+  // 3. ⏮/⏭, which come and go with the chapter's neighbours. Kept apart from
+  //    the transport so that gaining a "next chapter" cannot cost us play/pause.
+  const hasPrev = Boolean(chapterNav?.prev);
+  const hasNext = Boolean(chapterNav?.next);
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    if (msSilent) return;
+    const ms = navigator.mediaSession;
+    // Registered only when they lead somewhere: an inert ⏭ on the lock screen
+    // is worse than no ⏭.
+    ms.setActionHandler("previoustrack", hasPrev ? () => navRef.current?.prev?.() : null);
+    ms.setActionHandler("nexttrack", hasNext ? () => navRef.current?.next?.() : null);
+    return () => {
+      ms.setActionHandler("previoustrack", null);
+      ms.setActionHandler("nexttrack", null);
+    };
+  }, [msSilent, hasPrev, hasNext]);
 
   // Play/pause icon on the lock screen. Without this the OS keeps showing
   // whatever it last inferred, so pausing from inside the app leaves a ▶ that
@@ -551,24 +600,27 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         : "paused";
   }, [source, playing]);
 
-  // The lock screen's own scrub bar and its counting clock. It does not read
-  // our element; it reads this.
+  // 4. The lock screen's own scrub bar and its counting clock. It does not read
+  //    our element; it reads this. Told in whole seconds, which is the finest
+  //    thing the OS displays — the element ticks four times as often, and every
+  //    one of those was a call the notification did not need.
+  const positionSec = Math.floor(positionMs / 1000);
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
     const ms = navigator.mediaSession;
     if (!ms.setPositionState) return;
-    if (!source || source.kind === "device" || durationMs <= 0) return;
+    if (msSilent || durationMs <= 0) return;
     const duration = durationMs / 1000;
     try {
       ms.setPositionState({
         duration,
-        position: Math.min(Math.max(0, positionMs / 1000), duration),
+        position: Math.min(Math.max(0, positionSec), duration),
         playbackRate: rate > 0 ? rate : 1,
       });
     } catch {
       // some engines reject a state that disagrees with their own reading
     }
-  }, [source, positionMs, durationMs, rate]);
+  }, [msSilent, positionSec, durationMs, rate]);
 
   const value = useMemo<PlayerState>(
     () => ({

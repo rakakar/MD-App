@@ -6,6 +6,13 @@ import { AccountSecurity } from "@/components/auth/AccountSecurity";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { applyConsent } from "@/lib/analytics";
+import {
+  formatBytes,
+  listSavedAudio,
+  removeAllAudio,
+  removeAudio,
+  type SavedAudio,
+} from "@/lib/audioCache";
 import { listDownloads, removeDownload, type DownloadRecord } from "@/lib/idb";
 import {
   getPrefs,
@@ -18,10 +25,12 @@ export default function SettingsPage() {
   const { user, loading, logout } = useAuth();
   const [prefs, setPrefsState] = useState<Prefs | null>(null);
   const [downloads, setDownloads] = useState<DownloadRecord[]>([]);
+  const [audio, setAudio] = useState<SavedAudio[]>([]);
 
   useEffect(() => {
     setPrefsState(getPrefs());
     void listDownloads().then(setDownloads);
+    void listSavedAudio().then(setAudio);
   }, []);
 
   const update = (patch: Partial<Prefs>) => {
@@ -147,6 +156,59 @@ export default function SettingsPage() {
               </li>
             ))}
           </ul>
+        )}
+      </div>
+
+      {/* Audio is listed apart from the books, and per chapter, because it is a
+          different order of size: a saved chapter is tens of megabytes where a
+          whole downloaded book's text is a few. A reader who is short of space
+          needs to see which chapters, and how much each one costs. */}
+      <SectionHeading>Saved audio</SectionHeading>
+      <div className="rounded-2xl border border-rule bg-white">
+        {audio.length === 0 ? (
+          <p className="p-4 text-sm text-ink-soft">
+            No chapters saved for offline listening. Open a chapter’s audio mode and tap the
+            download size.
+          </p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
+              <p className="text-xs text-ink-soft">
+                {audio.length} {audio.length === 1 ? "chapter" : "chapters"} ·{" "}
+                {formatBytes(audio.reduce((n, a) => n + a.bytes, 0))}
+              </p>
+              <button
+                type="button"
+                onClick={() => void removeAllAudio().then(() => setAudio([]))}
+                className="shrink-0 rounded-full border border-rule px-3 py-1 text-xs"
+              >
+                Remove all
+              </button>
+            </div>
+            <ul className="divide-y divide-rule">
+              {audio.map((a) => (
+                <li key={a.url} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p lang="hi" className="hi truncate text-sm font-medium">
+                      {a.chapter_title}
+                    </p>
+                    <p lang="hi" className="hi truncate text-xs text-ink-soft">
+                      {a.book_title} · {a.voice_label} · {formatBytes(a.bytes)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void removeAudio(a.url).then(() => listSavedAudio().then(setAudio))
+                    }
+                    className="shrink-0 rounded-full border border-rule px-3 py-1 text-xs"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 

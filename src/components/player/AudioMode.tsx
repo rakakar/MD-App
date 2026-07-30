@@ -8,9 +8,17 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
 } from "@/components/shell/icons";
+import {
+  audioSupported,
+  formatBytes,
+  isAudioSaved,
+  removeAudio,
+  renditionBytes,
+  saveAudio,
+} from "@/lib/audioCache";
 import { coverGradient, bookHue } from "@/lib/bookHue";
-import type { Paragraph } from "@/lib/types";
-import { SKIP_SECONDS, activeRendition, usePlayer } from "./PlayerProvider";
+import type { AudioRendition, Paragraph } from "@/lib/types";
+import { SKIP_SECONDS, activeRendition, usePlayer, type TtsSource } from "./PlayerProvider";
 
 const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
 const SLEEP_OPTIONS = [10, 20, 30, 45, 60];
@@ -383,8 +391,11 @@ export function AudioMode({
           </TransportBtn>
         </div>
 
-        {/* ---- the row that makes it a listening app, not a play button ---- */}
-        <div className="mt-1 flex items-center justify-center gap-1 text-xs">
+        {/* ---- the row that makes it a listening app, not a play button ----
+            Scrolls rather than wraps: five short labels fit a 390pt phone, and
+            a narrower one should shorten the row, not double its height and
+            push the play button up. */}
+        <div className="mt-1 flex items-center justify-center gap-1 overflow-x-auto text-xs [scrollbar-width:none]">
           {onOpenContents && (
             <FootBtn
               onClick={() => {
@@ -433,9 +444,7 @@ export function AudioMode({
               onClick={() => setMenu(menu === "sleep" ? null : "sleep")}
               active={player.sleepRemainingMs !== null}
             >
-              {player.sleepRemainingMs !== null
-                ? fmt(player.sleepRemainingMs)
-                : "स्लीप टाइमर"}
+              {player.sleepRemainingMs !== null ? fmt(player.sleepRemainingMs) : "स्लीप"}
             </FootBtn>
             {menu === "sleep" && (
               <div
@@ -470,6 +479,9 @@ export function AudioMode({
               </div>
             )}
           </div>
+          {source.kind === "tts" && rendition && (
+            <SaveChapterButton source={source} rendition={rendition} />
+          )}
           {/* The read↔listen handoff, said out loud. Closing keeps the audio
               running and the page behind is already scrolled to this very
               paragraph, so it is a switch of mode, not a stop. */}
@@ -477,6 +489,97 @@ export function AudioMode({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Save this chapter's audio for offline listening.
+ *
+ * Two things make this button unusual, and both come from the files being WAV
+ * at 48 kB/s (see src/lib/audioCache.ts):
+ *
+ * - **The size is on the button**, before the tap. A control that says "सेव"
+ *   and silently pulls 70 MB over mobile data is a control that lies.
+ * - **Anything large asks twice.** Over 40 MB the first tap only shows the
+ *   number and waits, which is cheaper than an undo that costs the download
+ *   again. Removing asks twice for the same reason.
+ *
+ * There is no progress bar: the media host sends no CORS headers, so the
+ * response is opaque and its body cannot be read to count bytes. Better an
+ * honest spinner than a fake percentage.
+ */
+function SaveChapterButton({
+  source,
+  rendition,
+}: {
+  source: TtsSource;
+  rendition: AudioRendition;
+}) {
+  const [state, setState] = useState<"idle" | "confirm" | "saving" | "saved" | "removing" | "failed">(
+    "idle"
+  );
+  const bytes = renditionBytes(rendition);
+  const url = rendition.audio_url;
+
+  useEffect(() => {
+    let live = true;
+    setState("idle");
+    void isAudioSaved(url).then((yes) => {
+      if (live && yes) setState("saved");
+    });
+    return () => {
+      live = false;
+    };
+  }, [url]);
+
+  if (!audioSupported()) return null;
+
+  const size = formatBytes(bytes);
+  const heavy = bytes > 40_000_000;
+
+  const onClick = () => {
+    if (state === "saving") return;
+    if (state === "saved") {
+      setState("removing");
+      return;
+    }
+    if (state === "removing") {
+      void removeAudio(url).then(() => setState("idle"));
+      return;
+    }
+    if (state === "idle" && heavy) {
+      setState("confirm");
+      return;
+    }
+    setState("saving");
+    void saveAudio({
+      url,
+      book_code: source.bookCode,
+      book_title: source.bookTitle,
+      chapter_number: source.chapterNumber,
+      chapter_title: source.chapterTitle,
+      voice_label: rendition.voice_label,
+      bytes,
+    }).then((ok) => setState(ok ? "saved" : "failed"));
+  };
+
+  const label =
+    state === "saved"
+      ? "✓ सेव्ड"
+      : state === "removing"
+        ? "मिटाएँ?"
+        : state === "saving"
+          ? "सेव हो रहा है…"
+          : state === "confirm"
+            ? `${size} — पक्का?`
+            : state === "failed"
+              ? "सेव नहीं हुआ"
+              : `⤓ ${size}`;
+
+  return (
+    <FootBtn onClick={onClick} active={state === "saved" || state === "confirm" || state === "removing"}>
+      {label}
+    </FootBtn>
   );
 }
 

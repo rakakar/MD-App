@@ -3,10 +3,14 @@
  * Web Push subscribe is a v2 addition, not a rewrite — push handlers are
  * already wired below, only the subscribe UI is missing by design.
  */
-const VERSION = "md-sw-v2";
+const VERSION = "md-sw-v3";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 const OFFLINE_URL = "/offline";
+/* Chapter audio the reader explicitly saved (src/lib/audioCache.ts). Named
+   outside the VERSION namespace on purpose: a worker upgrade sweeps its own
+   caches, and 70 MB a reader chose to download must survive a deploy. */
+const AUDIO_CACHE = "md-audio-v1";
 
 self.addEventListener("install", (event) => {
   // Deliberately no skipWaiting() here. Activating under a live page swaps the
@@ -26,7 +30,9 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k))
+          keys
+            .filter((k) => !k.startsWith(VERSION) && k !== AUDIO_CACHE)
+            .map((k) => caches.delete(k))
         )
       )
       .then(() => self.clients.claim())
@@ -38,8 +44,28 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  // API responses are cached in IndexedDB by the app, not here
-  if (url.origin !== self.location.origin) return;
+  /* Saved chapter audio, from the BE's media host. Cache-first, and *only*
+     for files already saved — a miss is handed straight back to the browser
+     rather than proxied, so streaming and range requests for everything else
+     behave exactly as they do without a worker.
+
+     No range slicing: the cached response is opaque, so not even this worker
+     may read its bytes. Returning the whole thing to a media element that
+     asked for a range is something browsers accept, and it is reading from
+     local storage anyway. */
+  if (url.origin !== self.location.origin) {
+    if (event.request.destination === "audio" || /\.(wav|mp3|m4a|ogg|opus|aac)$/i.test(url.pathname)) {
+      event.respondWith(
+        caches
+          .open(AUDIO_CACHE)
+          .then((cache) => cache.match(url.href))
+          .then((hit) => hit || fetch(req))
+          .catch(() => fetch(req))
+      );
+    }
+    // API responses are cached in IndexedDB by the app, not here
+    return;
+  }
 
   // immutable build assets + fonts: cache-first
   if (url.pathname.startsWith("/_next/static/") || url.pathname.endsWith(".woff2")) {
