@@ -6,10 +6,10 @@ import { SutraCard } from "@/components/home/SutraCard";
 import { NotificationBanner } from "@/components/push/NotificationBanner";
 import { ChevronRight, Icon, PinIcon, WaveformIcon } from "@/components/shell/icons";
 import { EmptyState, PageContainer, SectionHeading, SeeAll } from "@/components/ui";
-import { getBooks, getEvents, getVani } from "@/lib/api";
+import { getBooks, getEvents } from "@/lib/api";
 import { eventLocation, eventStart, eventTitle, shortDate, upcomingEvents } from "@/lib/events";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
-import type { BookSummary, EventItem, ResourceLane, SutraOfTheDay } from "@/lib/types";
+import type { BookSummary, EventItem, SutraOfTheDay } from "@/lib/types";
 
 export const revalidate = 900;
 
@@ -17,21 +17,14 @@ async function loadHome(): Promise<{
   books: BookSummary[];
   sutra: SutraOfTheDay | null;
   events: EventItem[];
-  vaniCount: number;
 }> {
   // section code === workspace id (contract §10)
-  const [books, sutra, events, vani] = await Promise.all([
+  const [books, sutra, events] = await Promise.all([
     getBooks({ section: "originals" }).catch(() => [] as BookSummary[]),
     ACTIVE_SUTRA_SOURCE.getToday().catch(() => null),
     getEvents().catch(() => [] as EventItem[]),
-    getVani().catch(() => ({ collections: [], audio: [], video: [] }) as ResourceLane),
   ]);
-  return {
-    books,
-    sutra,
-    events,
-    vaniCount: vani.collections.length + vani.audio.length + vani.video.length,
-  };
+  return { books, sutra, events };
 }
 
 /**
@@ -44,7 +37,7 @@ async function loadHome(): Promise<{
  * be one would be worse than its absence.
  */
 export default async function OriginalsHome() {
-  const { books, sutra, events, vaniCount } = await loadHome();
+  const { books, sutra, events } = await loadHome();
   const shivirs = upcomingEvents(events).slice(0, 2);
 
   return (
@@ -59,36 +52,10 @@ export default async function OriginalsHome() {
       {sutra && <SutraCard sutra={sutra} />}
 
       {/*
-        "नागराज जी की वाणी" — the cross-section door (contract §13.6). It sits
-        directly under today's सूत्र because it is the same kind of thing: his
-        own words, first. Drawn only when something is actually behind it — a
-        door onto an empty room is worse than no door.
+        The "नागराज जी की वाणी" door used to sit here, under today's सूत्र.
+        It is reachable from the resources section, and a second entrance on
+        home was one door too many.
       */}
-      {vaniCount > 0 && (
-        <Link
-          href="/vani"
-          className="mt-4 flex items-center gap-3 rounded-[18px] p-4 text-white transition-shadow hover:shadow-md"
-          style={{ background: "var(--ws-color)" }}
-        >
-          <span
-            aria-hidden
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15"
-          >
-            <WaveformIcon />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span lang="hi" className="hi block text-[17px] font-semibold leading-snug">
-              नागराज जी की वाणी
-            </span>
-            <span lang="hi" className="hi mt-0.5 block text-[12.5px] text-white/80">
-              उनके अपने शब्दों, स्वर और हाथ से · {vaniCount}
-            </span>
-          </span>
-          <span aria-hidden className="shrink-0 text-white/70">
-            <ChevronRight />
-          </span>
-        </Link>
-      )}
 
       {/*
         One column on a phone; from lg, the spec's three (1A desktop). Home is
