@@ -49,6 +49,13 @@ export type GaEvent =
   | "login"
   | "signup"
   | "book_download_offline"
+  // Notifications are opt-in and asked for once. The ratio of banner
+  // impressions to enables is the only way to tell a prompt people ignore
+  // from one they never saw.
+  | "push_enable"
+  | "push_disable"
+  | "push_banner_dismiss"
+  | "push_notification_click"
   | "install_pwa"
   | "header_event_chip_tap";
 

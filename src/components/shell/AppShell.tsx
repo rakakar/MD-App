@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { PlayerBar } from "@/components/player/PlayerBar";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
+import { PushProvider } from "@/components/push/PushProvider";
 import { isReaderRoute } from "@/lib/routes";
 import { Header } from "./Header";
 import { BottomNav, Sidebar } from "./Nav";
@@ -57,6 +58,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <PlayerBar />
           {!bare && <BottomNav />}
           {!reader && <ConsentBanner />}
+          {/* Outside `bare` so a notification arriving mid-chapter is still
+              seen — it is the reader's own opt-in, not app chrome. */}
+          <PushProvider />
         </PlayerProvider>
       </WorkspaceProvider>
     </AuthProvider>

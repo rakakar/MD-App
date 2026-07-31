@@ -149,26 +149,14 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-// ---- Web Push (v2): handlers ready, subscribe UI intentionally absent ----
-self.addEventListener("push", (event) => {
-  if (!event.data) return;
-  let payload = {};
-  try {
-    payload = event.data.json();
-  } catch {
-    payload = { title: "MD Study", body: event.data.text() };
-  }
-  event.waitUntil(
-    self.registration.showNotification(payload.title || "MD Study", {
-      body: payload.body || "",
-      icon: "/icon-192.png",
-      data: { url: payload.url || "/" },
-    })
-  );
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
-  event.waitUntil(clients.openWindow(url));
-});
+/* ---- Push lives in public/firebase-messaging-sw.js ----
+ *
+ * The placeholder handlers that used to sit here are gone, not moved. Push
+ * arrived as FCM (Push Notifications PRD §2), and an FCM subscription belongs
+ * to the registration that created it — src/lib/push.ts registers a second
+ * worker at `/firebase-cloud-messaging-push-scope` and subscribes there, so
+ * nothing would ever have reached a `push` listener in this file. Two workers,
+ * because this one owns scope `/` and everything cached under it; a push
+ * worker registered at the same scope would replace it and take offline
+ * reading and saved audio down with it.
+ */

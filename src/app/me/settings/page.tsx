@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AccountSecurity } from "@/components/auth/AccountSecurity";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { NotificationSetting } from "@/components/push/NotificationSetting";
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { applyConsent } from "@/lib/analytics";
 import {
@@ -129,6 +130,10 @@ export default function SettingsPage() {
           ))}
         </div>
       </div>
+
+      {/* Renders its own heading, or nothing at all — this browser may have no
+          push to offer, and a heading over an empty space explains nothing. */}
+      <NotificationSetting />
 
       <SectionHeading>Offline downloads</SectionHeading>
       <div className="rounded-2xl border border-rule bg-white">

@@ -3,6 +3,7 @@ import { BookRail } from "@/components/home/BookRail";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
 import { SutraCard } from "@/components/home/SutraCard";
+import { NotificationBanner } from "@/components/push/NotificationBanner";
 import { ChevronRight, Icon, PinIcon, WaveformIcon } from "@/components/shell/icons";
 import { EmptyState, PageContainer, SectionHeading, SeeAll } from "@/components/ui";
 import { getBooks, getEvents, getVani } from "@/lib/api";
@@ -49,6 +50,11 @@ export default async function OriginalsHome() {
   return (
     <PageContainer size="shelf">
       <h1 className="sr-only">Originals — मूल ग्रंथ</h1>
+
+      {/* Above today's सूत्र only because it is dismissible and, once
+          dismissed, gone for good — below the fold it would never be seen at
+          all, and the offer would exist without ever being made. */}
+      <NotificationBanner />
 
       {sutra && <SutraCard sutra={sutra} />}
 
