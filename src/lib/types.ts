@@ -327,6 +327,8 @@ export interface AudioSeries {
   title_hi: string;
   section?: string;
   description?: string;
+  /** absolute URL, or null — also what the lock screen shows while a track plays */
+  cover_image?: string | null;
   ordering?: number;
   [key: string]: unknown;
 }

@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { PlayerBar } from "@/components/player/PlayerBar";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
+import { TrackAudioMode } from "@/components/player/TrackAudioMode";
 import { PushProvider } from "@/components/push/PushProvider";
 import { isReaderRoute } from "@/lib/routes";
 import { Header } from "./Header";
@@ -56,6 +57,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             {children}
           </main>
           <PlayerBar />
+          {/* Full-screen listening for anything that is not a chapter. The
+              reader mounts its own Audio Mode inside itself; a recording can
+              be playing from a series page, a collection or the folder tree,
+              so this one lives at the top and decides for itself. */}
+          <TrackAudioMode />
           {!bare && <BottomNav />}
           {!reader && <ConsentBanner />}
           {/* Outside `bare` so a notification arriving mid-chapter is still

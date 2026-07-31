@@ -76,11 +76,15 @@ function PlayerBarInner() {
     : null;
 
   /**
-   * Back up to the full listening screen. Audio Mode is drawn by the reader
-   * (it follows the chapter's text), so from anywhere else this first goes to
-   * the chapter that is playing and lets the reader put it up on arrival —
-   * which is also the honest thing for the tap to do: it takes you to what you
-   * are listening to.
+   * Back up to the full listening screen.
+   *
+   * A chapter's Audio Mode is drawn by the reader, because it follows the
+   * chapter's text — so from anywhere else this first goes to the chapter that
+   * is playing and lets the reader put it up on arrival, which is also the
+   * honest thing for the tap to do: it takes you to what you are listening to.
+   *
+   * A recording has no text and no page to return to, so `TrackAudioMode`
+   * hangs off the shell and simply opens where you stand.
    */
   const chapter =
     source.kind === "tts" || source.kind === "device"
@@ -93,7 +97,7 @@ function PlayerBarInner() {
         }
         player.openAudioMode();
       }
-    : null;
+    : () => player.openAudioMode();
 
   return (
     <div
@@ -176,10 +180,9 @@ function PlayerBarInner() {
             5mm chevron, because that is the target a thumb actually finds. */}
         <button
           type="button"
-          onClick={expand ?? undefined}
-          disabled={!expand}
-          aria-label={expand ? "Open audio mode" : undefined}
-          className="flex min-w-0 flex-1 items-center gap-1.5 text-left disabled:cursor-default"
+          onClick={expand}
+          aria-label="Open audio mode"
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
         >
           <span className="min-w-0 flex-1">
             <span className="hi block truncate text-sm font-medium leading-tight">{title}</span>
@@ -192,9 +195,7 @@ function PlayerBarInner() {
               )}
             </span>
           </span>
-          {expand && (
-            <ChevronDown className="h-4 w-4 shrink-0 rotate-180 text-ink-soft" />
-          )}
+          <ChevronDown className="h-4 w-4 shrink-0 rotate-180 text-ink-soft" />
         </button>
 
         <span className="hidden text-xs tabular-nums text-ink-soft sm:block">

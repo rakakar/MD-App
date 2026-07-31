@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ListenHeader } from "@/components/av/ListenHeader";
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { getAudioSeries } from "@/lib/api";
+import { contentLang } from "@/lib/script";
 import type { AudioSeries } from "@/lib/types";
 
 export const revalidate = 900;
@@ -30,12 +31,32 @@ export default async function AudioPage() {
             <Link
               key={s.id}
               href={`/audio/${s.id}`}
-              className="rounded-2xl border border-rule bg-white p-5 transition-shadow hover:shadow-md"
+              className="flex items-center gap-4 rounded-2xl border border-rule bg-white p-5 transition-shadow hover:shadow-md"
             >
-              <p lang="hi" className="hi text-base font-semibold">{seriesTitle(s)}</p>
-              {s.description && (
-                <p className="mt-1 line-clamp-2 text-sm text-ink-soft">{s.description}</p>
-              )}
+              {s.cover_image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={s.cover_image}
+                  alt=""
+                  className="h-14 w-14 shrink-0 rounded-lg object-cover ring-1 ring-rule"
+                />
+              ) : null}
+              <span className="min-w-0">
+                <span
+                  {...contentLang(seriesTitle(s))}
+                  className={`${contentLang(seriesTitle(s)).className} block text-base font-semibold`}
+                >
+                  {seriesTitle(s)}
+                </span>
+                {s.description && (
+                  <span
+                    {...contentLang(s.description)}
+                    className={`${contentLang(s.description).className} mt-1 line-clamp-2 block text-sm text-ink-soft`}
+                  >
+                    {s.description}
+                  </span>
+                )}
+              </span>
             </Link>
           ))}
         </div>

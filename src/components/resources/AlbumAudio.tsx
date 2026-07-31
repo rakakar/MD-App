@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePlayer } from "@/components/player/PlayerProvider";
+import { useMemo } from "react";
+import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueue";
 import { ProvenanceBadge } from "@/components/resources/ProvenanceBadge";
 import { formatDuration } from "@/components/resources/format";
 import { PlayIcon } from "@/components/shell/icons";
-import { getPlayhead } from "@/lib/storage";
+import { contentLang } from "@/lib/script";
 import type { ResourceItem } from "@/lib/types";
 
 /** where this item's playhead is kept, and how the player names it */
@@ -37,61 +37,21 @@ export function AlbumAudio({
   collectionTitle?: string;
   coverUrl?: string | null;
 }) {
-  const player = usePlayer();
-  const { playTrack, setChapterNav } = player;
-  const activeId = player.source?.kind === "track" ? player.source.id : null;
-  const activeIndex = items.findIndex((i) => trackId(i) === activeId);
-
-  // Saved playheads, read after mount: localStorage does not exist on the
-  // server, and rendering "जारी रखें" from a guess would flash it away again.
-  const [resumes, setResumes] = useState<Record<string, number>>({});
-  useEffect(() => {
-    const found: Record<string, number> = {};
-    for (const item of items) {
-      const ms = getPlayhead(trackId(item));
-      if (ms && ms > 5_000) found[trackId(item)] = ms;
-    }
-    setResumes(found);
-  }, [items]);
-
-  const play = useCallback(
-    (item: ResourceItem, fromStart = false) => {
-      const key = trackId(item);
-      const saved = fromStart ? 0 : (getPlayhead(key) ?? 0);
-      playTrack(
-        {
-          id: key,
-          title: item.title,
-          subtitle: collectionTitle ?? item.collection_title,
-          url: item.url,
-          durationMs: item.duration_seconds ? item.duration_seconds * 1000 : undefined,
-          coverImage: coverUrl,
-          resumeKey: key,
-        },
-        { startMs: saved }
-      );
-    },
-    [playTrack, collectionTitle, coverUrl]
+  const entries = useMemo<QueueEntry[]>(
+    () =>
+      items.map((item) => ({
+        id: trackId(item),
+        title: item.title,
+        subtitle: collectionTitle ?? item.collection_title,
+        url: item.url,
+        durationMs: item.duration_seconds ? item.duration_seconds * 1000 : undefined,
+        coverImage: coverUrl,
+      })),
+    [items, collectionTitle, coverUrl]
   );
 
-  // The queue. Memoized because handing the player a fresh object every render
-  // re-registers the OS transport handlers, which is what loses the Android
-  // notification (see the note in PlayerProvider).
-  const nav = useMemo(() => {
-    if (activeIndex < 0) return null;
-    const prev = items[activeIndex - 1];
-    const next = items[activeIndex + 1];
-    return {
-      prev: prev ? () => play(prev, true) : null,
-      next: next ? () => play(next, true) : null,
-    };
-  }, [activeIndex, items, play]);
-
-  useEffect(() => {
-    if (!nav) return;
-    setChapterNav(nav);
-    return () => setChapterNav(null);
-  }, [nav, setChapterNav]);
+  const { play, resumes, activeId } = useAudioQueue(entries);
+  const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
 
   return (
     <ol className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
@@ -103,7 +63,10 @@ export function AlbumAudio({
           <li key={item.id}>
             <button
               type="button"
-              onClick={() => play(item)}
+              onClick={() => {
+                const entry = byId.get(key);
+                if (entry) play(entry);
+              }}
               className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-black/[.03]"
             >
               <span
@@ -115,7 +78,10 @@ export function AlbumAudio({
                 {active ? <PlayIcon className="h-3.5 w-3.5" /> : i + 1}
               </span>
               <span className="min-w-0 flex-1">
-                <span lang="hi" className="hi block truncate text-[15px] leading-snug">
+                <span
+                  {...contentLang(item.title)}
+                  className={`${contentLang(item.title).className} block truncate text-[15px] leading-snug`}
+                >
                   {item.title}
                 </span>
                 <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
@@ -135,7 +101,10 @@ export function AlbumAudio({
                   />
                 </span>
                 {item.description && (
-                  <span lang="hi" className="hi mt-1 block text-xs text-ink-soft">
+                  <span
+                    {...contentLang(item.description)}
+                    className={`${contentLang(item.description).className} mt-1 block text-xs text-ink-soft`}
+                  >
                     {item.description}
                   </span>
                 )}

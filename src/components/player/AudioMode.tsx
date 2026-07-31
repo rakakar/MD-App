@@ -16,21 +16,20 @@ import {
   renditionBytes,
   saveAudio,
 } from "@/lib/audioCache";
-import { coverGradient, bookHue } from "@/lib/bookHue";
+import { bookHue } from "@/lib/bookHue";
 import type { AudioRendition, Paragraph } from "@/lib/types";
+import {
+  CoverArt,
+  FootBtn,
+  NextChapterIcon,
+  PrevChapterIcon,
+  RATES,
+  SLEEP_OPTIONS,
+  ScrubBar,
+  TransportBtn,
+  fmt,
+} from "./audioChrome";
 import { SKIP_SECONDS, activeRendition, usePlayer, type TtsSource } from "./PlayerProvider";
-
-const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
-const SLEEP_OPTIONS = [10, 20, 30, 45, 60];
-
-function fmt(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(s / 60);
-  const h = Math.floor(m / 60);
-  const mm = h > 0 ? String(m % 60).padStart(2, "0") : String(m);
-  const ss = String(s % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-}
 
 export interface AudioModeProps {
   /** the chapter's paragraphs, in reading order — the text that gets sung */
@@ -209,40 +208,7 @@ export function AudioMode({
 
       {/* ---- cover + what is playing ---- */}
       <div className="flex flex-col items-center px-6 pt-5">
-        <div
-          className="relative h-[38vw] max-h-44 w-[38vw] max-w-44 shrink-0 overflow-hidden rounded-2xl shadow-[0_18px_40px_-16px_rgba(0,0,0,.8)] ring-1 ring-white/10"
-          style={{ background: coverGradient(hue) }}
-        >
-          {cover ? (
-            <>
-              {/* The cover's own colours, blurred, filling what a portrait
-                  cover leaves in a square — the same treatment the shelf
-                  tiles use, and for the same reason: a derived hue behind a
-                  photographed cover reads as two objects. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={cover}
-                alt=""
-                aria-hidden
-                className="absolute inset-0 h-full w-full scale-125 object-cover blur-xl saturate-125"
-              />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={cover}
-                alt=""
-                className="absolute inset-0 h-full w-full object-contain"
-              />
-            </>
-          ) : (
-            <span
-              aria-hidden
-              lang="hi"
-              className="hi absolute inset-0 flex items-center justify-center text-4xl leading-none text-white/90"
-            >
-              {source.bookTitle?.[0] ?? "ग्र"}
-            </span>
-          )}
-        </div>
+        <CoverArt src={cover} hue={hue} fallback={source.bookTitle?.[0] ?? "ग्र"} />
         <p lang="hi" className="hi mt-4 line-clamp-2 text-center text-base font-semibold">
           {source.chapterTitle}
         </p>
@@ -324,28 +290,11 @@ export function AudioMode({
             />
           </div>
         ) : (
-          <div className="flex items-center gap-3">
-            <span className="w-11 shrink-0 text-[11px] tabular-nums text-[#f2ece2]/55">
-              {fmt(player.positionMs)}
-            </span>
-            <input
-              type="range"
-              aria-label="Seek"
-              min={0}
-              max={player.durationMs || 1}
-              value={Math.min(player.positionMs, player.durationMs || 0)}
-              onChange={(e) => player.seekMs(Number(e.target.value))}
-              className="audio-scrub h-6 min-w-0 flex-1 cursor-pointer appearance-none bg-transparent"
-              style={{
-                background: `linear-gradient(to right, #e08b3e ${
-                  player.durationMs ? (player.positionMs / player.durationMs) * 100 : 0
-                }%, rgba(255,255,255,.14) 0)`,
-              }}
-            />
-            <span className="w-11 shrink-0 text-end text-[11px] tabular-nums text-[#f2ece2]/55">
-              {fmt(player.durationMs)}
-            </span>
-          </div>
+          <ScrubBar
+            positionMs={player.positionMs}
+            durationMs={player.durationMs}
+            onSeek={player.seekMs}
+          />
         )}
 
         <div className="mt-2 flex items-center justify-between gap-1">
@@ -590,72 +539,5 @@ function SaveChapterButton({
     <FootBtn onClick={onClick} active={state === "saved" || state === "confirm" || state === "removing"}>
       {label}
     </FootBtn>
-  );
-}
-
-function TransportBtn({
-  onClick,
-  label,
-  disabled,
-  big,
-  children,
-}: {
-  onClick: () => void;
-  label: string;
-  disabled?: boolean;
-  big?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      className={`flex shrink-0 items-center justify-center rounded-full text-[#f2ece2] active:bg-white/10 disabled:opacity-25 ${
-        big ? "h-14 w-14 bg-white/8" : "h-12 w-12"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function FootBtn({
-  onClick,
-  active,
-  children,
-}: {
-  onClick: () => void;
-  active?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      lang="hi"
-      className={`hi min-h-11 rounded-full px-3 text-xs tabular-nums ${
-        active ? "text-[#e08b3e]" : "text-[#f2ece2]/60"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function PrevChapterIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
-      <path d="M7 5.5h2v13H7zM19 5.5v13l-9-6.5z" />
-    </svg>
-  );
-}
-
-function NextChapterIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
-      <path d="M15 5.5h2v13h-2zM5 5.5v13l9-6.5z" />
-    </svg>
   );
 }
