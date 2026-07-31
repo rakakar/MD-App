@@ -201,6 +201,41 @@ async function pushServiceWorker(config: FirebaseWebConfig): Promise<ServiceWork
   });
 }
 
+/**
+ * Wait for *this* registration's worker to be active.
+ *
+ * Deliberately not `navigator.serviceWorker.ready`, which resolves for the
+ * registration whose scope covers the current page — that is `/sw.js`, and in
+ * development `/sw.js` is never registered at all. `ready` then simply never
+ * settles: not a rejection, no error, just a promise nobody can catch, and an
+ * Enable button that spins forever. Our worker lives at its own scope, so it
+ * is its own state we have to watch.
+ */
+function activated(registration: ServiceWorkerRegistration): Promise<void> {
+  if (registration.active) return Promise.resolve();
+  const worker = registration.installing ?? registration.waiting;
+  if (!worker) return Promise.resolve();
+  return new Promise((resolve) => {
+    const onChange = () => {
+      if (worker.state === "activated" || worker.state === "redundant") {
+        worker.removeEventListener("statechange", onChange);
+        resolve();
+      }
+    };
+    worker.addEventListener("statechange", onChange);
+  });
+}
+
+/** Never let a hung browser API leave a button spinning with nothing to say. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 /** The FCM registration token for this browser, or null if none can be had. */
 async function getWebToken(config: FirebaseWebConfig): Promise<string | null> {
   // Imported here rather than at module scope so the Firebase SDK is fetched
@@ -216,12 +251,19 @@ async function getWebToken(config: FirebaseWebConfig): Promise<string | null> {
   const registration = await pushServiceWorker(config);
   // The worker has to be active before it can hold a subscription; a fresh
   // registration is still `installing` when register() resolves.
-  await navigator.serviceWorker.ready.catch(() => undefined);
+  await withTimeout(activated(registration), 10_000, "Service worker activation");
 
-  return getToken(getMessaging(app), {
-    vapidKey: config.vapidKey,
-    serviceWorkerRegistration: registration,
-  });
+  // getToken talks to the browser's push service and to FCM. Both are network
+  // calls that can stall — and a stall here is what the reader sees as a
+  // button that never comes back.
+  return withTimeout(
+    getToken(getMessaging(app), {
+      vapidKey: config.vapidKey,
+      serviceWorkerRegistration: registration,
+    }),
+    20_000,
+    "Getting a push token"
+  );
 }
 
 export type EnableResult =

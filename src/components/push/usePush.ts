@@ -10,6 +10,7 @@ import {
   iosNeedsInstall,
   isPushSupported,
   permissionState,
+  storedToken,
 } from "@/lib/push";
 
 /**
@@ -43,9 +44,13 @@ export function usePush() {
     if (!isPushSupported()) return setStatus("unsupported");
     const permission = permissionState();
     if (permission === "denied") return setStatus("denied");
-    // Granted-but-opted-out reads as "off, and you can turn it back on": the
-    // browser permission is still there, so re-enabling costs no second prompt.
-    setStatus(permission === "granted" && !hasOptedOut() ? "granted" : "default");
+    // "On" means a token actually reached the server, not merely that the
+    // browser said yes. Reading the permission alone was a lie the first
+    // version told: a failed registration left the OS permission granted, so
+    // the row came back after a reload claiming to be on while the server had
+    // never heard of the device — and the reader had no way to retry.
+    const on = permission === "granted" && !hasOptedOut() && storedToken() !== null;
+    setStatus(on ? "granted" : "default");
   }, []);
 
   useEffect(read, [read]);
@@ -65,11 +70,15 @@ export function usePush() {
       setStatus("denied");
       return;
     }
-    setError(
-      result.reason === "unsupported"
-        ? "This browser can't show notifications."
-        : "Couldn't turn notifications on. Please try again."
-    );
+    if (result.reason === "unsupported") {
+      setError("This browser can't show notifications.");
+    } else {
+      // The raw reason, not a shrug. "Please try again" on a failure that will
+      // fail again every time is the least useful sentence in software, and
+      // the person reading it is usually the one who can fix the cause.
+      const detail = result.error instanceof Error ? result.error.message : String(result.error);
+      setError(`Couldn't turn notifications on — ${detail}`);
+    }
     read();
   }, [read]);
 
