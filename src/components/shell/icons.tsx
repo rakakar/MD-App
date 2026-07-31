@@ -49,11 +49,24 @@ export function Icon({ name, ...props }: IconProps & { name: NavIcon }) {
           <path d="m20 20-3.5-3.5" />
         </Svg>
       );
+    // headphones, as the nav is drawn — the same glyph the player already
+    // uses. The tab still carries both media; this is the one a reader
+    // recognises at 24px in a tab bar.
     case "av":
       return (
         <Svg {...props}>
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <path d="m10 9 5 3-5 3Z" />
+          <path d="M4 14v-2a8 8 0 1 1 16 0v2" />
+          <rect x="3" y="14" width="4" height="6" rx="1.5" />
+          <rect x="17" y="14" width="4" height="6" rx="1.5" />
+        </Svg>
+      );
+    // the assistant slot (PRD §7). Sparkles, matching the journey glyph that
+    // already stands for the same idea elsewhere in the chrome.
+    case "assistant":
+      return (
+        <Svg {...props}>
+          <path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z" />
+          <path d="m18 16 .8 2.2L21 19l-2.2.8L18 22l-.8-2.2L15 19l2.2-.8L18 16Z" />
         </Svg>
       );
     case "browse":
@@ -344,6 +357,16 @@ export function HeadphonesIcon({ className }: { className?: string }) {
       <path d="M4 14v-2a8 8 0 1 1 16 0v2" />
       <rect x="3" y="14" width="4" height="6" rx="1.5" />
       <rect x="17" y="14" width="4" height="6" rx="1.5" />
+    </Svg>
+  );
+}
+
+/** a screen with a play triangle — the video half of the media pair */
+export function VideoIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m10 9 5 3-5 3Z" />
     </Svg>
   );
 }

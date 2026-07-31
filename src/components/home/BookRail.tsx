@@ -30,17 +30,26 @@ export function BookRail({ books }: { books: BookSummary[] }) {
     // is what the spec's desktop card shows, with the rest behind "All N →".
     <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:[&>li:nth-child(n+5)]:hidden">
       {books.map((b) => (
-        <li key={b.code} className="w-[6.5rem] shrink-0 snap-start lg:w-full">
+        <li key={b.code} className="w-[7.75rem] shrink-0 snap-start lg:w-full">
           <Link href={`/books/${encodeURIComponent(b.code)}`} className="group block">
             <CoverTile book={b} size="rail" />
             <span
               lang="hi"
-              className="hi mt-2 block line-clamp-2 text-[12px] font-semibold leading-snug group-hover:underline"
+              className="hi mt-2.5 block line-clamp-2 text-[13px] font-semibold leading-snug group-hover:underline"
             >
               {b.title_hi}
             </span>
+            {/* The author under the title, as the shelf caption is drawn. On
+                Originals it is the same name on every card, which is the point:
+                it is what these covers have in common, and on a translation the
+                line is the one place the two names differ. */}
+            {b.author ? (
+              <span lang="hi" className="hi mt-1 block truncate text-[12px] text-ink-soft">
+                {b.author}
+              </span>
+            ) : null}
             {b.page_count ? (
-              <span className="mt-0.5 block text-[11px] font-medium text-ink-soft">
+              <span className="mt-0.5 block text-[12px] text-muted">
                 {b.page_count} pages
               </span>
             ) : null}

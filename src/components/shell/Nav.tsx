@@ -16,22 +16,18 @@ function isActive(item: NavItem, pathname: string): boolean {
 }
 
 /**
- * Mobile bottom nav — per-workspace slots, centre slot is Search (the
- * assistant stand-in, PRD §7): same position + raised icon treatment in
- * every workspace.
+ * Mobile bottom nav — per-workspace slots in one flat, evenly-split row.
+ *
+ * The assistant slot (PRD §7) used to be a raised circular button in the
+ * centre. It is an ordinary tab now, last in the row, as the designer draws
+ * it: a floating action button says "do a thing here", and this one only ever
+ * navigated to another screen like its neighbours — while costing the row its
+ * even rhythm and forcing a 1fr–auto–1fr split that put the tabs at odd
+ * distances in the three-slot workspaces.
  */
 export function BottomNav() {
   const { workspace } = useWorkspace();
   const pathname = usePathname() ?? "/";
-
-  // The search slot is centred in a 1fr–auto–1fr row and the other items are
-  // split around it, so it holds the same position whether the workspace has
-  // two ordinary items or three — laying them all out in one evenly-spaced row
-  // pushed it to the edge in the shorter workspaces.
-  const others = workspace.nav.filter((i) => !i.isSearch);
-  const searchItem = workspace.nav.find((i) => i.isSearch);
-  const left = others.slice(0, Math.ceil(others.length / 2));
-  const right = others.slice(Math.ceil(others.length / 2));
 
   const item = (nav: NavItem) => {
     const active = isActive(nav, pathname);
@@ -40,10 +36,10 @@ export function BottomNav() {
         <Link
           href={nav.href}
           aria-current={active ? "page" : undefined}
-          className="flex min-h-13 flex-col items-center justify-center gap-0.5 px-1 pb-1.5 pt-2 text-[11px] font-medium transition-colors active:bg-black/5"
+          className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 text-[11.5px] font-medium transition-colors active:bg-black/5"
           style={{ color: active ? "var(--ws-ink)" : "var(--color-ink-soft)" }}
         >
-          <Icon name={nav.icon} className="h-5 w-5" strokeWidth={active ? 2.2 : 1.8} />
+          <Icon name={nav.icon} className="h-6 w-6" strokeWidth={active ? 2.1 : 1.7} />
           <span className="max-w-full truncate">{nav.label}</span>
         </Link>
       </li>
@@ -53,22 +49,9 @@ export function BottomNav() {
   return (
     <nav
       aria-label={`${workspace.name} navigation`}
-      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-[1fr_auto_1fr] items-stretch border-t border-rule bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
-      <ul className="flex items-stretch">{left.map(item)}</ul>
-      {searchItem ? (
-        <Link
-          href={searchItem.href}
-          aria-label="Search"
-          className="-mt-4 mx-2 flex h-13 w-13 items-center justify-center self-start rounded-full text-white shadow-lg transition-transform active:scale-95"
-          style={{ background: "var(--ws-color)" }}
-        >
-          <Icon name="search" className="h-5.5 w-5.5" />
-        </Link>
-      ) : (
-        <span />
-      )}
-      <ul className="flex items-stretch">{right.map(item)}</ul>
+      <ul className="flex items-stretch">{workspace.nav.map(item)}</ul>
     </nav>
   );
 }

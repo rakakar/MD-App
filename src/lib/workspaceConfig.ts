@@ -17,7 +17,12 @@ export interface NavItem {
   label: string;
   href: string;
   icon: NavIcon;
-  /** centre slot — the Search stand-in for the future assistant (PRD §7) */
+  /**
+   * The assistant slot (PRD §7). Search *is* the assistant until there is an
+   * assistant, so the slot is labelled for what it will be and points at what
+   * exists — nothing about the flag changes when that endpoint arrives, only
+   * the href. Desktop still shows its ⌘K.
+   */
   isSearch?: boolean;
 }
 
@@ -25,6 +30,7 @@ export type NavIcon =
   | "home"
   | "read"
   | "search"
+  | "assistant"
   | "av"
   | "browse"
   | "saved"
@@ -65,8 +71,8 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     nav: [
       { label: "Home", href: "/", icon: "home" },
       { label: "Read", href: "/books", icon: "read" },
-      { label: "Search", href: "/search", icon: "search", isSearch: true },
       { label: "Audio/Video", href: "/audio", icon: "av" },
+      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
   translations: {
@@ -79,7 +85,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     nav: [
       { label: "Home", href: "/translations", icon: "home" },
       { label: "Read", href: "/books?ws=translations", icon: "read" },
-      { label: "Search", href: "/search", icon: "search", isSearch: true },
+      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
   resources: {
@@ -94,8 +100,8 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     // nothing; the library itself is the browse surface.
     nav: [
       { label: "Library", href: "/resources", icon: "browse" },
-      { label: "Search", href: "/search", icon: "search", isSearch: true },
       { label: "Saved", href: "/me/bookmarks", icon: "saved" },
+      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
   journey: {
@@ -108,8 +114,8 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     nav: [
       { label: "Overview", href: "/me", icon: "overview" },
       { label: "Saved", href: "/me/bookmarks", icon: "saved" },
-      { label: "Search", href: "/search", icon: "search", isSearch: true },
       { label: "Notes", href: "/me/notes", icon: "notes" },
+      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
   connect: {
@@ -122,7 +128,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     nav: [
       { label: "Events", href: "/connect", icon: "events" },
       { label: "Centers", href: "/connect/centers", icon: "centers" },
-      { label: "Search", href: "/search", icon: "search", isSearch: true },
+      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
 };

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CoverTile, ProgressBar } from "@/components/shelf/CoverTile";
-import { getBooks } from "@/lib/api";
+import { getBook, getBooks } from "@/lib/api";
 import { localProgress, syncPersonal } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 
@@ -14,9 +14,22 @@ interface ResumeCard {
   href: string;
   cover: string | null;
   chapter: string;
+  /** the chapter's own name, once its book's TOC has been read */
+  chapterTitle: string | null;
   page: number | null;
   pageCount: number | null;
   percent: number | null;
+}
+
+/**
+ * "अध्याय 5 · <name>" — unless the name already opens with अध्याय, as MVD's
+ * TOC entries do ("अध्याय - पाँच निर्भ्रमता ही विश्राम"), where prefixing it
+ * says the word twice and numbers the chapter in two scripts at once. There
+ * the printed heading stands on its own.
+ */
+function chapterLine(chapter: string, title: string | null): string {
+  if (!title) return `अध्याय ${chapter}`;
+  return /^अध्याय/.test(title.trim()) ? title : `अध्याय ${chapter} · ${title}`;
 }
 
 /**
@@ -62,26 +75,42 @@ export function ContinueReading({
     const books = await getBooks().catch(() => []);
     const byCode = new Map(books.map((b) => [b.code, b]));
 
-    setCards(
-      rows.map((p) => {
-        const book = byCode.get(p.book_code);
-        const ref = parseRef(p.canonical_ref);
-        const page = ref ? Number(ref.page) : NaN;
-        const pageCount = book?.page_count ?? null;
-        const usable = Number.isFinite(page) && pageCount ? page : null;
-        return {
-          key: p.book_code,
-          title: p.book_title ?? book?.title_hi ?? p.book_code,
-          href: refToHref(p.canonical_ref),
-          cover: book?.cover_image ?? null,
-          chapter: ref?.chapter ?? String(p.chapter_number),
-          page: usable,
-          pageCount,
-          percent:
-            usable && pageCount ? Math.min(100, (usable / pageCount) * 100) : null,
-        };
+    const base: ResumeCard[] = rows.map((p) => {
+      const book = byCode.get(p.book_code);
+      const ref = parseRef(p.canonical_ref);
+      const page = ref ? Number(ref.page) : NaN;
+      const pageCount = book?.page_count ?? null;
+      const usable = Number.isFinite(page) && pageCount ? page : null;
+      return {
+        key: p.book_code,
+        title: p.book_title ?? book?.title_hi ?? p.book_code,
+        href: refToHref(p.canonical_ref),
+        cover: book?.cover_image ?? null,
+        chapter: ref?.chapter ?? String(p.chapter_number),
+        chapterTitle: null,
+        page: usable,
+        pageCount,
+        percent:
+          usable && pageCount ? Math.min(100, (usable / pageCount) * 100) : null,
+      };
+    });
+    setCards(base);
+
+    // The chapter's name is what tells a reader where they were — "अध्याय 1"
+    // alone names a position, not a subject. It lives in the book's TOC, which
+    // the list endpoint does not carry, so it arrives a beat after the cards
+    // do: the card is on screen and tappable first, and gains the name when it
+    // comes. A failed detail call costs nothing but the name.
+    const named = await Promise.all(
+      base.map(async (c) => {
+        const detail = await getBook(c.key).catch(() => null);
+        const entry = detail?.chapters?.find(
+          (ch) => String(ch.number) === c.chapter
+        );
+        return entry?.title_hi ? { ...c, chapterTitle: entry.title_hi } : c;
       })
     );
+    setCards(named);
   }, [limit]);
 
   useEffect(() => {
@@ -116,35 +145,46 @@ export function ContinueReading({
           >
             <Link
               href={c.href}
-              className="flex h-full items-center gap-3.5 rounded-[20px] border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
+              className="flex h-full items-center gap-4 rounded-[20px] border border-rule bg-white p-4 transition-shadow hover:shadow-md"
             >
               <CoverTile
                 book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}
-                size="sm"
+                size="resume"
               />
               <span className="min-w-0 flex-1">
-                <span lang="hi" className="hi block truncate text-[15px] font-semibold">
+                <span lang="hi" className="hi block truncate text-[17px] font-semibold">
                   {c.title}
                 </span>
-                <span className="mt-0.5 block truncate text-xs font-medium text-ink-soft">
-                  <span lang="hi" className="hi">
-                    अध्याय {c.chapter}
-                  </span>
-                  {c.page !== null && c.pageCount !== null && (
-                    <>
-                      {" · "}
-                      <span lang="hi" className="hi">
-                        पृष्ठ {c.page}
-                      </span>{" "}
-                      of {c.pageCount}
-                    </>
-                  )}
+                <span
+                  lang="hi"
+                  className="hi mt-1 block truncate text-[12.5px] font-medium text-ink-soft"
+                >
+                  {chapterLine(c.chapter, c.chapterTitle)}
                 </span>
                 {c.percent !== null ? (
-                  <ProgressBar percent={c.percent} className="mt-2" />
+                  <>
+                    {/* The bar runs the full width of the card and the two
+                        figures sit under it — printed page on the left, where
+                        a reader looks to check they are where they think they
+                        are, and the percentage on the right. */}
+                    <ProgressBar percent={c.percent} showValue={false} className="mt-3" />
+                    <span className="mt-1.5 flex items-baseline justify-between gap-2">
+                      <span className="truncate text-[12.5px] font-medium text-ink-soft">
+                        {c.page !== null && c.pageCount !== null
+                          ? `Page ${c.page} of ${c.pageCount}`
+                          : ""}
+                      </span>
+                      <span
+                        className="shrink-0 text-[13px] font-bold tabular-nums"
+                        style={{ color: "var(--ws-ink)" }}
+                      >
+                        {Math.round(c.percent)}%
+                      </span>
+                    </span>
+                  </>
                 ) : (
                   <span
-                    className="mt-2 block text-xs font-semibold"
+                    className="mt-2.5 block text-[13px] font-semibold"
                     style={{ color: "var(--ws-ink)" }}
                   >
                     Resume →

@@ -4,7 +4,7 @@ import { ContinueReading } from "@/components/home/ContinueReading";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
 import { SutraCard } from "@/components/home/SutraCard";
 import { NotificationBanner } from "@/components/push/NotificationBanner";
-import { ChevronRight, Icon, PinIcon, WaveformIcon } from "@/components/shell/icons";
+import { ChevronRight, PinIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { EmptyState, PageContainer, SectionHeading, SeeAll } from "@/components/ui";
 import { getBooks, getEvents } from "@/lib/api";
 import { eventLocation, eventStart, eventTitle, shortDate, upcomingEvents } from "@/lib/events";
@@ -170,7 +170,7 @@ function MediaTile({
         className="flex h-9 w-9 items-center justify-center rounded-[11px]"
         style={{ background: "var(--color-accent-tint)", color: "var(--color-accent-deep)" }}
       >
-        {icon === "audio" ? <WaveformIcon /> : <Icon name="av" className="h-4.5 w-4.5" />}
+        {icon === "audio" ? <WaveformIcon /> : <VideoIcon className="h-4.5 w-4.5" />}
       </span>
       <span className="block text-sm font-semibold">{title}</span>
       <span className="-mt-1.5 block text-xs text-ink-soft">{hint}</span>
