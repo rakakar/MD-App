@@ -383,7 +383,7 @@ const PLAYHEAD_KEY = "md.playhead.v1";
 
 type PlayheadStore = Record<string, { position_ms: number; updated_at: string }>;
 
-/** `key` is stable per playable item, e.g. `collection-item:88` */
+/** `key` is stable per playable item, e.g. `library-file:88` */
 export function setPlayhead(key: string, positionMs: number): void {
   if (!isBrowser) return;
   const store = read<PlayheadStore>(PLAYHEAD_KEY, {});

@@ -208,55 +208,62 @@ export interface SutraOfTheDay extends ParaResolution {
   has_next: boolean;
 }
 
-// ---- Resources — collections behind purpose doors (contract §13) ----
+// ---- The library — one tree for everything that is not a book (§13) ----
 //
-// The unit of this shelf is the **collection** — one shivir bundle, one संकलन,
-// one chart set — never the file. An item inside one is filed, not processed:
-// no chapters, no paragraphs, no canonical refs, so nothing here ever routes
-// into the reader.
+// A **folder** (`node`) holds child folders, **files** (`item`), or both, to
+// six levels. A "collection" is just a folder that happens to hold files; an
+// audio series is a folder; a lone PDF needs no wrapper at all. That one shape
+// replaced four container models, so there is one set of types here where
+// there used to be collections, folders, audio series and playlists.
+//
+// A file is served as the file it is: no chapters, no paragraphs, no canonical
+// refs, no read-aloud. Nothing here ever routes into the reader.
 
 /**
  * Whose word is it (contract §13, D14). The badge this drives is an epistemic
  * requirement rather than decoration — the reader has to see at a glance
  * whether a page is प्रमाण or someone's understanding.
  *
- * `""` is a legacy row nobody has judged yet; the badge is hidden then, never
- * guessed at.
+ * Already **resolved through inheritance** when it arrives: a folder without
+ * one of its own reports its nearest ancestor's, so nothing here ever walks
+ * the tree. `""` is a row nobody has judged yet; the badge is hidden then,
+ * never guessed at.
  */
 export type Provenance = "moola" | "sankalan" | "adhyayan" | "";
 
 /**
- * A purpose door on the Resources landing page, or a विषय chip inside one —
- * one shape, two manager-editable tables.
- *
- * Never hardcoded, for the same reason as the genre chips: both exist so a new
- * door or topic reaches the shelf without a frontend deploy, and a constant
- * here would silently hide whatever a manager added.
+ * What a file is, auto-detected by the BE from the file or the URL (§13.5).
+ * A YouTube/Vimeo link is `video`, a `.pdf` link is still `pdf`, any other
+ * bare URL is `link`.
  */
-export interface ResourceFacet {
-  code: string;
-  name_hi: string;
-  description: string;
-  ordering: number;
-  /** servable collections behind it — published, with ≥1 openable item */
-  collection_count: number;
+export type FileKind = "pdf" | "audio" | "video" | "image" | "link" | "other";
+
+/** one step of an ancestry chain, root first */
+export interface BreadcrumbStep {
+  id: number;
+  name: string;
 }
 
-export type ResourceKind = "pdf" | "audio" | "image" | "other";
-
-/** one card on the shelf (contract §13.3) */
-export interface ResourceCollection {
+/**
+ * A folder as a card — everything needed to render it in a list, and
+ * deliberately not enough to recurse without another request (§13.1).
+ *
+ * `child_count` / `item_count` / `kinds` are what make the card worth showing:
+ * without them every folder is an identical blank row. They count only what
+ * this reader can reach, so a card never promises more than the folder
+ * delivers, and they are **shallow** — direct children, not descendants.
+ */
+export interface NodeCard {
   id: number;
-  title_hi: string;
-  section: string;
-  door: string;
-  door_name_hi: string;
+  name: string;
+  /** which shelf holds it; the tree spans four of the five workspaces */
+  workspace: string;
   description: string;
   cover_url: string | null;
   provenance: Provenance;
-  provenance_hi: string;
-  /** विषय codes, matching resources/topics/ */
+  /** विषय codes, matching topics/ */
   topics: string[];
+  /** free text, a search axis and never a chip (§13.4) */
   tags: string[];
   /** approximate allowed, e.g. "2005" or "2005-03"; "" when unknown */
   year: string;
@@ -265,23 +272,41 @@ export interface ResourceCollection {
   people: string;
   language: string;
   language_label: string;
-  /** published items only — safe to print */
+  /** published child folders, direct only */
+  child_count: number;
+  /** servable files, direct only */
   item_count: number;
-  /** the kinds its published items are, so a card can say "14 ऑडियो · 1 PDF" */
-  kinds: ResourceKind[];
+  /** which sorts of file are inside, deduplicated and sorted; `[]`, never null */
+  kinds: FileKind[];
+  sequence: number;
   updated_at: string;
 }
 
-/** one file inside a collection (contract §13.4) */
-export interface ResourceItem {
+/**
+ * A folder card that says where it really lives.
+ *
+ * Three lists carry this rather than a bare card, and all three for the same
+ * reason: they gather folders from elsewhere. `linked_children` borrows one
+ * into another folder (§13.6), वाणी gathers by provenance across workspaces
+ * (§13.7), and search is by definition somewhere the reader was not (§13.8).
+ * "दिन 1" is the same two words in every shivir the library holds, so a row
+ * without its path is close to useless — and on a cross-post, showing the path
+ * is exactly what stops it reading as a duplicate.
+ */
+export interface LocatedNodeCard extends NodeCard {
+  /** the ancestor chain, root first — stops at this folder's parent */
+  breadcrumb: BreadcrumbStep[];
+}
+
+/** one file (§13.1) */
+export interface LibraryFile {
   id: number;
-  collection: number;
-  collection_title: string;
+  /** the folder it lives in */
+  node: number;
   title: string;
-  kind: ResourceKind;
-  kind_label: string;
+  kind: FileKind;
   /**
-   * Always present and absolute on a published item — publish is blocked
+   * Always present and absolute on a served file — a folder cannot publish
    * without a file or a link behind it, so no row is ever dead. It may point
    * at our media host or at wherever the file still lives during the
    * migration; both are opened the same way, with no host special-casing.
@@ -289,111 +314,69 @@ export interface ResourceItem {
   url: string;
   sequence: number;
   description: string;
-  /** already the *effective* one — the item's override, else its collection's */
+  /** already the effective one — its own, else inherited from its branch */
   provenance: Provenance;
-  provenance_hi: string;
+  tags: string[];
   /** bytes; null for a catalogued file whose bytes haven't moved yet */
   file_size: number | null;
   /** PDFs only */
   page_count: number | null;
-  /** audio only */
+  /** audio and video only */
   duration_seconds: number | null;
   updated_at: string;
 }
 
-/** the album view — the card plus its published items in `sequence` order */
-export interface ResourceCollectionDetail extends ResourceCollection {
-  items: ResourceItem[];
+/**
+ * A file that says where it lives. Unlike a folder's, this breadcrumb
+ * **includes its own folder**: a file is a row, its folder is the last and
+ * most useful step of its address, and the breadcrumb doubles as the jump
+ * target (§13.6).
+ */
+export interface LocatedFile extends LibraryFile {
+  breadcrumb: BreadcrumbStep[];
 }
 
 /**
- * `resources/search/` and `vani/` answer in the same three labelled lists
- * (contract §13.5–13.6). The FE renders them as ONE संसाधन lane — they are
- * three shapes of the same answer, not three results tabs.
+ * The one node shape (§13.1) — **identical at every depth**, which is what
+ * lets one component render depth 1 and depth 6 alike.
  */
-export interface ResourceLane {
-  collections: ResourceCollection[];
-  audio: AudioTrack[];
-  video: VideoItem[];
+export interface LibraryNode extends NodeCard {
+  /** ancestors, root first; `[]` at a workspace root */
+  breadcrumb: BreadcrumbStep[];
+  children: NodeCard[];
+  items: LibraryFile[];
+  /** cross-posted folders — cards that jump to their real home, never nested */
+  linked_children: LocatedNodeCard[];
+  /** cross-posted files — they open and play in place, like a native file */
+  linked_items: LocatedFile[];
 }
 
-/** folders/ — one node of the archivist's fallback tree (contract §13.7) */
-export interface Folder {
-  id: number;
+/**
+ * A विषय chip (§13.4) — a **door onto the whole library**, not a sieve over
+ * one folder: tapping it leaves the folder you are in.
+ *
+ * `name` is the one taxonomy label that arrives in Hindi and is rendered as a
+ * manager typed it. Managers add topics without a deploy, so the FE cannot
+ * hold a label it has never seen — which is exactly why this one is not in
+ * lib/labels.ts with the others.
+ */
+export interface Topic {
+  code: string;
   name: string;
-  parent: number | null;
-  section: string;
   description: string;
   ordering: number;
-  /** the ancestor chain, root first; [] at the root level */
-  breadcrumb: { id: number; name: string }[];
-  /** what sits *directly* inside — items counted published-only */
-  folder_count: number;
-  item_count: number;
+  /** visible folders on this विषय, library-wide; hide a zero-count chip */
+  node_count: number;
 }
 
-// ---- §9 live endpoints (shapes may still evolve; keep fields optional) ----
-
-// Shapes below verified against the live drf-spectacular schema
-// (GET /api/v1/schema/, 27 Jul 2026); §9 may still evolve, so keep them loose.
-
-export interface AudioSeries {
-  id: number;
-  title_hi: string;
-  section?: string;
-  description?: string;
-  /** absolute URL, or null — also what the lock screen shows while a track plays */
-  cover_image?: string | null;
-  ordering?: number;
-  [key: string]: unknown;
-}
-
-export interface AudioTrack {
-  id: number;
-  title_hi: string;
-  section?: string;
-  series?: string | null; // series title (list filter uses ?series=<id>)
-  sequence_in_series?: number;
-  speaker?: string;
-  recording_context?: string;
-  recording_date?: string;
-  duration_seconds?: number | null;
-  description?: string;
-  file_url?: string | null;
-  archive_org_url?: string;
-  categories?: string[];
-  tags?: string[];
-  /** whose word it is (§13) — `""` on a legacy row, where the badge is hidden */
-  provenance?: Provenance;
-  provenance_hi?: string;
-  [key: string]: unknown;
-}
-
-export interface VideoItem {
-  id: number;
-  title_hi: string;
-  youtube_id: string;
-  section?: string;
-  speaker?: string;
-  duration_seconds?: number | null;
-  thumbnail_url?: string;
-  description?: string;
-  categories?: string[];
-  tags?: string[];
-  /** whose word it is (§13) — `""` on a legacy row, where the badge is hidden */
-  provenance?: Provenance;
-  provenance_hi?: string;
-  [key: string]: unknown;
-}
-
-export interface Playlist {
-  id: number;
-  title_hi: string;
-  section?: string;
-  description?: string;
-  videos?: VideoItem[];
-  [key: string]: unknown;
-}
+/**
+ * One row of `library/search/` (§13.8) — the only response that mixes folders
+ * and files, and therefore the only one that carries `type`. Everywhere else
+ * each arrives under its own key and the caller already knows which it holds.
+ */
+export type LibrarySearchRow =
+  | ({ type: "folder" } & LocatedNodeCard)
+  | ({ type: "file" } & LocatedFile);
 
 export type EventType = "shivir" | "workshop" | "satsang" | "other";
 

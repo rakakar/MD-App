@@ -2,23 +2,23 @@
 
 import { useMemo } from "react";
 import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueue";
-import { ProvenanceBadge } from "@/components/resources/ProvenanceBadge";
-import { formatDuration } from "@/components/resources/format";
+import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
+import { formatDuration } from "@/components/library/format";
 import { PlayIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
-import type { ResourceItem } from "@/lib/types";
+import type { LibraryFile } from "@/lib/types";
 
-/** where this item's playhead is kept, and how the player names it */
-function trackId(item: ResourceItem): string {
-  return `collection-item:${item.id}`;
+/** where this file's playhead is kept, and how the player names it */
+function trackId(item: LibraryFile): string {
+  return `library-file:${item.id}`;
 }
 
 /**
- * A collection's audio, played **through the app's one player** in album mode
- * (contract §13.4) — never a second player.
+ * A folder's audio, played **through the app's one player** in album mode
+ * (contract §13.5) — never a second player.
  *
  * What "album mode" adds over a bare list of tracks is the three things a
- * 14-part shivir recording needs and a one-off track does not:
+ * 14-part shivir recording needs and a one-off file does not:
  *
  * - **the queue** — finishing part 3 rolls into part 4 by itself, and the lock
  *   screen's ⏮/⏭ walk the album. Both come from the player's `chapterNav`,
@@ -29,12 +29,12 @@ function trackId(item: ResourceItem): string {
  */
 export function AlbumAudio({
   items,
-  collectionTitle,
+  albumTitle,
   coverUrl = null,
 }: {
-  items: ResourceItem[];
-  /** what the player calls the album; a folder view lets each item say its own */
-  collectionTitle?: string;
+  items: LibraryFile[];
+  /** what the player calls the album — the folder the files sit in */
+  albumTitle?: string;
   coverUrl?: string | null;
 }) {
   const entries = useMemo<QueueEntry[]>(
@@ -42,12 +42,12 @@ export function AlbumAudio({
       items.map((item) => ({
         id: trackId(item),
         title: item.title,
-        subtitle: collectionTitle ?? item.collection_title,
+        subtitle: albumTitle,
         url: item.url,
         durationMs: item.duration_seconds ? item.duration_seconds * 1000 : undefined,
         coverImage: coverUrl,
       })),
-    [items, collectionTitle, coverUrl]
+    [items, albumTitle, coverUrl]
   );
 
   const { play, resumes, activeId } = useAudioQueue(entries);
@@ -95,10 +95,7 @@ export function AlbumAudio({
                       जारी रखें · {formatDuration(Math.round(resume / 1000))}
                     </span>
                   )}
-                  <ProvenanceBadge
-                    provenance={item.provenance}
-                    provenanceHi={item.provenance_hi}
-                  />
+                  <ProvenanceBadge provenance={item.provenance} />
                 </span>
                 {item.description && (
                   <span

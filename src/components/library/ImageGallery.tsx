@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ProvenanceBadge } from "@/components/resources/ProvenanceBadge";
+import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { CloseIcon } from "@/components/shell/icons";
-import type { ResourceItem } from "@/lib/types";
+import type { LibraryFile } from "@/lib/types";
 
 /**
  * A collection's images — thumbnails, then full screen with pinch-zoom.
@@ -15,7 +15,7 @@ import type { ResourceItem } from "@/lib/types";
  * implemented here rather than left to the browser: inside a fixed, scroll-
  * locked overlay, the page's own pinch gesture does nothing on most phones.
  */
-export function ImageGallery({ items }: { items: ResourceItem[] }) {
+export function ImageGallery({ items }: { items: LibraryFile[] }) {
   const [openAt, setOpenAt] = useState<number | null>(null);
 
   return (
@@ -38,10 +38,7 @@ export function ImageGallery({ items }: { items: ResourceItem[] }) {
               <span lang="hi" className="hi mt-1.5 block truncate text-xs font-medium">
                 {item.title}
               </span>
-              <ProvenanceBadge
-                provenance={item.provenance}
-                provenanceHi={item.provenance_hi}
-              />
+              <ProvenanceBadge provenance={item.provenance} />
             </button>
           </li>
         ))}
@@ -67,7 +64,7 @@ function Lightbox({
   onIndex,
   onClose,
 }: {
-  items: ResourceItem[];
+  items: LibraryFile[];
   index: number;
   onIndex: (i: number) => void;
   onClose: () => void;

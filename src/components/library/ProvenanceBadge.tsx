@@ -15,6 +15,10 @@ import type { Provenance } from "@/lib/types";
  * invisible on white paper on several of them — which is the one badge that
  * must never be missed. The label is always spelled out beside the dot, so the
  * colour is a second signal rather than the only one.
+ *
+ * These three words are now the *only* copy of them: the BE's `provenance_hi`
+ * twin drifted from the FE's and was removed with Content Model v3 (§10.1),
+ * so there is no override to prefer any more.
  */
 const DOT: Record<Exclude<Provenance, "">, { color: string; label: string }> = {
   moola: { color: "#2F6E86", label: "मूल" },
@@ -22,30 +26,23 @@ const DOT: Record<Exclude<Provenance, "">, { color: string; label: string }> = {
   adhyayan: { color: "#8A8378", label: "अध्ययन" },
 };
 
-/** what the badge says, or null for a legacy row nobody has judged yet */
+/** what the badge says, or null for a row nobody has judged yet */
 export function provenanceLabel(
-  provenance: Provenance | undefined,
-  provenanceHi?: string
+  provenance: Provenance | undefined
 ): { color: string; label: string } | null {
   if (!provenance) return null;
-  const known = DOT[provenance];
-  if (!known) return null;
-  // The BE's own Hindi label wins when it sends one — the table is editable
-  // there, and this component should not be the thing that goes stale.
-  return { color: known.color, label: provenanceHi || known.label };
+  return DOT[provenance] ?? null;
 }
 
 export function ProvenanceBadge({
   provenance,
-  provenanceHi,
   tone = "paper",
 }: {
   provenance: Provenance | undefined;
-  provenanceHi?: string;
   /** `paper` on a white card, `dark` over a tinted hero */
   tone?: "paper" | "dark";
 }) {
-  const badge = provenanceLabel(provenance, provenanceHi);
+  const badge = provenanceLabel(provenance);
   // A legacy row carries no judgement yet. Nothing is shown rather than a
   // guess — an unlabelled item is honest, a wrongly labelled one is not.
   if (!badge) return null;

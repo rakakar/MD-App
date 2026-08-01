@@ -2,15 +2,46 @@ import type { MetadataRoute } from "next";
 import {
   getBook,
   getBooks,
-  getCollections,
   getEvents,
+  getNodes,
   getParibhashaIndex,
-  getResourceDoors,
+  getWorkspaces,
 } from "@/lib/api";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://welfareinfo.net";
 
-// All books, chapters, library folders, events, workspace homes (PRD §4).
+/**
+ * How many folders the crawl will walk before it stops.
+ *
+ * The library is a tree of unknown width and nothing in it is paginated
+ * (contract §13.2), so a full walk is one request per folder and its cost is
+ * whatever the pCloud import turns out to be. A cap keeps a sitemap request
+ * bounded; the shelf pages themselves stay reachable either way.
+ */
+const MAX_FOLDERS = 400;
+
+/** every visible folder under a workspace root, breadth first and bounded */
+async function walk(rootId: number): Promise<number[]> {
+  const found: number[] = [];
+  let level = [rootId];
+  // Six is the tree's own ceiling, so this terminates on depth as well as
+  // on the cap.
+  for (let depth = 0; depth < 6 && level.length > 0; depth += 1) {
+    const next: number[] = [];
+    for (const id of level) {
+      if (found.length >= MAX_FOLDERS) return found;
+      const children = await getNodes({ parent: id }).catch(() => []);
+      for (const c of children) {
+        found.push(c.id);
+        next.push(c.id);
+      }
+    }
+    level = next;
+  }
+  return found;
+}
+
+// Books, chapters, glossary words, library folders, events, shelf homes (PRD §4).
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const urls: MetadataRoute.Sitemap = [
     "",
@@ -42,21 +73,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     urls.push({ url: `${SITE_URL}/paribhasha/${w.id}`, changeFrequency: "monthly" });
   }
 
-  // The resources shelf as a reader browses it — doors and collection albums.
-  // The folder tree is deliberately absent: it is a second address for the
-  // same files, and it is marked noindex for that reason.
-  const [doors, collections] = await Promise.all([
-    getResourceDoors().catch(() => []),
-    getCollections().then((r) => r.results).catch(() => []),
-  ]);
-  for (const d of doors) {
-    urls.push({
-      url: `${SITE_URL}/resources/doors/${encodeURIComponent(d.code)}`,
-      changeFrequency: "weekly",
-    });
+  // The library, from each workspace's root down. Roots themselves are left
+  // out: a root is its shelf, and `/resources` is already listed above.
+  const workspaces = await getWorkspaces().catch(() => []);
+  const seen = new Set<number>();
+  for (const w of workspaces) {
+    if (w.root_node_id === null) continue;
+    for (const id of await walk(w.root_node_id)) seen.add(id);
   }
-  for (const c of collections) {
-    urls.push({ url: `${SITE_URL}/resources/collections/${c.id}`, changeFrequency: "monthly" });
+  for (const id of seen) {
+    urls.push({ url: `${SITE_URL}/library/${id}`, changeFrequency: "weekly" });
   }
 
   for (const e of events) urls.push({ url: `${SITE_URL}/connect/events/${e.id}` });

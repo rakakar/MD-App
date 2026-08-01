@@ -1,31 +1,25 @@
 import type {
   ApiWorkspace,
-  AudioSeries,
-  AudioTrack,
   BookDetail,
   BookGenre,
   BookSummary,
   CenterItem,
   ChapterPayload,
   EventItem,
-  Folder,
+  LibraryNode,
+  LibrarySearchRow,
+  LocatedNodeCard,
+  NodeCard,
   PageResolution,
   ParaResolution,
   ParibhashaFullIndex,
   ParibhashaHit,
   ParibhashaIndex,
   ParibhashaWord,
-  Playlist,
-  ResourceCollection,
-  ResourceCollectionDetail,
-  ResourceFacet,
-  ResourceItem,
-  ResourceKind,
-  ResourceLane,
   SearchResponse,
   SearchResult,
   SutraOfTheDay,
-  VideoItem,
+  Topic,
 } from "./types";
 
 // Content is immutable until republished, Cache-Control: public, max-age=900
@@ -188,179 +182,109 @@ export async function getWorkspaces(): Promise<ApiWorkspace[]> {
   return unwrapList(await apiFetch<ApiWorkspace[] | { results: ApiWorkspace[] }>("workspaces/"));
 }
 
-// ---- Resources — collections behind purpose doors (§13) ----
+// ---- The library — one tree for everything that is not a book (§13) ----
 //
-// The old `documents/` endpoint is gone. The shelf's unit is now the
-// collection, and browsing is doors → facet chips → cards → album page; the
-// folder tree below survives only as the archivist's "सभी फ़ाइलें" fallback.
+// One shape at every depth, so one component renders the whole tree. What used
+// to be four endpoint families — doors, collections, folders, audio series —
+// is `nodes/` and nothing else.
 
 /**
- * The Resources landing page's doors, in `ordering` order.
+ * One folder in full (§13.1): its own facts, its breadcrumb, its child
+ * folders, its files, and anything cross-posted in.
  *
- * Manager-editable, so it is always fetched and never a constant here — same
- * rule as the genre chips. A door with nothing servable behind it is already
- * left out by the BE, so every row that arrives is worth rendering as-is.
+ * A 404 is an ordinary answer here, not a failure — a folder is visible only
+ * while it *and every one of its ancestors* is published, so un-publishing one
+ * folder hides its whole branch and links into it start 404ing by design
+ * (§13.3). Callers turn that into `notFound()`.
  */
-export async function getResourceDoors(): Promise<ResourceFacet[]> {
-  return unwrapList(await apiFetch<ResourceFacet[] | { results: ResourceFacet[] }>(
-    "resources/doors/"
-  ));
+export async function getNode(id: number): Promise<LibraryNode> {
+  return apiFetch<LibraryNode>(`nodes/${id}/`);
 }
 
 /**
- * The विषय chips. Unlike doors, *all* topics are returned — the FE hides the
- * zero-count ones, because a chip that filters to nothing is a dead control.
- */
-export async function getResourceTopics(): Promise<ResourceFacet[]> {
-  return unwrapList(await apiFetch<ResourceFacet[] | { results: ResourceFacet[] }>(
-    "resources/topics/"
-  ));
-}
-
-export interface CollectionFilters {
-  door?: string;
-  topic?: string;
-  /** prefix match, so "2005" also matches "2005-03" */
-  year?: string;
-  place?: string;
-  person?: string;
-  language?: string;
-  kind?: ResourceKind;
-  provenance?: string;
-  section?: string;
-}
-
-/** one page of cards, plus the cursor for the next one */
-interface CollectionPage {
-  results: ResourceCollection[];
-  next: string | null;
-}
-
-async function collectionPage(
-  filters: CollectionFilters,
-  cursor?: string
-): Promise<CollectionPage> {
-  // A cursor arrives as an absolute URL. Only its query is reused, re-anchored
-  // to our own base, so a BE misconfigured with the wrong public host can never
-  // send us off to fetch someone else's origin (same rule as paribhasha/).
-  const query = cursor
-    ? new URL(cursor).search
-    : qs({
-        door: filters.door,
-        topic: filters.topic,
-        year: filters.year,
-        place: filters.place,
-        person: filters.person,
-        language: filters.language,
-        kind: filters.kind,
-        provenance: filters.provenance,
-        section__code: filters.section,
-      });
-  const data = await apiFetch<{ results?: ResourceCollection[]; next?: string | null }>(
-    `resources/collections/${query}`
-  );
-  return { results: data.results ?? [], next: data.next ?? null };
-}
-
-/**
- * The cards behind a door or a facet.
+ * A level of the tree as cards.
  *
- * The endpoint is cursor-paginated at 50, and a door page needs the whole set
- * anyway: the वर्ष/स्थान/व्यक्ति/भाषा chips are *derived* from the collections
- * themselves (there is no facet-values endpoint), so a half-read list would
- * quietly offer half the chips. Pages are therefore followed to the end,
- * bounded — a door that has grown past the cap renders what arrived and says
- * so rather than walking a shelf of unknown size on every request.
+ * `parent` is one level down; without it the call answers with the *root*
+ * folders — which is also why `topic` and `provenance` currently only ever
+ * narrow roots. Prefer `root_node_id` from `workspaces/` over
+ * `{ workspace }` here: it reaches the same folder without the round trip
+ * spent discovering an id (§10.1).
  */
-export const COLLECTION_PAGE_CAP = 4;
-
-export async function getCollections(
-  filters: CollectionFilters = {},
-  maxPages = COLLECTION_PAGE_CAP
-): Promise<{ results: ResourceCollection[]; truncated: boolean }> {
-  const results: ResourceCollection[] = [];
-  let cursor: string | undefined;
-  for (let page = 0; page < maxPages; page += 1) {
-    const { results: rows, next } = await collectionPage(filters, cursor);
-    results.push(...rows);
-    if (!next) return { results, truncated: false };
-    cursor = next;
-  }
-  return { results, truncated: true };
-}
-
-/**
- * The album view (§13.4) — the card plus its published items in `sequence`
- * order. A 404 means the collection is unpublished or has nothing openable
- * behind it, which is an ordinary answer here, so it becomes null.
- */
-export async function getCollection(id: number): Promise<ResourceCollectionDetail | null> {
-  try {
-    return await apiFetch<ResourceCollectionDetail>(`resources/collections/${id}/`);
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 404) return null;
-    throw e;
-  }
-}
-
-/**
- * One level of the archivist's fallback tree. No `parent` is the root level.
- *
- * A folder with nothing published anywhere beneath it is not returned at all
- * — the library is still being migrated — so navigation never lands in an
- * empty branch and no empty-folder state is needed.
- */
-export async function getFolders(parent?: number): Promise<Folder[]> {
+export async function getNodes(
+  opts: { workspace?: string; parent?: number; topic?: string; provenance?: string } = {}
+): Promise<NodeCard[]> {
   return unwrapList(
-    await apiFetch<Folder[] | { results: Folder[] }>(`folders/${qs({ parent })}`)
-  );
-}
-
-/** The published items sitting in one folder — the "सभी फ़ाइलें" view only. */
-export async function getResourceItems(
-  opts: { folder?: number; kind?: ResourceKind } = {}
-): Promise<ResourceItem[]> {
-  return unwrapList(
-    await apiFetch<ResourceItem[] | { results: ResourceItem[] }>(
-      `resources/items/${qs({ folder: opts.folder, kind: opts.kind })}`
+    await apiFetch<NodeCard[] | { results: NodeCard[] }>(
+      `nodes/${qs({
+        workspace: opts.workspace,
+        parent: opts.parent,
+        topic: opts.topic,
+        provenance: opts.provenance,
+      })}`
     )
   );
 }
 
 /**
- * The संसाधन lane (§13.5). **Metadata only** — titles, descriptions, topics,
- * tags, people, place, year, source path. File contents are never indexed and
- * never will be, which is exactly why these hits are rendered in their own
- * lane: a citation is quotable back to A. Nagraj ji, a metadata match is not.
+ * The child folders of one node, as cards.
+ *
+ * The single place `children` is read, on purpose. Nothing in the library is
+ * paginated today — a folder holds a handful and paging would be complexity
+ * bought for nobody — but the pCloud import will produce folders with hundreds
+ * of children, and at that point `children` in the detail payload gets capped
+ * and `?parent=` grows pagination (§13.2). Every caller going through here is
+ * what makes that day an afternoon rather than a rewrite.
  */
-export async function searchResources(
-  q: string,
-  signal?: AbortSignal
-): Promise<ResourceLane> {
-  const data = await apiFetch<Partial<ResourceLane>>(
-    `resources/search/${qs({ q })}`,
-    { signal }
-  );
-  return {
-    collections: data.collections ?? [],
-    audio: data.audio ?? [],
-    video: data.video ?? [],
-  };
+export function nodeChildren(node: LibraryNode): NodeCard[] {
+  return node.children;
 }
 
 /**
- * "नागराज जी की वाणी" (§13.6) — everything published with provenance = मूल,
- * across *all* sections. The reader never needs to know that resources holds
- * most of it underneath.
+ * The विषय chips (§13.4) — a door onto the whole library, counted library-wide.
+ *
+ * All topics are returned and the FE hides the zero-count ones: a chip that
+ * filters to nothing is a dead control. Never a constant here — managers add
+ * topics without a deploy.
  */
-export async function getVani(): Promise<ResourceLane> {
-  const data = await apiFetch<Partial<ResourceLane>>("vani/");
-  return {
-    collections: data.collections ?? [],
-    audio: data.audio ?? [],
-    video: data.video ?? [],
-  };
+export async function getTopics(): Promise<Topic[]> {
+  return unwrapList(await apiFetch<Topic[] | { results: Topic[] }>("topics/"));
 }
+
+/**
+ * "नागराज जी की वाणी" (§13.7) — every visible folder whose resolved provenance
+ * is मूल, across all workspaces, as one flat list.
+ *
+ * Rows carry `breadcrumb` and this is the list that most needs it: it gathers
+ * from every workspace and every depth, so three shivirs contribute three rows
+ * all called "दिन 1".
+ */
+export async function getVani(): Promise<LocatedNodeCard[]> {
+  return unwrapList(
+    await apiFetch<LocatedNodeCard[] | { results: LocatedNodeCard[] }>("vani/")
+  );
+}
+
+/**
+ * The संसाधन lane (§13.8). **Metadata only** — names, descriptions, facets,
+ * tags and the original pCloud path. File contents are never indexed and never
+ * will be, which is exactly why these hits are rendered in their own lane: a
+ * citation is quotable back to A. Nagraj ji, a metadata match is not.
+ *
+ * One list with folders leading, each row saying what it is. Every row carries
+ * a breadcrumb, and a hit is close to useless without it — a search result is
+ * by definition somewhere the reader was not.
+ */
+export async function searchLibrary(
+  q: string,
+  signal?: AbortSignal
+): Promise<LibrarySearchRow[]> {
+  const data = await apiFetch<{ results?: LibrarySearchRow[] }>(
+    `library/search/${qs({ q })}`,
+    { signal }
+  );
+  return data.results ?? [];
+}
+
 
 /**
  * A book's original PDF (§13.9) — the whole reading experience for a PDF-only

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookHeroActions } from "@/components/books/BookHeroActions";
-import { PdfView } from "@/components/resources/PdfView";
+import { PdfView } from "@/components/library/PdfView";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { BackIcon, ChevronRight } from "@/components/shell/icons";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";

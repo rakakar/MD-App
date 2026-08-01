@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { NodeCardView } from "@/components/library/NodeCard";
+import { FileList } from "@/components/library/FileList";
+import { Sieve, applySieve, ClearSieve, type SieveSelection } from "@/components/library/Sieve";
 import { ShelfCard } from "@/components/shelf/BookShelf";
 import { ChevronRight } from "@/components/shell/icons";
 import { EmptyState, PageContainer, SectionHeading, SegmentedNav } from "@/components/ui";
-import { getBooks, getFolders, getResourceDoors } from "@/lib/api";
-import type { BookSummary, Folder, ResourceFacet } from "@/lib/types";
+import { getBooks, getNode, getTopics, getWorkspaces, nodeChildren } from "@/lib/api";
+import { shelfMap } from "@/lib/library";
+import type { BookSummary, LibraryNode, Topic } from "@/lib/types";
 
 export const revalidate = 900;
 
@@ -15,74 +20,67 @@ export const metadata: Metadata = {
 };
 
 /**
- * Which format of the shelf is showing (PRD v2 §5.0.1, prompt §9).
+ * Which format of the shelf is showing (PRD v2 §5.0.1).
  *
- * A section is a shelf, not a treatment: every section may hold every format,
- * so संसाधन holds collections *and* books *and* audio *and* video. The tabs
- * exist for that, and an empty one is never drawn — a tab that opens onto
- * nothing is worse than the absence of the tab.
+ * A workspace is a shelf, not a treatment: संसाधन holds the library tree *and*
+ * whichever books are filed here. The tab exists for that, and it is never
+ * drawn when there is only one — a single tab is a label for the thing already
+ * on screen.
  */
-type Format = "collections" | "books";
+type Format = "library" | "books";
 
 const FORMAT_LABEL: Record<Format, string> = {
-  collections: "दस्तावेज़",
+  library: "सामग्री",
   books: "पुस्तकें",
 };
 
-function isFormat(v: string | undefined): v is Format {
-  return v === "collections" || v === "books";
-}
-
 /**
- * The Resources landing page — **6–7 large purpose doors**, in the order the
- * BE gives them (contract §13.1, PRD v2 §5.6.2).
+ * The संसाधन shelf — the Resources workspace root, rendered as its contents.
  *
- * Never a folder tree: nobody arrives thinking "which folder is it in", they
- * arrive thinking "अमरकंटक 2005 वाला शिविर सुनना है". The tree still exists,
- * one link down, for the archivist.
+ * The root is a folder like any other and the seven purpose doors are now
+ * ordinary folders inside it (Content Model v3 D8) — one fewer concept, one
+ * fewer panel screen. What is kept is how they *look*: the first level of the
+ * shelf is drawn as doors, everything below it as folder rows, because a
+ * reader choosing a direction and a reader navigating are not doing the same
+ * thing.
  *
- * The door list is never hardcoded — same rule as the genre chips. It is a
- * manager-editable table precisely so a new door appears without a deploy, and
- * doors with nothing published behind them are already dropped by the BE, so
- * whatever arrives is rendered exactly as it arrives.
+ * The root itself is never drawn as a card inside its own shelf (§10.1) — a
+ * card labelled संसाधन sitting inside संसाधन is an empty step.
  */
 export default async function ResourcesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ format?: string }>;
+  searchParams: Promise<SieveSelection & { format?: string }>;
 }) {
-  const { format } = await searchParams;
+  const { format, ...selection } = await searchParams;
 
-  const [doors, books, folders] = await Promise.all([
-    getResourceDoors().catch(() => [] as ResourceFacet[]),
+  const workspaces = await getWorkspaces().catch(() => []);
+  const rootId = workspaces.find((w) => w.code === "resources")?.root_node_id ?? null;
+  // `root_node_id` is null when the root is unpublished — the whole shelf is
+  // then hidden by the same rule that hides any branch, and the honest answer
+  // is that there is nothing here rather than an empty page pretending.
+  if (rootId === null) notFound();
+
+  const [root, topics, books, shelves] = await Promise.all([
+    getNode(rootId).catch(() => null),
+    getTopics().catch(() => [] as Topic[]),
     getBooks({ workspace: "resources" }).catch(() => [] as BookSummary[]),
-    // Only to decide whether "सभी फ़ाइलें" leads anywhere — a fallback that
-    // dead-ends in an empty tree is not a fallback.
-    getFolders().catch(() => [] as Folder[]),
+    shelfMap(),
   ]);
+  if (!root) notFound();
 
-  // दस्तावेज़ is always present, even with no doors behind it yet: the doors
-  // *are* this shelf, and a landing page that silently became a book list the
-  // day the migration paused would have told the reader the library does not
-  // exist. Empty formats are hidden; the shelf itself is not a format.
-  const available: Format[] = [
-    "collections",
-    ...(books.length > 0 ? (["books"] as const) : []),
-  ];
-  const active: Format =
-    isFormat(format) && available.includes(format) ? format : "collections";
+  const available: Format[] = ["library", ...(books.length > 0 ? (["books"] as const) : [])];
+  const active: Format = format === "books" && books.length > 0 ? "books" : "library";
 
   return (
     <PageContainer size="shelf">
       <h1 className="font-display text-[26px] font-medium tracking-[-0.015em] lg:text-4xl">
-        <span lang="hi" className="hi">संसाधन</span>
+        <span lang="hi" className="hi">{root.name}</span>
       </h1>
       <p lang="hi" className="hi mt-1 text-sm text-ink-soft">
         शिविर सामग्री, संकलन, प्रवचन, शोध पत्र, चित्र व चार्ट — क्या खोज रहे हैं, उससे शुरू करें।
       </p>
 
-      {/* Only drawn when there is a second format to switch to. One tab is not
-          a choice, it is a label for the thing already on screen. */}
       {available.length > 1 && (
         <div className="mt-4">
           <SegmentedNav
@@ -93,35 +91,14 @@ export default async function ResourcesPage({
                   {FORMAT_LABEL[f]}
                 </span>
               ),
-              href: f === available[0] ? "/resources" : `/resources?format=${f}`,
+              href: f === "library" ? "/resources" : `/resources?format=${f}`,
               active: f === active,
             }))}
           />
         </div>
       )}
 
-      {active === "collections" && (
-        <>
-          {doors.length > 0 ? (
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-              {doors.map((d) => (
-                <li key={d.code}>
-                  <DoorCard door={d} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="mt-5">
-              <EmptyState
-                title="संसाधन अभी आ रहे हैं"
-                hint="The library is being curated collection by collection; doors appear here as material is published."
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {active === "books" && (
+      {active === "books" ? (
         <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {books.map((b) => (
             <li key={b.code}>
@@ -129,72 +106,123 @@ export default async function ResourcesPage({
             </li>
           ))}
         </ul>
-      )}
-
-      {/*
-        The archivist's way in. Deliberately a quiet link at the foot and never
-        the default view: the folder tree is the librarian's structure, and a
-        seeker who is shown it first has to learn our filing system before they
-        can find anything.
-      */}
-      {folders.length > 0 && (
-        <>
-          <SectionHeading tier="title">Archive</SectionHeading>
-          <Link
-            href="/resources/files"
-            className="flex items-center gap-3 rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
-          >
-            <span className="min-w-0 flex-1">
-              <span lang="hi" className="hi block text-[15px] font-medium">
-                सभी फ़ाइलें
-              </span>
-              <span className="mt-0.5 block text-xs text-ink-soft">
-                Browse the library the way it is filed — folder by folder.
-              </span>
-            </span>
-            <span aria-hidden className="shrink-0 text-muted">
-              <ChevronRight />
-            </span>
-          </Link>
-        </>
+      ) : (
+        <Shelf root={root} selection={selection} topics={topics} shelves={shelves} />
       )}
     </PageContainer>
   );
 }
 
-/** One purpose door (PRD v2 §5.6.2) — large, labelled in Hindi, counted. */
-function DoorCard({ door }: { door: ResourceFacet }) {
+function Shelf({
+  root,
+  selection,
+  topics,
+  shelves,
+}: {
+  root: LibraryNode;
+  selection: SieveSelection;
+  topics: Topic[];
+  shelves: Record<number, string>;
+}) {
+  const doors = nodeChildren(root);
+  const shown = applySieve(doors, selection);
+  const filtered = Object.values(selection).some(Boolean);
+  const files = [...root.items, ...root.linked_items];
+
   return (
-    <Link
-      href={`/resources/doors/${encodeURIComponent(door.code)}`}
-      className="group flex h-full items-start gap-3 rounded-[18px] border border-rule bg-white p-5 transition-shadow hover:shadow-md"
-    >
-      <span className="min-w-0 flex-1">
-        <span
-          lang="hi"
-          className="hi block text-[19px] font-semibold leading-snug group-hover:underline"
-        >
-          {door.name_hi}
-        </span>
-        {door.description && (
-          <span lang="hi" className="hi mt-1 block text-[13px] leading-relaxed text-ink-soft">
-            {door.description}
+    <>
+      <TopicDoors topics={topics} />
+
+      <Sieve cards={doors} selection={selection} basePath="/resources" />
+      {filtered && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
+          <span lang="hi" className="hi">
+            {shown.length} / {doors.length}
           </span>
-        )}
-        <span
-          lang="hi"
-          className="hi mt-2 block text-[11.5px] font-semibold"
-          style={{ color: "var(--ws-ink)" }}
-        >
-          {/* संग्रह, not संकलन: संकलन is one of the three provenance badges,
-              and the same word counting the cards would read as "12 verbatim
-              compilations" on a door that holds nothing of the sort. */}
-          {door.collection_count} संग्रह
+          <ClearSieve basePath="/resources" selection={selection} />
+        </div>
+      )}
+
+      {shown.length > 0 ? (
+        <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+          {shown.map((door) => (
+            <li key={door.id}>
+              <NodeCardView card={door} variant="door" shelves={shelves} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-5">
+          <EmptyState
+            title="संसाधन अभी आ रहे हैं"
+            hint="The library is being filled folder by folder; material appears here as it is published."
+          />
+        </div>
+      )}
+
+      {/* A file filed directly on the root — a lone PDF needs no wrapper now,
+          so the shelf has to be able to hold one. */}
+      {files.length > 0 && (
+        <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
+      )}
+
+      <SectionHeading tier="title">
+        <span lang="hi" className="hi">नागराज जी की वाणी</span>
+      </SectionHeading>
+      <Link
+        href="/vani"
+        className="flex items-center gap-3 rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
+      >
+        <span className="min-w-0 flex-1">
+          <span lang="hi" className="hi block text-[15px] font-medium">
+            जो उनके अपने शब्दों, स्वर या हाथ से है
+          </span>
+          <span className="mt-0.5 block text-xs text-ink-soft">
+            Everything marked मूल, gathered from across the library.
+          </span>
         </span>
-      </span>
-      <span aria-hidden className="mt-1 shrink-0 text-muted">
-        <ChevronRight />
-      </span>
-    </Link>
+        <span aria-hidden className="shrink-0 text-muted">
+          <ChevronRight />
+        </span>
+      </Link>
+    </>
+  );
+}
+
+/**
+ * The विषय chips — a **door onto the whole library**, which is why tapping one
+ * navigates away rather than narrowing what is on screen (contract §13.4).
+ *
+ * Zero-count chips are hidden: a chip that filters to nothing is a dead
+ * control. Today every count is 0 because nothing is filed yet, so the row
+ * simply is not drawn.
+ */
+function TopicDoors({ topics }: { topics: Topic[] }) {
+  const live = topics.filter((t) => t.node_count > 0).sort((a, b) => a.ordering - b.ordering);
+  if (live.length === 0) return null;
+
+  return (
+    <div className="mt-5">
+      <p lang="hi" className="hi mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+        विषय
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {live.map((t) => (
+          <Link
+            key={t.code}
+            href={`/library?topic=${encodeURIComponent(t.code)}`}
+            className="rounded-full border border-rule bg-white px-3 py-1 text-xs font-medium text-ink transition-colors hover:bg-black/[.03]"
+          >
+            {/* The one taxonomy label that arrives in Hindi and is shown as a
+                manager typed it — they add topics without a deploy, so the FE
+                cannot hold a label it has never seen. */}
+            <span lang="hi" className="hi">
+              {t.name}
+            </span>
+            <span className="ms-1 tabular-nums opacity-70">{t.node_count}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }

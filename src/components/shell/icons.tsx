@@ -371,6 +371,25 @@ export function VideoIcon({ className }: { className?: string }) {
   );
 }
 
+export function FolderIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M3 7a2 2 0 0 1 2-2h3.6a2 2 0 0 1 1.4.6L11.5 7H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+    </Svg>
+  );
+}
+
+/** a bare URL we hand over rather than render in place (file kind `link`) */
+export function ExternalLinkIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M14 4h6v6" />
+      <path d="M20 4 11 13" />
+      <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+    </Svg>
+  );
+}
+
 export function DownloadIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

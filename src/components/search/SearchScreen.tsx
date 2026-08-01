@@ -4,16 +4,16 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { WordRow } from "@/components/paribhasha/GlossaryBrowser";
-import { ResourceLaneView } from "@/components/resources/ResourceLaneView";
+import { LibraryLane } from "@/components/library/LibraryLane";
 import { Icon } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
 import { track } from "@/lib/analytics";
-import { getParibhasha, search, searchResources } from "@/lib/api";
+import { getParibhasha, search, searchLibrary } from "@/lib/api";
 import { refToHref } from "@/lib/refs";
 import type {
   ParibhashaHit,
   ParibhashaWord,
-  ResourceLane,
+  LibrarySearchRow,
   SearchResponse,
   SearchResult,
 } from "@/lib/types";
@@ -48,11 +48,11 @@ export function SearchScreen() {
   const [raw, setRaw] = useState(false);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   /**
-   * The संसाधन lane's own answer (contract §13.5). Kept in its own piece of
+   * The संसाधन lane's own answer (contract §13.8). Kept in its own piece of
    * state, never folded into `response`, because the two are different kinds
    * of claim — see the note where the lane is rendered.
    */
-  const [resources, setResources] = useState<ResourceLane | null>(null);
+  const [resources, setResources] = useState<LibrarySearchRow[] | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -82,7 +82,7 @@ export function SearchScreen() {
       // them being down is no reason to show the reader nothing.
       const [passages, lane] = await Promise.allSettled([
         search(query, { raw, signal: ctrl.signal }),
-        searchResources(query, ctrl.signal),
+        searchLibrary(query, ctrl.signal),
       ]);
       if (
         (passages.status === "rejected" && (passages.reason as Error)?.name === "AbortError") ||
@@ -146,9 +146,7 @@ export function SearchScreen() {
   const results = response?.results ?? [];
   const shown = expanded ? results : results.slice(0, FIRST_PAGE);
   const glossary = response?.paribhasha ?? [];
-  const resourceHits = resources
-    ? resources.collections.length + resources.audio.length + resources.video.length
-    : 0;
+  const resourceHits = resources?.length ?? 0;
 
   return (
     <PageContainer>
@@ -352,7 +350,7 @@ export function SearchScreen() {
           contain the word, and folding the two together would let a folder's
           name pass for evidence.
         */}
-        {!busy && resources && <ResourceLaneView lane={resources} />}
+        {!busy && resources && <LibraryLane rows={resources} />}
       </div>
 
       {/* assistant placeholder — quiet inline banner (PRD §7). It sits below
@@ -525,14 +523,17 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
   const badge =
     result.type === "audio" ? "🎧 Audio" : result.type === "video" ? "▶ Video" : null;
 
+  // v1 returns passages only; the audio/video buckets are forward
+  // compatibility for the day AV transcripts get an index (PRD §7). There is
+  // no page for a single file — a recording lives in a folder — and the hit
+  // carries no folder id, so the honest destination for one is the library
+  // rather than a shelf that no longer exists.
   const href =
     result.type === "text" && ref
       ? refToHref(ref)
-      : result.type === "video"
-        ? "/videos"
-        : result.type === "audio"
-          ? "/audio"
-          : "/books";
+      : result.type === "audio" || result.type === "video"
+        ? "/resources"
+        : "/books";
 
   const citation = (
     <>
