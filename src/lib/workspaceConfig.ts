@@ -168,10 +168,7 @@ export function contentWorkspace(code: string | null | undefined): ContentWorksp
 }
 
 export function workspaceForPath(path: string): WorkspaceId | null {
-  // /vani is deliberately Originals chrome, not Resources: it is the door onto
-  // his own words, and the reader is never told that the resources shelf holds
-  // most of what is behind it (contract §13.7).
-  if (path === "/" || path.startsWith("/vani")) return "originals";
+  if (path === "/") return "originals";
   if (path.startsWith("/translations")) return "translations";
   if (path.startsWith("/resources")) return "resources";
   if (path.startsWith("/me")) return "journey";

@@ -48,7 +48,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/books",
     "/translations",
     "/resources",
-    "/vani",
     "/paribhasha",
     "/connect",
     "/connect/centers",

@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
-import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
+import { ProvenanceBadge, provenanceLabel } from "@/components/library/ProvenanceBadge";
 import { KIND_HI, cardSummary, fileFacts } from "@/components/library/format";
 import { contentLang } from "@/lib/script";
 import type { LibrarySearchRow } from "@/lib/types";
 
 /** first N rows; the rest are one tap away on the shelf itself */
 const LANE_LIMIT = 6;
+
+/** nearest his own word first — the order the badge legend reads in */
+const PROVENANCE_ORDER = ["moola", "sankalan", "adhyayan"];
 
 /**
  * The **संसाधन lane** — folders and files that matched on metadata
@@ -26,7 +30,10 @@ const LANE_LIMIT = 6;
  * a lone file does.
  */
 export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
+  const [provenance, setProvenance] = useState<string | null>(null);
   if (rows.length === 0) return null;
+
+  const shown = provenance ? rows.filter((r) => r.provenance === provenance) : rows;
 
   return (
     <section aria-label="संसाधन" className="mt-8">
@@ -43,15 +50,17 @@ export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
         Matched on titles, topics, people and places — file contents are never indexed.
       </p>
 
+      <ProvenanceFilter rows={rows} active={provenance} onChange={setProvenance} />
+
       <ul className="mt-3 divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
-        {rows.slice(0, LANE_LIMIT).map((row) => (
+        {shown.slice(0, LANE_LIMIT).map((row) => (
           <li key={`${row.type}-${row.id}`}>
             <Row row={row} />
           </li>
         ))}
       </ul>
 
-      {rows.length > LANE_LIMIT && (
+      {shown.length > LANE_LIMIT && (
         <p className="mt-3 text-center text-xs">
           <Link
             href="/resources"
@@ -63,6 +72,64 @@ export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
         </p>
       )}
     </section>
+  );
+}
+
+/**
+ * प्रमाण over the results — the second place the provenance question is asked.
+ *
+ * "उनके अपने शब्दों में व्यवस्था पर क्या है?" is one question, and a search box
+ * is where it gets asked. It used to have a page of its own (वाणी, everything
+ * मूल in one flat list), which answered a question nobody had: provenance is
+ * inherited, so that page was the मूल branches with their structure flattened
+ * away. Here it narrows a list the reader is already reading, which is the
+ * shape the thing always wanted.
+ *
+ * Client-side over what the response already holds — the lane is capped at
+ * fifty rows, so a round trip to narrow them would be spent on nothing.
+ */
+function ProvenanceFilter({
+  rows,
+  active,
+  onChange,
+}: {
+  rows: LibrarySearchRow[];
+  active: string | null;
+  onChange: (v: string | null) => void;
+}) {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    if (row.provenance) counts.set(row.provenance, (counts.get(row.provenance) ?? 0) + 1);
+  }
+  // One option narrows nothing, so the row would be an instruction to press a
+  // button that changes nothing. Same rule the folder sieve draws itself by.
+  if (counts.size < 2) return null;
+  const chips = PROVENANCE_ORDER.filter((p) => counts.has(p));
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {chips.map((value) => {
+        const badge = provenanceLabel(value as LibrarySearchRow["provenance"]);
+        const selected = active === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onChange(selected ? null : value)}
+            aria-pressed={selected}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
+            }`}
+            style={selected ? { background: "var(--ws-color)" } : undefined}
+          >
+            <span lang="hi" className="hi">
+              {badge?.label ?? value}
+            </span>
+            <span className="ms-1 tabular-nums opacity-70">{counts.get(value)}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

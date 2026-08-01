@@ -375,7 +375,7 @@ exact shapes; these may still evolve, unlike §§0–8):
 | `GET book-genres/` | The Originals shelf's filter chips. See §11. |
 | `GET nodes/` · `GET nodes/{id}/` | The library — every file that is not a book, at any depth. See §13. |
 | `GET topics/` | The विषय browse chips. See §13. |
-| `GET vani/` · `GET library/search/` | "नागराज जी की वाणी", and metadata search over the library. See §13. |
+| `GET library/search/` | Metadata search over the library. See §13. |
 | `GET centers/` · `GET events/` · `POST events/{id}/register/` | Centers, events, event registration. |
 | `GET search` | Hybrid (semantic + keyword) search over published book paragraphs — see §9.1. |
 
@@ -760,7 +760,7 @@ component recursively.
   "cover_url": null,
   "provenance": "moola",          // resolved through inheritance
   "topics": ["shivir", "vyavastha"],
-  "tags": ["अमरकंटक", "1998"],    // free text, search only — never a chip
+  "tags": ["अमरकंटक", "1998"],    // folders only, free text, search only — never a chip
   "year": "2019", "place": "अमरकंटक", "people": "…",
   "language": "hi", "language_label": "हिन्दी (Hindi)",
   "child_count": 0,               // published child folders
@@ -770,7 +770,7 @@ component recursively.
   "children": [ /* child folders, same fields minus children/items */ ],
   "items": [ {"id": 91, "node": 42, "title": "सत्र 1", "kind": "audio",
               "url": "…", "sequence": 1, "description": "", "provenance": "moola",
-              "tags": [], "file_size": 2411008, "page_count": null,
+              "file_size": 2411008, "page_count": null,
               "duration_seconds": 3600, "updated_at": "…"} ],
   "linked_children": [ /* cross-posted folders — cards that jump to their real home */ ],
   "linked_items":    [ /* cross-posted files — play in place */ ]
@@ -824,7 +824,8 @@ else about the card is identical.
 
 `?provenance=` matches the **resolved** value, not the stored column — a folder
 set to मूल answers for its whole branch (§7), and that is what the cards
-display. `vani/` is this filter under a name, with `moola` fixed.
+display. It replaces `vani/`, which was this filter with a page built around
+it (§13.7).
 
 **Navigation is by id.** Human-readable slugs are a later nicety, deliberately
 deferred. The route should be **workspace-neutral** — `/library/42` rather than
@@ -937,21 +938,33 @@ reader one level short of the file they came for.
 Both sides have to be visible: if either the borrowed thing's branch or the
 borrowing folder's branch is unpublished, it simply does not arrive.
 
-### 13.7 `GET /api/v1/vani/` — "नागराज जी की वाणी" (home door)
+### 13.7 Provenance is a sieve, not a room
 
-Every visible folder whose resolved provenance is `moola`, across all
-workspaces — **one flat list** of the card shape, not three parallel arrays to
-merge. The reader never needs to know which shelf holds it underneath.
+`vani/` used to live here — "नागराज जी की वाणी", every visible folder resolving
+to `moola`, one flat cross-workspace list. **It is gone. The distinction is
+not.**
 
-Rows carry `breadcrumb`, and this is the list that most needs it: it gathers
-folders from every workspace and every depth, so three shivirs contribute three
-rows all called "दिन 1". Not needing to know which *shelf* a thing sits on is
-not the same as not needing to know which *shivir* it is from.
+The distinction is central to this collection: what he said, versus what
+somebody compiled from what he said. But a page was the wrong shape for it.
+Provenance is *inherited* (§7), so one folder marked मूल puts its whole subtree
+in that list — the page could only ever be the मूल branches with their own
+structure flattened out of them, one shivir arriving three times at three
+depths. And the questions readers actually ask are narrower than it: "his own
+words in **this** shivir", "his own words **on व्यवस्था**". Both are asked from
+inside a folder or from a search box, and a separate page answers neither.
+
+So: the badge rides on every card and every file, the FE filters on it where
+the question is asked — beside the local sieves (§13.4) and over search results
+— and anything wanting the flat list can ask `nodes/?provenance=moola`, which
+is all the endpoint ever was.
+
+**Do not build sibling pages for `sankalan` or `adhyayan`.** They are trust
+information, not a way to browse.
 
 ### 13.8 `GET /api/v1/library/search/?q=` — the संसाधन lane
 
-Metadata only — names, descriptions, facets, tags, and the original pCloud
-path. **Never file contents.** One list, always separate from the
+Metadata only — names, descriptions, facets, a folder's tags, and a file's
+original pCloud path. **Never file contents.** One list, always separate from the
 पुस्तकों-में citation lane (§9.1).
 
 ```jsonc

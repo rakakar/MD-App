@@ -5,8 +5,7 @@ import { NodeCardView } from "@/components/library/NodeCard";
 import { FileList } from "@/components/library/FileList";
 import { Sieve, applySieve, ClearSieve, type SieveSelection } from "@/components/library/Sieve";
 import { ShelfCard } from "@/components/shelf/BookShelf";
-import { ChevronRight } from "@/components/shell/icons";
-import { EmptyState, PageContainer, SectionHeading, SegmentedNav } from "@/components/ui";
+import { EmptyState, PageContainer, SegmentedNav } from "@/components/ui";
 import { getBooks, getNode, getTopics, getWorkspaces, nodeChildren } from "@/lib/api";
 import { shelfMap } from "@/lib/library";
 import type { BookSummary, LibraryNode, Topic } from "@/lib/types";
@@ -166,25 +165,6 @@ function Shelf({
         <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
       )}
 
-      <SectionHeading tier="title">
-        <span lang="hi" className="hi">नागराज जी की वाणी</span>
-      </SectionHeading>
-      <Link
-        href="/vani"
-        className="flex items-center gap-3 rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
-      >
-        <span className="min-w-0 flex-1">
-          <span lang="hi" className="hi block text-[15px] font-medium">
-            जो उनके अपने शब्दों, स्वर या हाथ से है
-          </span>
-          <span className="mt-0.5 block text-xs text-ink-soft">
-            Everything marked मूल, gathered from across the library.
-          </span>
-        </span>
-        <span aria-hidden className="shrink-0 text-muted">
-          <ChevronRight />
-        </span>
-      </Link>
     </>
   );
 }

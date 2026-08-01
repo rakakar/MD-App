@@ -271,20 +271,6 @@ export async function getTopics(): Promise<Topic[]> {
 }
 
 /**
- * "नागराज जी की वाणी" (§13.7) — every visible folder whose resolved provenance
- * is मूल, across all workspaces, as one flat list.
- *
- * Rows carry `breadcrumb` and this is the list that most needs it: it gathers
- * from every workspace and every depth, so three shivirs contribute three rows
- * all called "दिन 1".
- */
-export async function getVani(): Promise<LocatedNodeCard[]> {
-  return unwrapList(
-    await apiFetch<LocatedNodeCard[] | { results: LocatedNodeCard[] }>("vani/")
-  );
-}
-
-/**
  * The संसाधन lane (§13.8). **Metadata only** — names, descriptions, facets,
  * tags and the original pCloud path. File contents are never indexed and never
  * will be, which is exactly why these hits are rendered in their own lane: a

@@ -316,7 +316,8 @@ export interface LibraryFile {
   description: string;
   /** already the effective one — its own, else inherited from its branch */
   provenance: Provenance;
-  tags: string[];
+  // No `tags` — a file has none. Its folder carries topics, year, place,
+  // people and tags, and search reaches the file through them.
   /** bytes; null for a catalogued file whose bytes haven't moved yet */
   file_size: number | null;
   /** PDFs only */

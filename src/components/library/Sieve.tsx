@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { KIND_HI } from "@/components/library/format";
+import { provenanceLabel } from "@/components/library/ProvenanceBadge";
 import type { FileKind, NodeCard } from "@/lib/types";
 
 /**
- * The **sieve** — वर्ष · स्थान · व्यक्ति · भाषा · प्रकार over the folder you
- * are standing in (contract §13.4).
+ * The **sieve** — प्रमाण · वर्ष · स्थान · व्यक्ति · भाषा · प्रकार over the
+ * folder you are standing in (contract §13.4).
  *
  * Not to be confused with विषय, which sits above it and is a different kind of
  * control entirely: a विषय chip is a *door* onto the whole library and tapping
@@ -21,14 +22,25 @@ import type { FileKind, NodeCard } from "@/lib/types";
  * प्रकार is last on purpose. "सिर्फ़ audio दिखाओ, चलते-फिरते सुनना है" is a
  * real need, but it is never the first question a seeker asks, and a format
  * filter at the top turns a library back into a file browser.
+ *
+ * प्रमाण (provenance) is first, for the mirror-image reason. "उनका अपना कौन सा
+ * है?" is the question this collection exists to be able to answer, and it
+ * outranks which year a thing is from. It used to have a page of its own —
+ * वाणी, a flat list of everything मूल — but provenance is inherited, so that
+ * page could only ever be the मूल branches with their structure flattened out
+ * of them. The question is asked *from inside a folder*, so it is answered
+ * here, beside the folder it is asked about.
  */
-export type SieveAxis = "year" | "place" | "person" | "language" | "kind";
+export type SieveAxis = "provenance" | "year" | "place" | "person" | "language" | "kind";
 
 export type SieveSelection = Partial<Record<SieveAxis, string>>;
 
-export const SIEVE_AXES: SieveAxis[] = ["year", "place", "person", "language", "kind"];
+export const SIEVE_AXES: SieveAxis[] = [
+  "provenance", "year", "place", "person", "language", "kind",
+];
 
 const AXIS_HI: Record<SieveAxis, string> = {
+  provenance: "प्रमाण",
   year: "वर्ष",
   place: "स्थान",
   person: "व्यक्ति",
@@ -38,6 +50,9 @@ const AXIS_HI: Record<SieveAxis, string> = {
 
 /** the kinds worth sieving by — nobody goes looking for "a link" or "a file" */
 const SIEVE_KINDS: FileKind[] = ["audio", "video", "pdf", "image"];
+
+/** nearest his own word first — the order the badge legend reads in */
+const PROVENANCE_ORDER: string[] = ["moola", "sankalan", "adhyayan"];
 
 /**
  * Below this many children, the list *is* the answer: five folders can be read
@@ -66,6 +81,15 @@ function href(basePath: string, selection: SieveSelection, axis?: SieveAxis, val
 /** every value one child can be found under, on one axis */
 function valuesOf(card: NodeCard, axis: SieveAxis): { value: string; label: string }[] {
   switch (axis) {
+    case "provenance": {
+      // The card's provenance arrives already resolved through inheritance, so
+      // a folder that never stated one still sieves under the branch it
+      // belongs to. A blank one is genuinely unjudged and gets no chip — the
+      // badge stays silent there too, and a chip would be a judgement nobody
+      // made.
+      const badge = provenanceLabel(card.provenance);
+      return badge ? [{ value: card.provenance, label: badge.label }] : [];
+    }
     case "year":
       // `2005-03` files under 2005: a chip per month would shatter one shivir
       // season into three.
@@ -122,6 +146,14 @@ export function sieveOptions(cards: NodeCard[], axis: SieveAxis): Chip[] {
   }
   const chips = [...counts].map(([value, { label, count }]) => ({ value, label, count }));
   if (axis === "year") return chips.sort((a, b) => b.value.localeCompare(a.value));
+  if (axis === "provenance") {
+    // मूल → संकलन → अध्ययन: nearest his own word first, and the same order the
+    // badge legend uses. Alphabetical would put अध्ययन at the top, which reads
+    // as a ranking nobody meant.
+    return chips.sort(
+      (a, b) => PROVENANCE_ORDER.indexOf(a.value) - PROVENANCE_ORDER.indexOf(b.value)
+    );
+  }
   if (axis === "kind") {
     return chips.sort(
       (a, b) =>
