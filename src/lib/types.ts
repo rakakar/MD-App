@@ -15,14 +15,25 @@ export type BlockType =
 
 export type Align = "left" | "center" | "right";
 
-/** sections/ — code doubles as the FE workspace id (contract §10) */
-export interface Section {
+/**
+ * workspaces/ — code doubles as the FE workspace id (contract §10.1).
+ *
+ * `name` is English and stays English: the reader-facing Hindi (मूल / अनुवाद /
+ * संसाधन …) lives in workspaceConfig.ts, which already held it. The BE's old
+ * `name_hi` twin was a second place to fix a typo and it drifted.
+ */
+export interface ApiWorkspace {
   code: string;
-  name_hi?: string;
-  name_en?: string;
-  ordering?: number;
-  description?: string;
-  [key: string]: unknown;
+  name: string;
+  ordering: number;
+  description: string;
+  /**
+   * The folder this shelf opens into — the library tree's root for this
+   * workspace. `null` for `journey`, which never holds content, and for any
+   * workspace whose root is unpublished, so branch on it rather than assuming
+   * an id is there.
+   */
+  root_node_id: number | null;
 }
 
 /**
@@ -31,11 +42,14 @@ export interface Section {
  * A manager-editable table, never a constant in here: it exists so a new kind
  * of writing (Notes, Letters, a compilation) reaches the shelf without a
  * frontend deploy. Hardcoding it would silently drop those books off it.
+ *
+ * `name` is English (§11.1). The Hindi a reader sees comes from lib/labels.ts,
+ * which translates the codes we know and falls back to this for the ones a
+ * manager added after we shipped — so the list is still never hardcoded.
  */
 export interface BookGenre {
   code: string;
-  name_hi: string;
-  name_en: string;
+  name: string;
   description: string;
   ordering: number;
   /** published books filed under this genre, translations included */
@@ -56,7 +70,8 @@ export interface BookSummary {
   title_hi: string;
   subtitle_hi: string;
   author: string;
-  section: Section | string | null;
+  /** which shelf this book sits on — the workspace code (contract §10) */
+  workspace: string;
   book_type: BookType;
   /**
    * What kind of writing this is — the Originals chips. Distinct from
@@ -482,7 +497,7 @@ export interface SearchResult {
   context_after?: string;
   title?: string;
   timestamp?: number;
-  section?: Section | string | null;
+  workspace?: string;
   /** which leg found this: "vector" (meaning), "keyword" (words), or "both" */
   matched?: "vector" | "keyword" | "both";
   [key: string]: unknown;
@@ -605,11 +620,4 @@ export interface ChatSession {
   modes: ("quick" | "deep")[];
   feedback_categories: { value: string; label: string }[];
   recent: ChatAnswer[];
-}
-
-/** Section code carried on any §9 object — objects may embed section as code string or object. */
-export function sectionCode(section: Section | string | null | undefined): string | null {
-  if (!section) return null;
-  if (typeof section === "string") return section;
-  return section.code ?? null;
 }

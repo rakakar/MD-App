@@ -29,7 +29,7 @@ export default async function TranslationsHome({
         ways, so what a reader is choosing between here is the rendering.
       */}
       <BookShelf
-        section="translations"
+        workspace="translations"
         axis="language"
         basePath="/translations"
         selected={language}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { EmptyState, FilterChips } from "@/components/ui";
 import { getBookGenres, getBooks } from "@/lib/api";
+import { genreLabel } from "@/lib/labels";
 import type { BookGenre, BookSummary } from "@/lib/types";
 
 /**
@@ -17,8 +18,8 @@ import type { BookGenre, BookSummary } from "@/lib/types";
 export type ShelfAxis = "genre" | "language";
 
 interface ShelfProps {
-  /** the BE section this shelf browses; its code is the workspace id (§10) */
-  section: "originals" | "translations";
+  /** the workspace this shelf browses; its code is the ?workspace= value (§10) */
+  workspace: "originals" | "translations";
   axis: ShelfAxis;
   /** route the chips link back to, e.g. "/books" or "/translations" */
   basePath: string;
@@ -36,7 +37,7 @@ function href(basePath: string, carry: Record<string, string>, extra?: [string, 
 }
 
 export async function BookShelf({
-  section,
+  workspace,
   axis,
   basePath,
   carry = {},
@@ -73,7 +74,7 @@ export async function BookShelf({
       ) : (
         <div className="mt-5">
           <EmptyState
-            title={section === "translations" ? "अनुवाद अभी नहीं" : "यहाँ अभी कुछ नहीं"}
+            title={workspace === "translations" ? "अनुवाद अभी नहीं" : "यहाँ अभी कुछ नहीं"}
             hint={
               selected
                 ? "Nothing published under this filter yet."
@@ -93,10 +94,9 @@ export async function BookShelf({
  * a translation — the words are his, the rendering is not — so a card showing
  * only the author would credit him with a student's English.
  *
- * Exported because the Resources shelf's पुस्तकें tab is the same object on a
- * different shelf: a section is a shelf, not a treatment (PRD v2 §5.0.1), so a
- * book filed under संसाधन is still a book and must not look like a second kind
- * of card.
+ * Exported because a book filed on another shelf is the same object: a
+ * workspace is a shelf, not a treatment (PRD v2 §5.0.1), so a book under
+ * संसाधन is still a book and must not look like a second kind of card.
  */
 export function ShelfCard({ book }: { book: BookSummary }) {
   return (
@@ -139,7 +139,7 @@ type Chip = { value: string; label: string };
 async function genreShelf(selected?: string): Promise<[Chip[], BookSummary[]]> {
   const [genres, books] = await Promise.all([
     getBookGenres().catch(() => [] as BookGenre[]),
-    getBooks({ section: "originals", genre: selected }).catch(() => [] as BookSummary[]),
+    getBooks({ workspace: "originals", genre: selected }).catch(() => [] as BookSummary[]),
   ]);
   return [
     genres
@@ -148,7 +148,10 @@ async function genreShelf(selected?: string): Promise<[Chip[], BookSummary[]]> {
       // only, and counts a translation through its original.
       .filter((g) => g.book_count > 0)
       .sort((a, b) => a.ordering - b.ordering)
-      .map((g) => ({ value: g.code, label: g.name_hi || g.name_en || g.code })),
+      // The API's `name` is English now (§11.1); the Hindi lives in the FE.
+      // Every row still renders — a genre added after we shipped keeps its
+      // English name rather than dropping off the shelf.
+      .map((g) => ({ value: g.code, label: genreLabel(g.code, g.name) })),
     books,
   ];
 }
@@ -158,9 +161,9 @@ async function languageShelf(selected?: string): Promise<[Chip[], BookSummary[]]
   // the published translations are actually in, so a first Tamil translation
   // brings its own chip with it.
   const [all, filtered] = await Promise.all([
-    getBooks({ section: "translations" }).catch(() => [] as BookSummary[]),
+    getBooks({ workspace: "translations" }).catch(() => [] as BookSummary[]),
     selected
-      ? getBooks({ section: "translations", language: selected }).catch(
+      ? getBooks({ workspace: "translations", language: selected }).catch(
           () => [] as BookSummary[]
         )
       : null,

@@ -1,4 +1,5 @@
 import type {
+  ApiWorkspace,
   AudioSeries,
   AudioTrack,
   BookDetail,
@@ -23,7 +24,6 @@ import type {
   ResourceLane,
   SearchResponse,
   SearchResult,
-  Section,
   SutraOfTheDay,
   VideoItem,
 } from "./types";
@@ -118,12 +118,12 @@ function unwrapList<T>(data: T[] | { results: T[] }): T[] {
  * returns the English MVD too. That is intended.
  */
 export async function getBooks(
-  opts: { section?: string; genre?: string; language?: string } = {}
+  opts: { workspace?: string; genre?: string; language?: string } = {}
 ): Promise<BookSummary[]> {
   return unwrapList(
     await apiFetch<BookSummary[] | { results: BookSummary[] }>(
       `books/${qs({
-        section__code: opts.section,
+        workspace: opts.workspace,
         genre: opts.genre,
         language: opts.language,
       })}`
@@ -176,8 +176,16 @@ export async function getSutraOfTheDay(offset = 0): Promise<SutraOfTheDay | null
 
 // ---- §9 live endpoints ----
 
-export async function getSections(): Promise<Section[]> {
-  return unwrapList(await apiFetch<Section[] | { results: Section[] }>("sections/"));
+/**
+ * The five workspaces (contract §10.1), in `ordering` order.
+ *
+ * Never a constant in here — same rule as the genre chips. `root_node_id` is
+ * the folder each shelf opens into, and it is `null` for `journey` and for any
+ * workspace whose root is unpublished, so callers branch on it rather than
+ * assuming an id is there.
+ */
+export async function getWorkspaces(): Promise<ApiWorkspace[]> {
+  return unwrapList(await apiFetch<ApiWorkspace[] | { results: ApiWorkspace[] }>("workspaces/"));
 }
 
 // ---- Resources — collections behind purpose doors (§13) ----
@@ -535,8 +543,8 @@ const SEARCH_TYPE: Record<string, SearchResult["type"]> = {
  * **Originals only.** Translations and resource documents are not indexed and
  * never will be: retrieval is tuned for Devanagari, and a citation has to be
  * quotable back to A. Nagraj ji rather than to a student's rendering. So
- * `section` can only ever narrow originals — never offer it as a way to reach
- * the other two shelves, because there is nothing there to reach.
+ * `workspace` can only ever narrow originals — never offer it as a way to
+ * reach the other two shelves, because there is nothing there to reach.
  *
  * Never paginated: the BE returns the whole (small, ranked) result set in one
  * call, so "show more" is a client-side reveal and costs no round-trip.
@@ -544,7 +552,7 @@ const SEARCH_TYPE: Record<string, SearchResult["type"]> = {
 export async function search(
   q: string,
   opts: {
-    section?: string;
+    workspace?: string;
     book?: string;
     limit?: number;
     /** search the query exactly as typed, skipping the Devanagari rewrite */
@@ -555,7 +563,7 @@ export async function search(
   const envelope = await apiFetch<SearchEnvelope>(
     `search${qs({
       q,
-      section: opts.section,
+      workspace: opts.workspace,
       book: opts.book,
       limit: opts.limit,
       raw: opts.raw ? 1 : undefined,

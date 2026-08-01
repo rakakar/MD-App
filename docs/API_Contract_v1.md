@@ -10,6 +10,14 @@ Base path: `/api/v1/` · Interactive schema: `/api/v1/docs/` (drf-spectacular).
 **Production BE:** `https://mdbe.welfareinfo.net` (may change; FE must read the
 base URL from an environment variable, never hardcode it).
 
+> **Changed on 2026-08-01 (Content Model v3).** §§0–8 — the reader contract for
+> books — are untouched. What moved: `sections/` is now `workspaces/` and
+> `?section__code=` is now `?workspace=`; the resources, audio and video
+> endpoints are replaced by one node tree (§13); and no response carries a
+> `name_hi` / `name_en` / `provenance_hi` twin any more (§10.1). There are no
+> compatibility adapters. See `docs/FE_Handoff_Content_Model_v3.md` for the
+> change list on the FE side.
+
 ---
 
 ## 0. The one decision that shapes everything
@@ -54,11 +62,11 @@ fact. In **both** cases, citations use `canonical_ref` (stable, see §5).
 ### 2.1 `GET /api/v1/books/` — list published books
 
 Array of book summaries (no chapters). Fields: `code`, `title_hi`,
-`subtitle_hi`, `author`, `section`, `book_type`, `genre`, `language`,
+`subtitle_hi`, `author`, `workspace`, `book_type`, `genre`, `language`,
 `language_label`, `translator`, `translation_of`, `edition`,
 `publication_year`, `description`, `cover_image`, `page_count`, `tags`.
 
-Filters: `?section__code=originals` · `?genre=darshan` · `?language=en` ·
+Filters: `?workspace=originals` · `?genre=darshan` · `?language=en` ·
 `?translation_of=MVD`. See §11 for what `genre` means and §12 for translations.
 
 ### 2.2 `GET /api/v1/books/{code}/` — book detail + TOC
@@ -363,11 +371,11 @@ exact shapes; these may still evolve, unlike §§0–8):
 
 | Endpoint | What it returns |
 |---|---|
-| `GET sections/` | Content sections (used as `?section__code=` filter everywhere). See §10. |
+| `GET workspaces/` | The five workspaces (used as the `?workspace=` filter everywhere). See §10. |
 | `GET book-genres/` | The Originals shelf's filter chips. See §11. |
-| `GET folders/` · `GET documents/` | The Resources file library. See §13. |
-| `GET audio/series/` · `GET audio/` | Discourse audio series and tracks. Filters: `?section__code=`, `?series=`. |
-| `GET videos/` · `GET playlists/` | Embedded YouTube videos and curated playlists. Filter: `?section__code=`. |
+| `GET nodes/` · `GET nodes/{id}/` | The library — every file that is not a book, at any depth. See §13. |
+| `GET topics/` | The विषय browse chips. See §13. |
+| `GET vani/` · `GET library/search/` | "नागराज जी की वाणी", and metadata search over the library. See §13. |
 | `GET centers/` · `GET events/` · `POST events/{id}/register/` | Centers, events, event registration. |
 | `GET search` | Hybrid (semantic + keyword) search over published book paragraphs — see §9.1. |
 
@@ -413,7 +421,7 @@ change needed no client edit.
 |---|---|
 | `q` **(required)** | Devanagari, Hinglish or English; 2+ characters |
 | `book` | restrict to one book code, e.g. `MVD` |
-| `section` | narrow *within* the corpus. It cannot widen it — `section=translations` returns nothing |
+| `workspace` | narrow *within* the corpus. It cannot widen it — `workspace=translations` returns nothing |
 | `limit` | max hits — default 25, max 50 |
 | `raw=1` | search exactly as typed; skip the Devanagari rewrite |
 
@@ -532,63 +540,88 @@ the corpus or a word retrieval does not understand yet.
 
 ---
 
-## 10. Sections
+## 10. Workspaces
 
-There are exactly **three** sections, and their codes are the frontend's
-workspace ids verbatim — so `?section__code=` needs no translation on either
-side, and there is no mapping table to keep in sync.
+There are exactly **five** workspaces, and their codes are the frontend's
+workspace ids verbatim — so `?workspace=` needs no translation on either side,
+and there is no mapping table to keep in sync. (These were called "sections" in
+the backend until Content Model v3; the FE has always called them workspaces,
+and now so does the API.)
 
-| `code` | `name_hi` | `name_en` |
+| `code` | Holds | Notes |
 |---|---|---|
-| `originals` | मूल | Originals |
-| `translations` | अनुवाद | Translations |
-| `resources` | संसाधन | Resources |
+| `originals` | books **and** library folders | A. Nagraj ji's own works |
+| `translations` | books **and** library folders | those works in other languages |
+| `resources` | library folders | the main home for everything that is not a book |
+| `connect` | library folders | centers and events are separate models; this is for their brochures and photos |
+| `journey` | nothing, ever | each signed-in reader's own notes, bookmarks and progress |
 
-### 10.1 `GET /api/v1/sections/`
+### 10.1 `GET /api/v1/workspaces/`
 
 ```json
 [
-  { "code": "originals",    "name_hi": "मूल",     "name_en": "Originals",    "ordering": 1, "description": "…" },
-  { "code": "translations", "name_hi": "अनुवाद",  "name_en": "Translations", "ordering": 2, "description": "…" },
-  { "code": "resources",    "name_hi": "संसाधन",  "name_en": "Resources",    "ordering": 3, "description": "…" }
+  { "code": "originals",    "name": "Originals",    "ordering": 1, "root_node_id": 1,    "description": "…" },
+  { "code": "translations", "name": "Translations", "ordering": 2, "root_node_id": 2,    "description": "…" },
+  { "code": "resources",    "name": "Resources",    "ordering": 3, "root_node_id": 3,    "description": "…" },
+  { "code": "connect",      "name": "Connect",      "ordering": 4, "root_node_id": 4,    "description": "…" },
+  { "code": "journey",      "name": "Journey",      "ordering": 5, "root_node_id": null, "description": "…" }
 ]
 ```
 
-Returned sorted by `ordering` — use it for the workspace strip. `name_hi` is
-what the public site shows; `name_en` exists for English surfaces.
+Returned sorted by `ordering` — use it for the workspace strip.
 
-**The FE must not hardcode its own section list.** Read these three from the
+**`root_node_id` is the folder the shelf opens into.** Without it, opening
+संसाधन costs a round trip spent discovering an id the FE is not allowed to
+hardcode — ask `nodes/?workspace=resources`, read the single row, then finally
+ask for its contents. It is `null` for `journey`, which holds no content, and
+for any workspace whose root is not published; branch on that rather than
+assuming an id is there.
+
+**Do not render the root folder as a card inside its own shelf.** A card
+labelled "संसाधन" sitting inside संसाधन is an empty step. Take `root_node_id`,
+fetch it, and render *its contents* as the shelf — the first `breadcrumb` entry
+is then the page's own title, not a link.
+
+**`name` is English, and that is deliberate.** The reader-facing Hindi labels
+(मूल / अनुवाद / संसाधन …) live in the FE, which already hardcodes them. The
+backend used to ship a `name_hi` twin for every taxonomy row; it was a second
+place to fix a typo and it drifted. `name_hi` and `name_en` no longer arrive on
+any endpoint — see also §11.1 (genres), §13.4 (topics) and `provenance_hi`
+(§13).
+
+**The FE must not hardcode its own workspace list.** Read these from the
 endpoint, so a later change to a name or order needs no FE deploy.
 
-### 10.2 The frontend's other two workspaces
+### 10.2 Journey and Connect
 
-The FE also has **My Journey** and **Connect**. Neither is a section, and
-neither ever appears in `sections/`:
-
-- **My Journey** is the signed-in user's own data — notes, bookmarks, reading
-  progress. See §6 (`me/notes/`, `me/bookmarks/`, `me/progress/`).
+- **My Journey** never holds published content. It is the signed-in reader's
+  own data — notes, bookmarks, reading progress. See §6 (`me/notes/`,
+  `me/bookmarks/`, `me/progress/`). It appears in `workspaces/` for
+  completeness and nothing is ever filed under it.
 - **Connect** is the events and centers module. `Center` and `Event` carry no
-  section FK, so `events/` and `centers/` are never filtered by
-  `?section__code=`. Panel-side, editing them is gated on the rbac `events`
-  module, not on any section.
-
-Community-facing books, audio and video are ordinary `resources` content.
+  workspace FK, so `events/` and `centers/` are never filtered by
+  `?workspace=`. Panel-side, editing them is gated on the rbac `events`
+  module. The workspace exists so that a brochure or a photo set for an event
+  has somewhere to live in the library tree.
 
 ### 10.3 Each shelf has its own filter axis
 
-The three sections hold different *kinds* of thing, so they do not share one
-filter control. This is the shape of the whole content model:
+The workspaces hold different *kinds* of thing, so they do not share one filter
+control. This is the shape of the whole content model:
 
-| Section | Primary axis | Endpoint that supplies it | UI |
+| Workspace | Primary axis | Endpoint that supplies it | UI |
 |---|---|---|---|
 | `originals` | **genre** (दर्शन / वाद / शास्त्र / परिचय …) | `GET book-genres/` (§11) | chips |
 | `translations` | **language** (+ translator) | `language` on each book (§12) | chips |
-| `resources` | **purpose doors + facets** (PRD v2 §5.6) | `GET resources/doors/` + facet params (§13) | doors → chips |
+| `resources` | **the tree, plus facets** | `GET nodes/` + `GET topics/` (§13) | folders → chips |
 
 Do not put a genre chip on the Resources shelf, or a folder tree on Originals.
 Each axis exists because that shelf's content is organized that way.
 
----
+**Originals and Translations may now hold folders as well as books.** The BE
+serves both; whether the FE interleaves them on one shelf or shows two bands is
+an FE decision. Until it renders them, `nodes/?workspace=originals` simply
+returns whatever is there — which is nothing, so nothing breaks.
 
 ## 11. Book genres — the Originals shelf's chips
 
@@ -608,18 +641,18 @@ numbers (§1).
 
 ```json
 [
-  { "code": "darshan",  "name_hi": "दर्शन",  "name_en": "Darshan",  "description": "…", "ordering": 1, "book_count": 4 },
-  { "code": "vaad",     "name_hi": "वाद",    "name_en": "Vaad",     "description": "…", "ordering": 2, "book_count": 3 },
-  { "code": "shastra",  "name_hi": "शास्त्र", "name_en": "Shastra",  "description": "…", "ordering": 3, "book_count": 3 },
-  { "code": "parichay", "name_hi": "परिचय",  "name_en": "Parichay", "description": "…", "ordering": 4, "book_count": 2 },
-  { "code": "diary",    "name_hi": "डायरी",  "name_en": "Diary",    "description": "…", "ordering": 5, "book_count": 0 },
-  { "code": "other",    "name_hi": "अन्य",   "name_en": "Other",    "description": "…", "ordering": 99, "book_count": 1 }
+  { "code": "darshan",  "name": "Darshan",  "description": "…", "ordering": 1, "book_count": 4 },
+  { "code": "vaad",     "name": "Vaad",     "description": "…", "ordering": 2, "book_count": 3 },
+  { "code": "shastra",  "name": "Shastra",  "description": "…", "ordering": 3, "book_count": 3 },
+  { "code": "parichay", "name": "Parichay", "description": "…", "ordering": 4, "book_count": 2 },
+  { "code": "diary",    "name": "Diary",    "description": "…", "ordering": 5, "book_count": 0 },
+  { "code": "other",    "name": "Other",    "description": "…", "ordering": 99, "book_count": 1 }
 ]
 ```
 
 Sorted by `ordering` — render chips in that order.
 
-**The FE must not hardcode this list.** Same rule as `sections/`, and here it
+**The FE must not hardcode this list.** Same rule as `workspaces/`, and here it
 matters more: genres are a manager-editable table precisely so a new kind of
 writing (Notes, Letters, compilations) can appear without an FE deploy. A
 hardcoded list would silently drop those books off the shelf.
@@ -634,14 +667,14 @@ hardcoded list would silently drop those books off the shelf.
 already the effective one, so the FE never has to resolve inheritance itself.
 
 There is deliberately **no `resources` genre**: which shelf a book sits on is
-already answered by `section`, and a second field saying the same thing could
+already answered by `workspace`, and a second field saying the same thing could
 disagree with it.
 
 ---
 
 ## 12. Translations
 
-A translation is a **separate book row** in the `translations` section that
+A translation is a **separate book row** in the `translations` workspace that
 points back at the original it renders. The same original translated by three
 students is three rows.
 
@@ -657,7 +690,7 @@ already filled in with the original's genre by the API, so an English MVD comes
 back as `genre: "darshan"` and answers `?genre=darshan`. Re-filing the original
 re-files every translation of it at once.
 
-**No chains.** A translation always points at an originals-section book, never
+**No chains.** A translation always points at an originals-workspace book, never
 at another translation, so `translations[]` on a translation is always `[]`.
 
 ### 12.1 On the original's page
@@ -691,119 +724,260 @@ would return nothing.
 
 ---
 
-## 13. Resources — collections behind purpose doors *(PRD v2 §5.6)*
+## 13. The library — one tree for everything that is not a book
 
-The unit of the shelf is the **Collection** (one shivir bundle, one संकलन,
-one chart set — D15), not the file. Browsing is **purpose doors → facet chips
-→ collection cards**; the folder tree survives only as the archivist's
-"सभी फ़ाइलें" fallback. An item is served as the file it is: no chapters, no
-paragraphs, no canonical refs, no read-aloud, no content indexing.
+*(Content Model v3. Replaces the old "collections behind purpose doors" model,
+and with it the separate audio and video endpoints.)*
 
-Provenance (D14) rides on every card and item as `provenance` +
-`provenance_hi`: `moola` मूल 🔵 / `sankalan` संकलन 🟡 / `adhyayan` अध्ययन ⚪.
-The same pair now also appears on audio tracks and videos (may be `""` on
-legacy rows — hide the badge then).
+**Everything that is not a book is one tree.** A **folder** (`node`) holds
+child folders, **files** (`item`), or both, to any depth up to six. A
+"collection" is just a folder that happens to hold files; an audio series is a
+folder; a playlist is a folder; a lone PDF needs no wrapper at all and sits
+directly wherever it belongs.
 
-### 13.1 `GET /api/v1/resources/doors/` — the landing page
+A file is served as the file it is: no chapters, no paragraphs, no canonical
+refs, no read-aloud, no content indexing.
 
-```json
-[{ "code": "shivir_samagri", "name_hi": "शिविर सामग्री", "description": "…",
-   "ordering": 2, "collection_count": 12 }]
-```
+Provenance (D14) rides on every folder and file as `provenance`:
+`moola` / `sankalan` / `adhyayan`. It is **inherited** — a folder without one
+of its own reports the nearest ancestor's, already resolved, so the FE never
+walks the tree to find it. The Hindi badge labels (मूल 🔵 / संकलन 🟡 /
+अध्ययन ⚪) live in the FE; `provenance_hi` no longer arrives.
 
-Doors with nothing servable behind them are **not returned** — render exactly
-what arrives. Manager-extendable: never hardcode the seven seeded doors.
+### 13.1 The one node shape
 
-### 13.2 `GET /api/v1/resources/topics/` — the विषय chips
+`GET /api/v1/nodes/{id}/` returns this, **and returns exactly this at every
+depth**. Depth 1 and depth 6 are the same object, so the FE renders one
+component recursively.
 
-Same shape (`collection_count` per topic). All topics are returned; hide
-zero-count chips. Chip order **inside a door**: विषय → वर्ष → स्थान → व्यक्ति
-→ भाषा → and *last* प्रकार (kind).
-
-### 13.3 `GET /api/v1/resources/collections/` — the cards
-
-Facet filters: `?door=`, `?topic=`, `?year=` (prefix match), `?place=`,
-`?person=`, `?language=`, `?kind=` (pdf/audio/image — has ≥1 published item of
-that kind), `?provenance=`, `?section__code=`. Paginated.
-
-```json
+```jsonc
 {
-  "id": 7, "title_hi": "अमरकंटक शिविर 2005", "section": "resources",
-  "door": "shivir_samagri", "door_name_hi": "शिविर सामग्री",
-  "description": "…", "cover_url": null,
-  "provenance": "moola", "provenance_hi": "मूल",
-  "topics": ["vyavastha"], "tags": [], "year": "2005", "place": "अमरकंटक",
-  "people": "ए. नागराज", "language": "hi", "language_label": "हिन्दी (Hindi)",
-  "item_count": 14, "kinds": ["audio", "pdf"], "updated_at": "…"
+  "id": 42,
+  "name": "दिन 1",
+  "workspace": "resources",
+  "breadcrumb": [{"id": 3, "name": "शिविर सामग्री"}, {"id": 17, "name": "2019"}],
+  "description": "…",
+  "cover_url": null,
+  "provenance": "moola",          // resolved through inheritance
+  "topics": ["shivir", "vyavastha"],
+  "tags": ["अमरकंटक", "1998"],    // free text, search only — never a chip
+  "year": "2019", "place": "अमरकंटक", "people": "…",
+  "language": "hi", "language_label": "हिन्दी (Hindi)",
+  "child_count": 0,               // published child folders
+  "item_count": 15,               // servable files
+  "kinds": ["audio", "pdf"],      // which sorts, deduplicated, sorted
+  "sequence": 1, "updated_at": "…",
+  "children": [ /* child folders, same fields minus children/items */ ],
+  "items": [ {"id": 91, "node": 42, "title": "सत्र 1", "kind": "audio",
+              "url": "…", "sequence": 1, "description": "", "provenance": "moola",
+              "tags": [], "file_size": 2411008, "page_count": null,
+              "duration_seconds": 3600, "updated_at": "…"} ],
+  "linked_children": [ /* cross-posted folders — cards that jump to their real home */ ],
+  "linked_items":    [ /* cross-posted files — play in place */ ]
 }
 ```
 
-Only servable collections arrive: published, with ≥1 published openable item.
-Cards are a **grid of covers/thumbnails, never a list of filenames**.
+`children` carries the same fields as the top level **minus** `breadcrumb`,
+`children`, `items`, `linked_children` and `linked_items` — enough to render a
+card, not enough to recurse without another request. Fetch a child by id when
+the reader opens it.
 
-### 13.4 `GET /api/v1/resources/collections/{id}/` — the album view
+**`child_count` / `item_count` / `kinds` are what make a card worth showing.**
+Without them every folder is an identical blank row and the only way to tell
+forty discourses from nothing is to open both. They count what *this* reader
+can actually reach — published children, servable files — so a card never
+promises more than the folder delivers. They arrive on every card at every
+level, including nested `children` and `linked_children`, so a folder listing
+never needs a request per row. `kinds` is what makes the number legible:
+render "14 audio · 1 PDF", not "15 files". It is `[]`, never null.
 
-The card plus `items` (published, in `sequence` order):
+**Counting is deliberately shallow.** `child_count` is direct children, not
+descendants: a folder of folders reports how many folders, not the files at
+the bottom of the tree. Summing a whole subtree would mean walking it.
+
+### 13.2 Browsing
+
+| Call | Returns |
+|---|---|
+| `GET nodes/?workspace=resources` | the root folders of that workspace |
+| `GET nodes/?parent=<id>` | one level down (card shape only) |
+| `GET nodes/<id>/` | the full shape above |
+
+Optional filters on the list form: `?topic=`, `?provenance=`.
+
+**Navigation is by id.** Human-readable slugs are a later nicety, deliberately
+deferred. The route should be **workspace-neutral** — `/library/42` rather than
+`/resources/nodes/42` — because one tree spans all four content workspaces, and
+a Connect brochure sitting at a `/resources/…` URL is a URL that lies. The card
+carries `workspace`, so the FE can still dress the page in that shelf's chrome.
+
+**Neither list is paginated, and that is a known limit rather than a promise.**
+Today the whole library is a few hundred folders and any one folder holds a
+handful, so paging would be complexity bought for nobody. The pCloud import
+(Content Model v3 §17) is what changes this: it will produce folders with
+hundreds of children, and at that point `?parent=` grows pagination and
+`children` in the detail payload gets capped. **Read `children` through one
+function**, so that day is an afternoon's work rather than a rewrite.
+
+### 13.3 Visibility — one rule
+
+> A folder is visible only if **it and every one of its ancestors** is
+> published.
+
+That is the whole predicate. There is no separate "servable" test, no
+per-file status, and no half-published state: a file goes live with its
+folder. Anything the API returns is safe to render.
+
+Two consequences worth designing for:
+
+- **Un-publishing one folder hides its entire branch**, however much is
+  published below it. Links into it start 404ing; that is intended.
+- **A published folder may legitimately be empty.** The seeded workspace roots
+  and the seven doors ship published so that content published inside them is
+  visible. Render an empty one as a "coming soon" shelf, or hide it — the FE's
+  call. (A *manager-created* folder cannot publish while empty; the backend
+  refuses it.)
+
+`is_hidden` on a file is the exception valve for one bad scan: hidden files are
+never served, and the folder around them stays live.
+
+### 13.4 `GET /api/v1/topics/` — the विषय chips
 
 ```json
-"items": [{ "id": 88, "title": "भाग 1", "kind": "audio", "kind_label": "Audio",
-  "url": "https://…/part1.opus", "sequence": 1, "description": "",
-  "provenance": "moola", "provenance_hi": "मूल",
-  "file_size": 2411008, "page_count": null, "duration_seconds": 3120,
-  "updated_at": "…" }]
+[{ "code": "vyavastha", "name": "व्यवस्था", "description": "…",
+   "ordering": 10, "node_count": 12 }]
 ```
 
-- `url` is always present and absolute on a published item — publish is
-  blocked without a file or a link behind it. It may point at our media host
-  or wherever the file still lives during migration; treat both the same.
-- Item `provenance` is the *effective* one (its own override, else the
-  collection's).
-- Consumption per kind: audio → the existing player in album mode (resume,
-  speed, background); pdf → in-app viewer, download available never forced;
-  image → gallery with lightbox + pinch-zoom.
+All topics are returned; **hide zero-count chips** — an empty chip is a dead
+filter. `node_count` counts visible folders only.
 
-### 13.5 `GET /api/v1/resources/search/?q=` — the संसाधन lane (D12)
+`name` is the one taxonomy label that arrives in Hindi and is shown to the
+reader as typed: managers add topics without a deploy, so the FE cannot hold a
+label it has never seen. Everything else (workspaces, genres) is English in the
+API with the Hindi in the FE.
 
-Metadata only — never file contents. Returns three labeled lists the FE
-renders as ONE संसाधन lane, always separate from the पुस्तकों-में citation
-lane:
+**विषय is not the same kind of control as the chips beside it**, and an
+earlier draft of this section listed them in one row as though it were.
 
-```json
-{ "q": "अमरकंटक", "collections": [ …cards… ], "audio": [ …tracks… ], "video": [ …videos… ] }
+| | विषय | वर्ष · स्थान · व्यक्ति · भाषा · प्रकार |
+|---|---|---|
+| What it is | a **door** onto the whole library | a **sieve** over the folder you are in |
+| Tapping it | leaves the current folder | stays put and narrows |
+| Comes from | `GET topics/`, counted library-wide | the `year` / `place` / `people` / `language` / `kinds` already on the children in hand |
+| Server filter | `nodes/?topic=vyavastha` | none — derive and apply locally |
+
+So: one विषय row that navigates, and beneath it — when a folder is wide enough
+to need them — the local sieves, in the order वर्ष → स्थान → व्यक्ति → भाषा →
+and *last* प्रकार (kind). A folder is not a shelf, so the sieves are only worth
+rendering when there is something to sieve.
+
+Server-side facet filters existed on the old flat `resources/collections/`
+endpoint and are gone on purpose: a folder holds a handful of children, and
+filtering a handful over the network is a round trip spent on nothing. They
+come back with pagination (§13.2), when a folder can be big enough that the FE
+no longer holds all of it.
+
+### 13.5 File kinds
+
+`kind` is one of `pdf` · `audio` · `video` · `image` · `link` · `other`, and it
+is auto-detected from the file or URL — a YouTube/Vimeo link is `video`, a
+`.pdf` link is still `pdf`, any other bare URL is `link`.
+
+`url` is always present and absolute on a served file — a folder cannot publish
+without a file or a link behind it. It may point at our media host or at
+wherever the file still lives during migration; treat both the same.
+
+Consumption per kind: `audio` → the existing player in album mode (resume,
+speed, background); `video` → embedded player for a YouTube/Vimeo link, native
+`<video>` for an uploaded file; `pdf` → in-app viewer, download available never
+forced; `image` → gallery with lightbox + pinch-zoom; `link` → open out.
+
+### 13.6 Cross-posting — one file, many places
+
+Rare, but real: a मूल PDF filed deep inside Originals also needs to appear
+somewhere in Resources, without being uploaded twice.
+
+| | Behaviour |
+|---|---|
+| `linked_items` | Files. They open and play **in place**, exactly like a native file. |
+| `linked_children` | Folders. They render as a **card that jumps to the folder's real home** — never nested under the folder that borrowed them. |
+
+Both carry a `breadcrumb` showing where the thing really lives. **Show it** —
+that is what stops a cross-post reading as a duplicate. One folder always has
+exactly one canonical path.
+
+A folder's breadcrumb stops at its parent, because the folder itself is the
+page you are looking at. **A file's includes its own folder**, because a file
+is a row and its folder is the last and most useful step of its address — and
+because the breadcrumb is also the jump target. `संसाधन / शिविर सामग्री / 2019`
+on a session that lives in `दिन 1` would both misstate its home and land the
+reader one level short of the file they came for.
+
+Both sides have to be visible: if either the borrowed thing's branch or the
+borrowing folder's branch is unpublished, it simply does not arrive.
+
+### 13.7 `GET /api/v1/vani/` — "नागराज जी की वाणी" (home door)
+
+Every visible folder whose resolved provenance is `moola`, across all
+workspaces — **one flat list** of the card shape, not three parallel arrays to
+merge. The reader never needs to know which shelf holds it underneath.
+
+Rows carry `breadcrumb`, and this is the list that most needs it: it gathers
+folders from every workspace and every depth, so three shivirs contribute three
+rows all called "दिन 1". Not needing to know which *shelf* a thing sits on is
+not the same as not needing to know which *shivir* it is from.
+
+### 13.8 `GET /api/v1/library/search/?q=` — the संसाधन lane
+
+Metadata only — names, descriptions, facets, tags, and the original pCloud
+path. **Never file contents.** One list, always separate from the
+पुस्तकों-में citation lane (§9.1).
+
+```jsonc
+{ "q": "अमरकंटक", "results": [
+  { "type": "folder", "id": 17, "name": "2019",
+    "breadcrumb": [{"id": 3, "name": "संसाधन"}, {"id": 8, "name": "शिविर सामग्री"}], … },
+  { "type": "file",   "id": 91, "title": "सत्र 1", "node": 42,
+    "breadcrumb": [ …, {"id": 42, "name": "दिन 1"}], … }
+]}
 ```
 
-### 13.6 `GET /api/v1/vani/` — "नागराज जी की वाणी" (home door)
+`type` appears **only here** — it is the one response that mixes the two, and
+"has `name` but no `title`" is a discriminator by accident rather than by
+contract. Folders lead: a folder answers "what is this?" better than a lone
+file does.
 
-Everything published with `provenance = moola` across all sections, in the
-same three-list shape as 13.5. The reader never needs to know which shelf
-holds it underneath.
+**Both row shapes carry `breadcrumb`, and a hit is close to useless without
+it.** A search result is by definition somewhere the reader was not, and
+"सत्र 1" is the same three words in every shivir the library holds. Render the
+path on every row.
 
-### 13.7 Folders — the archivist's fallback only
-
-- `GET /api/v1/folders/` — one level (`?parent=`, root when omitted); each
-  row carries `breadcrumb`, `folder_count`, `item_count` (published, direct).
-  Branches with nothing published beneath them are not returned at all.
-- `GET /api/v1/resources/items/?folder=<id>` — that folder's published items.
-
-Reachable only under "सभी फ़ाइलें"; never the default view. `source_path`
-(the original pCloud path) is searchable metadata but is never served for
-navigation.
-
-### 13.8 What resources deliberately do not have
+### 13.9 What the library deliberately does not have
 
 No `canonical_ref`, no chapter/paragraph endpoints, no TTS renditions, no
-citation-search hits, and no genre. If a resource ever deserves the full
+citation-search hits, no genre, no per-file workflow status, no file
+versioning, and no nesting past six levels. If a file ever deserves the full
 reader treatment, it is re-created as a proper Book (possibly PDF-only first,
-§5.1.3) — a manager decision, not an FE one.
+§13.10) — a manager decision, never automatic.
 
-### 13.9 PDF-only Books (§5.1.3)
+### 13.10 PDF-only Books (§5.1.3)
 
-Every book now carries `is_pdf_only`. When `true`: no chapters/paragraphs
-exist yet — the reading experience is `GET /api/v1/books/{code}/pdf/` (302 to
-a short-lived signed URL) in the in-app viewer, clearly labeled PDF-only. The
+Every book carries `is_pdf_only`. When `true`: no chapters/paragraphs exist yet
+— the reading experience is `GET /api/v1/books/{code}/pdf/` (302 to a
+short-lived signed URL) in the in-app viewer, clearly labeled PDF-only. The
 flag flips off by itself when the book is pipelined; links keep working.
 
----
+### 13.11 Endpoints that are gone
+
+Deleted outright, with **no compatibility adapters** — alpha, and the FE is
+ours:
+
+`sections/` · `resources/doors/` · `resources/topics/` ·
+`resources/collections/` · `resources/collections/{id}/` · `resources/items/` ·
+`resources/search/` · `folders/` · `audio/` · `audio/series/` · `videos/` ·
+`playlists/`
+
+`?section__code=` is gone everywhere too; the parameter is `?workspace=`.
 
 ## 14. परिभाषा — the glossary
 

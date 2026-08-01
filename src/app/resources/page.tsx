@@ -71,7 +71,7 @@ export default async function ResourcesPage({
 
   const [doors, books, audio, videos, folders] = await Promise.all([
     getResourceDoors().catch(() => [] as ResourceFacet[]),
-    getBooks({ section: "resources" }).catch(() => [] as BookSummary[]),
+    getBooks({ workspace: "resources" }).catch(() => [] as BookSummary[]),
     getAudioTracks({ sectionCode: "resources" }).catch(() => [] as AudioTrack[]),
     getVideos("resources").catch(() => [] as VideoItem[]),
     // Only to decide whether "सभी फ़ाइलें" leads anywhere — a fallback that

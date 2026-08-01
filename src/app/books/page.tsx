@@ -44,7 +44,7 @@ export default async function BooksPage({
   // The shelf's own summary line (design 1B: "6 ग्रंथ · 760 pages · ए. नागराज").
   // Unfiltered, so it describes the library rather than the current chips.
   const all = await getBooks({
-    section: isTranslations ? "translations" : "originals",
+    workspace: isTranslations ? "translations" : "originals",
   }).catch(() => [] as BookSummary[]);
   const pages = all.reduce((n, b) => n + (b.page_count ?? 0), 0);
 
@@ -74,7 +74,7 @@ export default async function BooksPage({
       {!isTranslations && <ContinueReading limit={3} />}
 
       <BookShelf
-        section={isTranslations ? "translations" : "originals"}
+        workspace={isTranslations ? "translations" : "originals"}
         axis={isTranslations ? "language" : "genre"}
         basePath="/books"
         carry={isTranslations ? { ws: "translations" } : {}}

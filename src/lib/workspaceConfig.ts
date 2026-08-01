@@ -1,7 +1,8 @@
-// Five-workspace navigation model (PRD §2). Three of the five are backed by a
-// BE section, and the section codes are these workspace ids verbatim (contract
-// §10) — so there is no code→workspace mapping table on either side. Journey
-// and Connect have their own endpoints and never appear in sections/.
+// Five-workspace navigation model (PRD §2). The BE now calls them workspaces
+// too (Content Model v3), and its codes are these ids verbatim (contract §10)
+// — so there is no code→workspace mapping table on either side. What lives
+// here and not in the API is the reader-facing Hindi: the BE holds English
+// names only, on purpose (§10.1).
 
 export type WorkspaceId =
   | "originals"
@@ -10,7 +11,7 @@ export type WorkspaceId =
   | "journey"
   | "connect";
 
-/** the three workspaces whose content is filtered by ?section__code= */
+/** the three workspaces whose content is filtered by ?workspace= */
 export type ContentWorkspaceId = "originals" | "translations" | "resources";
 
 export interface NavItem {
@@ -147,19 +148,19 @@ const CONTENT_WORKSPACE_IDS: readonly ContentWorkspaceId[] = [
   "resources",
 ];
 
-/** true for workspaces that can be used as a ?section__code= value */
+/** true for workspaces that can be used as a ?workspace= value */
 export function isContentWorkspace(ws: WorkspaceId): ws is ContentWorkspaceId {
   return (CONTENT_WORKSPACE_IDS as readonly string[]).includes(ws);
 }
 
 /**
- * section__code → workspace. It is an identity for the three content sections;
- * a section the FE does not know yet lands in Resources, which is also the
- * fallback the BE documents (contract §10).
+ * A BE `workspace` code → the workspace whose chrome a content page wears.
+ * An identity for the three that hold books and folders; a code the FE does
+ * not know yet lands in Resources, the shelf for everything else.
  */
-export function workspaceForSection(sectionCode: string | null | undefined): ContentWorkspaceId {
-  const code = sectionCode?.toLowerCase() ?? "";
-  return isContentWorkspace(code as WorkspaceId) ? (code as ContentWorkspaceId) : "resources";
+export function contentWorkspace(code: string | null | undefined): ContentWorkspaceId {
+  const c = code?.toLowerCase() ?? "";
+  return isContentWorkspace(c as WorkspaceId) ? (c as ContentWorkspaceId) : "resources";
 }
 
 export function workspaceForPath(path: string): WorkspaceId | null {

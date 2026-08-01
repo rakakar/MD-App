@@ -9,8 +9,8 @@ import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { ApiError, bookPdfUrl, getBook, getBookGenres, getBooks } from "@/lib/api";
 import { bookHue } from "@/lib/bookHue";
-import { sectionCode } from "@/lib/types";
-import { workspaceForSection } from "@/lib/workspaceConfig";
+import { genreLabel } from "@/lib/labels";
+import { contentWorkspace } from "@/lib/workspaceConfig";
 
 export const revalidate = 900;
 export const dynamicParams = true;
@@ -57,16 +57,21 @@ export default async function BookDetailPage({
     throw e;
   }
 
-  const ws = workspaceForSection(sectionCode(book.section));
+  const ws = contentWorkspace(book.workspace);
   // the same hue the cover carries everywhere else, so the hero reads as this
   // book's surface rather than as a second colour it happens to be sitting on
   const hue = bookHue(book.code);
 
   // `genre` arrives as a code ("parichay"); the chip has to read as a name.
-  // A missing genres list just drops the chip rather than printing the slug.
-  const genreLabel = book.genre
+  // The genres list is still consulted so a genre added after we shipped shows
+  // its English name rather than nothing; a failed fetch drops the chip rather
+  // than printing the slug.
+  const genreChip = book.genre
     ? await getBookGenres()
-        .then((gs) => gs.find((g) => g.code === book.genre)?.name_hi ?? null)
+        .then((gs) => {
+          const g = gs.find((row) => row.code === book.genre);
+          return g ? genreLabel(g.code, g.name) : null;
+        })
         .catch(() => null)
     : null;
   const frontMatter = book.chapters.filter((c) => c.is_front_matter);
@@ -177,9 +182,9 @@ export default async function BookDetailPage({
                   <span lang="hi" className="hi">मूल ग्रंथ</span>
                 </Chip>
               )}
-              {genreLabel && (
+              {genreChip && (
                 <Chip>
-                  <span lang="hi" className="hi">{genreLabel}</span>
+                  <span lang="hi" className="hi">{genreChip}</span>
                 </Chip>
               )}
               {book.edition && <Chip>{book.edition}</Chip>}

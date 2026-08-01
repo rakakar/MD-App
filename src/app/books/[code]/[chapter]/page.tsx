@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { Reader } from "@/components/reader/Reader";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { ApiError, getBook, getBooks, getChapter } from "@/lib/api";
-import { sectionCode, type BookDetail, type ChapterPayload } from "@/lib/types";
-import { workspaceForSection } from "@/lib/workspaceConfig";
+import type { BookDetail, ChapterPayload } from "@/lib/types";
+import { contentWorkspace } from "@/lib/workspaceConfig";
 
 export const revalidate = 900;
 export const dynamicParams = true;
@@ -81,7 +81,7 @@ export default async function ChapterPage({
     if (e instanceof ApiError && e.status === 404) notFound();
   }
 
-  const ws = workspaceForSection(sectionCode(book.section));
+  const ws = contentWorkspace(book.workspace);
 
   const jsonLd = {
     "@context": "https://schema.org",
