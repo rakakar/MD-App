@@ -205,21 +205,41 @@ export async function getNode(id: number): Promise<LibraryNode> {
  * A level of the tree as cards.
  *
  * `parent` is one level down; without it the call answers with the *root*
- * folders — which is also why `topic` and `provenance` currently only ever
- * narrow roots. Prefer `root_node_id` from `workspaces/` over
- * `{ workspace }` here: it reaches the same folder without the round trip
- * spent discovering an id (§10.1).
+ * folders. Prefer `root_node_id` from `workspaces/` over `{ workspace }`
+ * here: it reaches the same folder without the round trip spent discovering
+ * an id (§10.1).
+ *
+ * Browsing only. A विषय is `openTopic` below — same endpoint, different
+ * question, and the two return different cards (§13.2).
  */
 export async function getNodes(
-  opts: { workspace?: string; parent?: number; topic?: string; provenance?: string } = {}
+  opts: { workspace?: string; parent?: number } = {}
 ): Promise<NodeCard[]> {
   return unwrapList(
     await apiFetch<NodeCard[] | { results: NodeCard[] }>(
+      `nodes/${qs({ workspace: opts.workspace, parent: opts.parent })}`
+    )
+  );
+}
+
+/**
+ * A door onto the whole library: every folder on a विषय, at any depth (§13.2).
+ *
+ * Separate from `getNodes` because it is not a level and the rows are not the
+ * same card. Browsing asks "what is inside this folder?", where every answer
+ * shares the page's own path; a door gathers from every depth and workspace,
+ * so each row carries a `breadcrumb` and needs it — "दिन 1" names one folder
+ * in a shivir and nothing at all in a list of twelve.
+ */
+export async function openTopic(
+  opts: { topic?: string; provenance?: string; workspace?: string }
+): Promise<LocatedNodeCard[]> {
+  return unwrapList(
+    await apiFetch<LocatedNodeCard[] | { results: LocatedNodeCard[] }>(
       `nodes/${qs({
-        workspace: opts.workspace,
-        parent: opts.parent,
         topic: opts.topic,
         provenance: opts.provenance,
+        workspace: opts.workspace,
       })}`
     )
   );

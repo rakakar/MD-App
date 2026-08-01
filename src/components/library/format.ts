@@ -85,7 +85,7 @@ export function formatDuration(seconds: number | null | undefined): string {
 export function fileFacts(file: LibraryFile): string {
   return [
     KIND_HI[file.kind],
-    file.page_count ? `${file.page_count} pages` : null,
+    file.page_count ? `${file.page_count} ${file.page_count === 1 ? "page" : "pages"}` : null,
     formatDuration(file.duration_seconds) || null,
     formatBytes(file.file_size) || null,
   ]

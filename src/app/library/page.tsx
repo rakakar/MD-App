@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NodeCardView } from "@/components/library/NodeCard";
 import { EmptyState, PageContainer } from "@/components/ui";
-import { getNodes, getTopics } from "@/lib/api";
+import { getTopics, openTopic } from "@/lib/api";
 import { shelfMap } from "@/lib/library";
-import type { NodeCard, Topic } from "@/lib/types";
+import type { LocatedNodeCard, Topic } from "@/lib/types";
 
 export const revalidate = 900;
 
@@ -32,8 +32,11 @@ async function findTopic(code: string): Promise<Topic | null> {
  * विषय is a **door**, not a sieve (contract §13.4): tapping one leaves the
  * folder you were in, because what you are asking for is everything filed
  * under व्यवस्था wherever it lives — not the व्यवस्था inside this one shivir.
- * That is why it navigates here rather than narrowing in place, and why the
- * results carry no folder context of their own.
+ * That is why it navigates here rather than narrowing in place.
+ *
+ * Which is also why every row prints its path: these arrive from every depth
+ * and every workspace, so the reader who left a folder to get here has no
+ * context left but what the card carries.
  */
 export default async function LibraryTopicPage({
   searchParams,
@@ -47,7 +50,7 @@ export default async function LibraryTopicPage({
 
   const [row, nodes, shelves] = await Promise.all([
     findTopic(topic),
-    getNodes({ topic }).catch(() => [] as NodeCard[]),
+    openTopic({ topic }).catch(() => [] as LocatedNodeCard[]),
     shelfMap(),
   ]);
   if (!row) notFound();

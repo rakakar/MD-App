@@ -801,9 +801,30 @@ the bottom of the tree. Summing a whole subtree would mean walking it.
 |---|---|
 | `GET nodes/?workspace=resources` | the root folders of that workspace |
 | `GET nodes/?parent=<id>` | one level down (card shape only) |
+| `GET nodes/?topic=vyavastha` | every folder on that विषय, **at any depth** |
+| `GET nodes/?provenance=moola` | same, by whose word it is |
 | `GET nodes/<id>/` | the full shape above |
 
-Optional filters on the list form: `?topic=`, `?provenance=`.
+**The first two walk the tree; the last two open a door onto all of it**, and
+that difference changes two things about the response.
+
+*How deep it looks.* Browsing is depth-scoped by definition — a level is a
+level, and with no filter at all `nodes/` still means the roots. `?topic=` and
+`?provenance=` are not depth-scoped: `topics/` counts them library-wide (§13.4),
+so a chip clamped to the roots would promise twelve folders and open onto none.
+Add `?parent=` and they narrow that one level instead, because naming a level
+makes the question a browse again. `?workspace=` narrows a door to one shelf.
+
+*Whether a row places itself.* Door rows carry `breadcrumb`, for the reason
+वाणी and search rows do (§13.6): they arrive from every depth and every
+workspace, so a row reading only "दिन 1" names nothing. Browse rows do not —
+every sibling would repeat the breadcrumb of the page the reader is on. Treat
+`breadcrumb` as **present on door rows, absent on browse rows**; everything
+else about the card is identical.
+
+`?provenance=` matches the **resolved** value, not the stored column — a folder
+set to मूल answers for its whole branch (§7), and that is what the cards
+display. `vani/` is this filter under a name, with `moola` fixed.
 
 **Navigation is by id.** Human-readable slugs are a later nicety, deliberately
 deferred. The route should be **workspace-neutral** — `/library/42` rather than
@@ -864,7 +885,7 @@ earlier draft of this section listed them in one row as though it were.
 | What it is | a **door** onto the whole library | a **sieve** over the folder you are in |
 | Tapping it | leaves the current folder | stays put and narrows |
 | Comes from | `GET topics/`, counted library-wide | the `year` / `place` / `people` / `language` / `kinds` already on the children in hand |
-| Server filter | `nodes/?topic=vyavastha` | none — derive and apply locally |
+| Server filter | `nodes/?topic=vyavastha`, at any depth (§13.2) | none — derive and apply locally |
 
 So: one विषय row that navigates, and beneath it — when a folder is wide enough
 to need them — the local sieves, in the order वर्ष → स्थान → व्यक्ति → भाषा →
