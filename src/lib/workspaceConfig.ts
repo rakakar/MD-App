@@ -69,10 +69,14 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     color: "#A64E12",
     tagline: "ग्रंथ · daily सूत्र · प्रवचन",
     home: "/",
+    // Three slots, not four. The fourth was "Audio/Video → /audio", a shelf
+    // Content Model v3 dissolved; वाणी is meant to take it, and is held back
+    // until something in the library actually carries मूल provenance. A tab
+    // onto an empty page is worse than a tab fewer (PRD §2: uneven counts are
+    // intentional, do not pad).
     nav: [
       { label: "Home", href: "/", icon: "home" },
       { label: "Read", href: "/books", icon: "read" },
-      { label: "Audio/Video", href: "/audio", icon: "av" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
@@ -164,16 +168,10 @@ export function contentWorkspace(code: string | null | undefined): ContentWorksp
 }
 
 export function workspaceForPath(path: string): WorkspaceId | null {
-  // /vani is deliberately Originals chrome, not Resources: it is the home
-  // page's door onto his own words, and the reader is never told that the
-  // resources shelf holds most of what is behind it (contract §13.6).
-  if (
-    path === "/" ||
-    path.startsWith("/audio") ||
-    path.startsWith("/videos") ||
-    path.startsWith("/vani")
-  )
-    return "originals";
+  // /vani is deliberately Originals chrome, not Resources: it is the door onto
+  // his own words, and the reader is never told that the resources shelf holds
+  // most of what is behind it (contract §13.7).
+  if (path === "/" || path.startsWith("/vani")) return "originals";
   if (path.startsWith("/translations")) return "translations";
   if (path.startsWith("/resources")) return "resources";
   if (path.startsWith("/me")) return "journey";

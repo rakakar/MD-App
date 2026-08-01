@@ -1,24 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { YouTubeEmbed } from "@/components/av/YouTubeEmbed";
-import { TrackList } from "@/components/av/TrackList";
 import { ShelfCard } from "@/components/shelf/BookShelf";
 import { ChevronRight } from "@/components/shell/icons";
 import { EmptyState, PageContainer, SectionHeading, SegmentedNav } from "@/components/ui";
-import {
-  getAudioTracks,
-  getBooks,
-  getFolders,
-  getResourceDoors,
-  getVideos,
-} from "@/lib/api";
-import type {
-  AudioTrack,
-  BookSummary,
-  Folder,
-  ResourceFacet,
-  VideoItem,
-} from "@/lib/types";
+import { getBooks, getFolders, getResourceDoors } from "@/lib/api";
+import type { BookSummary, Folder, ResourceFacet } from "@/lib/types";
 
 export const revalidate = 900;
 
@@ -36,17 +22,15 @@ export const metadata: Metadata = {
  * exist for that, and an empty one is never drawn — a tab that opens onto
  * nothing is worse than the absence of the tab.
  */
-type Format = "collections" | "books" | "audio" | "video";
+type Format = "collections" | "books";
 
 const FORMAT_LABEL: Record<Format, string> = {
   collections: "दस्तावेज़",
   books: "पुस्तकें",
-  audio: "ऑडियो",
-  video: "वीडियो",
 };
 
 function isFormat(v: string | undefined): v is Format {
-  return v === "collections" || v === "books" || v === "audio" || v === "video";
+  return v === "collections" || v === "books";
 }
 
 /**
@@ -69,11 +53,9 @@ export default async function ResourcesPage({
 }) {
   const { format } = await searchParams;
 
-  const [doors, books, audio, videos, folders] = await Promise.all([
+  const [doors, books, folders] = await Promise.all([
     getResourceDoors().catch(() => [] as ResourceFacet[]),
     getBooks({ workspace: "resources" }).catch(() => [] as BookSummary[]),
-    getAudioTracks({ sectionCode: "resources" }).catch(() => [] as AudioTrack[]),
-    getVideos("resources").catch(() => [] as VideoItem[]),
     // Only to decide whether "सभी फ़ाइलें" leads anywhere — a fallback that
     // dead-ends in an empty tree is not a fallback.
     getFolders().catch(() => [] as Folder[]),
@@ -86,8 +68,6 @@ export default async function ResourcesPage({
   const available: Format[] = [
     "collections",
     ...(books.length > 0 ? (["books"] as const) : []),
-    ...(audio.length > 0 ? (["audio"] as const) : []),
-    ...(videos.length > 0 ? (["video"] as const) : []),
   ];
   const active: Format =
     isFormat(format) && available.includes(format) ? format : "collections";
@@ -149,20 +129,6 @@ export default async function ResourcesPage({
             </li>
           ))}
         </ul>
-      )}
-
-      {active === "audio" && (
-        <div className="mt-5">
-          <TrackList tracks={audio} />
-        </div>
-      )}
-
-      {active === "video" && (
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {videos.map((v) => (
-            <YouTubeEmbed key={v.id} video={v} />
-          ))}
-        </div>
       )}
 
       {/*

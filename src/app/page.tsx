@@ -4,7 +4,7 @@ import { ContinueReading } from "@/components/home/ContinueReading";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
 import { SutraCard } from "@/components/home/SutraCard";
 import { NotificationBanner } from "@/components/push/NotificationBanner";
-import { ChevronRight, PinIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
+import { ChevronRight, PinIcon } from "@/components/shell/icons";
 import { EmptyState, PageContainer, SectionHeading, SeeAll } from "@/components/ui";
 import { getBooks, getEvents } from "@/lib/api";
 import { eventLocation, eventStart, eventTitle, shortDate, upcomingEvents } from "@/lib/events";
@@ -85,18 +85,15 @@ export default async function OriginalsHome() {
             <EmptyState title="No books available yet" hint="Published books will appear here." />
           )}
 
-          {/* The media pair carries no heading — the spec runs it straight on
-              from the rail, because these two are the same kind of thing as
-              the covers above them, in a different medium. */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <MediaTile
-              href="/audio"
-              icon="audio"
-              title="Discourse audio"
-              hint="Plays as you read."
-            />
-            <MediaTile href="/videos" icon="video" title="Videos" hint="Talks & playlists." />
-          </div>
+          {/*
+            The spec runs a pair of media cards on from the rail here. They
+            pointed at the audio and video shelves, which Content Model v3
+            dissolved — a recording is a file in a folder now, reached by
+            browsing, by its विषय or by search. Nothing replaces them until
+            there is something published to point at: a card promising
+            "Discourse audio" that opens an empty library is a worse home page
+            than one card fewer.
+          */}
         </section>
 
         <section>
@@ -147,32 +144,3 @@ export default async function OriginalsHome() {
   );
 }
 
-/** One of the two media cards under the ग्रंथ rail (design 1A). */
-function MediaTile({
-  href,
-  icon,
-  title,
-  hint,
-}: {
-  href: string;
-  icon: "audio" | "video";
-  title: string;
-  hint: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex flex-col gap-2.5 rounded-[18px] border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
-    >
-      <span
-        aria-hidden
-        className="flex h-9 w-9 items-center justify-center rounded-[11px]"
-        style={{ background: "var(--color-accent-tint)", color: "var(--color-accent-deep)" }}
-      >
-        {icon === "audio" ? <WaveformIcon /> : <VideoIcon className="h-4.5 w-4.5" />}
-      </span>
-      <span className="block text-sm font-semibold">{title}</span>
-      <span className="-mt-1.5 block text-xs text-ink-soft">{hint}</span>
-    </Link>
-  );
-}

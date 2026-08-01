@@ -375,37 +375,6 @@ export function bookPdfUrl(code: string): string {
   return new URL(`books/${encodeURIComponent(code)}/pdf/`, apiBase()).toString();
 }
 
-export async function getAudioSeries(sectionCode?: string): Promise<AudioSeries[]> {
-  return unwrapList(
-    await apiFetch<AudioSeries[] | { results: AudioSeries[] }>(
-      `audio/series/${qs({ section__code: sectionCode })}`
-    )
-  );
-}
-
-export async function getAudioTracks(opts: {
-  series?: number | string;
-  sectionCode?: string;
-} = {}): Promise<AudioTrack[]> {
-  return unwrapList(
-    await apiFetch<AudioTrack[] | { results: AudioTrack[] }>(
-      `audio/${qs({ series: opts.series, section__code: opts.sectionCode })}`
-    )
-  );
-}
-
-export async function getVideos(sectionCode?: string): Promise<VideoItem[]> {
-  return unwrapList(
-    await apiFetch<VideoItem[] | { results: VideoItem[] }>(
-      `videos/${qs({ section__code: sectionCode })}`
-    )
-  );
-}
-
-export async function getPlaylists(): Promise<Playlist[]> {
-  return unwrapList(await apiFetch<Playlist[] | { results: Playlist[] }>("playlists/"));
-}
-
 export async function getEvents(): Promise<EventItem[]> {
   return unwrapList(
     await apiFetch<EventItem[] | { results: EventItem[] }>("events/", {
