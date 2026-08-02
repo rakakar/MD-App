@@ -199,7 +199,38 @@ function AlbumHeader({
           {node.description}
         </p>
       )}
+
+      <WholeSetLink url={node.external_url} tone="dark" />
     </div>
+  );
+}
+
+/**
+ * "The whole set, where it also lives" — a YouTube playlist for a folder of
+ * recordings.
+ *
+ * Under the files rather than over them, and worded as *also*: every video is
+ * here as its own item and plays here, so a link out offered first would send
+ * a reader away from the thing they already have. It is for the reader who
+ * wants the set in one piece, or wants it on the platform they keep it on.
+ */
+function WholeSetLink({ url, tone = "light" }: { url: string; tone?: "light" | "dark" }) {
+  if (!url) return null;
+  const dark = tone === "dark";
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+        dark
+          ? "border-white/30 text-white/90 hover:bg-white/10"
+          : "border-rule bg-white text-ink hover:bg-black/[.03]"
+      }`}
+    >
+      <span lang="hi" className="hi">पूरी शृंखला देखें</span>
+      <span aria-hidden>↗</span>
+    </a>
   );
 }
 
@@ -245,6 +276,7 @@ function IndexHeader({
       <div className="mt-2">
         <ProvenanceBadge provenance={node.provenance} />
       </div>
+      <WholeSetLink url={node.external_url} />
     </div>
   );
 }

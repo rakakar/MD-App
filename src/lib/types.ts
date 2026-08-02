@@ -260,6 +260,12 @@ export interface NodeCard {
   workspace: string;
   description: string;
   cover_url: string | null;
+  /**
+   * Where this whole set also lives — a YouTube playlist for a folder of
+   * recordings, `""` for the ordinary folder. The videos are still items in
+   * here with their own watch links; this opens the set as one thing.
+   */
+  external_url: string;
   provenance: Provenance;
   /** विषय codes, matching topics/ */
   topics: string[];
