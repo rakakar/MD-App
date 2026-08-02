@@ -46,7 +46,9 @@ Delete it before building.
 | `/` | Home — sutra of the day, resume reading, the shelves |
 | `/books`, `/books/[code]` | Originals shelf, and one book |
 | `/translations` | Translations shelf |
-| `/read/…` | The reader. Renders **outside the app shell** on purpose — the text owns the viewport |
+| `/books/[code]/[chapter]` | **The reader.** Renders outside the app shell on purpose — header plus bottom nav cost ~26% of a phone screen and none of it is useful mid-chapter (`src/lib/routes.ts`) |
+| `/books/[code]/page/[n]` | A printed page number, resolved to its chapter |
+| `/paras/[ref]` | A citation like `MVD 3.42.5`, opened at that paragraph |
 | `/resources` | The library's top level: the doors, and the विषय chips |
 | `/library/[id]` | **Any folder, at any depth** — one component, recursed by route |
 | `/library?topic=` | One विषय, across the whole library |
