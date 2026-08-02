@@ -5,7 +5,7 @@ import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { ApiError, getNode } from "@/lib/api";
 import { shelfMap } from "@/lib/library";
-import { contentWorkspace } from "@/lib/workspaceConfig";
+import { libraryWorkspace } from "@/lib/workspaceConfig";
 import type { SieveSelection } from "@/components/library/Sieve";
 
 export const revalidate = 900;
@@ -87,7 +87,7 @@ export default async function LibraryNodePage({
 
   return (
     <PageContainer size="shelf">
-      <WorkspaceScope ws={contentWorkspace(node.workspace)} />
+      <WorkspaceScope ws={libraryWorkspace(node.workspace)} />
       <NodeView
         node={node}
         selection={selection}

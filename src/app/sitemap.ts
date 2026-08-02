@@ -51,6 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/paribhasha",
     "/connect",
     "/connect/centers",
+    "/connect/library",
   ].map((p) => ({ url: `${SITE_URL}${p}`, changeFrequency: "daily" as const }));
 
   const books = await getBooks().catch(() => []);
@@ -73,7 +74,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // The library, from each workspace's root down. Roots themselves are left
-  // out: a root is its shelf, and `/resources` is already listed above.
+  // out: a root is its shelf, and `/resources` and `/connect/library` are
+  // already listed above.
   const workspaces = await getWorkspaces().catch(() => []);
   const seen = new Set<number>();
   for (const w of workspaces) {

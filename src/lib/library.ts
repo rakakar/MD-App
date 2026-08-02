@@ -8,11 +8,15 @@ import { getWorkspaces } from "./api";
  * `/resources/…` URL would be a URL that lies. The exception is a root: it is
  * the shelf, and `/resources` is the address readers already have for it.
  *
- * Only Resources has one today. Originals and Translations may hold folders
- * too, and when they get a band for them their roots belong here as well.
+ * Resources and Connect have one. Connect's is a section rather than the
+ * workspace home (`/connect` is the events feed, PRD §8), but it is still the
+ * one address for that root, so a card for it never lands on `/library/4`.
+ * Originals and Translations may hold folders too, and when they get a band
+ * for them their roots belong here as well.
  */
 const WORKSPACE_SHELF: Record<string, string> = {
   resources: "/resources",
+  connect: "/connect/library",
 };
 
 /** root node id → the shelf page that renders that root */

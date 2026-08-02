@@ -853,9 +853,9 @@ Two consequences worth designing for:
 
 - **Un-publishing one folder hides its entire branch**, however much is
   published below it. Links into it start 404ing; that is intended.
-- **A published folder may legitimately be empty.** The seeded workspace roots
-  and the seven doors ship published so that content published inside them is
-  visible. Render an empty one as a "coming soon" shelf, or hide it — the FE's
+- **A published folder may legitimately be empty.** The four seeded shelves,
+  the seven Resources doors and the four Connect doors ship published so that
+  content published inside them is visible. Render an empty one as a "coming soon" shelf, or hide it — the FE's
   call. (A *manager-created* folder cannot publish while empty; the backend
   refuses it.)
 

@@ -130,9 +130,13 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     color: "#2F6E86",
     tagline: "शिविर calendar · JV centres",
     home: "/connect",
+    // The fourth slot is the संपर्क shelf, not padding: it is a real surface
+    // with four doors of its own, and without a tab it is reachable only from
+    // a segmented control on two other pages.
     nav: [
       { label: "Events", href: "/connect", icon: "events" },
       { label: "Centers", href: "/connect/centers", icon: "centers" },
+      { label: "Library", href: "/connect/library", icon: "browse" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
@@ -165,6 +169,19 @@ export function isContentWorkspace(ws: WorkspaceId): ws is ContentWorkspaceId {
 export function contentWorkspace(code: string | null | undefined): ContentWorkspaceId {
   const c = code?.toLowerCase() ?? "";
   return isContentWorkspace(c as WorkspaceId) ? (c as ContentWorkspaceId) : "resources";
+}
+
+/**
+ * A BE `workspace` code → the chrome a *folder* wears at `/library/[id]`.
+ *
+ * Wider than `contentWorkspace` because the library tree is wider than the
+ * `?workspace=` filter: Connect holds folders (केंद्र · कार्यक्रम · संपर्क
+ * सूत्र · सहभागिता) without being a filterable content shelf, and a reader who
+ * opens one of its doors should still be standing in संपर्क — same accent,
+ * same tab bar — rather than be quietly moved to Resources.
+ */
+export function libraryWorkspace(code: string | null | undefined): WorkspaceId {
+  return code?.toLowerCase() === "connect" ? "connect" : contentWorkspace(code);
 }
 
 export function workspaceForPath(path: string): WorkspaceId | null {

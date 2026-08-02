@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { EmptyState, PageContainer, SegmentedNav } from "@/components/ui";
+import { ConnectNav } from "@/components/connect/ConnectNav";
+import { EmptyState, PageContainer } from "@/components/ui";
 import { getCenters } from "@/lib/api";
 import type { CenterItem } from "@/lib/types";
 
@@ -30,13 +31,7 @@ export default async function CentersPage() {
       <h1 className="font-display text-2xl font-medium">Centres</h1>
       <p className="mt-1 text-sm text-ink-soft">Study centres and contacts, by region.</p>
       <div className="mt-3">
-        <SegmentedNav
-          label="Connect sections"
-          items={[
-            { label: "Events", href: "/connect", active: false },
-            { label: "Centres", href: "/connect/centers", active: true },
-          ]}
-        />
+        <ConnectNav active="centers" />
       </div>
 
       {centers.length === 0 ? (
