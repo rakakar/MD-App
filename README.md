@@ -76,6 +76,10 @@ For how content gets *into* the app, see the backend repo's
 `docs/library_manager_manual.md` — §9 maps every panel action to what a reader
 ends up seeing.
 
+**When these documents drift**, run the backend repo's `docs/doc_audit.md`. It
+covers both repos, and its rule 5 exists because the last run's worst finding
+was a route invented in a file written that same session.
+
 ## Conventions
 
 - **UI chrome is English; content is whatever the material is.** The
