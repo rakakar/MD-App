@@ -11,10 +11,14 @@ import { getWorkspaces } from "./api";
  * Resources and Connect have one. Connect's is a section rather than the
  * workspace home (`/connect` is the events feed, PRD §8), but it is still the
  * one address for that root, so a card for it never lands on `/library/4`.
- * Originals and Translations may hold folders too, and when they get a band
- * for them their roots belong here as well.
+ * Originals' is `/originals` — its home is the Originals *workspace* home, so
+ * its library needs an address of its own that is not `/`.
+ *
+ * Translations has no folders yet. It may hold them (Content Model v3 D14),
+ * and its root belongs here the day it gets a shelf for them.
  */
 const WORKSPACE_SHELF: Record<string, string> = {
+  originals: "/originals",
   resources: "/resources",
   connect: "/connect/library",
 };

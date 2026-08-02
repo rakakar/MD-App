@@ -69,14 +69,20 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     color: "#A64E12",
     tagline: "ग्रंथ · daily सूत्र · प्रवचन",
     home: "/",
-    // Three slots, not four. The fourth was "Audio/Video → /audio", a shelf
-    // Content Model v3 dissolved; वाणी is meant to take it, and is held back
-    // until something in the library actually carries मूल provenance. A tab
-    // onto an empty page is worse than a tab fewer (PRD §2: uneven counts are
-    // intentional, do not pad).
+    // The fourth slot was "Audio/Video → /audio", a shelf Content Model v3
+    // dissolved. It is सामग्री now, and points at the library rather than at
+    // one kind of file inside it: audio, video, photographs and documents are
+    // all Items in the same tree, and प्रकार on that shelf sieves between them.
+    // Re-splitting them into their own tabs is the arrangement v3 deleted.
+    //
+    // It was held back while there was nothing published to open, which the
+    // pCloud import has now changed. वाणी — the मूल-provenance door — is still
+    // held back, and is a different thing from this: a filter across the whole
+    // library, not one workspace's shelf.
     nav: [
       { label: "Home", href: "/", icon: "home" },
       { label: "Read", href: "/books", icon: "read" },
+      { label: "Library", href: "/originals", icon: "av" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },

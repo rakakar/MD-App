@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BookRail } from "@/components/home/BookRail";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
+import { LibraryBand } from "@/components/home/LibraryBand";
 import { SutraCard } from "@/components/home/SutraCard";
 import { NotificationBanner } from "@/components/push/NotificationBanner";
 import { ChevronRight, PinIcon } from "@/components/shell/icons";
@@ -86,14 +87,13 @@ export default async function OriginalsHome() {
           )}
 
           {/*
-            The spec runs a pair of media cards on from the rail here. They
-            pointed at the audio and video shelves, which Content Model v3
-            dissolved — a recording is a file in a folder now, reached by
-            browsing, by its विषय or by search. Nothing replaces them until
-            there is something published to point at: a card promising
-            "Discourse audio" that opens an empty library is a worse home page
-            than one card fewer.
+            The spec's pair of media cards sat here, pointing at the audio and
+            video shelves that Content Model v3 dissolved. What replaces them
+            is the library itself: the folders Originals actually holds, drawn
+            only when there are some. Named-kind cards are what could promise
+            an empty shelf; a folder that exists cannot.
           */}
+          <LibraryBand />
         </section>
 
         <section>
