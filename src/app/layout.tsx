@@ -50,6 +50,23 @@ const mukta = Mukta({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://welfareinfo.net";
 
+/**
+ * How stale a page may be, for the whole app — **the one number to change.**
+ *
+ * The lowest `revalidate` across a route's layout and page wins, so this
+ * ceiling reaches every page without touching any of them. Pages that need to
+ * be fresher still say so themselves (`/connect` is 300); pages that say 900
+ * are agreeing with this rather than overriding it.
+ *
+ * It cannot read an env var: Next requires the value to be statically
+ * analyzable — even `60 * 10` is rejected — so a literal is the only form
+ * this can take, and changing it means a deploy.
+ *
+ * **Alpha: 60.** Restore to 900 for release, together with `API_CACHE_SECONDS`
+ * on the backend, which sets the same window on the API's own responses.
+ */
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {

@@ -22,9 +22,28 @@ import type {
   Topic,
 } from "./types";
 
-// Content is immutable until republished, Cache-Control: public, max-age=900
-// (contract §5) — mirror that TTL in ISR revalidation.
-export const CONTENT_REVALIDATE_SECONDS = 900;
+/**
+ * How long a fetched payload may be reused, mirroring the API's own
+ * `Cache-Control: max-age` (contract §5).
+ *
+ * A page is only as fresh as the *later* of two windows — this one and the
+ * route's `revalidate` (see `app/layout.tsx`) — so both have to come down
+ * together for content to appear sooner.
+ *
+ * Unlike the route's, this one is an ordinary runtime value and reads an env
+ * var, so it can be changed in Vercel's settings rather than in code. Default
+ * 900; the alpha runs it lower to match the layout.
+ */
+export const CONTENT_REVALIDATE_SECONDS = (() => {
+  // Trimmed and length-checked before Number(), because `Number("")` is 0 —
+  // and a var that is present but empty, which is what a blank line in a
+  // dashboard gives you, would otherwise mean "never cache" and send every
+  // single render to the origin. Nothing here may turn caching off by
+  // accident; setting it to 0 has to be deliberate.
+  const raw = (process.env.CONTENT_REVALIDATE_SECONDS ?? "").trim();
+  const seconds = Number(raw);
+  return raw !== "" && Number.isFinite(seconds) && seconds >= 0 ? seconds : 900;
+})();
 
 export function apiBase(): string {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL;
