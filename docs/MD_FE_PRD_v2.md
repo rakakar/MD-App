@@ -3,9 +3,35 @@
 **Status:** Final for coding — supersedes PRD v1. All open questions resolved (team answers 27 Jul + expert decisions inline, each marked `[EXPERT DECISION]`).
 **Prepared by:** Rakesh (UI/UX + FE)
 **Date:** 27 July 2026
-**Inputs:** `FE_Decision_Guide.md` (§10 finalised decisions) · `API_Contract_v1.md` (frozen §§0–8, live extras §9) · MoM 16 Jul (Vinod Bhaiya) · **Five-workspace navigation model (team-confirmed 27 Jul)**
+**Inputs:** `API_Contract_v1.md` (frozen §§0–8, live extras §9) · MoM 16 Jul (Vinod Bhaiya) · **Five-workspace navigation model (team-confirmed 27 Jul)**
 
 ---
+
+> ### ⚠️ Everything about non-book content is superseded
+>
+> **On 2026-08-01, Content Model v3 replaced the audio / video / collection
+> model** this PRD was written against. `/audio`, `/audio/{series}` and
+> `/videos` no longer exist — they permanently redirect to `/resources`, and the
+> endpoints behind them (`audio/`, `audio/series/`, `videos/`, `playlists/`,
+> `resources/doors/`, `resources/collections/`) all return 404.
+>
+> Everything that is not a book now lives in **one tree**, browsed at
+> `/library/[id]` at any depth. `Section` is called `Workspace`. A separate
+> "नागराज जी की वाणी" page was built and then removed on 2026-08-02: provenance
+> is inherited, so such a page could only list a मूल branch *and* everything
+> inside it. Readers filter on provenance inside a folder and over search
+> results instead.
+>
+> **Still true:** the five-workspace model, the reader, TTS follow-along,
+> search's two lanes, personal features, PWA, analytics, and every design
+> decision about type and colour. Read §3's route table and the audio/video
+> milestones as history.
+>
+> Current: `docs/API_Contract_v1.md` §13 · the backend repo's
+> `docs/Content_Model_v3.md` and `docs/library_manager_manual.md`.
+
+---
+
 
 ## 0. Ground rules for the coding agent
 

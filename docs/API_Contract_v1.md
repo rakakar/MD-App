@@ -15,8 +15,7 @@ base URL from an environment variable, never hardcode it).
 > `?section__code=` is now `?workspace=`; the resources, audio and video
 > endpoints are replaced by one node tree (§13); and no response carries a
 > `name_hi` / `name_en` / `provenance_hi` twin any more (§10.1). There are no
-> compatibility adapters. See `docs/FE_Handoff_Content_Model_v3.md` for the
-> change list on the FE side.
+> compatibility adapters.
 
 ---
 
@@ -387,13 +386,13 @@ read-only (except event register), published-only, cached.
 - **Chat assistant API** — half of this shipped: the *retrieval* half of the
   welfare engine is now public as §9.1, so "find me the paribhasha" is answered
   today. What is still unbuilt is the **answering** layer — a rate-limited,
-  SSE-streaming endpoint that spends an LLM call per question
-  (`docs/FE_Decision_Guide.md` §4). It will be a contract **addition**, will
+  SSE-streaming endpoint that spends an LLM call per question. It will be a
+  contract **addition**, will
   require sign-in and a per-day cap (an answer costs ~1000× a search), and will
   call the same §9.1 retrieval underneath.
-- **Push notifications** — Web Push (VAPID) subscribe/unsubscribe endpoints and
-  the panel-side `notifications` app (`FE_Decision_Guide.md` §6) are planned,
-  not present.
+- **Push notifications** — Web Push (VAPID) subscribe/unsubscribe endpoints
+  are planned, not present. What *is* live is FCM, documented in
+  `docs/push_notifications_manual.md`.
 
 Both will be documented here (or in a v2 contract) when they land; nothing in
 §§0–8 will change shape because of them.
