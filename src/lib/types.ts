@@ -385,6 +385,50 @@ export type LibrarySearchRow =
   | ({ type: "folder" } & LocatedNodeCard)
   | ({ type: "file" } & LocatedFile);
 
+/**
+ * One chip on one sieve axis, as the endpoint counts it.
+ *
+ * Always the same three keys, including when `label` equals `value` — one
+ * shape to render beats a special case per axis. `label` is a courtesy rather
+ * than an instruction: the FE holds its own Hindi for प्रमाण and प्रकार and
+ * keeps using it (§13.8). विषय is the one label it cannot hold, because
+ * managers add topics without a deploy.
+ */
+export interface FacetValue {
+  value: string;
+  label: string;
+  /** rows this chip would yield — zero-count values are never returned */
+  count: number;
+}
+
+/** the sieve, counted over the whole scope; keyed by axis (§13.8) */
+export type LibraryFacets = Partial<Record<string, FacetValue[]>>;
+
+/**
+ * `library/search/` — the library's one **find** (§13.8).
+ *
+ * An envelope rather than a list, and every part of it is load-bearing:
+ * `facets` is what the sieve chips are drawn from and it describes the whole
+ * scope rather than what is on screen, `count` is the total before paging so
+ * "और दिखाएँ" knows whether there is more, and `searched_as` is the rewrite
+ * the reader is owed an explanation for.
+ *
+ * **Facets arrive even when nothing was asked, and results do not.** A shelf a
+ * reader has just landed on browses through `nodes/` (§13.2) — but the sieve
+ * above that browse still has to be drawn, and only this endpoint can count it
+ * over the whole shelf rather than over one level.
+ */
+export interface LibraryFindResponse {
+  q: string;
+  /** the Devanagari actually searched; `""` when the query needed no rewrite */
+  searched_as: string;
+  scope: { workspace: string | null; under: number | null };
+  /** total in scope, before limit/offset */
+  count: number;
+  results: LibrarySearchRow[];
+  facets: LibraryFacets;
+}
+
 export type EventType = "shivir" | "workshop" | "satsang" | "other";
 
 export interface CenterItem {

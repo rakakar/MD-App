@@ -4,9 +4,9 @@ import { NodeView } from "@/components/library/NodeView";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { ApiError, getNode } from "@/lib/api";
+import { readFind } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
 import { libraryWorkspace } from "@/lib/workspaceConfig";
-import type { SieveSelection } from "@/components/library/Sieve";
 
 export const revalidate = 900;
 export const dynamicParams = true;
@@ -67,13 +67,14 @@ export default async function LibraryNodePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<SieveSelection>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ id }, selection, shelves] = await Promise.all([
+  const [{ id }, rawParams, shelves] = await Promise.all([
     params,
     searchParams,
     shelfMap(),
   ]);
+  const state = readFind(rawParams);
 
   const node = await load(id);
   if (!node) notFound();
@@ -90,7 +91,7 @@ export default async function LibraryNodePage({
       <WorkspaceScope ws={libraryWorkspace(node.workspace)} />
       <NodeView
         node={node}
-        selection={selection}
+        state={state}
         basePath={`/library/${node.id}`}
         shelves={shelves}
       />

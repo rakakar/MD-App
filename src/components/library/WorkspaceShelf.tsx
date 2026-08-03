@@ -1,30 +1,41 @@
 import Link from "next/link";
 import { FileList } from "./FileList";
+import { FindBar } from "./FindBar";
+import { FindResults } from "./FindResults";
 import { NodeCardView } from "./NodeCard";
-import { Sieve, applySieve, ClearSieve, type SieveSelection } from "./Sieve";
+import { Sieve } from "./Sieve";
 import { EmptyState } from "@/components/ui";
-import { nodeChildren } from "@/lib/api";
-import type { LibraryNode, Topic } from "@/lib/types";
+import { findLibrary, nodeChildren } from "@/lib/api";
+import { isAsked, type FindState } from "@/lib/find";
+import type { LibraryFindResponse, LibraryNode, Topic } from "@/lib/types";
 
 /**
  * A workspace root, drawn as its contents.
  *
  * Lifted out of the संसाधन page once Originals started holding folders too
  * (Content Model v3 §5, D14): the two shelves ask the same question of the
- * same shape — the root's children as doors, sieved, over whatever files sit
- * on the root itself — and the second copy of two hundred lines is where they
- * would start to disagree.
+ * same shape — the root's children as doors, over whatever files sit on the
+ * root itself — and the second copy of two hundred lines is where they would
+ * start to disagree.
  *
  * What stays per-workspace is only what a reader would notice: the address the
- * sieve writes into, and what an empty shelf says. Everything structural is
- * the same because the tree is the same tree.
+ * find writes into, and what an empty shelf says. Everything structural is the
+ * same because the tree is the same tree.
  *
  * The root is never drawn as a card inside its own shelf (§10.1) — a card
  * labelled संसाधन sitting inside संसाधन is an empty step.
+ *
+ * **Browse and find are two different calls, and this is where the switch
+ * lives** (§13.2, §13.4). With nothing typed and no chip on, the shelf is the
+ * root's children — one level, cached, no breadcrumbs, exactly as before. The
+ * moment anything is asked it becomes `library/search/`: the whole workspace,
+ * deep, ranked, a path on every row. The sieve above is fetched either way,
+ * because its counts describe the whole shelf and that is precisely what the
+ * browse cannot answer.
  */
-export function WorkspaceShelf({
+export async function WorkspaceShelf({
   root,
-  selection,
+  state,
   topics,
   shelves,
   basePath,
@@ -32,51 +43,62 @@ export function WorkspaceShelf({
   emptyHint,
 }: {
   root: LibraryNode;
-  selection: SieveSelection;
+  state: FindState;
   topics: Topic[];
   shelves: Record<number, string>;
-  /** where the sieve's chips write their query — this shelf's own address */
+  /** where the box and the chips write their query — this shelf's own address */
   basePath: string;
   emptyTitle: string;
   emptyHint: string;
 }) {
   const doors = nodeChildren(root);
-  const shown = applySieve(doors, selection);
-  const filtered = Object.values(selection).some(Boolean);
   const files = [...root.items, ...root.linked_items];
+  const scope = { workspace: root.workspace };
+
+  // Losing the find must not lose the shelf: a failed request drops back to
+  // the browse, which needs nothing from it.
+  const find: LibraryFindResponse | null = await findLibrary({ ...scope, state }).catch(
+    () => null
+  );
+  const finding = isAsked(state) && find !== null;
 
   return (
     <>
       <TopicDoors topics={topics} />
 
-      <Sieve cards={doors} selection={selection} basePath={basePath} />
-      {filtered && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
-          <span lang="hi" className="hi">
-            {shown.length} / {doors.length}
-          </span>
-          <ClearSieve basePath={basePath} selection={selection} />
-        </div>
-      )}
+      <FindBar basePath={basePath} state={state} scope={root.name} />
+      {find && <Sieve facets={find.facets} state={state} basePath={basePath} />}
 
-      {shown.length > 0 ? (
-        <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-          {shown.map((door) => (
-            <li key={door.id}>
-              <NodeCardView card={door} variant="door" shelves={shelves} />
-            </li>
-          ))}
-        </ul>
+      {finding ? (
+        <FindResults
+          find={find}
+          state={state}
+          basePath={basePath}
+          scope={scope}
+          shelves={shelves}
+        />
       ) : (
-        <div className="mt-5">
-          <EmptyState title={emptyTitle} hint={emptyHint} />
-        </div>
-      )}
+        <>
+          {doors.length > 0 ? (
+            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+              {doors.map((door) => (
+                <li key={door.id}>
+                  <NodeCardView card={door} variant="door" shelves={shelves} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="mt-5">
+              <EmptyState title={emptyTitle} hint={emptyHint} />
+            </div>
+          )}
 
-      {/* A file filed directly on the root — a lone PDF needs no wrapper now,
-          so the shelf has to be able to hold one. */}
-      {files.length > 0 && (
-        <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
+          {/* A file filed directly on the root — a lone PDF needs no wrapper
+              now, so the shelf has to be able to hold one. */}
+          {files.length > 0 && (
+            <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
+          )}
+        </>
       )}
     </>
   );
@@ -85,6 +107,11 @@ export function WorkspaceShelf({
 /**
  * The विषय chips — a **door onto the whole library**, which is why tapping one
  * navigates away rather than narrowing what is on screen (contract §13.4).
+ *
+ * Kept above the box and outside the sieve for that reason, even though the
+ * find endpoint will happily filter on विषय too: these are counted library-wide
+ * and leave the shelf, while a sieve chip is counted over this shelf and stays.
+ * One row that navigates, one block that narrows.
  *
  * Zero-count chips are hidden: a chip that filters to nothing is a dead
  * control, so a shelf whose विषय are all empty simply does not draw the row.

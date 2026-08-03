@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
-import type { SieveSelection } from "@/components/library/Sieve";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { getNode, getTopics, getWorkspaces } from "@/lib/api";
+import { readFind } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
 import type { Topic } from "@/lib/types";
 
@@ -34,9 +34,9 @@ export const metadata: Metadata = {
 export default async function OriginalsLibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<SieveSelection>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const selection = await searchParams;
+  const state = readFind(await searchParams);
 
   const workspaces = await getWorkspaces().catch(() => []);
   const rootId = workspaces.find((w) => w.code === "originals")?.root_node_id ?? null;
@@ -63,7 +63,7 @@ export default async function OriginalsLibraryPage({
 
       <WorkspaceShelf
         root={root}
-        selection={selection}
+        state={state}
         topics={topics}
         shelves={shelves}
         basePath="/originals"

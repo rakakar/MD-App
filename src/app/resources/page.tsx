@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
-import type { SieveSelection } from "@/components/library/Sieve";
 import { ShelfCard } from "@/components/shelf/BookShelf";
 import { PageContainer, SegmentedNav } from "@/components/ui";
 import { getBooks, getNode, getTopics, getWorkspaces } from "@/lib/api";
+import { readFind } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
 import type { BookSummary, Topic } from "@/lib/types";
 
@@ -44,9 +44,11 @@ const FORMAT_LABEL: Record<Format, string> = {
 export default async function ResourcesPage({
   searchParams,
 }: {
-  searchParams: Promise<SieveSelection & { format?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { format, ...selection } = await searchParams;
+  const params = await searchParams;
+  const format = typeof params.format === "string" ? params.format : undefined;
+  const state = readFind(params);
 
   const workspaces = await getWorkspaces().catch(() => []);
   const rootId = workspaces.find((w) => w.code === "resources")?.root_node_id ?? null;
@@ -103,7 +105,7 @@ export default async function ResourcesPage({
       ) : (
         <WorkspaceShelf
           root={root}
-          selection={selection}
+          state={state}
           topics={topics}
           shelves={shelves}
           basePath="/resources"

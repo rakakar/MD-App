@@ -1,3 +1,4 @@
+import { findQuery, type FindState } from "./find";
 import type {
   ApiWorkspace,
   BookDetail,
@@ -6,6 +7,7 @@ import type {
   CenterItem,
   ChapterPayload,
   EventItem,
+  LibraryFindResponse,
   LibraryNode,
   LibrarySearchRow,
   LocatedNodeCard,
@@ -290,24 +292,71 @@ export async function getTopics(): Promise<Topic[]> {
 }
 
 /**
- * The संसाधन lane (§13.8). **Metadata only** — names, descriptions, facets,
- * tags and the original pCloud path. File contents are never indexed and never
- * will be, which is exactly why these hits are rendered in their own lane: a
- * citation is quotable back to A. Nagraj ji, a metadata match is not.
+ * The library's one **find** (§13.8) — scoped, filtered, ranked, faceted and
+ * paginated.
  *
- * One list with folders leading, each row saying what it is. Every row carries
- * a breadcrumb, and a hit is close to useless without it — a search result is
- * by definition somewhere the reader was not.
+ * **Metadata only** — names, descriptions, facets, tags, a file's filename and
+ * its original pCloud path. File contents are never indexed and never will be,
+ * which is exactly why these hits are rendered in their own lane on `/search`:
+ * a citation is quotable back to A. Nagraj ji, a metadata match is a title that
+ * happened to contain the word.
+ *
+ * `under` wins over `workspace`, which it already implies — a folder is in
+ * exactly one workspace — and it means that folder's **descendants**, not the
+ * folder itself, which is the page the reader is standing on.
+ *
+ * Called on every shelf and folder page, including when nothing has been asked:
+ * the sieve chips are drawn from `facets`, which describes the whole scope and
+ * is the one thing `nodes/` cannot answer (§13.4).
+ */
+export async function findLibrary(opts: {
+  /** the shelf to search — ignored when `under` is given */
+  workspace?: string;
+  /** a folder id; scopes to everything beneath it */
+  under?: number;
+  state: FindState;
+  limit?: number;
+  offset?: number;
+  signal?: AbortSignal;
+}): Promise<LibraryFindResponse> {
+  const params = findQuery(opts.state);
+  if (opts.under !== undefined) params.set("under", String(opts.under));
+  else if (opts.workspace) params.set("workspace", opts.workspace);
+  if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+  if (opts.offset) params.set("offset", String(opts.offset));
+  const query = params.toString();
+  const data = await apiFetch<LibraryFindResponse>(
+    `library/search/${query ? `?${query}` : ""}`,
+    { signal: opts.signal }
+  );
+  return {
+    ...data,
+    count: data.count ?? 0,
+    results: data.results ?? [],
+    facets: data.facets ?? {},
+  };
+}
+
+/**
+ * The संसाधन lane on `/search` — the same find, asked of the whole library.
+ *
+ * Neither scoped nor chipped, because that page's question is "is this word
+ * anywhere in the library?" rather than "where is it on this shelf?". One list
+ * with each row saying what it is, and a breadcrumb on every one: a hit is by
+ * definition somewhere the reader was not.
  */
 export async function searchLibrary(
   q: string,
   signal?: AbortSignal
 ): Promise<LibrarySearchRow[]> {
-  const data = await apiFetch<{ results?: LibrarySearchRow[] }>(
-    `library/search/${qs({ q })}`,
-    { signal }
-  );
-  return data.results ?? [];
+  const { results } = await findLibrary({
+    state: { q, selection: {}, raw: false },
+    // The lane shows six and filters the rest by प्रमाण in the browser, so it
+    // asks for a set worth filtering rather than for one screenful.
+    limit: 50,
+    signal,
+  });
+  return results;
 }
 
 

@@ -10,6 +10,14 @@ Base path: `/api/v1/` · Interactive schema: `/api/v1/docs/` (drf-spectacular).
 **Production BE:** `https://mdbe.welfareinfo.net` (may change; FE must read the
 base URL from an environment variable, never hardcode it).
 
+> **Changed on 2026-08-03 (Catalogue Search).** Additive — nothing existing
+> changes shape. `library/search/` (§13.8) becomes the library's one **find**
+> endpoint: scoped by workspace or by folder, filtered on every sieve axis,
+> ranked, paginated, Hinglish-aware, and returning `facets` so the chips
+> describe the whole scope instead of one level. `books/` (§11.2) gains `?q=`,
+> `?tag=`, `?year=` and the same facets block. `nodes/` (§13.2) is unchanged and
+> stays the browse. Objective and boundary: `docs/Catalogue_Search_v1.md`.
+
 > **Changed on 2026-08-01 (Content Model v3).** §§0–8 — the reader contract for
 > books — are untouched. What moved: `sections/` is now `workspaces/` and
 > `?section__code=` is now `?workspace=`; the resources, audio and video
@@ -669,6 +677,34 @@ There is deliberately **no `resources` genre**: which shelf a book sits on is
 already answered by `workspace`, and a second field saying the same thing could
 disagree with it.
 
+#### Finding a book
+
+The books shelves get the same catalogue treatment the tree gets in §13.8,
+scaled to what a book row actually carries:
+
+| Param | Meaning |
+|---|---|
+| `q` | 2+ characters, over `title_hi`, `subtitle_hi`, `author`, `translator`, `description`, `tags` and `code`. Ranked title-first, same tiers as §13.8. |
+| `tag` | One free-text tag. |
+| `year` | `publication_year`. |
+| `genre` · `language` · `workspace` · `translation_of` | Unchanged. |
+
+**The response shape does not change — it is still a plain list**, and these
+params are additive, so a client that ignores them behaves exactly as before.
+There is deliberately **no `facets` block here**, unlike §13.8: `books/` is
+unpaginated and every axis (`genre`, `language`, `publication_year`, `tags`)
+already rides on each row, so the shelf holds the whole set and can count its
+own chips — which is what it does for genre and language today. The library
+needed server-side facets because it is a deep tree with inherited values and a
+paginated result set; a flat list of a few hundred books is neither.
+
+**This finds a book; §9.1 finds something inside one.** They are different
+questions and the shelf should say so and link across — a reader who typed
+"अनुभव" into the books box wanted §9.1 and should be handed it, not shown an
+empty shelf. `tags` here are free text and never a chip *in the panel*; on the
+reader's side they are a filter like any other, because a tag somebody typed is
+still the only handle on some of these books.
+
 ---
 
 ## 12. Translations
@@ -757,6 +793,10 @@ component recursively.
   "breadcrumb": [{"id": 3, "name": "शिविर सामग्री"}, {"id": 17, "name": "2019"}],
   "description": "…",
   "cover_url": null,
+  "external_url": "",             // the whole set elsewhere — e.g. a YouTube
+                                  // playlist. "" for an ordinary folder. The
+                                  // videos are still items below, each with
+                                  // its own watch link; this opens the set.
   "provenance": "moola",          // resolved through inheritance
   "topics": ["shivir", "vyavastha"],
   "tags": ["अमरकंटक", "1998"],    // folders only, free text, search only — never a chip
@@ -840,6 +880,19 @@ hundreds of children, and at that point `?parent=` grows pagination and
 `children` in the detail payload gets capped. **Read `children` through one
 function**, so that day is an afternoon's work rather than a rewrite.
 
+**These endpoints browse; they do not find.** They stay one level deep and
+unfiltered beyond the params above — that is what makes them cacheable and what
+makes a browse row's missing breadcrumb correct. Anything narrower than a level
+— a search box, a sieve chip, a scope wider than the folder in hand — is
+§13.8, which is deep, ranked, faceted and paginated, and puts a breadcrumb on
+every row because its rows come from everywhere. The FE switches between them on
+one test: **no query and no chip → browse; otherwise → find.**
+
+`?topic=` and `?provenance=` here remain the folders-only doors the विषय page is
+built on. §13.8 filters on the same two axes and also returns the files, because
+a shelf's find is a different question from a विषय page. Both are correct; pick
+by which one the reader asked.
+
 ### 13.3 Visibility — one rule
 
 > A folder is visible only if **it and every one of its ancestors** is
@@ -882,21 +935,41 @@ earlier draft of this section listed them in one row as though it were.
 
 | | विषय | वर्ष · स्थान · व्यक्ति · भाषा · प्रकार |
 |---|---|---|
-| What it is | a **door** onto the whole library | a **sieve** over the folder you are in |
+| What it is | a **door** onto the whole library | a **sieve** over the scope you are looking at |
 | Tapping it | leaves the current folder | stays put and narrows |
-| Comes from | `GET topics/`, counted library-wide | the `year` / `place` / `people` / `language` / `kinds` already on the children in hand |
-| Server filter | `nodes/?topic=vyavastha`, at any depth (§13.2) | none — derive and apply locally |
+| Comes from | `GET topics/`, counted library-wide | `facets` on the catalogue-search envelope (§13.8) |
+| Server filter | `nodes/?topic=vyavastha`, at any depth (§13.2) | §13.8, the same call that returns the rows |
 
-So: one विषय row that navigates, and beneath it — when a folder is wide enough
-to need them — the local sieves, in the order वर्ष → स्थान → व्यक्ति → भाषा →
-and *last* प्रकार (kind). A folder is not a shelf, so the sieves are only worth
-rendering when there is something to sieve.
+So: one विषय row that navigates, and beneath it the sieves, in the order
+वर्ष → स्थान → व्यक्ति → भाषा → and *last* प्रकार (kind).
 
-Server-side facet filters existed on the old flat `resources/collections/`
-endpoint and are gone on purpose: a folder holds a handful of children, and
-filtering a handful over the network is a round trip spent on nothing. They
-come back with pagination (§13.2), when a folder can be big enough that the FE
-no longer holds all of it.
+**The sieve moved to the server on 2026-08-03, and it changed meaning when it
+moved.** It used to be derived from the children the FE already held, which made
+it a filter over *one level*: standing on a shelf root, the वर्ष chip could only
+see the top-level doors, so a 2019 recording three levels down was unreachable
+and the प्रकार row — built from `kinds`, which counts a folder's **direct**
+files only — did not render at all. The chips said "filter this shelf" and meant
+"filter this level".
+
+They now come from `facets` on §13.8, counted over the **whole scope**: the
+workspace, or the folder and everything beneath it. A chip opens what it
+promised.
+
+Two consequences for the FE:
+
+- **Browse and find are different calls.** With no query and no chip active, a
+  shelf or folder page is a browse (`nodes/`, §13.2) — one level, cached, no
+  breadcrumbs, exactly as today. The moment *any* chip or text is applied it
+  becomes a find (§13.8) — deep, ranked, breadcrumb on every row. One switch,
+  and the breadcrumb difference is right on both sides of it.
+- **Counts now narrow.** Each axis is counted with every *other* active chip
+  applied, so a count always predicts what the tap yields — see §13.8, which
+  states the rule and why it is not the other way round.
+
+The earlier note here said server-side facets were "gone on purpose" because
+filtering a handful of children over the network is a round trip spent on
+nothing. That was true of a *level* and false of a *shelf*, and the sieve was
+attached to the shelf.
 
 ### 13.5 File kinds
 
@@ -960,30 +1033,158 @@ is all the endpoint ever was.
 **Do not build sibling pages for `sankalan` or `adhyayan`.** They are trust
 information, not a way to browse.
 
-### 13.8 `GET /api/v1/library/search/?q=` — the संसाधन lane
+### 13.8 `GET /api/v1/library/search/` — catalogue search
 
-Metadata only — names, descriptions, facets, a folder's tags, and a file's
-original pCloud path. **Never file contents.** One list, always separate from the
-पुस्तकों-में citation lane (§9.1).
+**The one "find" endpoint for the library.** It answers *"where is the अमरकंटक
+2019 audio?"* — what the library **records** about a thing, never what is inside
+it. See `docs/Catalogue_Search_v1.md` for the three-searches boundary this sits
+inside; the short version is that this reads the catalogue, §9.1 reads the
+books, and they are never merged into one list.
+
+Metadata only — names, descriptions, facets, a folder's tags, a file's filename
+and original pCloud path. **Never file contents.**
+
+#### Parameters
+
+| Param | Meaning |
+|---|---|
+| `q` | **Optional.** 2+ characters. Absent = a pure facet filter, which is what a chip tap with an empty box is. |
+| `workspace` | `originals` · `translations` · `resources` · `connect`. Scopes to one shelf. |
+| `under` | A node id. Scopes to that folder's **descendants** — not the folder itself, which is the page you are standing on. Wins over `workspace`, which it already implies. |
+| `topic` · `provenance` · `year` · `place` · `person` · `language` · `kind` | The sieve axes. Repeatable within an axis (OR); across axes they AND. |
+| `type` | `folder` or `file`. Omit for both. |
+| `raw=1` | Search exactly as typed; skip the Devanagari rewrite. |
+| `limit` · `offset` | Default 25, max 100. |
+
+Neither `workspace` nor `under` is required — with neither, the scope is the
+whole library, which is what the `/search` page's संसाधन lane asks for (§9.1)
+and what U11's "पूरी library में खोजें?" escape widens to.
+
+#### Facets are inherited, exactly like provenance
+
+This is the rule that makes a shelf-level chip mean anything, so it is worth
+stating on its own.
+
+**`year`, `place` and `person` resolve to the nearest ancestor that states
+one** — the treatment §7 already gives `provenance`, extended to the facets that
+behave the same way. A shivir folder marked `year=2019, place=अमरकंटक` is
+describing every session inside it; the manager states it once at the top of the
+branch and does not retype it onto each of forty days. Without inheritance,
+वर्ष 2019 would match the one folder carrying the string and none of the
+recordings beneath it — which is precisely the level-scoped sieve this replaced.
+
+**`topic` is a union, not an override.** A folder adding शिक्षा inside a
+व्यवस्था branch is about both; letting the child replace its parent would file
+it out of the chip its whole branch sits under.
+
+**`language` never inherits** — the column has a default, so every folder
+already states one and there is nothing to resolve.
+
+**A file then inherits the whole resolved set from its folder.** So
+`kind=audio&year=2019` means *audio whose folder resolves to 2019* — the only
+reading that makes the two axes composable, since a file carries neither year
+nor topic of its own (§13.9). `kind` and a `provenance` override are the only
+axes a file answers for itself.
+
+One consequence to design for: **counts get large near the top of a branch.**
+वर्ष 2019 on a shelf counts the shivir folder, its days, and every recording in
+them. That is correct — it is what tapping the chip returns — but it means a
+facet count is a count of *rows*, not of shivirs.
+
+#### Response
 
 ```jsonc
-{ "q": "अमरकंटक", "results": [
-  { "type": "folder", "id": 17, "name": "2019",
-    "breadcrumb": [{"id": 3, "name": "संसाधन"}, {"id": 8, "name": "शिविर सामग्री"}], … },
-  { "type": "file",   "id": 91, "title": "सत्र 1", "node": 42,
-    "breadcrumb": [ …, {"id": 42, "name": "दिन 1"}], … }
-]}
+{
+  "q": "amarkantak",
+  "searched_as": "अमरकंटक",          // "" when the query needed no rewrite
+  "scope": { "workspace": "resources", "under": null },
+  "count": 137,                       // total in scope, before limit/offset
+  "results": [
+    { "type": "folder", "id": 17, "name": "2019",
+      "breadcrumb": [{"id": 3, "name": "संसाधन"}, {"id": 8, "name": "शिविर सामग्री"}], … },
+    { "type": "file",   "id": 91, "title": "सत्र 1", "node": 42,
+      "breadcrumb": [ …, {"id": 42, "name": "दिन 1"}], … }
+  ],
+  "facets": {
+    "provenance": [{ "value": "moola",   "label": "मूल",      "count": 41 }, …],
+    "year":       [{ "value": "2019",    "label": "2019",     "count": 22 }, …],
+    "place":      [{ "value": "अमरकंटक",  "label": "अमरकंटक",  "count": 18 }, …],
+    "person":     [ … ],
+    "language":   [{ "value": "hi",      "label": "हिन्दी",     "count": 130 }, …],
+    "kind":       [{ "value": "audio",   "label": "audio",    "count": 88 }, …],
+    "topic":      [{ "value": "vyavastha", "label": "व्यवस्था", "count": 12 }, …]
+  }
+}
 ```
+
+Every facet entry is the same three keys, including when `label` equals `value`
+— one shape to render beats a special case per axis. `label` is a courtesy, not
+an instruction: the FE already holds Hindi for प्रमाण and प्रकार and should keep
+using it. विषय is the one label it *cannot* hold, because managers add topics
+without a deploy (§13.4).
 
 `type` appears **only here** — it is the one response that mixes the two, and
 "has `name` but no `title`" is a discriminator by accident rather than by
-contract. Folders lead: a folder answers "what is this?" better than a lone
-file does.
+contract.
 
 **Both row shapes carry `breadcrumb`, and a hit is close to useless without
 it.** A search result is by definition somewhere the reader was not, and
 "सत्र 1" is the same three words in every shivir the library holds. Render the
 path on every row.
+
+#### Ranking
+
+Rows come back scored, best first:
+
+| Tier | Matched in |
+|---|---|
+| 1 | folder `name` / file `title` — exact |
+| 2 | `name` / `title` — starts with |
+| 3 | `name` / `title` — contains |
+| 4 | `description` |
+| 5 | facets — `year`, `place`, `people`, विषय name |
+| 6 | `tags` |
+| 7 | **filename** and `source_path` |
+
+Filename is last deliberately. `IMG_20190312_094511.jpg` is not a title anybody
+wrote, and a library full of camera-generated names would otherwise bury the
+folders somebody actually described. It is included at all because it was half
+included before: the old query read a file's `source_path` — which only the
+pCloud import writes — and not its `file`, so **an imported file's name was
+searchable and an uploaded one's was not.**
+
+**Folders lead only at equal score.** The previous version of this section put
+every folder above every file unconditionally, on the reasoning that a folder
+answers "what is this?" better than a lone file does. That reasoning survives as
+the tiebreak, but it cannot survive as the sort: once results are ranked and
+paginated, an unconditional rule puts a page of weak folder-name matches ahead
+of the file whose title is exactly what was typed.
+
+#### Facet counts narrow
+
+**Each axis is counted with every *other* active facet applied, but not its
+own.** Ask for `year=2019` and the `kind` counts describe 2019 only, while the
+`year` counts still describe the whole scope — so a count always predicts what
+the tap yields, and the axis you are already inside stays switchable rather than
+collapsing to the one value you picked. `Clear` (U10) is the way back out of
+all of them.
+
+The alternative — counting every axis over the unfiltered scope — is what the
+FE's client-side sieve did, and it is a promise the tap then breaks: "audio 88"
+beside an active `2019` chip yields three. Costs seven small aggregates per
+request; the library is a few hundred folders, and this is the first thing to
+revisit if that stops being true.
+
+**Zero-count values are not returned.** A chip that filters to nothing is a dead
+control (the same rule §13.4 states for विषय).
+
+#### Hinglish
+
+`q` runs through the same Latin→Devanagari rewrite the citation search uses, so
+`amarkantak` finds अमरकंटक. `searched_as` is non-empty only when a rewrite
+actually happened — show it (*"Showing results for अमरकंटक"*) with `raw=1` as
+the way back, exactly as §9.1's screen already does. Provider trouble degrades
+to the literal query; it never fails the search.
 
 ### 13.9 What the library deliberately does not have
 
@@ -992,6 +1193,12 @@ citation-search hits, no genre, no per-file workflow status, no file
 versioning, and no nesting past six levels. If a file ever deserves the full
 reader treatment, it is re-created as a proper Book (possibly PDF-only first,
 §13.10) — a manager decision, never automatic.
+
+**No search inside a file** — not a PDF's words, not an audio's transcript.
+§13.8 reads the catalogue; §9.1 reads the books; nothing reads a resource's
+bytes, because nothing in this tree has paragraphs to index. That boundary is
+not an apology, and the FE's job at it is to hand the reader across rather than
+explain it — see `docs/Catalogue_Search_v1.md` §4.
 
 ### 13.10 PDF-only Books (§5.1.3)
 

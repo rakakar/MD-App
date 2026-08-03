@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BreadcrumbLine } from "@/components/library/NodeCard";
-import { ProvenanceBadge, provenanceLabel } from "@/components/library/ProvenanceBadge";
-import { KIND_HI, cardSummary, fileFacts } from "@/components/library/format";
-import { contentLang } from "@/lib/script";
+import { FindRow } from "@/components/library/FindRow";
+import { provenanceLabel } from "@/components/library/ProvenanceBadge";
 import type { LibrarySearchRow } from "@/lib/types";
 
 /** first N rows; the rest are one tap away on the shelf itself */
@@ -55,7 +53,7 @@ export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
       <ul className="mt-3 divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
         {shown.slice(0, LANE_LIMIT).map((row) => (
           <li key={`${row.type}-${row.id}`}>
-            <Row row={row} />
+            <FindRow row={row} />
           </li>
         ))}
       </ul>
@@ -130,50 +128,5 @@ function ProvenanceFilter({
         );
       })}
     </div>
-  );
-}
-
-/**
- * One hit, with its path above it.
- *
- * The path is not decoration here: a search result is by definition somewhere
- * the reader was not, and "सत्र 1" is the same two words in every shivir the
- * library holds. A folder's breadcrumb stops at its parent and a file's
- * includes its own folder, which is also where the file's link goes — there
- * is no page for a single file, and its folder is where it plays.
- */
-function Row({ row }: { row: LibrarySearchRow }) {
-  const href = row.type === "folder" ? `/library/${row.id}` : `/library/${row.node}`;
-  const title = row.type === "folder" ? row.name : row.title;
-  const facts =
-    row.type === "folder"
-      ? [row.year, row.place, cardSummary(row)].filter(Boolean).join(" · ")
-      : fileFacts(row);
-
-  return (
-    <Link
-      href={href}
-      className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-black/[.03]"
-    >
-      {row.breadcrumb.length > 0 && <BreadcrumbLine steps={row.breadcrumb} />}
-      <span
-        {...contentLang(title)}
-        className={`${contentLang(title).className} text-[15px] font-medium leading-snug`}
-      >
-        {title}
-      </span>
-      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
-        <span
-          lang="hi"
-          className="hi rounded-full bg-canvas px-2 py-0.5 text-[11px] font-semibold"
-        >
-          {row.type === "folder" ? "फ़ोल्डर" : KIND_HI[row.kind]}
-        </span>
-        <ProvenanceBadge provenance={row.provenance} />
-        <span lang="hi" className="hi">
-          {facts}
-        </span>
-      </span>
-    </Link>
   );
 }

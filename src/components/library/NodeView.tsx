@@ -1,15 +1,24 @@
 import Link from "next/link";
 import { FileList } from "@/components/library/FileList";
+import { FindBar } from "@/components/library/FindBar";
+import { FindResults } from "@/components/library/FindResults";
 import { NodeCardView } from "@/components/library/NodeCard";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
-import { ClearSieve, Sieve, applySieve, type SieveSelection } from "@/components/library/Sieve";
+import { Sieve } from "@/components/library/Sieve";
 import { filesSummary, nodeFacts } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { BackIcon } from "@/components/shell/icons";
-import { nodeChildren } from "@/lib/api";
+import { findLibrary, nodeChildren } from "@/lib/api";
 import { bookHue } from "@/lib/bookHue";
+import {
+  EMPTY_FIND,
+  FIND_MIN_ROWS,
+  isAsked,
+  scopeSize,
+  type FindState,
+} from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
-import type { LibraryNode } from "@/lib/types";
+import type { LibraryFindResponse, LibraryNode } from "@/lib/types";
 
 /**
  * One folder — **the same component at every depth**.
@@ -24,18 +33,22 @@ import type { LibraryNode } from "@/lib/types";
  * its own fetch, which is what makes a deep link shareable and the back button
  * mean something. `children` is deliberately not enough to recurse without
  * another request.
+ *
+ * A large shivir folder is **searchable from inside it** (§13.8, U14): the box
+ * and the chips are scoped to `under=<this folder>`, which is everything
+ * beneath it, and asking anything swaps the browse below for a ranked find.
  */
-export function NodeView({
+export async function NodeView({
   node,
-  selection = {},
+  state = EMPTY_FIND,
   basePath,
   shelves = {},
   /** the first breadcrumb step is the page's own title on a shelf, not a link */
   isShelf = false,
 }: {
   node: LibraryNode;
-  selection?: SieveSelection;
-  /** this folder's own URL, for the sieve's chip links */
+  state?: FindState;
+  /** this folder's own URL, for the box and the sieve's chip links */
   basePath: string;
   shelves?: ShelfMap;
   isShelf?: boolean;
@@ -44,9 +57,21 @@ export function NodeView({
   // import forces `children` to be capped and paginated, that is the one place
   // it changes (§13.2).
   const children = nodeChildren(node);
-  const shown = applySieve(children, selection);
-  const filtered = Object.values(selection).some(Boolean);
   const files = [...node.items, ...node.linked_items];
+
+  // `under` means this folder's **descendants**, so a folder holding only its
+  // own files has nothing for the box to look into — the files are already on
+  // screen, and a box that could never match them would be a lie. That is also
+  // why an album gets no find: its whole content is the list below it.
+  const scope = { under: node.id };
+  const find: LibraryFindResponse | null =
+    children.length > 0 ? await findLibrary({ ...scope, state }).catch(() => null) : null;
+  // A folder is worth searching once there is more beneath it than a reader can
+  // take in at a glance — and always while a find is already on, so a shared
+  // link never hides the control that produced what is on screen.
+  const searchable =
+    find !== null && (scopeSize(find.facets) >= FIND_MIN_ROWS || isAsked(state));
+  const finding = searchable && isAsked(state);
 
   // The album/index rule. A folder with no child folders and at least one file
   // is an album: a hero, a cover and the player, which is what a fourteen-part
@@ -65,66 +90,64 @@ export function NodeView({
         <IndexHeader node={node} shelves={shelves} isShelf={isShelf} />
       )}
 
-      {children.length > 0 && (
+      {searchable && find && (
         <>
-          <Sieve cards={children} selection={selection} basePath={basePath} />
-
-          {filtered && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
-              <span lang="hi" className="hi">
-                {shown.length} / {children.length} फ़ोल्डर
-              </span>
-              <ClearSieve basePath={basePath} selection={selection} />
-            </div>
-          )}
-
-          <ul className="mt-4 flex flex-col gap-3">
-            {shown.map((child) => (
-              <li key={child.id}>
-                <NodeCardView card={child} shelves={shelves} />
-              </li>
-            ))}
-          </ul>
-
-          {shown.length === 0 && (
-            <p lang="hi" className="hi mt-4 text-center text-sm text-ink-soft">
-              इस छाँट पर कुछ नहीं — कोई चिप हटाकर देखें।
-            </p>
-          )}
+          <FindBar basePath={basePath} state={state} scope={node.name} />
+          <Sieve facets={find.facets} state={state} basePath={basePath} />
         </>
       )}
 
-      {/*
-        Cross-posted folders, kept apart from the folder's own children and
-        never nested under it: a borrowed folder has exactly one home, and its
-        card jumps there rather than pretending to live here (§13.6). The
-        sieve above does not touch them for the same reason — they are not
-        this folder's contents.
-      */}
-      {node.linked_children.length > 0 && (
-        <section className="mt-7">
-          <h2 lang="hi" className="hi mb-3 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
-            और भी यहाँ से
-          </h2>
-          <ul className="flex flex-col gap-3">
-            {node.linked_children.map((card) => (
-              <li key={card.id}>
-                <NodeCardView card={card} shelves={shelves} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {finding && find ? (
+        <FindResults
+          find={find}
+          state={state}
+          basePath={basePath}
+          scope={scope}
+          shelves={shelves}
+        />
+      ) : (
+        <>
+          {children.length > 0 && (
+            <ul className="mt-4 flex flex-col gap-3">
+              {children.map((child) => (
+                <li key={child.id}>
+                  <NodeCardView card={child} shelves={shelves} />
+                </li>
+              ))}
+            </ul>
+          )}
 
-      <FileList
-        files={node.items}
-        linked={node.linked_items}
-        albumTitle={node.name}
-        coverUrl={node.cover_url}
-      />
+          {/*
+            Cross-posted folders, kept apart from the folder's own children and
+            never nested under it: a borrowed folder has exactly one home, and
+            its card jumps there rather than pretending to live here (§13.6).
+          */}
+          {node.linked_children.length > 0 && (
+            <section className="mt-7">
+              <h2 lang="hi" className="hi mb-3 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+                और भी यहाँ से
+              </h2>
+              <ul className="flex flex-col gap-3">
+                {node.linked_children.map((card) => (
+                  <li key={card.id}>
+                    <NodeCardView card={card} shelves={shelves} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-      {children.length === 0 && node.linked_children.length === 0 && files.length === 0 && (
-        <EmptyFolder />
+          <FileList
+            files={node.items}
+            linked={node.linked_items}
+            albumTitle={node.name}
+            coverUrl={node.cover_url}
+          />
+
+          {children.length === 0 && node.linked_children.length === 0 && files.length === 0 && (
+            <EmptyFolder />
+          )}
+        </>
       )}
     </>
   );
