@@ -14,6 +14,13 @@ import type { LibraryFile } from "@/lib/types";
  * able to zoom into one corner of it is the whole feature, so zoom is
  * implemented here rather than left to the browser: inside a fixed, scroll-
  * locked overlay, the page's own pinch gesture does nothing on most phones.
+ *
+ * The grid draws `thumbnail_url` and the lightbox draws `url`, which is the
+ * whole point of there being two. The library's photographs are camera
+ * originals: `/library/71` is 127 of them at 106MB, against 3.3MB of
+ * thumbnails — thirty-two times lighter to open as a grid of postage stamps.
+ * Every `?? item.url` below is the fallback for a picture that has no
+ * thumbnail yet, which draws heavy rather than blank.
  */
 export function ImageGallery({ items }: { items: LibraryFile[] }) {
   const [openAt, setOpenAt] = useState<number | null>(null);
@@ -30,9 +37,10 @@ export function ImageGallery({ items }: { items: LibraryFile[] }) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={item.url}
+                src={item.thumbnail_url ?? item.url}
                 alt={item.title}
                 loading="lazy"
+                decoding="async"
                 className="aspect-[4/3] w-full rounded-xl border border-rule bg-white object-contain transition-shadow group-hover:shadow-md"
               />
               <span lang="hi" className="hi mt-1.5 block truncate text-xs font-medium">
@@ -81,6 +89,35 @@ function Lightbox({
   // A new image starts unzoomed — carrying the previous one's transform over
   // lands the reader in the middle of a chart they have not seen yet.
   useEffect(() => setView({ scale: 1, x: 0, y: 0 }), [index]);
+
+  // The thumbnail is already in the browser's cache — the grid behind this
+  // overlay just drew it — so showing it here is free and instant. A 6MB
+  // original over mobile data is several seconds of black screen otherwise,
+  // and a reader who taps a photograph and sees nothing taps again.
+  //
+  // The swap is a state change rather than an `onLoad` on the visible <img>,
+  // because swapping a live element's `src` blanks it while the new bytes
+  // decode; loading the original off-screen first means the soft picture is
+  // replaced by the sharp one in a single frame.
+  //
+  // Held as *which* original has arrived rather than as a boolean, so moving
+  // to the next picture makes this false by derivation. A boolean would need
+  // an effect to reset it on `index` — a second render, and a frame of the new
+  // photograph wearing the old one's "ready".
+  const [loaded, setLoaded] = useState<string | null>(null);
+  const ready = !item.thumbnail_url || loaded === item.url;
+  useEffect(() => {
+    if (!item.thumbnail_url) return;
+    const src = item.url;
+    const full = new window.Image();
+    full.onload = () => setLoaded(src);
+    // No `onerror`: a picture that will not load leaves the thumbnail on
+    // screen, blurry but readable, rather than the alt text of a broken <img>.
+    full.src = src;
+    return () => {
+      full.onload = null;
+    };
+  }, [item.url, item.thumbnail_url]);
 
   // The page behind must not scroll while a full-screen chart is open.
   useEffect(() => {
@@ -190,6 +227,18 @@ function Lightbox({
           <p className="mt-0.5 text-xs text-white/60">
             {index + 1} / {items.length}
             {view.scale > 1.05 && ` · ${view.scale.toFixed(1)}×`}
+            {/* Said out loud, because until the original lands the picture on
+                screen is a 480px thumbnail: a reader who pinches into a chart
+                and finds it soft should know it is still arriving rather than
+                conclude the scan is bad. */}
+            {!ready && (
+              <>
+                {" · "}
+                <span lang="hi" className="hi">
+                  पूरा चित्र आ रहा है…
+                </span>
+              </>
+            )}
           </p>
         </div>
         <button
@@ -216,7 +265,7 @@ function Lightbox({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={item.url}
+          src={ready ? item.url : (item.thumbnail_url ?? item.url)}
           alt={item.title}
           draggable={false}
           className="max-h-full max-w-full object-contain"

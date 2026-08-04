@@ -318,6 +318,20 @@ export interface LibraryFile {
    * migration; both are opened the same way, with no host special-casing.
    */
   url: string;
+  /**
+   * A small copy to draw in a grid — **never the address of the picture**,
+   * which is always `url`.
+   *
+   * Null is the ordinary case, not a failure: every non-image has none, and so
+   * does any photograph the BE could not open. Treat it as an optimisation
+   * that may or may not be given and fall back to `url`, so a folder whose
+   * thumbnails have not been generated yet draws heavy rather than blank.
+   *
+   * The library's photographs are camera originals — one folder of 127 is
+   * 106MB against 3.3MB of thumbnails — which is the whole reason this field
+   * exists (see `backfill_thumbnails` in the BE).
+   */
+  thumbnail_url: string | null;
   sequence: number;
   description: string;
   /** already the effective one — its own, else inherited from its branch */
