@@ -1,12 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { CloseIcon, Icon } from "@/components/shell/icons";
-import { findHref, type FindState } from "@/lib/find";
-
-/** long enough that a Devanagari word is not searched three times mid-syllable */
-const DEBOUNCE_MS = 350;
+import { findHref, MIN_QUERY_CHARS, type FindState } from "@/lib/find";
 
 /**
  * The find bar — one box on a shelf or a folder, scoped to what is beneath it
@@ -24,6 +21,25 @@ const DEBOUNCE_MS = 350;
  * address (U9) and the chips beside it compose with it for free. Typing
  * `replace`s rather than pushes: a reader backing out of a search wants the
  * shelf they came from, not eleven keystrokes of it.
+ *
+ * **Nothing is searched until the reader asks for it.** This box was
+ * search-as-you-type on a 350ms debounce, and on this endpoint that was the
+ * wrong shape three times over. Every commit was a full server render of a
+ * dynamic route, so a word cost three or four of them at ~1s each. Each one
+ * scanned the whole visible tree, which is the cost that grows as the library
+ * fills. And a Latin query buys a billed transliteration keyed on the exact
+ * string, so `anubhav` was charged six times — once per prefix — for one
+ * question.
+ *
+ * It also ate letters, which is how it was noticed. The box followed the URL,
+ * the URL trailed the typing by a round trip, and a navigation landing late
+ * wrote its stale query back into a box that had moved on: `anubhav` typed at
+ * a phone's pace arrived as `anbhav`. Committing on submit removes the whole
+ * class rather than patching it — there is no in-flight navigation while
+ * anyone is typing, so there is nothing that can overwrite them.
+ *
+ * The chips are the deliberate contrast and stay instant: a chip tap *is* the
+ * asking, so it navigates on the tap.
  */
 export function FindBar({
   basePath,
@@ -36,53 +52,82 @@ export function FindBar({
   scope: string;
 }) {
   const router = useRouter();
-  const [q, setQ] = useState(state.q);
-  const inputRef = useRef<HTMLInputElement>(null);
   /**
-   * What has already been asked — the query the URL is showing.
-   *
-   * Two things need it. A keystroke that lands back where it started (typing a
-   * letter and deleting it) must not fire a navigation. And the URL can change
-   * without the box — a chip tap, "साफ़ करें", the back button — in which case
-   * the box has to follow, or the two disagree about what was searched.
+   * What is in the box. The only owner of it while the reader is typing —
+   * `state.q` is what has been *asked*, which is a different thing and only
+   * catches up when they submit.
    */
-  const [committed, setCommitted] = useState(state.q);
-  if (committed !== state.q) {
-    setCommitted(state.q);
+  const [q, setQ] = useState(state.q);
+  const [pending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * The URL can change without the box: the back button, "साफ़ करें", a chip
+   * that cleared the query. The box has to follow those or the two disagree
+   * about what was searched.
+   *
+   * Guarded on focus, and that guard is the fix. A reader with the caret in
+   * this box is the authority on what it says; nothing arriving from the
+   * router may overwrite them mid-word. Submitting blurs, so their own search
+   * still lands.
+   */
+  useEffect(() => {
+    if (document.activeElement === inputRef.current) return;
     setQ(state.q);
-  }
+  }, [state.q]);
 
   function commit(typed: string) {
-    setCommitted(typed);
+    // Clearing is always worth a navigation — it is the way back to the shelf.
+    // A query too short to search is not one (§13.8): the shelf it would
+    // return to is the shelf already on screen, so the reader would press
+    // search and watch a second of loading buy them nothing.
+    if (typed !== "" && typed.length < MIN_QUERY_CHARS) return;
+    if (typed === state.q) return;
     // `raw` is dropped on a new query: it is a correction to one rewrite, not
     // a setting the reader turned on for the session.
-    router.replace(findHref(basePath, { ...state, q: typed, raw: false }), {
-      scroll: false,
+    startTransition(() => {
+      router.replace(findHref(basePath, { ...state, q: typed, raw: false }), {
+        scroll: false,
+      });
     });
   }
 
-  useEffect(() => {
-    const typed = q.trim();
-    if (typed === committed) return;
-    const t = setTimeout(() => commit(typed), DEBOUNCE_MS);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, committed]);
+  /** something typed that has not been asked yet — what the button offers to do */
+  const unasked = q.trim() !== state.q;
 
   return (
     <div className="mt-4">
       <form
         role="search"
         onSubmit={(e) => {
-          // Enter closes the phone keyboard and commits at once, rather than
-          // reloading the page as a bare form would.
           e.preventDefault();
           commit(q.trim());
+          // Closes the phone keyboard, and hands the box back to the effect
+          // above so a later back button can move it.
           inputRef.current?.blur();
         }}
-        className="flex items-center gap-2 rounded-2xl border border-rule bg-white px-4 py-2.5 focus-within:border-(--ws-color)"
+        // No vertical padding of its own: the button carries the height now,
+        // and `min-h-11` there comes to the same 44px the old `py-2.5` did.
+        className="flex items-center gap-1 rounded-2xl border border-rule bg-white ps-1 pe-3 focus-within:border-(--ws-color)"
       >
-        <Icon name="search" className="h-4.5 w-4.5 shrink-0 text-ink-soft" />
+        <button
+          type="submit"
+          aria-label={`${scope} में खोजें`}
+          // The magnifier is the button rather than an ornament beside one:
+          // it is already where a reader looks for search, and on a phone the
+          // keyboard's own search key is the other way in (`enterKeyHint`).
+          // It carries the workspace colour only when there is something
+          // unasked in the box, so the one control that costs a round trip
+          // says when it would actually do something.
+          className={`flex min-h-11 shrink-0 items-center justify-center rounded-xl px-2.5 transition-colors ${
+            unasked ? "text-(--ws-color)" : "text-ink-soft"
+          }`}
+        >
+          <Icon
+            name="search"
+            className={`h-4.5 w-4.5 ${pending ? "animate-pulse" : ""}`}
+          />
+        </button>
         <input
           ref={inputRef}
           type="search"
@@ -91,17 +136,25 @@ export function FindBar({
           placeholder={`${scope} में खोजें…`}
           aria-label={`${scope} में खोजें`}
           enterKeyHint="search"
-          className="hi w-full bg-transparent text-base outline-none"
+          // The browser draws its own clear button inside a `type="search"`
+          // box, in its own colour and with a 10px hit area. Ours is beside it
+          // and does more — it empties the search as well as the box — so the
+          // native one is two controls for one job, and the wrong one wins on
+          // a phone because it is the harder of the two to hit.
+          className="hi w-full bg-transparent text-base outline-none [&::-webkit-search-cancel-button]:appearance-none"
         />
         {q && (
           <button
             type="button"
             onClick={() => {
               setQ("");
+              // Emptying the box has to empty the search too, or the rows stay
+              // narrowed by a word that is no longer written anywhere.
+              commit("");
               inputRef.current?.focus();
             }}
             aria-label="Clear search"
-            className="shrink-0 text-ink-soft transition-colors hover:text-ink"
+            className="flex min-h-11 shrink-0 items-center px-1 text-ink-soft transition-colors hover:text-ink"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
