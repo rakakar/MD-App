@@ -129,6 +129,56 @@ export const GLOSSARY_LIMIT = 20;
 /** below this, a "contains" match takes half the glossary and ranks noise */
 const MIN_CONTAINS_CHARS = 2;
 
+/**
+ * How many typed characters may be wrong before a word stops being the word.
+ *
+ * Elasticsearch's `fuzziness: AUTO` thresholds, which most search stacks have
+ * settled on. Short words get no allowance at all, and that is the important
+ * half: one edit from `मन` reaches `तन`, `धन`, `जन` and `बन`, so a two-letter
+ * query with a budget would answer everything and mean nothing.
+ */
+function editBudget(query: string): number {
+  if (query.length <= 2) return 0;
+  return query.length <= 5 ? 1 : 2;
+}
+
+/**
+ * Damerau-Levenshtein distance, given up on as soon as it passes `max`.
+ *
+ * Four edits are counted, and the fourth is why this is not plain Levenshtein:
+ * insert (`anubav` → `anubhav`), delete (`anubhava` → `anubhav`), substitute
+ * (`anubhaw` → `anubhav`, `अनुभब` → `अनुभव`) and **transpose** (`anubhva` →
+ * `anubhav`), which is the commonest thing fingers actually do.
+ *
+ * The ceiling is what makes this affordable over the whole glossary: the
+ * moment an entire row is already worse than the budget, no later row can
+ * recover, so the pair is abandoned. With the length check in front of it,
+ * 2,802 entries measure ~1.4 ms per query — under a rendered frame, on the
+ * device, for nothing.
+ */
+function editDistance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prevPrev: number[] = [];
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let v = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        v = Math.min(v, prevPrev[j - 2] + 1);
+      }
+      cur[j] = v;
+      if (v < best) best = v;
+    }
+    if (best > max) return max + 1;
+    prevPrev = prev;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
 const NON_LATIN = /[^a-z]+/g;
 const DOUBLES = /(.)\1+/g;
 const VOWEL_RUNS = /[aeiou]+/g;
@@ -188,6 +238,21 @@ export function localGlossaryWords(): ParibhashaWord[] | null {
  *   3. headword prefix         अनुभ     → अनुभव, अनुभूति…
  *   4. headword contains
  *   5. anything else that matched — Roman spelling, folded prefix, definition
+ *   6. a misspelling                anubhaw / अनुभब → अनुभव
+ *
+ * **Rung 6 is ours and runs only when 0–5 found nothing at all.** The folding
+ * above settles how a word is *spelled by taste* — `anubhaav`, `anubhava` —
+ * and stops there, so a genuine slip still missed: `anubhaw`, `anubav`,
+ * `jeewan`, and every Devanagari typo, since nothing on the way in corrects
+ * Devanagari. Those are not exotic. Romanised Hindi has no standard, and a
+ * dictionary is the one screen a reader opens *because* they are unsure how
+ * the word is written.
+ *
+ * Last, and only on an empty result, because it is loose: `samadan` sits one
+ * edit from संपादन, समाधान *and* समापन. Three guesses in a list a reader picks
+ * from is help; the same three anywhere that answers with one word is not,
+ * which is why the reader's tap (`localDefinition`, `lookup`) never comes
+ * here — see the note in the BE's `normalize.py`.
  */
 export function searchGlossary(
   words: ParibhashaWord[],
@@ -233,5 +298,44 @@ export function searchGlossary(
   // list that looks subtly wrong in a dictionary, where alphabetical order is
   // most of how anybody reads one.
   ranked.sort((a, b) => a.rank - b.rank);
-  return ranked.slice(0, limit).map((r) => r.word);
+  if (ranked.length > 0) return ranked.slice(0, limit).map((r) => r.word);
+
+  return nearestWords(words, query, lower, limit);
+}
+
+/**
+ * Rung 6 — the words a reader probably meant, when they matched nothing.
+ *
+ * Both spellings are measured and the better one wins, so a Devanagari typo is
+ * caught by the headword and a Roman one by the transliteration, without the
+ * caller having to know which keyboard was used.
+ *
+ * Ordered by distance rather than by the index, and this is the one rung where
+ * that is right: within a rung the server's alphabetical order is the answer,
+ * but here "how close is it" *is* the ranking, and one edit away is a better
+ * guess than two however the alphabet feels about it. Ties keep the index
+ * order underneath, because the sort is stable.
+ */
+function nearestWords(
+  words: ParibhashaWord[],
+  query: string,
+  lower: string,
+  limit: number
+): ParibhashaWord[] {
+  const max = editBudget(query);
+  if (max === 0) return [];
+
+  const near: { word: ParibhashaWord; distance: number }[] = [];
+  for (const word of words) {
+    const hindi = (word.hindi ?? "").normalize("NFC");
+    const hinglish = (word.hinglish ?? "").toLowerCase();
+    let distance = editDistance(query, hindi, max);
+    if (distance > max && hinglish) {
+      distance = Math.min(distance, editDistance(lower, hinglish, max));
+    }
+    if (distance <= max) near.push({ word, distance });
+  }
+
+  near.sort((a, b) => a.distance - b.distance);
+  return near.slice(0, limit).map((n) => n.word);
 }
