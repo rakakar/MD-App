@@ -104,10 +104,14 @@ export function NodeCardView({
           {card.name}
         </span>
         {card.description && (
-          // One line only. A tile is half a phone wide, and a description that
-          // wraps to four lines pushes the count — the reason the tile exists
-          // — off the bottom of it.
-          <span className="mt-0.5 block truncate text-[11.5px] text-muted">
+          // Two lines, not one. This line is doing more work than it looks:
+          // a folder is named in the language its material is in, so on a
+          // Hindi shelf the description is where an English reader is met —
+          // "ऑडियो" over "Audio — Nagraj ji's recorded discourses". Clipped to
+          // one line it became "Audio — Nagraj ji's record…", which is the
+          // half of the sentence that says nothing. Still clamped, because
+          // four lines would push the count off the bottom of the tile.
+          <span className="mt-0.5 line-clamp-2 text-[11.5px] leading-snug text-muted">
             {card.description}
           </span>
         )}
