@@ -20,7 +20,7 @@ function Marker({ marker }: { marker: string }) {
 }
 
 /**
- * Book text, with परिभाषा headwords marked when the reader has asked for it.
+ * Book text, with Paribhasha headwords marked when the reader has asked for it.
  *
  * Rendered as React nodes, never as HTML — book text can never inject markup,
  * the same rule the search snippet highlighter follows.

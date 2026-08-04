@@ -112,7 +112,7 @@ export function Sidebar() {
             })}
           </ul>
         </nav>
-        {/* What this route sends up — the shelf's प्रकार · विषय · वर्ष on
+        {/* What this route sends up — the shelf's Type · Topic · Year on
             /originals and /resources, and nothing at all everywhere else. */}
         <RailHost />
       </div>

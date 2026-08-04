@@ -8,7 +8,7 @@ import type { LibraryFile } from "@/lib/types";
 /**
  * A collection's images — thumbnails, then full screen with pinch-zoom.
  *
- * Charts are the reason the lightbox is not optional. A मध्यस्थ दर्शन chart is
+ * Charts are the reason the lightbox is not optional. A Madhyasth Darshan chart is
  * a dense diagram of small Devanagari labels; at thumbnail size it is a grey
  * texture, and at page width on a 375px phone it is still unreadable. Being
  * able to zoom into one corner of it is the whole feature, so zoom is
@@ -231,14 +231,7 @@ function Lightbox({
                 screen is a 480px thumbnail: a reader who pinches into a chart
                 and finds it soft should know it is still arriving rather than
                 conclude the scan is bad. */}
-            {!ready && (
-              <>
-                {" · "}
-                <span lang="hi" className="hi">
-                  पूरा चित्र आ रहा है…
-                </span>
-              </>
-            )}
+            {!ready && <> · <span>Loading full image…</span></>}
           </p>
         </div>
         <button
@@ -278,16 +271,15 @@ function Lightbox({
 
       <div className="flex items-center justify-between gap-3 p-3">
         <NavButton
-          label="पिछला"
+          label="Previous"
           onClick={() => onIndex(index - 1)}
           disabled={index === 0}
         />
         <p className="text-center text-[11px] text-white/50">
-          <span lang="hi" className="hi">दो उँगलियों से बड़ा करें</span> · pinch or
-          double-tap to zoom
+          Pinch or double-tap to zoom
         </p>
         <NavButton
-          label="अगला"
+          label="Next"
           onClick={() => onIndex(index + 1)}
           disabled={index === items.length - 1}
         />

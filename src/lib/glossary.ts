@@ -3,7 +3,7 @@
 // It lives here rather than in a provider because three very different places
 // need to ask for it: the reader, when someone taps a word; the book download
 // button, which is promising that a book will work on a train; and the
-// परिभाषा search box, which searches this copy rather than the network. A
+// Paribhasha search box, which searches this copy rather than the network. A
 // context could not serve the second — the download button is not inside the
 // reader — and two copies of a 900 KB map is not a thing to arrange casually.
 
@@ -111,7 +111,7 @@ export function dropFullGlossary(): void {
 // ~0.9s and a request per keystroke, for a filter that runs in under a
 // millisecond over 2,800 rows.
 //
-// This is why परिभाषा searches as you type while every other box in the app
+// This is why Paribhasha searches as you type while every other box in the app
 // waits to be asked. The rule is not "dictionaries are different" — it is that
 // **instant search needs local data**. Anything crossing the network waits for
 // the reader to ask (see `SearchField`).
@@ -217,7 +217,7 @@ export function searchKeyFor(hinglish: string): string {
 /**
  * Every entry on this device, or null when the dictionary is not here yet.
  *
- * Null is an ordinary answer and means "ask the network" — see the परिभाषा
+ * Null is an ordinary answer and means "ask the network" — see the Paribhasha
  * box in `SearchScreen`, which degrades to `getParibhasha` rather than
  * telling a reader the dictionary is empty.
  */

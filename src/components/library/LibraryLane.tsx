@@ -13,7 +13,7 @@ const LANE_LIMIT = 6;
 const PROVENANCE_ORDER = ["moola", "sankalan", "adhyayan"];
 
 /**
- * The **संसाधन lane** — folders and files that matched on metadata
+ * The **Library lane** — folders and files that matched on metadata
  * (contract §13.8).
  *
  * Never merged into the citation results beside it. That separation is the
@@ -34,15 +34,15 @@ export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
   const shown = provenance ? rows.filter((r) => r.provenance === provenance) : rows;
 
   return (
-    <section aria-label="संसाधन" className="mt-8">
+    <section aria-label="Library" className="mt-8">
       <h2 className="text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
-        <span lang="hi" className="hi">संसाधन</span> · Library materials
+        Library materials
       </h2>
       {/*
         Said plainly, because the difference between the two lanes is invisible
         otherwise: this half searched titles and tags, not the inside of any
-        file. Someone who does not know that will read an empty संसाधन lane as
-        "the library has nothing on this".
+        file. Someone who does not know that will read an empty lane as "the
+        library has nothing on this".
       */}
       <p className="mt-1 text-xs text-ink-soft">
         Matched on titles, topics, people and places — file contents are never indexed.
@@ -65,7 +65,7 @@ export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
             className="font-semibold underline underline-offset-2"
             style={{ color: "var(--ws-ink)" }}
           >
-            <span lang="hi" className="hi">पूरा संसाधन संग्रह देखें</span>
+            See the whole Resources collection
           </Link>
         </p>
       )}
@@ -74,12 +74,12 @@ export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
 }
 
 /**
- * प्रमाण over the results — the second place the provenance question is asked.
+ * Source over the results — the second place the provenance question is asked.
  *
  * "उनके अपने शब्दों में व्यवस्था पर क्या है?" is one question, and a search box
- * is where it gets asked. It used to have a page of its own (वाणी, everything
- * मूल in one flat list), which answered a question nobody had: provenance is
- * inherited, so that page was the मूल branches with their structure flattened
+ * is where it gets asked. It used to have a page of its own (everything of
+ * Original provenance in one flat list), which answered a question nobody had:
+ * provenance is inherited, so that page was those branches, flattened
  * away. Here it narrows a list the reader is already reading, which is the
  * shape the thing always wanted.
  *

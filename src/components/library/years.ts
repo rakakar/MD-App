@@ -1,7 +1,7 @@
 import type { FacetValue } from "@/lib/types";
 
 /**
- * वर्ष, grouped into bands once there are too many of them to read as years.
+ * Years, grouped into bands once there are too many of them to read as years.
  *
  * The designer draws the year control as ranges — "1998–2000", "2001–2005" —
  * and that is right for the archive it was drawn against: A. Nagraj ji's

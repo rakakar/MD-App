@@ -45,7 +45,7 @@ export function PdfView({
           className="w-full rounded-xl border border-rule bg-white px-4 py-3 text-sm font-semibold"
           style={{ color: "var(--ws-ink)" }}
         >
-          <span lang="hi" className="hi">यहीं पढ़ें</span> · Read here
+          Read here
         </button>
       )}
 
@@ -57,7 +57,7 @@ export function PdfView({
           className="underline underline-offset-2"
           style={{ color: "var(--ws-ink)" }}
         >
-          <span lang="hi" className="hi">नए टैब में खोलें</span> · Open in a new tab
+          Open in a new tab
         </a>
         <a
           href={url}
@@ -66,7 +66,7 @@ export function PdfView({
           style={{ color: "var(--ws-ink)" }}
         >
           <DownloadIcon className="h-3.5 w-3.5" />
-          <span lang="hi" className="hi">डाउनलोड</span>
+          <span>Download</span>
         </a>
       </div>
     </div>

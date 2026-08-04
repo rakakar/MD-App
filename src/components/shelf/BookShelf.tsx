@@ -50,7 +50,7 @@ export async function BookShelf({
   return (
     <>
       <FilterChips
-        label={axis === "genre" ? "विधा · Filter by genre" : "भाषा · Filter by language"}
+        label={axis === "genre" ? "Filter by genre" : "Filter by language"}
         allHref={href(basePath, carry)}
         active={selected}
         options={options.map((o) => ({
@@ -74,7 +74,7 @@ export async function BookShelf({
       ) : (
         <div className="mt-5">
           <EmptyState
-            title={workspace === "translations" ? "अनुवाद अभी नहीं" : "यहाँ अभी कुछ नहीं"}
+            title={workspace === "translations" ? "No translations yet" : "Nothing here yet"}
             hint={
               selected
                 ? "Nothing published under this filter yet."
@@ -90,13 +90,13 @@ export async function BookShelf({
 /**
  * One cover card on the shelf (design 1B).
  *
- * A translation keeps its translator on the card. `author` stays ए. नागराज on
+ * A translation keeps its translator on the card. `author` stays A. Nagraj on
  * a translation — the words are his, the rendering is not — so a card showing
  * only the author would credit him with a student's English.
  *
  * Exported because a book filed on another shelf is the same object: a
  * workspace is a shelf, not a treatment (PRD v2 §5.0.1), so a book under
- * संसाधन is still a book and must not look like a second kind of card.
+ * Resources is still a book and must not look like a second kind of card.
  */
 export function ShelfCard({ book }: { book: BookSummary }) {
   return (
@@ -127,7 +127,7 @@ export function ShelfCard({ book }: { book: BookSummary }) {
       </span>
       {book.translation_of && book.translator && (
         <span className="-mt-1.5 block truncate text-[11px] text-ink-soft">
-          <span lang="hi" className="hi">अनुवाद:</span> {book.translator}
+          Translator: {book.translator}
         </span>
       )}
     </Link>

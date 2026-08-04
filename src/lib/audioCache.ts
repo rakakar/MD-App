@@ -4,7 +4,7 @@
  * Why this is not part of "Download for offline" (which fetches a whole book's
  * text into IndexedDB): audio is heavy in a way text never is. The renditions
  * generated before the BE had ffmpeg are **WAV**, 48 kB per second — one
- * 24-minute chapter is 70 MB, and मानव व्यवहार दर्शन entire most of a
+ * 24-minute chapter is 70 MB, and a whole book most of a
  * gigabyte. mp3 renditions are 6× lighter, but a whole book is still
  * a hundred-plus megabytes, so the shape stands either way: audio is saved
  * one chapter at a time, always deliberately, always with the size shown

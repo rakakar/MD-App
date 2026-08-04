@@ -12,7 +12,7 @@ import "./globals.css";
 
 // Type system per the design spec (design_docs/screens): Instrument Sans for
 // chrome and English, Newsreader for display/section titles, Tiro Devanagari
-// Hindi for मूल content, Mukta for Devanagari UI labels. Content faces are
+// Hindi for book content, Mukta for Devanagari inside chrome lines. Content faces are
 // self-hosted via next/font and preloaded — no CLS from font swap (PRD §5).
 const instrumentSans = Instrument_Sans({
   variable: "--font-instrument-sans",
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     template: "%s · MD Study",
   },
   description:
-    "Read A. Nagrajji's published books (मध्यस्थ दर्शन), listen to discourses, and study translations and resources.",
+    "Read A. Nagrajji's published books (Madhyasth Darshan), listen to discourses, and study translations and resources.",
   applicationName: "MD Study",
   manifest: "/manifest.webmanifest",
   // Without these an iOS home-screen install gets a screenshot for an icon and

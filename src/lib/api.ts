@@ -230,7 +230,7 @@ export async function getNode(id: number): Promise<LibraryNode> {
  * here: it reaches the same folder without the round trip spent discovering
  * an id (§10.1).
  *
- * Browsing only. A विषय is `openTopic` below — same endpoint, different
+ * Browsing only. A topic is `openTopic` below — same endpoint, different
  * question, and the two return different cards (§13.2).
  */
 export async function getNodes(
@@ -244,7 +244,7 @@ export async function getNodes(
 }
 
 /**
- * A door onto the whole library: every folder on a विषय, at any depth (§13.2).
+ * A door onto the whole library: every folder on a topic, at any depth (§13.2).
  *
  * Separate from `getNodes` because it is not a level and the rows are not the
  * same card. Browsing asks "what is inside this folder?", where every answer
@@ -281,7 +281,7 @@ export function nodeChildren(node: LibraryNode): NodeCard[] {
 }
 
 /**
- * The विषय chips (§13.4) — a door onto the whole library, counted library-wide.
+ * The topic chips (§13.4) — a door onto the whole library, counted library-wide.
  *
  * All topics are returned and the FE hides the zero-count ones: a chip that
  * filters to nothing is a dead control. Never a constant here — managers add
@@ -342,7 +342,7 @@ export async function findLibrary(opts: {
 }
 
 /**
- * The संसाधन lane on `/search` — the same find, asked of the whole library.
+ * The library lane on `/search` — the same find, asked of the whole library.
  *
  * Neither scoped nor chipped, because that page's question is "is this word
  * anywhere in the library?" rather than "where is it on this shelf?". One list
@@ -355,7 +355,7 @@ export async function searchLibrary(
 ): Promise<LibrarySearchRow[]> {
   const { results } = await findLibrary({
     state: { q, selection: {}, raw: false },
-    // The lane shows six and filters the rest by प्रमाण in the browser, so it
+    // The lane shows six and filters the rest by source in the browser, so it
     // asks for a set worth filtering rather than for one screenful.
     limit: 50,
     signal,
@@ -400,7 +400,7 @@ export async function registerForEvent(
   });
 }
 
-// ---- परिभाषा — the glossary (§14) ----
+// ---- Paribhasha — the glossary (§14) ----
 
 /** one screenful of glossary rows, plus the cursor for the next one */
 export interface ParibhashaPage {
@@ -414,7 +414,7 @@ export interface ParibhashaPage {
 }
 
 /**
- * The glossary page (§14.1): `q` ranked search, `letter` for the अ आ इ index.
+ * The glossary page (§14.1): `q` ranked search, `letter` for the letter index.
  *
  * Roman spelling is a first-class key on the BE — `anubhav`, `anubhaav` and
  * `anubhava` all reach अनुभव — so pass whatever was typed and do no folding

@@ -8,7 +8,7 @@ import { coverGradient, type BookHue } from "@/lib/bookHue";
  *
  * There are two surfaces because there are two things to listen to, and they
  * differ in the middle of the screen and nowhere else: a chapter has text that
- * follows the voice, a शिविर recording has nothing but its own length. Around
+ * follows the voice, a shivir recording has nothing but its own length. Around
  * that difference everything is the same — the fixed dark palette, the cover,
  * the scrub bar, the transport, the sleep timer — and it has to *stay* the
  * same, because a listener who learns the controls on a book must not have to

@@ -18,9 +18,9 @@ export function MovedNote() {
   if (!wasCollection && !wasFolder) return null;
 
   return (
-    <p lang="hi" className="hi mt-4 rounded-2xl border border-rule bg-white p-4 text-sm leading-relaxed">
-      यह लिंक संग्रह के पुराने ढाँचे का है। अब सारी सामग्री एक ही जगह है —
-      <span className="hi"> संसाधन</span> से खोलें या ऊपर खोजें।
+    <p className="mt-4 rounded-2xl border border-rule bg-white p-4 text-sm leading-relaxed">
+      This link points into the library&apos;s old structure. Everything lives in
+      one place now — open it from Resources, or search above.
       <span className="mt-1 block text-xs text-ink-soft">
         The library was reorganised into one folder tree; the old collection and
         door addresses do not map onto the new folders.

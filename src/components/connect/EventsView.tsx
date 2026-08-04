@@ -14,10 +14,10 @@ import type { EventItem } from "@/lib/types";
 
 /** Hindi labels for the BE's event_type choices (design 9A badge). */
 const TYPE_LABELS: Record<string, string> = {
-  shivir: "शिविर",
-  workshop: "कार्यशाला",
-  satsang: "सत्संग",
-  other: "अन्य",
+  shivir: "Shivir",
+  workshop: "Workshop",
+  satsang: "Satsang",
+  other: "Other",
 };
 
 export function eventTypeLabel(t: string): string {
@@ -236,7 +236,7 @@ export function EventsView({ events }: { events: EventItem[] }) {
           </div>
         ) : typeFilter !== null ? (
           <div className="rounded-2xl border border-dashed border-rule bg-white/50 p-8 text-center">
-            <p lang="hi" className="hi text-sm font-medium">इस प्रकार का कोई आगामी आयोजन नहीं</p>
+            <p className="text-sm font-medium">No upcoming events of this type</p>
             <button
               type="button"
               onClick={() => setTypeFilter(null)}

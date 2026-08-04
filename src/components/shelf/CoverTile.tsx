@@ -5,17 +5,17 @@ import type { BookSummary } from "@/lib/types";
  * A book's cover, at four densities (design 1A rail, 1B grid, 1C hero, plus
  * the small tile the resume cards use).
  *
- * Where a ग्रंथ has no cover image, the spec draws the fallback not as a grey
+ * Where a book has no cover image, the spec draws the fallback not as a grey
  * placeholder but as a *designed object*: a 150° gradient in the book's own
- * hue, the title's first अक्षर set large in the top-left, and a short white
+ * hue, the title's first letter set large in the top-left, and a short white
  * rule at the foot standing in for a spine band.
  *
  * Where it does have one, the cover is shown and the fallback gets out of the
- * way. The spec draws the अक्षर and a full-height scrim over image covers too,
+ * way. The spec draws the letter and a full-height scrim over image covers too,
  * and this used to follow it — but the spec's covers are abstract textures,
  * and A. Nagraj ji's are photographs of printed covers that already carry the
  * title, the author and the publisher in type. Over those, the scrim muted the
- * artwork and the अक्षर landed on the printed title, so a real cover came out
+ * artwork and the letter landed on the printed title, so a real cover came out
  * looking worse than the fallback invented to stand in for it. Nothing is
  * drawn on top of a cover now — which is also why no caption sits inside the
  * tile any more, and why the Home rail captions underneath as the shelf grid

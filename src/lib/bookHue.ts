@@ -3,14 +3,14 @@
  *
  * The designer draws every cover in a different hue — plum, pine, iris, olive —
  * and the book-detail hero is explicitly "colour derived from the cover" (spec
- * 1C, Layout). The BE carries no such colour, and most ग्रंथ carry no cover
+ * 1C, Layout). The BE carries no such colour, and most books carry no cover
  * image either, so there is nothing to sample. Deriving it from the book code
  * gives the shelf the designer's variety and, unlike a random pick, gives each
  * book the *same* colour on the rail, the shelf, the resume card and its own
  * hero — which is what makes a cover recognisable at all.
  *
  * The palette is the spec's own six, deepened where white needed the room:
- * the light end carries only the large अक्षर (≥3:1 — large-text AA), the dark
+ * the light end carries only the large initial (≥3:1 — large-text AA), the dark
  * end carries any small white label (≥4.5:1). Values measured, not guessed.
  */
 export interface BookHue {
@@ -32,7 +32,7 @@ const PALETTE: BookHue[] = [
 /**
  * Stable hue for a book code. FNV-1a rather than a sum of char codes: two
  * codes that are anagrams of each other ("MVD" / "VDM") must not collide onto
- * the same colour, and on a shelf of a dozen ग्रंथ that is a real risk.
+ * the same colour, and on a shelf of a dozen books that is a real risk.
  */
 export function bookHue(code: string | null | undefined): BookHue {
   let h = 0x811c9dc5;

@@ -10,7 +10,7 @@ import { DefinitionText, useDefinitionSegments } from "./DefinitionText";
 import { DefinitionCount, DefinitionList } from "./WordTrail";
 
 /**
- * The अ आ इ index. Written out rather than derived from the data: a letter
+ * The Devanagari letter index. Written out rather than derived from the data: a letter
  * with nothing behind it today gets a word tomorrow, and a row that changes
  * shape between visits is harder to use than one dead chip.
  */
@@ -110,24 +110,23 @@ export function GlossaryBrowser({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="शब्द खोजें… अनुभव, anubhav"
-          aria-label="शब्द खोजें"
-          className="hi w-full bg-transparent text-base outline-none"
+          placeholder="Search words… अनुभव, anubhav"
+          aria-label="Search words"
+          className="ui-hi w-full bg-transparent text-base outline-none"
         />
       </div>
       {/* Roman spelling is a first-class key on the BE, and it folds the
           spellings — anubhav, anubhaav and anubhava all arrive at अनुभव — so
           nobody has to switch keyboards to use this. Worth saying once. */}
       <p className="mt-2 text-xs text-ink-soft">
-        <span lang="hi" className="hi">हिंदी या रोमन, दोनों चलेंगे</span> · Type in Devanagari or
-        Roman spelling.
+        Type in Devanagari or Roman spelling — both work.
       </p>
 
       {/* The letter index is a browsing control, so it steps aside while a
           search is on screen — it filters nothing that is showing. */}
       {!searching && (
-        <div className="mt-4 flex flex-wrap gap-1.5" role="group" aria-label="अक्षर सूची">
-          <LetterChip href="/paribhasha" active={!letter} label="सभी" wide />
+        <div className="mt-4 flex flex-wrap gap-1.5" role="group" aria-label="Letter index">
+          <LetterChip href="/paribhasha" active={!letter} label="All" wide />
           {LETTERS.map((l) => (
             <LetterChip
               key={l}
@@ -141,20 +140,20 @@ export function GlossaryBrowser({
 
       <div className="mt-5">
         {busy && rows.length === 0 && (
-          <p className="text-center text-sm text-ink-soft">खोजा जा रहा है…</p>
+          <p className="text-center text-sm text-ink-soft">Searching…</p>
         )}
         {error && (
           <p className="text-center text-sm text-ink-soft">
-            शब्दकोश अभी उपलब्ध नहीं है।
+            The glossary isn&apos;t available right now.
           </p>
         )}
         {!busy && !error && rows.length === 0 && (
           <EmptyState
-            title={searching ? `“${query.trim()}” नहीं मिला` : "इस अक्षर से कोई शब्द नहीं"}
+            title={searching ? `No match for “${query.trim()}”` : "No words under this letter"}
             hint={
               searching
-                ? "वर्तनी बदलकर देखें, या अक्षर सूची से खोजें।"
-                : "कोई दूसरा अक्षर चुनें।"
+                ? "Try another spelling, or browse by letter."
+                : "Pick another letter."
             }
           />
         )}
@@ -175,7 +174,7 @@ export function GlossaryBrowser({
             className="mt-4 w-full rounded-2xl border border-rule bg-white px-4 py-3 text-sm font-medium disabled:opacity-50"
             style={{ color: "var(--ws-ink)" }}
           >
-            <span lang="hi" className="hi">{busy ? "आ रहा है…" : "और शब्द"}</span>
+            <span>{busy ? "Loading…" : "More words"}</span>
           </button>
         )}
       </div>

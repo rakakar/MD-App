@@ -18,9 +18,10 @@ export type Align = "left" | "center" | "right";
 /**
  * workspaces/ — code doubles as the FE workspace id (contract §10.1).
  *
- * `name` is English and stays English: the reader-facing Hindi (मूल / अनुवाद /
- * संसाधन …) lives in workspaceConfig.ts, which already held it. The BE's old
- * `name_hi` twin was a second place to fix a typo and it drifted.
+ * `name` is English and stays English, which is also what the app shows: the
+ * interface is English throughout, and only content is rendered in the language
+ * it was authored in. The BE's old `name_hi` twin was a second place to fix a
+ * typo and it drifted.
  */
 export interface ApiWorkspace {
   code: string;
@@ -86,7 +87,7 @@ export interface BookSummary {
   /** ready to display, e.g. "English", "मराठी (Marathi)" */
   language_label: string;
   /**
-   * Who translated *this* edition. `author` stays ए. नागराज on a translation,
+   * Who translated *this* edition. `author` stays A. Nagraj on a translation,
    * so a card showing only `author` misattributes a student's work to him.
    */
   translator: string;
@@ -222,7 +223,7 @@ export interface SutraOfTheDay extends ParaResolution {
 /**
  * Whose word is it (contract §13, D14). The badge this drives is an epistemic
  * requirement rather than decoration — the reader has to see at a glance
- * whether a page is प्रमाण or someone's understanding.
+ * whether a page is a source or someone's understanding.
  *
  * Already **resolved through inheritance** when it arrives: a folder without
  * one of its own reports its nearest ancestor's, so nothing here ever walks
@@ -267,7 +268,7 @@ export interface NodeCard {
    */
   external_url: string;
   provenance: Provenance;
-  /** विषय codes, matching topics/ */
+  /** topic codes, matching topics/ */
   topics: string[];
   /** free text, a search axis and never a chip (§13.4) */
   tags: string[];
@@ -293,7 +294,7 @@ export interface NodeCard {
  *
  * Three lists carry this rather than a bare card, and all three for the same
  * reason: they gather folders from elsewhere. `linked_children` borrows one
- * into another folder (§13.6), वाणी gathers by provenance across workspaces
+ * into another folder (§13.6), provenance gathers across workspaces
  * (§13.7), and search is by definition somewhere the reader was not (§13.8).
  * "दिन 1" is the same two words in every shivir the library holds, so a row
  * without its path is close to useless — and on a cross-post, showing the path
@@ -373,7 +374,7 @@ export interface LibraryNode extends NodeCard {
 }
 
 /**
- * A विषय chip (§13.4) — a **door onto the whole library**, not a sieve over
+ * A topic chip (§13.4) — a **door onto the whole library**, not a sieve over
  * one folder: tapping it leaves the folder you are in.
  *
  * `name` is the one taxonomy label that arrives in Hindi and is rendered as a
@@ -386,7 +387,7 @@ export interface Topic {
   name: string;
   description: string;
   ordering: number;
-  /** visible folders on this विषय, library-wide; hide a zero-count chip */
+  /** visible folders on this topic, library-wide; hide a zero-count chip */
   node_count: number;
 }
 
@@ -404,9 +405,10 @@ export type LibrarySearchRow =
  *
  * Always the same three keys, including when `label` equals `value` — one
  * shape to render beats a special case per axis. `label` is a courtesy rather
- * than an instruction: the FE holds its own Hindi for प्रमाण and प्रकार and
- * keeps using it (§13.8). विषय is the one label it cannot hold, because
- * managers add topics without a deploy.
+ * than an instruction: the FE holds its own English for Source and Type and
+ * keeps using it (§13.8), because the BE's are long admin strings and bare
+ * codes. Everything else — a place, a person, a year, a topic — is content and
+ * is rendered as it arrives.
  */
 export interface FacetValue {
   value: string;
@@ -424,7 +426,7 @@ export type LibraryFacets = Partial<Record<string, FacetValue[]>>;
  * The counterpart to `NodeCard`'s counts, which are **shallow** by contract
  * (§13.1) and therefore say almost nothing on a shelf root: a card holding
  * folders reports folders, so the collection worth twenty-seven hours and the
- * one holding two PDFs both read "N फ़ोल्डर". These are the same numbers a
+ * one holding two PDFs both read "N folders". These are the same numbers a
  * reader would arrive at by opening everything.
  */
 export interface NodeRollup {
@@ -446,7 +448,7 @@ export type LibraryRollup = Record<string, NodeRollup | undefined>;
  * An envelope rather than a list, and every part of it is load-bearing:
  * `facets` is what the sieve chips are drawn from and it describes the whole
  * scope rather than what is on screen, `count` is the total before paging so
- * "और दिखाएँ" knows whether there is more, and `searched_as` is the rewrite
+ * "Show more" knows whether there is more, and `searched_as` is the rewrite
  * the reader is owed an explanation for.
  *
  * **Facets arrive even when nothing was asked, and results do not.** A shelf a
@@ -501,7 +503,7 @@ export interface EventItem {
   [key: string]: unknown;
 }
 
-// ---- परिभाषा — the glossary (§14) ----
+// ---- Paribhasha — the glossary (§14) ----
 
 /**
  * One glossary entry. A **standalone dictionary row**, not book content: no
@@ -589,7 +591,7 @@ export interface SearchResponse {
   results: SearchResult[];
   total: number;
   /**
-   * The परिभाषा card, shown **above** the passage hits (§9.1). Kept out of
+   * The Paribhasha card, shown **above** the passage hits (§9.1). Kept out of
    * `results` on purpose: it is a different shape answering a different
    * question ("what does this word mean", not "where is it discussed"), and
    * flattening it in produced blank passage cards with no text and no ref.

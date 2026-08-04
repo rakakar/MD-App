@@ -30,7 +30,7 @@ export function FindResults({
   find: LibraryFindResponse;
   state: FindState;
   basePath: string;
-  /** what was searched — passed on so "और दिखाएँ" asks the same question */
+  /** what was searched — passed on so "Show more" asks the same question */
   scope: { workspace?: string; under?: number };
   shelves: ShelfMap;
 }) {
@@ -39,8 +39,8 @@ export function FindResults({
   return (
     <div className="mt-5">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
-        <span lang="hi" className="hi">
-          {count > 0 ? `${count} परिणाम` : "कुछ नहीं मिला"}
+        <span>
+          {count > 0 ? `${count} ${count === 1 ? "result" : "results"}` : "No results"}
         </span>
         <ClearFind basePath={basePath} state={state} />
       </div>
@@ -97,15 +97,13 @@ export function FindResults({
  * A reader who asked the wrong search the wrong question should be moved to
  * the right one in a tap rather than handed a sentence explaining why they got
  * nothing. Two ways out: widen this shelf's box to the whole library, and — for
- * the reader who wanted "अनुभव पर उन्होंने क्या कहा?" and typed it into a
+ * the reader who wanted "what did he say about अनुभव?" and typed it into a
  * catalogue box — the citation search that reads inside the books.
  */
 function NothingHere({ state, basePath }: { state: FindState; basePath: string }) {
   return (
     <div className="mt-4 rounded-2xl border border-dashed border-rule px-4 py-8 text-center">
-      <p lang="hi" className="hi text-sm font-medium">
-        इस खोज पर कुछ नहीं मिला
-      </p>
+      <p className="text-sm font-medium">Nothing matched this search</p>
       {state.q ? (
         <p className="mt-2 text-xs text-ink-soft">
           <Link
@@ -113,12 +111,9 @@ function NothingHere({ state, basePath }: { state: FindState; basePath: string }
             className="font-semibold underline underline-offset-2"
             style={{ color: "var(--ws-ink)" }}
           >
-            <span lang="hi" className="hi">पूरी library में खोजें</span>
+            Search the whole library
           </Link>
-          {" — "}
-          <span lang="hi" className="hi">
-            ग्रंथों के भीतर भी
-          </span>
+          {" — including inside the books"}
         </p>
       ) : (
         <p className="mt-2 text-xs text-ink-soft">
@@ -127,7 +122,7 @@ function NothingHere({ state, basePath }: { state: FindState; basePath: string }
             className="font-semibold underline underline-offset-2"
             style={{ color: "var(--ws-ink)" }}
           >
-            <span lang="hi" className="hi">कोई चिप हटाकर देखें</span>
+            Try removing a filter
           </Link>
         </p>
       )}

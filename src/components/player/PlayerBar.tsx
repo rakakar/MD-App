@@ -69,7 +69,7 @@ function PlayerBarInner() {
     source.kind === "tts"
       ? `${source.bookTitle}${rendition ? ` · ${rendition.voice_label}` : ""}`
       : source.kind === "device"
-        ? `${source.bookTitle} · डिवाइस की आवाज़`
+        ? `${source.bookTitle} · Device voice`
         : (source.subtitle ?? "");
   const paraProgress = device
     ? `${Math.min(player.deviceParaIndex + 1, source.paras.length)} / ${source.paras.length}`
@@ -151,7 +151,7 @@ function PlayerBarInner() {
         <button
           type="button"
           onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-          aria-label={device ? "पिछला पैरा" : `${SKIP_SECONDS} सेकंड पीछे`}
+          aria-label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-black/5"
         >
           <SkipBackIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
@@ -170,7 +170,7 @@ function PlayerBarInner() {
         <button
           type="button"
           onClick={() => player.skipSeconds(SKIP_SECONDS)}
-          aria-label={device ? "अगला पैरा" : `${SKIP_SECONDS} सेकंड आगे`}
+          aria-label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-black/5"
         >
           <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
@@ -190,7 +190,7 @@ function PlayerBarInner() {
               {subtitle}
               {rendition?.is_stale && (
                 <span className="ml-1 text-[10px] text-ink-soft/80" title="Text was edited after this audio was generated">
-                  · पुराना audio
+                  · Older audio
                 </span>
               )}
             </span>
@@ -199,7 +199,7 @@ function PlayerBarInner() {
         </button>
 
         <span className="hidden text-xs tabular-nums text-ink-soft sm:block">
-          {device ? `पैरा ${paraProgress}` : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
+          {device ? `Para ${paraProgress}` : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
         </span>
 
         {/* voice picker (TTS only, multiple renditions) */}

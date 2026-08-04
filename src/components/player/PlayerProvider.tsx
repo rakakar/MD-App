@@ -59,7 +59,7 @@ export interface TrackSource {
   coverImage?: string | null;
   /**
    * Where to remember this playhead, if it is worth remembering — set by the
-   * surface that knows the track has an identity to return to (a संसाधन
+   * surface that knows the track has an identity to return to (a Resources
    * collection's items do; an ad-hoc URL does not). Absent means "play it, but
    * do not keep a place for it", which is the old behaviour of every track.
    */
@@ -121,7 +121,7 @@ interface PlayerState {
 
 /**
  * The skip step, in seconds. Ten is the podcast convention, and it is the
- * right size for these texts too: a सूत्र runs 15–40 seconds spoken, so ten
+ * right size for these texts too: a sutra runs 15–40 seconds spoken, so ten
  * seconds re-hears a clause without losing the sentence.
  */
 export const SKIP_SECONDS = 10;
@@ -440,7 +440,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const src = source;
     if (!src) return;
     // A track keeps its place only when the surface that started it gave it a
-    // key to keep it under — a संसाधन collection's items do, so a 90-minute
+    // key to keep it under — a Resources collection's items do, so a 90-minute
     // shivir recording resumes instead of restarting.
     if (src.kind === "track") {
       if (!src.resumeKey) return;
@@ -554,7 +554,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     ms.metadata = new MediaMetadata({
       title: msTitle,
       artist: msArtist ?? "",
-      album: "मध्यस्थ दर्शन",
+      album: "Madhyasth Darshan",
       artwork,
     });
   }, [msSilent, msTitle, msArtist, msCover]);

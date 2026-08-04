@@ -240,7 +240,7 @@ export function FilterIcon({ className }: { className?: string }) {
   );
 }
 
-/** विषय — the tag the topic panel is headed with (designer, "ui 1"). */
+/** The tag the topic panel is headed with (designer, "ui 1"). */
 export function TagIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-4 w-4"}>

@@ -57,7 +57,7 @@ export default async function CentersPage() {
                   )}
                   {c.contact_name && (
                     <p className="mt-2 text-sm text-ink-soft">
-                      <span lang="hi" className="hi">संपर्क:</span> {c.contact_name}
+                      Contact: {c.contact_name}
                     </p>
                   )}
                   {/* Call / Email / Directions action chips (design 9A):

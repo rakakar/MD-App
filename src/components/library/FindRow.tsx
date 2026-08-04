@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
-import { KIND_HI, cardSummary, fileFacts } from "@/components/library/format";
+import { KIND_LABEL, cardSummary, fileFacts } from "@/components/library/format";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
 import type { LibrarySearchRow } from "@/lib/types";
@@ -18,7 +18,7 @@ import type { LibrarySearchRow } from "@/lib/types";
  *
  * Folders and files share one row because the response mixes them, and `type`
  * exists only there for that reason. What tells them apart to a reader is the
- * little kind badge — फ़ोल्डर, or ऑडियो / PDF / चित्र — rather than the shape
+ * little kind badge — Folder, or Audio / PDF / Image — rather than the shape
  * of the row, because both answer the same question: where is this thing?
  */
 export function FindRow({
@@ -49,16 +49,13 @@ export function FindRow({
         {title}
       </span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
-        <span
-          lang="hi"
-          className="hi rounded-full bg-canvas px-2 py-0.5 text-[11px] font-semibold"
-        >
-          {row.type === "folder" ? "फ़ोल्डर" : KIND_HI[row.kind]}
+        <span className="rounded-full bg-canvas px-2 py-0.5 text-[11px] font-semibold">
+          {row.type === "folder" ? "Folder" : KIND_LABEL[row.kind]}
         </span>
         <ProvenanceBadge provenance={row.provenance} />
-        <span lang="hi" className="hi">
-          {facts}
-        </span>
+        {/* year · place · people · language — the manager's words, so the
+            script decides the face rather than this row assuming Hindi */}
+        <span {...contentLang(facts)}>{facts}</span>
       </span>
     </Link>
   );

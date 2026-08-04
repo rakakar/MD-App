@@ -50,7 +50,7 @@ export function useResume(bookCode: string, pageCount?: number | null): Resume |
 }
 
 /**
- * The book hero's primary action (design 1C): "Resume · पृष्ठ N" once there is
+ * The book hero's primary action (design 1C): "Resume · page N" once there is
  * a saved position, "Start reading" before that.
  *
  * White on the tinted hero rather than the workspace fill — on a hero already
@@ -81,7 +81,7 @@ export function ResumeButton({
       <PlayIcon className="h-4 w-4" />
       {r ? (
         <>
-          Resume{r.page && <> · <span lang="hi" className="hi">पृष्ठ {r.page}</span></>}
+          Resume{r.page && <> · page {r.page}</>}
         </>
       ) : (
         "Start reading"

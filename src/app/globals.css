@@ -140,7 +140,7 @@ body {
   font-family: var(--font-devanagari-sans);
 }
 
-/* A UI line that interleaves both scripts ("ग्रंथ · daily सूत्र · प्रवचन").
+/* A UI line that interleaves both scripts (English chrome around a Hindi name).
    Elsewhere each script gets its own span, but these strings alternate too
    often for that, so the stack switches per glyph instead: Latin from the UI
    sans, Devanagari from Mukta — which is the 6A face for Devanagari UI labels,
@@ -223,7 +223,7 @@ html[data-reading="1"] body {
   transition: background 0.3s ease;
 }
 
-/* परिभाषा — a word the glossary can define (contract §14).
+/* Paribhasha — a word the glossary can define (contract §14).
 
    Dotted rather than solid, and pushed well clear of the baseline: Devanagari
    matras hang below the line, and a tight underline cuts straight through

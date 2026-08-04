@@ -24,9 +24,9 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const word = await load(params);
-  if (!word) return { title: "परिभाषा" };
+  if (!word) return { title: "Paribhasha" };
   return {
-    title: `${word.hindi} · परिभाषा`,
+    title: `${word.hindi} · Paribhasha`,
     // The definition itself is the description — it is what someone searching
     // this word wants to see in a result, and it is already plain text.
     description: word.definitions[0]?.slice(0, 300),
@@ -48,7 +48,7 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
   return (
     <PageContainer>
       <Link href="/paribhasha" className="text-xs text-ink-soft underline underline-offset-2">
-        <span lang="hi" className="hi">← परिभाषा</span>
+        ← Paribhasha
       </Link>
 
       <h1 lang="hi" className="hi mt-3 text-2xl font-bold leading-snug">
@@ -68,7 +68,7 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
         className="mt-4 block rounded-xl px-4 py-2.5 text-center text-sm font-medium text-white"
         style={{ background: "var(--ws-color)" }}
       >
-        <span lang="hi" className="hi">ग्रंथों में यह शब्द खोजें</span>
+        Find this word in the books
       </Link>
     </PageContainer>
   );

@@ -590,7 +590,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
     setDefineWord(word);
   }, []);
 
-  /** the selection bar's परिभाषा action — shown only for an exact headword */
+  /** the selection bar's Paribhasha action — shown only for an exact headword */
   const selectedHeadword = useMemo(() => {
     const text = selection?.text.trim();
     if (!text || !matcher) return null;
@@ -999,7 +999,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
   const positionLabel =
     mode === "page" && page
       ? book.book_type === "print" && page.label === String(Number(page.label))
-        ? `पृष्ठ ${page.label} · ${pageIndex + 1}/${pages.length}`
+        ? `Page ${page.label} · ${pageIndex + 1}/${pages.length}`
         : `${pageIndex + 1} / ${pages.length}`
       : `${Math.round(progress * 100)}%`;
 
@@ -1007,7 +1007,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
     isFrontMatter || p.label !== String(Number(p.label)) ? (
       <span className="text-xs tracking-widest text-(--reader-ink-soft)">{p.label}</span>
     ) : book.book_type === "print" ? (
-      <span className="text-sm font-semibold tracking-wide">पृष्ठ {p.label}</span>
+      <span className="text-sm font-semibold tracking-wide">Page {p.label}</span>
     ) : (
       <span className="text-xs text-(--reader-ink-soft) opacity-70">{p.label}</span>
     );
@@ -1253,7 +1253,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
                 clearSelection();
               }}
             >
-              <span lang="hi" className="hi">परिभाषा</span>
+              <span>Paribhasha</span>
             </ActionBtn>
           )}
           <ActionBtn onClick={() => doBookmark(selection.para.canonical_ref)}>Bookmark</ActionBtn>
@@ -1290,7 +1290,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
       )}
 
       {/* ---- sheets ---- */}
-      {/* The same परिभाषा card the शब्दकोश uses — recursive underlines and
+      {/* The same Paribhasha card the glossary uses — recursive underlines and
           the trail included, so a word means the same thing wherever it is
           tapped. */}
       <ParibhashaTrailSheet word={defineWord} onClose={() => setDefineWord(null)} />
@@ -1491,7 +1491,7 @@ function ActionBtn({
 }
 
 /**
- * Block types that are never marked for परिभाषा: headings and subheadings are
+ * Block types that are never marked for Paribhasha: headings and subheadings are
  * titles rather than reading, and a figure caption or table cell is too tight
  * to carry underlines.
  */

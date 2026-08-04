@@ -8,20 +8,20 @@ import { getParibhasha } from "@/lib/api";
 export const revalidate = 900;
 
 export const metadata: Metadata = {
-  title: "परिभाषा · Glossary",
+  title: "Paribhasha · Glossary",
   description:
-    "मध्यस्थ दर्शन की शब्दावली — परिभाषा संहिता के आधार पर संकलित शब्द और उनकी परिभाषाएँ।",
+    "The vocabulary of Madhyasth Darshan — words and their definitions, compiled from the Paribhasha Samhita.",
 };
 
 interface Search {
   /** ranked search: headword, Roman spelling, then definition text */
   q?: string;
-  /** Devanagari initial for the अ आ इ index */
+  /** Devanagari initial for the letter index */
   letter?: string;
 }
 
 /**
- * परिभाषा — the glossary page (contract §14.1).
+ * Paribhasha — the glossary page (contract §14.1).
  *
  * **Not a fourth section.** Like search and Sutra of the day this is a
  * cross-cutting utility, so it neither claims a workspace nor switches the
@@ -46,13 +46,9 @@ export default async function ParibhashaPage({
 
   return (
     <PageContainer>
-      <h1 lang="hi" className="hi text-xl font-bold">
-        परिभाषा
-      </h1>
+      <h1 className="text-xl font-bold">Paribhasha</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        <span lang="hi" className="hi">
-          मध्यस्थ दर्शन की शब्दावली, परिभाषा संहिता के आधार पर।
-        </span>
+        The vocabulary of Madhyasth Darshan, based on the Paribhasha Samhita.
       </p>
 
       {/* The same headword index the reader uses, so the words *inside* these

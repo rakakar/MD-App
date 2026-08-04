@@ -4,7 +4,7 @@ import { ImageGallery } from "@/components/library/ImageGallery";
 import { PdfView } from "@/components/library/PdfView";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { VideoView } from "@/components/library/VideoView";
-import { KIND_HI, KIND_ORDER, fileFacts } from "@/components/library/format";
+import { KIND_LABEL, KIND_ORDER, fileFacts } from "@/components/library/format";
 import { DownloadIcon, ExternalLinkIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import type { FileKind, LibraryFile, LocatedFile } from "@/lib/types";
@@ -51,7 +51,7 @@ export function FileList({
               lang="hi"
               className="hi mb-3 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft"
             >
-              {KIND_HI[kind]} · {kindFiles.length}
+              {KIND_LABEL[kind]} · {kindFiles.length}
             </h2>
           )}
           <KindGroup

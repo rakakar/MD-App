@@ -3,11 +3,12 @@ import type { Provenance } from "@/lib/types";
 /**
  * Whose word is this (contract §13, PRD v2 §5.6.3).
  *
- * 🔵 मूल — his own words, voice or hand · 🟡 संकलन — verbatim compilation ·
- * ⚪ अध्ययन — a student's own writing. The badge is an epistemic requirement
- * rather than decoration: the same rule that keeps resources out of citation
- * search requires the reader to see at a glance whether this is प्रमाण or
- * someone's understanding, and hidden in metadata it would be useless.
+ * 🔵 Original — his own words, voice or hand · 🟡 Compilation — verbatim
+ * compilation · ⚪ Students — a student's own writing. The badge is an
+ * epistemic requirement rather than decoration: the same rule that keeps
+ * resources out of citation search requires the reader to see at a glance
+ * whether this is source or someone's understanding, and hidden in metadata it
+ * would be useless.
  *
  * The spec writes the three as emoji. They are drawn here as a CSS dot in the
  * same three colours instead: the emoji circles land at wildly different sizes
@@ -18,12 +19,13 @@ import type { Provenance } from "@/lib/types";
  *
  * These three words are now the *only* copy of them: the BE's `provenance_hi`
  * twin drifted from the FE's and was removed with Content Model v3 (§10.1),
- * so there is no override to prefer any more.
+ * and the BE's English labels are long admin strings, so there is no override
+ * to prefer any more.
  */
 const DOT: Record<Exclude<Provenance, "">, { color: string; label: string }> = {
-  moola: { color: "#2F6E86", label: "मूल" },
-  sankalan: { color: "#C8901A", label: "संकलन" },
-  adhyayan: { color: "#8A8378", label: "अध्ययन" },
+  moola: { color: "#2F6E86", label: "Original" },
+  sankalan: { color: "#C8901A", label: "Compilation" },
+  adhyayan: { color: "#8A8378", label: "Students" },
 };
 
 /** what the badge says, or null for a row nobody has judged yet */

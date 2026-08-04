@@ -42,7 +42,7 @@ export async function LibraryBand() {
           doors.length > SHOWN ? <SeeAll href="/originals">All {doors.length}</SeeAll> : undefined
         }
       >
-        <span lang="hi" className="hi">सामग्री</span>
+        Library
       </SectionHeading>
       <ul className="flex flex-col gap-2">
         {doors.slice(0, SHOWN).map((door) => (

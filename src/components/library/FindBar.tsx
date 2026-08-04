@@ -11,7 +11,7 @@ import { findHref, MIN_QUERY_CHARS, type FindState } from "@/lib/find";
  *
  * **The box states its scope, never its category.** A reader should never have
  * to work out which of this app's three searches they want — catalogue,
- * citation, परिभाषा — so no new noun appears here. The placeholder names the
+ * citation, Paribhasha — so no new noun appears here. The placeholder names the
  * shelf or folder being searched, and the one line beneath it carries the only
  * boundary that matters: this reads what the library *records* about a thing,
  * not what is inside the file. Someone who does not know that reads an empty
@@ -71,7 +71,7 @@ export function FindBar({
   const inputRef = useRef<HTMLInputElement>(null);
 
   /**
-   * The URL can change without the box: the back button, "साफ़ करें", a chip
+   * The URL can change without the box: the back button, "Clear", a chip
    * that cleared the query. The box has to follow those or the two disagree
    * about what was searched.
    *
@@ -115,16 +115,13 @@ export function FindBar({
           commit("");
           inputRef.current?.focus();
         }}
-        placeholder={`${scope} में खोजें…`}
-        label={`${scope} में खोजें`}
+        placeholder={`Search ${scope}…`}
+        label={`Search ${scope}`}
         unasked={q.trim() !== state.q}
         pending={pending}
       />
-      <p
-        lang="hi"
-        className={`hi mt-1.5 px-1 text-[11.5px] text-ink-soft ${dense ? "lg:hidden" : ""}`}
-      >
-        नाम, विषय, वर्ष, स्थान से — फ़ाइल के अंदर से नहीं।
+      <p className={`mt-1.5 px-1 text-[11.5px] text-ink-soft ${dense ? "lg:hidden" : ""}`}>
+        By name, topic, year or place — not inside the files.
       </p>
     </div>
   );

@@ -19,7 +19,7 @@ export interface QueueEntry {
  * Album behaviour for any ordered list of audio.
  *
  * A list of tracks becomes an album when it gains three things, and a
- * fourteen-part शिविर recording needs all three where a one-off file needs
+ * fourteen-part shivir recording needs all three where a one-off file needs
  * none:
  *
  * - **the queue** — finishing part 3 rolls into part 4 by itself, and the lock
@@ -41,7 +41,7 @@ export function useAudioQueue(entries: QueueEntry[]) {
   const activeIndex = entries.findIndex((e) => e.id === activeId);
 
   // Saved playheads, read after mount: localStorage does not exist on the
-  // server, and rendering "जारी रखें" from a guess would flash it away again.
+  // server, and rendering "Resume" from a guess would flash it away again.
   const [resumes, setResumes] = useState<Record<string, number>>({});
   useEffect(() => {
     const found: Record<string, number> = {};

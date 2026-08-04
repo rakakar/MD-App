@@ -11,7 +11,7 @@ const SHOWN = 4;
  * A shelf's photographs, as photographs (designer, "Desktop UI").
  *
  * The one place on this shelf where the grid above it cannot do the job. A tile
- * reading "चित्र · 320 photos" is an accurate sentence about a folder and tells
+ * reading "Images · 320 photos" is an accurate sentence about a folder and tells
  * a reader nothing about whether it holds shivir snapshots, charts or scanned
  * letters — and photographs are the one kind of material where a thumbnail is
  * cheaper to understand than any label written about it.
@@ -39,7 +39,7 @@ export async function PhotoStrip({
   state: FindState;
 }) {
   const total = (facets?.kind ?? []).find((f) => f.value === "image")?.count ?? 0;
-  // Under a handful, the चित्र tile in the grid above has already said
+  // Under a handful, the images tile in the grid above has already said
   // everything a strip could — and four pictures laid out as a feature is a
   // promise of a gallery that is not there.
   if (total < SHOWN * 2) return null;
@@ -61,8 +61,8 @@ export async function PhotoStrip({
       <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-[15px] font-semibold tracking-[-0.01em]">
           Photos
-          <span lang="hi" className="hi ms-1.5 text-[12.5px] font-medium text-ink-soft">
-            · नागराज जी चित्र · <span className="tabular-nums">{total}</span>
+          <span className="ms-1.5 text-[12.5px] font-medium text-ink-soft">
+            · <span className="tabular-nums">{total}</span>
           </span>
         </h2>
         <Link

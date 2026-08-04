@@ -67,7 +67,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const events = await getEvents().catch(() => []);
   // Every glossary word gets a URL. It costs one request — the underlining
   // index already carries all ~2,800 ids — and these are the pages someone
-  // searching a मध्यस्थ दर्शन term in Hindi is actually looking for.
+  // searching a Madhyasth Darshan term in Hindi is actually looking for.
   const glossary = await getParibhashaIndex().catch(() => null);
   for (const w of glossary?.words ?? []) {
     urls.push({ url: `${SITE_URL}/paribhasha/${w.id}`, changeFrequency: "monthly" });

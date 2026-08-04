@@ -116,11 +116,8 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           </span>
 
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold leading-tight">
-              {ws.name}
-              <span className="hi font-medium text-ink-soft"> — {ws.nameHi}</span>
-            </span>
-            <span className="ui-hi mt-0.5 block text-[12.5px] leading-snug text-ink-soft">
+            <span className="block text-[15px] font-semibold leading-tight">{ws.name}</span>
+            <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-soft">
               {ws.tagline}
             </span>
           </span>

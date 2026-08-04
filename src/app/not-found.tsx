@@ -10,7 +10,7 @@ import { MovedNote } from "./not-found-note";
  * rows on the way, so `/resources/collections/88` and
  * `/resources/doors/shivir` do not map onto anything — the new folders have
  * their own ids. Sending those links to a folder picked by arithmetic would be
- * worse than saying so: the reader would be looking at the wrong शिविर without
+ * worse than saying so: the reader would be looking at the wrong shivir without
  * being told. So they land here and are pointed at the library.
  *
  * A folder that has been un-published reaches this page too, which is correct
@@ -21,9 +21,7 @@ export default function NotFound() {
   return (
     <PageContainer size="shelf">
       <div className="mx-auto max-w-md py-16 text-center">
-        <h1 lang="hi" className="hi text-[22px] font-semibold">
-          यह पृष्ठ नहीं मिला
-        </h1>
+        <h1 className="text-[22px] font-semibold">This page was not found</h1>
         <p className="mt-2 text-sm text-ink-soft">
           The page you followed is not here.
         </p>
@@ -36,7 +34,7 @@ export default function NotFound() {
             className="rounded-full px-4 py-2 text-sm font-semibold text-white"
             style={{ background: "var(--ws-color)" }}
           >
-            <span lang="hi" className="hi">संसाधन</span>
+            Resources
           </Link>
           <Link
             href="/search"

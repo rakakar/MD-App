@@ -91,8 +91,8 @@ export function AlbumAudio({
                     </span>
                   )}
                   {resume && (
-                    <span lang="hi" className="hi font-medium" style={{ color: "var(--ws-ink)" }}>
-                      जारी रखें · {formatDuration(Math.round(resume / 1000))}
+                    <span className="font-medium" style={{ color: "var(--ws-ink)" }}>
+                      Resume · {formatDuration(Math.round(resume / 1000))}
                     </span>
                   )}
                   <ProvenanceBadge provenance={item.provenance} />

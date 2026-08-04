@@ -22,7 +22,7 @@ interface Overview {
 function SyncCta() {
   return (
     <div className="rounded-2xl border border-rule bg-white p-4">
-      <p className="text-sm font-medium">इसी device पर saved</p>
+      <p className="text-sm font-medium">Saved on this device</p>
       <p className="mt-1 text-xs text-ink-soft">
         Your progress, bookmarks and notes live only on this device right now.
       </p>
@@ -72,7 +72,7 @@ export default function MyJourneyPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-medium">My Journey · <span lang="hi" className="hi">मेरी यात्रा</span></h1>
+      <h1 className="font-display text-2xl font-medium">My Journey</h1>
       {!loading && !user && (
         <div className="mt-4">
           <SyncCta />

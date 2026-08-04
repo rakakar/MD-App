@@ -50,7 +50,7 @@ export function NotificationBanner() {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">Get notified about new chapters</p>
         <p className="mt-0.5 text-xs text-ink-soft">
-          New books and chapters, upcoming <span lang="hi" className="hi">शिविर</span>, and
+          New books and chapters, upcoming shivirs, and
           announcements. Nothing else.
         </p>
         <div className="mt-3 flex gap-2">

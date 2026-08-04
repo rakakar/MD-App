@@ -3,7 +3,7 @@ import { CoverTile } from "@/components/shelf/CoverTile";
 import type { BookSummary } from "@/lib/types";
 
 /**
- * The horizontal ग्रंथ rail on Home (design 1A) — covers that snap one per
+ * The horizontal book rail on Home (design 1A) — covers that snap one per
  * swipe. A rail rather than the grid used on the shelf: Home is a place to
  * re-enter the practice, so the books are a glance across what exists, and
  * the full shelf is one tap away at "All N →".

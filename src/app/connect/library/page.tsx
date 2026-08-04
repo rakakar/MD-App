@@ -11,12 +11,12 @@ import { shelfMap } from "@/lib/library";
 export const revalidate = 900;
 
 export const metadata: Metadata = {
-  title: "Connect · सामग्री",
-  description: "केंद्र, कार्यक्रम, संपर्क सूत्र और सहभागिता — Connect's own material.",
+  title: "Connect · Library",
+  description: "Centres, programmes, contacts and participation — Connect's own material.",
 };
 
 /**
- * The संपर्क shelf — the Connect workspace root, rendered as its contents.
+ * The Connect shelf — the workspace root, rendered as its contents.
  *
  * Same shape as `/resources`, on purpose: one library renderer, one card, one
  * `/library/[id]` behind every door (Content Model v3 D8). Connect got no
@@ -47,7 +47,7 @@ export default async function ConnectLibraryPage() {
   return (
     <PageContainer size="shelf">
       <h1 className="font-display text-2xl font-medium">
-        Connect · <span lang="hi" className="hi">सामग्री</span>
+        Connect · Library
       </h1>
       <p className="mt-1 text-sm text-ink-soft">
         Material that belongs to the centres and the work around them.
@@ -62,7 +62,7 @@ export default async function ConnectLibraryPage() {
             <li key={door.id}>
               {/* Empty doors are shown, not hidden — the four ship published
                   and empty so that content published inside them is visible
-                  (§13.3), and the card says "अभी कुछ नहीं" rather than a bare
+                  (§13.3), and the card says "Nothing yet" rather than a bare
                   0. Hiding them would make the shelf appear and disappear
                   under readers as managers file the first folder. */}
               <NodeCardView card={door} variant="door" shelves={shelves} />
@@ -72,7 +72,7 @@ export default async function ConnectLibraryPage() {
       ) : (
         <div className="mt-5">
           <EmptyState
-            title="सामग्री अभी आ रही है"
+            title="The library is on its way"
             hint="Centre material appears here as it is published."
           />
         </div>
@@ -83,7 +83,7 @@ export default async function ConnectLibraryPage() {
         <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
       )}
 
-      {/* केंद्र the folder and the centres directory are two different things:
+      {/* The centres folder and the centres directory are two different things:
           the directory carries an address and a map pin, this folder carries a
           centre's material. The line below points at the other one by name so
           neither page has to imply it is both. */}

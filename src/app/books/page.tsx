@@ -5,12 +5,13 @@ import { BookShelf } from "@/components/shelf/BookShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { getBooks } from "@/lib/api";
+import { contentLang } from "@/lib/script";
 import type { BookSummary } from "@/lib/types";
 
 export const revalidate = 900;
 
 export const metadata: Metadata = {
-  title: "Books · ग्रंथ",
+  title: "Books",
   description: "Browse published books.",
 };
 
@@ -41,7 +42,7 @@ export default async function BooksPage({
 
   const isTranslations = ws === "translations";
 
-  // The shelf's own summary line (design 1B: "6 ग्रंथ · 760 pages · ए. नागराज").
+  // The shelf's own summary line (design 1B: "6 books · 760 pages · A. Nagraj").
   // Unfiltered, so it describes the library rather than the current chips.
   const all = await getBooks({
     workspace: isTranslations ? "translations" : "originals",
@@ -59,10 +60,12 @@ export default async function BooksPage({
       </h1>
       {all.length > 0 && (
         <p className="mt-1 text-sm text-ink-soft">
-          <span lang="hi" className="hi">{all.length} ग्रंथ</span>
+          <span>
+            {all.length} {all.length === 1 ? "book" : "books"}
+          </span>
           {pages > 0 && ` · ${pages} pages`}
           {" · "}
-          <span lang="hi" className="hi">{all[0].author}</span>
+          <span {...contentLang(all[0].author)}>{all[0].author}</span>
         </p>
       )}
 

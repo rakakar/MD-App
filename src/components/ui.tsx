@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { contentLang } from "@/lib/script";
 
 /**
  * Page gutters and measure.
@@ -34,7 +35,7 @@ export function PageContainer({
  * which carry different meaning:
  *
  * - `eyebrow` (11px / 700 / uppercase) labels a shelf of things that belong to
- *   the page — CONTINUE READING, BOOKS · ग्रंथ, EXPLORE WORKSPACES. It is a
+ *   the page — CONTINUE READING, BOOKS, EXPLORE WORKSPACES. It is a
  *   caption; the covers under it are the content.
  * - `title` (17px, sentence case, full ink) heads a section that is its own
  *   subject — News & updates, Upcoming shivirs.
@@ -95,10 +96,10 @@ export function FilterChips({
   active,
 }: {
   label: string;
-  /** where the "सभी" chip goes — clearing the filter */
+  /** where the "All" chip goes — clearing the filter */
   allHref: string;
   options: { value: string; label: string; href: string }[];
-  /** the selected value; undefined means "सभी" */
+  /** the selected value; undefined means "All" */
   active?: string;
 }) {
   if (options.length === 0) return null;
@@ -114,7 +115,7 @@ export function FilterChips({
         className={chip(!active)}
         style={!active ? { background: "var(--ws-color)" } : undefined}
       >
-        <span lang="hi" className="hi">सभी</span>
+        All
       </Link>
       {options.map((o) => (
         <Link
@@ -124,7 +125,7 @@ export function FilterChips({
           className={chip(active === o.value)}
           style={active === o.value ? { background: "var(--ws-color)" } : undefined}
         >
-          <span lang="hi" className="hi">{o.label}</span>
+          <span {...contentLang(o.label)}>{o.label}</span>
         </Link>
       ))}
     </div>
@@ -133,7 +134,7 @@ export function FilterChips({
 
 /**
  * A link-based segmented control for sibling destinations (design 5A, 9A):
- * Events | Centres on Connect, प्रवचन | Videos on Listen. Links, not state —
+ * Events | Centres on Connect, Audio | Videos on Listen. Links, not state —
  * each segment is its own URL, so the segments survive reload and sharing.
  */
 export function SegmentedNav({

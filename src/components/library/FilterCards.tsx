@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { KIND_HI, KIND_ORDER } from "./format";
-import { chipLabel, AXIS_HI } from "./Sieve";
+import { KIND_LABEL, KIND_ORDER } from "./format";
+import { chipLabel, AXIS_LABEL } from "./Sieve";
 import { yearBands, yearSpan } from "./years";
 import {
   ChevronDown,
@@ -22,13 +22,14 @@ import {
   type FindAxis,
   type FindState,
 } from "@/lib/find";
+import { contentLang } from "@/lib/script";
 import type { FacetValue, FileKind, LibraryFacets, Topic } from "@/lib/types";
 
 /**
  * The shelf's filters on a phone — **two closed cards, above the collections**
  * (designer, "ui 1", both states).
  *
- * This replaces a single `छाँटें` fold holding six chip rows, and the change is
+ * This replaces a single `Filter` fold holding six chip rows, and the change is
  * as much about where the controls are as what they look like. They used to sit
  * *below* the grid: counted over a whole shelf the chips ran to some five
  * hundred pixels, and above the tiles that pushed the second collection off a
@@ -86,10 +87,10 @@ export function FilterCards({
 }
 
 /**
- * विषय — **and it narrows in place now.**
+ * Topic — **and it narrows in place now.**
  *
- * The chips used to be links onto `/library?topic=`: a reader tapping अस्तित्व
- * दर्शन on this shelf lost the shelf and landed on a flat list from every depth
+ * The chips used to be links onto `/library?topic=`: a reader tapping a topic
+ * on this shelf lost the shelf and landed on a flat list from every depth
  * of every workspace. The designer draws the opposite, and says why in the
  * mockup: selecting a topic filters every collection at once, the tile counts
  * below update in place, and the chip persists as you move into a collection.
@@ -97,7 +98,7 @@ export function FilterCards({
  * like any other, and the counts here are its facet.
  *
  * **The door survives at the foot of the panel**, as a link rather than as the
- * only behaviour. "Everything filed under व्यवस्था wherever it lives" is a real
+ * only behaviour. "Everything filed under this topic wherever it lives" is a real
  * question; it just is not the one being asked by someone looking at this
  * shelf's collections, and it cost them the shelf to ask it by accident.
  */
@@ -135,7 +136,6 @@ function TopicCard({
     <Panel
       icon={<TagIcon className="h-4.5 w-4.5" />}
       title="Browse by topic"
-      titleHi="विषय"
       summary={
         on.length > 0
           ? `${on.length} selected · ${itemCount} items`
@@ -151,7 +151,7 @@ function TopicCard({
         />
       }
     >
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="विषय">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Topic">
         {live.map(({ topic, count }) => (
           <Chip
             key={topic.code}
@@ -172,10 +172,8 @@ function TopicCard({
             className="text-[11.5px] font-semibold"
             style={{ color: "var(--ws-ink)" }}
           >
-            <span lang="hi" className="hi">
-              {single.topic.name} — पूरी लाइब्रेरी में देखें
-            </span>{" "}
-            →
+            <span {...contentLang(single.topic.name)}>{single.topic.name}</span>
+            {" — see across the whole library →"}
           </Link>
         </p>
       )}
@@ -184,18 +182,19 @@ function TopicCard({
 }
 
 /**
- * वर्ष व प्रकार, in one panel — because they answer the same question.
+ * Year and category, in one panel — because they answer the same question.
  *
  * *Which slice of the archive?* Topic is about subject matter and users combine
  * it with any category; these two are the cut a reader makes inside whatever
  * they have already chosen, so the designer stacks them in one sheet and that
  * is right.
  *
- * प्रकार leads as a grid of labelled buttons rather than as chips: it is the
+ * Type leads as a grid of labelled buttons rather than as chips: it is the
  * shortest axis, the one with icons, and the one most often tapped on a phone
- * ("सिर्फ़ audio दिखाओ, चलते-फिरते सुनना है"). The other four axes — प्रमाण,
- * स्थान, व्यक्ति, भाषा — keep the chip rows underneath, since a shelf that has
- * them still has to offer them and a grid of place names would be a wall.
+ * ("just show me audio, I want to listen on the move"). The other four axes —
+ * Source, Place, Person, Language — keep the chip rows underneath, since a
+ * shelf that has them still has to offer them and a grid of place names would
+ * be a wall.
  */
 function SieveCard({
   facets,
@@ -225,13 +224,12 @@ function SieveCard({
   const axes: FindAxis[] = ["kind", "year", ...rows];
   const selected = axes.reduce((n, axis) => n + (state.selection[axis]?.length ?? 0), 0);
   const span = yearSpan(facets.year);
-  const kindWords = kinds.map((k) => KIND_HI[k.value as FileKind] ?? k.value).join(", ");
+  const kindWords = kinds.map((k) => KIND_LABEL[k.value as FileKind] ?? k.value).join(", ");
 
   return (
     <Panel
       icon={<FilterIcon className="h-4.5 w-4.5" />}
-      title="Year & category"
-      titleHi="वर्ष व प्रकार"
+      title="Year and category"
       summary={
         selected > 0
           ? `${selected} selected · ${itemCount} items`
@@ -252,12 +250,12 @@ function SieveCard({
     >
       {showKinds && (
         <section>
-          <Legend en="By category" hi={AXIS_HI.kind} />
+          <Legend en="By category" />
           {/* Two per row of icon + word + count. As chips these were the axis a
               thumb missed most: five short words wrapped into a hedge, and the
               count that tells you whether the tap is worth making was set in
               70% grey beside them. */}
-          <div className="grid grid-cols-2 gap-1.5" role="group" aria-label={AXIS_HI.kind}>
+          <div className="grid grid-cols-2 gap-1.5" role="group" aria-label={AXIS_LABEL.kind}>
             {kinds.map((chip) => {
               const on = isChipOn(state, "kind", chip.value);
               return (
@@ -279,9 +277,7 @@ function SieveCard({
                   <span className="shrink-0" style={{ color: on ? undefined : "var(--color-ink-soft)" }}>
                     <KindIcon kind={chip.value as FileKind} />
                   </span>
-                  <span lang="hi" className="hi min-w-0 flex-1 truncate">
-                    {chipLabel("kind", chip)}
-                  </span>
+                  <span className="min-w-0 flex-1 truncate">{chipLabel("kind", chip)}</span>
                   <span className="shrink-0 text-[11.5px] tabular-nums text-ink-soft">
                     {chip.count}
                   </span>
@@ -294,8 +290,8 @@ function SieveCard({
 
       {showYears && (
         <section className={showKinds ? "mt-3.5" : undefined}>
-          <Legend en="By year" hi={AXIS_HI.year} note={bands.length > 1 ? span : ""} />
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={AXIS_HI.year}>
+          <Legend en="By year" note={bands.length > 1 ? span : ""} />
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={AXIS_LABEL.year}>
             {bands.map((band) => (
               <Chip
                 key={band.label}
@@ -312,8 +308,8 @@ function SieveCard({
 
       {rows.map((axis) => (
         <section key={axis} className="mt-3.5">
-          <Legend en={AXIS_EN[axis]} hi={AXIS_HI[axis]} />
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={AXIS_HI[axis]}>
+          <Legend en={AXIS_EN[axis]} />
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={AXIS_LABEL[axis]}>
             {(facets[axis] ?? []).map((chip) => (
               <Chip
                 key={chip.value}
@@ -345,12 +341,11 @@ const AXIS_EN: Record<FindAxis, string> = {
  *
  * The summary is a real sentence rather than a label — a closed panel has to
  * earn the tap that opens it, and "6 topics · filters every collection" says
- * both what is behind it and what it will do, which "छाँटें" never did.
+ * both what is behind it and what it will do, which "Filter" never did.
  */
 function Panel({
   icon,
   title,
-  titleHi,
   summary,
   selected,
   open,
@@ -359,7 +354,6 @@ function Panel({
 }: {
   icon: React.ReactNode;
   title: string;
-  titleHi: string;
   summary: string;
   selected: number;
   open: boolean;
@@ -377,13 +371,7 @@ function Panel({
           {icon}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[13.5px] font-semibold leading-tight">
-            {title}
-            <span lang="hi" className="hi font-medium text-ink-soft">
-              {" "}
-              · {titleHi}
-            </span>
-          </span>
+          <span className="block text-[13.5px] font-semibold leading-tight">{title}</span>
           <span className="mt-0.5 block truncate text-[11.5px] leading-snug text-ink-soft">
             {summary}
           </span>
@@ -412,7 +400,7 @@ function Panel({
  *
  * "Clear all" clears **this panel's axes only**, never the whole find — a
  * reader emptying the year panel has not asked to lose the topic they chose in
- * the one above it. The find-wide way back is `साफ़ करें`, which sits with the
+ * the one above it. The find-wide way back is `Clear`, which sits with the
  * results.
  */
 function Footer({
@@ -443,15 +431,10 @@ function Footer({
   );
 }
 
-function Legend({ en, hi, note }: { en: string; hi: string; note?: string }) {
+function Legend({ en, note }: { en: string; note?: string }) {
   return (
     <p className="mb-1.5 flex items-baseline justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
-      <span>
-        {en} ·{" "}
-        <span lang="hi" className="hi">
-          {hi}
-        </span>
-      </span>
+      <span>{en}</span>
       {note && <span className="font-medium tabular-nums normal-case tracking-normal">{note}</span>}
     </p>
   );
@@ -481,15 +464,15 @@ function Chip({
       }`}
       style={on ? { background: "var(--ws-color)" } : undefined}
     >
-      <span lang="hi" className={numeric ? "tabular-nums" : "hi"}>
-        {label}
-      </span>
+      {/* A year is a number, a kind is ours, a place or person is the
+          manager's — so the script of the label decides its face. */}
+      <span {...(numeric ? { className: "tabular-nums" } : contentLang(label))}>{label}</span>
       <span className="ms-1 tabular-nums opacity-70">{count}</span>
     </Link>
   );
 }
 
-/** प्रकार in the order files are shown in, not in the order they were counted. */
+/** Kinds in the order files are shown in, not in the order they were counted. */
 function orderedKinds(facets: FacetValue[] | undefined): FacetValue[] {
   const by = new Map((facets ?? []).map((f) => [f.value, f]));
   const known = KIND_ORDER.map((k) => by.get(k)).filter((f): f is FacetValue => !!f);

@@ -76,7 +76,7 @@ export interface Prefs {
   /** tapping the left/right edge turns the page (Pages mode only) */
   tapZones: boolean;
   /**
-   * Underline the words परिभाषा can define. Off by default and sticky once
+   * Underline the words Paribhasha can define. Off by default and sticky once
    * turned on, like every other reading preference here.
    *
    * Off is the default because it was measured: the glossary was compiled
@@ -374,7 +374,7 @@ export function clearListeningPosition(bookCode: string): void {
 // ---- Track playheads ----
 //
 // The same idea as a listening position, for content that is not a chapter of
-// a book: a संसाधन collection's audio, played in album mode. Kept in its own
+// a book: a Resources collection's audio, played in album mode. Kept in its own
 // store because it is keyed by the thing played rather than by a book code,
 // and carries no paragraph — there is nothing to re-resolve against, so the
 // milliseconds are the whole of it.

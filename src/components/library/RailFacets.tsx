@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AXIS_HI, ClearFind, chipLabel } from "./Sieve";
+import { ClearFind, chipLabel } from "./Sieve";
 import { yearBands } from "./years";
 import {
   DocumentIcon,
@@ -8,6 +8,7 @@ import {
   ImageIcon,
   VideoIcon,
 } from "@/components/shell/icons";
+import { contentLang } from "@/lib/script";
 import {
   FIND_AXES,
   findHref,
@@ -22,7 +23,7 @@ import type { FacetValue, FileKind, LibraryFacets, Topic } from "@/lib/types";
 /**
  * The shelf's facets **as the left rail draws them** (designer, "Desktop UI").
  *
- * The same controls as the {@link Sieve} and the विषय row, answering the same
+ * The same controls as the {@link Sieve} and the Topic row, answering the same
  * two questions and writing the same query — a separate component only because
  * a rail and a phone want opposite shapes out of them. In the main column the
  * axes are chip rows behind a fold, because they are competing with the shelf
@@ -36,8 +37,8 @@ import type { FacetValue, FileKind, LibraryFacets, Topic } from "@/lib/types";
  * a reader has to open before they can see what is filterable is exactly what
  * the rail exists to stop being.
  *
- * **Nor does `hideAxes`.** The shelf suppresses प्रकार when its tiles already
- * *are* the formats, and on मूल ग्रंथ they are — but that rule was about two
+ * **Nor does `hideAxes`.** The shelf suppresses Type when its tiles already
+ * *are* the formats, and on Originals they are — but that rule was about two
  * controls for one choice sitting a thumb-width apart. In the rail they are not
  * near each other and the designer draws both: the tiles are the shelf, and
  * CATEGORY is the standing way to cut it. So the rail asks for every axis.
@@ -59,14 +60,14 @@ export function RailFacets({
   // against an archive that runs 1997 to 2015. A band is only a shorthand for
   // the years inside it; nothing below this knows they exist. See `years.ts`.
   const years = yearBands(facets.year);
-  // प्रकार and वर्ष are drawn where the design puts them; the rest keep their
+  // Type and Year are drawn where the design puts them; the rest keep their
   // canonical order underneath, so a shelf with places and speakers still
   // offers them rather than losing them to a layout that only knew three.
   const rest = FIND_AXES.filter((axis) => axis !== "kind" && axis !== "year");
 
   const blocks = [
     kinds.length > 0 && (
-      <Axis key="kind" axis="kind" en="Category">
+      <Axis key="kind" en="Category">
         {kinds.map((chip) => (
           <FacetRow
             key={chip.value}
@@ -80,7 +81,7 @@ export function RailFacets({
       </Axis>
     ),
     years.length > 0 && (
-      <Axis key="year" axis="year" en="Years">
+      <Axis key="year" en="Years">
         {/* Years are the one axis that is short, ordered and numeric, so they
             tile as pills instead of stacking into a column of near-identical
             rows four words wide. */}
@@ -112,7 +113,7 @@ export function RailFacets({
       const inUse = (state.selection[axis]?.length ?? 0) > 0;
       if (options.length < 2 && !inUse) return false;
       return (
-        <Axis key={axis} axis={axis} en={AXIS_EN[axis]}>
+        <Axis key={axis} en={AXIS_EN[axis]}>
           {options.map((chip) => (
             <FacetRow
               key={chip.value}
@@ -126,7 +127,7 @@ export function RailFacets({
       );
     }),
     // Last, where the design puts it, and where it stopped costing the fold:
-    // at six topics heading the rail, वर्ष and स्थान sat below the crease on an
+    // at six topics heading the rail, Year and Place sat below the crease on an
     // 800px laptop — the two axes with the most useful counts on this shelf.
     <TopicRows
       key="topic"
@@ -142,7 +143,7 @@ export function RailFacets({
   return (
     <div className="flex flex-col gap-5">
       {/* At the top, not the bottom. The rail runs past the fold on a laptop
-          once a shelf has four axes, and "साफ़ करें" is the way *out* of a
+          once a shelf has four axes, and "Clear" is the way *out* of a
           filter — a reader who wants it wants it now, and should never have to
           scroll through the controls that got them here to find it. */}
       <div className="px-1 empty:hidden">
@@ -163,29 +164,12 @@ const AXIS_EN: Record<FindAxis, string> = {
   topic: "Topics",
 };
 
-/**
- * A labelled block in the rail.
- *
- * The heading carries both words — "CATEGORY · प्रकार" — because the rail is
- * the one surface where a label has no row of values beside it to make it
- * obvious, and the nav directly above it is in English.
- */
-function Axis({
-  axis,
-  en,
-  children,
-}: {
-  axis: FindAxis;
-  en: string;
-  children: React.ReactNode;
-}) {
+/** A labelled block in the rail. */
+function Axis({ en, children }: { en: string; children: React.ReactNode }) {
   return (
     <section>
       <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
-        {en} ·{" "}
-        <span lang="hi" className="hi">
-          {AXIS_HI[axis]}
-        </span>
+        {en}
       </p>
       {children}
     </section>
@@ -223,7 +207,9 @@ function FacetRow({
       }
     >
       {icon && <span className="shrink-0 text-ink-soft">{icon}</span>}
-      <span lang="hi" className="hi min-w-0 flex-1 truncate">
+      {/* Ours for a kind or a source, the manager's for a place, a person or
+          a topic — so the script of the label decides its face. */}
+      <span {...contentLang(label)} className={`${contentLang(label).className} min-w-0 flex-1 truncate`}>
         {label}
       </span>
       <span className="shrink-0 text-[11px] font-medium tabular-nums text-ink-soft">
@@ -243,7 +229,7 @@ function KindIcon({ kind }: { kind: FileKind }) {
 }
 
 /**
- * विषय in the rail — **rows that narrow, like every other row here.**
+ * Topics in the rail — **rows that narrow, like every other row here.**
  *
  * They were links onto `/library?topic=`, and the note under the heading had to
  * warn that this one block behaved unlike the four above it: tapping a topic
@@ -255,10 +241,10 @@ function KindIcon({ kind }: { kind: FileKind }) {
  *
  * Counts come from the facets, never from `topics/`: `node_count` counts only
  * what a manager tagged *directly*, and every axis in this library is
- * inherited, so a शिविर branch tagged once at its root counted as one where the
+ * inherited, so a shivir branch tagged once at its root counted as one where the
  * chip actually reaches fifty-nine. `topics/` still supplies the row — it is
  * the only thing that knows the labels and the order a manager set, and it can
- * add a विषय without a deploy.
+ * add a topic without a deploy.
  */
 function TopicRows({
   topics,
@@ -281,10 +267,7 @@ function TopicRows({
   return (
     <section>
       <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
-        Topics ·{" "}
-        <span lang="hi" className="hi">
-          विषय
-        </span>
+        Topics
       </p>
       {live.map(({ topic, count }) => (
         <FacetRow

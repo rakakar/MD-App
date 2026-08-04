@@ -7,7 +7,7 @@ import { CloseIcon, Icon } from "@/components/shell/icons";
  *
  * This app has three search surfaces and they answer to different rules: the
  * catalogue find bar navigates the URL on submit, the citation search fetches
- * and renders its own results, the परिभाषा box filters a dictionary already
+ * and renders its own results, the Paribhasha box filters a dictionary already
  * on the device. What they share is not behaviour, it is the *control* — a
  * bordered row, a magnifier that submits, a clear button, and tap targets big
  * enough for a thumb.
@@ -94,7 +94,11 @@ export function SearchField({
         // does more than empty the text, so the native one is two controls for
         // one job — and the wrong one wins on a phone, being the harder of the
         // two to hit.
-        className="hi w-full bg-transparent text-base outline-none [&::-webkit-search-cancel-button]:appearance-none"
+        // `ui-hi`, not `hi`: the placeholder is now English chrome around a
+        // folder's own name, and a reader types either script into it — so the
+        // stack switches per glyph rather than setting the whole box in the
+        // Devanagari serif.
+        className="ui-hi w-full bg-transparent text-base outline-none [&::-webkit-search-cancel-button]:appearance-none"
       />
       {value && (
         <button

@@ -10,6 +10,7 @@ import { PageContainer, SectionHeading } from "@/components/ui";
 import { ApiError, bookPdfUrl, getBook, getBookGenres, getBooks } from "@/lib/api";
 import { bookHue } from "@/lib/bookHue";
 import { genreLabel } from "@/lib/labels";
+import { contentLang } from "@/lib/script";
 import { contentWorkspace } from "@/lib/workspaceConfig";
 
 export const revalidate = 900;
@@ -115,7 +116,7 @@ export default async function BookDetailPage({
           the page returns to plain paper for the chapter list.
 
           Full-bleed and dark, not a wash: the hero is the book's own surface,
-          which is what makes one ग्रंथ feel unlike the next when they are
+          which is what makes one book feel unlike the next when they are
           otherwise identical rows of Devanagari on the same paper. */}
       <div
         // Full-bleed on a phone, where the hero *is* the top of the screen; a
@@ -146,25 +147,26 @@ export default async function BookDetailPage({
               </p>
             )}
             <p className="mt-2 text-[12.5px] font-medium text-white/75">
-              <span lang="hi" className="hi">{book.author}</span>
+              <span {...contentLang(book.author)}>{book.author}</span>
               {mainChapters.length > 0 && (
-                <span lang="hi" className="hi"> · {mainChapters.length} अध्याय</span>
+                <span>
+                  {" · "}
+                  {mainChapters.length} {mainChapters.length === 1 ? "chapter" : "chapters"}
+                </span>
               )}
               {book.page_count ? ` · ${book.page_count} pages` : ""}
             </p>
             {/*
-              On a translation the author is still ए. नागराज — the words are
+              On a translation the author is still A. Nagraj — the words are
               his, the rendering is not. Naming the translator right under him,
               in the same weight, is what keeps the page from crediting him
               with someone else's English.
             */}
             {book.translation_of && book.translator && (
               <p className="mt-1 text-[12.5px] text-white/75">
-                <span lang="hi" className="hi">अनुवाद:</span>{" "}
+                Translator:{" "}
                 <span className="font-semibold text-white">{book.translator}</span>
-                {book.language_label && (
-                  <span lang="hi" className="hi"> · {book.language_label}</span>
-                )}
+                {book.language_label && <span> · {book.language_label}</span>}
               </p>
             )}
 
@@ -178,14 +180,10 @@ export default async function BookDetailPage({
                   the chip, not from its absence. */}
               {book.is_pdf_only && <Chip>PDF-only</Chip>}
               {!book.translation_of && (
-                <Chip>
-                  <span lang="hi" className="hi">मूल ग्रंथ</span>
-                </Chip>
+                <Chip>Original</Chip>
               )}
               {genreChip && (
-                <Chip>
-                  <span lang="hi" className="hi">{genreChip}</span>
-                </Chip>
+                <Chip>{genreChip}</Chip>
               )}
               {book.edition && <Chip>{book.edition}</Chip>}
               {book.publication_year && <Chip>{book.publication_year}</Chip>}
@@ -205,7 +203,7 @@ export default async function BookDetailPage({
             className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold sm:max-w-sm"
             style={{ color: hue.to }}
           >
-            <span lang="hi" className="hi">PDF पढ़ें</span>
+            Read the PDF
           </a>
         ) : (
           <BookHeroActions
@@ -236,20 +234,20 @@ export default async function BookDetailPage({
       */}
       {book.translation_of && (
         <p className="mt-6 rounded-2xl border border-rule bg-white p-4 text-sm">
-          <span lang="hi" className="hi text-ink-soft">यह एक अनुवाद है ·</span>{" "}
+          <span className="text-ink-soft">This is a translation ·</span>{" "}
           <Link
             href={`/books/${encodeURIComponent(book.translation_of)}`}
             className="font-semibold underline underline-offset-2"
             style={{ color: "var(--ws-ink)" }}
           >
-            <span lang="hi" className="hi">मूल पुस्तक देखें</span>
+            See the original book
           </Link>
         </p>
       )}
 
       {book.translations.length > 0 && (
         <>
-          <SectionHeading>इस पुस्तक के अनुवाद</SectionHeading>
+          <SectionHeading>Translations of this book</SectionHeading>
           <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
             {book.translations.map((t) => (
               <li key={t.code}>
@@ -259,19 +257,21 @@ export default async function BookDetailPage({
                 >
                   <span className="flex items-baseline gap-2">
                     <span
-                      lang="hi"
-                      className="hi text-sm font-semibold"
+                      className="text-sm font-semibold"
                       style={{ color: "var(--ws-ink)" }}
                     >
                       {t.language_label}
                     </span>
-                    <span lang="hi" className="hi min-w-0 flex-1 truncate text-[15px]">
+                    <span
+                      {...contentLang(t.title_hi)}
+                      className={`${contentLang(t.title_hi).className} min-w-0 flex-1 truncate text-[15px]`}
+                    >
                       {t.title_hi}
                     </span>
                   </span>
                   {t.translator && (
                     <span className="text-xs text-ink-soft">
-                      <span lang="hi" className="hi">अनुवाद:</span> {t.translator}
+                      Translator: {t.translator}
                     </span>
                   )}
                 </Link>
@@ -292,8 +292,8 @@ export default async function BookDetailPage({
       {book.is_pdf_only ? (
         <section id="pdf" className="mt-7 scroll-mt-4">
           <p className="rounded-2xl border border-rule bg-white p-4 text-sm text-ink-soft">
-            <span lang="hi" className="hi font-semibold text-ink">
-              यह पुस्तक अभी PDF रूप में है।
+            <span className="font-semibold text-ink">
+              This book is currently available as a PDF.
             </span>{" "}
             The scanned book is readable and downloadable here. Chapter-by-chapter reading,
             citations and read-aloud arrive when it goes through the pipeline — this page
@@ -305,13 +305,11 @@ export default async function BookDetailPage({
         </section>
       ) : (
         <>
-      {/* अध्याय सूची with its own count (design 1C). A plain list on paper,
+      {/* The chapter list with its own count (design 1C). A plain list on paper,
           not a card: the hero above is the page's one object, and boxing the
           contents made the chapters read as a second, competing one. */}
       <div className="mt-7 flex items-center gap-2.5 border-b border-rule pb-3">
-        <h2 lang="hi" className="hi text-[15px] font-semibold">
-          अध्याय सूची
-        </h2>
+        <h2 className="text-[15px] font-semibold">Chapters</h2>
         {mainChapters.length > 0 && (
           <span className="rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold tabular-nums text-ink-soft">
             {mainChapters.length}

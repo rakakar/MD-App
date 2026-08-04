@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "MD Study — मध्यस्थ दर्शन",
+    name: "MD Study — Madhyasth Darshan",
     short_name: "MD Study",
     description:
       "Read A. Nagrajji's books, listen to discourses, study translations and resources.",
@@ -18,8 +18,8 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["books", "education", "lifestyle"],
     // long-press the installed icon — the three things people actually open
     shortcuts: [
-      { name: "Read · ग्रंथ", short_name: "Read", url: "/books" },
-      { name: "Search · खोज", short_name: "Search", url: "/search" },
+      { name: "Read", short_name: "Read", url: "/books" },
+      { name: "Search", short_name: "Search", url: "/search" },
       { name: "My Journey", short_name: "Journey", url: "/me" },
     ],
     icons: [

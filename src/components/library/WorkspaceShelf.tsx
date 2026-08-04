@@ -20,7 +20,7 @@ import type {
 /**
  * A workspace root, drawn as its contents.
  *
- * Lifted out of the संसाधन page once Originals started holding folders too
+ * Lifted out of the Resources page once Originals started holding folders too
  * (Content Model v3 §5, D14): the two shelves ask the same question of the
  * same shape — the root's children as doors, over whatever files sit on the
  * root itself — and the second copy of two hundred lines is where they would
@@ -31,7 +31,7 @@ import type {
  * same because the tree is the same tree.
  *
  * The root is never drawn as a card inside its own shelf (§10.1) — a card
- * labelled संसाधन sitting inside संसाधन is an empty step.
+ * labelled Resources sitting inside Resources is an empty step.
  *
  * **Browse and find are two different calls, and this is where the switch
  * lives** (§13.2, §13.4). With nothing typed and no chip on, the shelf is the
@@ -194,7 +194,7 @@ export async function WorkspaceShelf({
       </div>
 
       {/* Below the grid, where the design puts it: a shelf's photographs are
-          worth *seeing* rather than counting, and a folder named चित्र says
+          worth *seeing* rather than counting, and a folder named for them says
           nothing about what is in it. */}
       <PhotoStrip
         scope={scope}
@@ -223,7 +223,7 @@ export async function WorkspaceShelf({
  * What the grid below is, and how much of it there is.
  *
  * The total is summed from the rollups rather than taken from `count`, which
- * counts folders and files together: a reader reading "247 सामग्री" means
+ * counts folders and files together: a reader reading "247 items" means
  * files, and folders are the furniture they are filed in.
  */
 function ShelfHeading({
@@ -237,13 +237,11 @@ function ShelfHeading({
   const hours = Math.round(total.duration / 3600);
   return (
     <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-      <p lang="hi" className="hi text-[11px] font-bold uppercase tracking-wide text-ink-soft">
-        संग्रह
-      </p>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">Collections</p>
       {total.items > 0 && (
-        <p lang="hi" className="hi text-[11.5px] tabular-nums text-muted">
-          {total.items} सामग्री
-          {hours > 0 && ` · ${hours} घंटे`}
+        <p className="text-[11.5px] tabular-nums text-muted">
+          {total.items} {total.items === 1 ? "item" : "items"}
+          {hours > 0 && ` · ${hours} ${hours === 1 ? "hour" : "hours"}`}
         </p>
       )}
     </div>

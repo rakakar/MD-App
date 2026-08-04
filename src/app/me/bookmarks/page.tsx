@@ -33,7 +33,7 @@ export default function BookmarksPage() {
       <h1 className="font-display text-2xl font-medium">Bookmarks</h1>
       {!loading && !user && rows !== null && rows.length > 0 && (
         <p className="mt-1 text-xs text-ink-soft">
-          इसी device पर saved ·{" "}
+          Saved on this device ·{" "}
           <Link href="/login?next=/me/bookmarks" className="underline">
             Sign in to sync
           </Link>

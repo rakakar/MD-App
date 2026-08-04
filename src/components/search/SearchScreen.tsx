@@ -34,7 +34,7 @@ const FIRST_PAGE = 10;
 
 /**
  * What the one box searches (design 2A). "All" is the ranked passage search
- * with the definition card on top; "परिभाषा" turns the same box into the
+ * with the definition card on top; "Paribhasha" turns the same box into the
  * dictionary — live per keystroke, every matching word listed, nothing else.
  */
 type SearchMode = "all" | "paribhasha";
@@ -53,7 +53,7 @@ export function SearchScreen() {
   const [raw, setRaw] = useState(false);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   /**
-   * The संसाधन lane's own answer (contract §13.8). Kept in its own piece of
+   * The Resources lane's own answer (contract §13.8). Kept in its own piece of
    * state, never folded into `response`, because the two are different kinds
    * of claim — see the note where the lane is rendered.
    */
@@ -102,7 +102,7 @@ export function SearchScreen() {
       abortRef.current = ctrl;
       setBusy(true);
       setError(false);
-      // Two independent endpoints, settled independently: the संसाधन lane is
+      // Two independent endpoints, settled independently: the Resources lane is
       // a metadata scan and the citation lane a retrieval engine, and one of
       // them being down is no reason to show the reader nothing.
       const [passages, lane] = await Promise.allSettled([
@@ -141,7 +141,7 @@ export function SearchScreen() {
   }, []);
 
   /**
-   * The dictionary itself, brought to the device the moment परिभाषा is opened.
+   * The dictionary itself, brought to the device the moment Paribhasha is opened.
    *
    * Usually free: the reader's word-tap and the book download button load the
    * same copy through the same module, and it is kept in IndexedDB. When it is
@@ -177,7 +177,7 @@ export function SearchScreen() {
   }, [mode]);
 
   /**
-   * **परिभाषा searches as you type, and that is not an inconsistency.**
+   * **Paribhasha searches as you type, and that is not an inconsistency.**
    *
    * Every other box in this app waits to be asked because its answer is over
    * the network. This one's answer is on the device, so it costs nothing and
@@ -194,7 +194,7 @@ export function SearchScreen() {
   }, [q, mode, dictionary]);
 
   /**
-   * What the परिभाषा list shows — the device's answer, or the endpoint's when
+   * What the Paribhasha list shows — the device's answer, or the endpoint's when
    * there is no local copy. An emptied box shows nothing either way, which is
    * why that is read off `q` here rather than written back into state.
    */
@@ -259,7 +259,7 @@ export function SearchScreen() {
           setQ(value);
           setRaw(false);
         }}
-        // परिभाषा has already answered by the time this fires — the box is
+        // Paribhasha has already answered by the time this fires — the box is
         // reading a dictionary that is on the device — so submitting there is
         // only what it is on any phone: the thing that puts the keyboard away.
         onSubmit={() => {
@@ -275,7 +275,7 @@ export function SearchScreen() {
           setError(false);
           inputRef.current?.focus();
         }}
-        placeholder="खोजें… paribhasha, sutra, books"
+        placeholder="Search… paribhasha, sutra, books"
         label="Search"
         // Only "All results" has something unasked to offer; the dictionary is
         // never behind what has been typed.
@@ -284,13 +284,13 @@ export function SearchScreen() {
       />
 
       {/* Mode chips (design 2A). Two questions, one box: "where is this
-          discussed" (All) and "what does this word mean" (परिभाषा). The mode
+          discussed" (All) and "what does this word mean" (Paribhasha). The mode
           rides in the URL so a shared dictionary search reopens as one. */}
       <div className="mt-3 flex gap-2" role="radiogroup" aria-label="Search mode">
         {(
           [
             ["all", <span key="a">All results</span>],
-            ["paribhasha", <span key="p" lang="hi" className="hi">परिभाषा</span>],
+            ["paribhasha", <span key="p">Paribhasha</span>],
           ] as const
         ).map(([m, label]) => (
           <button
@@ -316,24 +316,23 @@ export function SearchScreen() {
       {mode === "paribhasha" && (
         <>
           <p className="mt-3 text-xs text-ink-soft">
-            <span lang="hi" className="hi">हिंदी या रोमन, दोनों चलेंगे</span> · Dictionary
-            search, live as you type ·{" "}
+            Devanagari or Roman, both work · Dictionary search, live as you type ·{" "}
             <Link href="/paribhasha" className="underline underline-offset-2">
-              Browse the full <span lang="hi" className="hi">शब्दकोश</span>
+              Browse the full glossary
             </Link>
           </p>
           <div className="mt-5">
             {busy && dictWords === null && (
-              <p className="text-center text-sm text-ink-soft">खोजा जा रहा है…</p>
+              <p className="text-center text-sm text-ink-soft">Searching…</p>
             )}
             {error && (
               <p className="text-center text-sm text-ink-soft">
-                शब्दकोश अभी उपलब्ध नहीं है।
+                The glossary isn&apos;t available right now.
               </p>
             )}
             {!error && dictWords !== null && dictWords.length === 0 && (
-              <p lang="hi" className="hi text-center text-sm text-ink-soft">
-                “{q.trim()}” शब्दकोश में नहीं मिला।
+              <p className="text-center text-sm text-ink-soft">
+                No match for “{q.trim()}” in the glossary.
               </p>
             )}
             {dictWords !== null && dictWords.length > 0 && (
@@ -355,7 +354,7 @@ export function SearchScreen() {
         Nagraj ji rather than to a student's rendering. Translations are not
         indexed and never will be.
 
-        The संसाधन lane below the results is not an exception to that rule,
+        The Resources lane below the results is not an exception to that rule,
         it is the shape the rule takes: resources are searched by *metadata*
         only — titles, topics, people, places, filenames — never by what is
         inside a file, because nothing in that library has paragraphs to index
@@ -367,15 +366,14 @@ export function SearchScreen() {
         is what a filter would only have pretended to offer.
       */}
       <p className="mt-3 text-xs text-ink-soft">
-        <span lang="hi" className="hi">उद्धरण केवल मूल ग्रंथों से</span> · Citations come from
-        A. Nagraj ji&apos;s original works; <span lang="hi" className="hi">संसाधन</span> are
+        Citations come from A. Nagraj ji&apos;s original works; Resources are
         matched on their metadata.
         {" · "}
         {/* The glossary answers a different question from this box, and only
             announces itself when a query happens to reach it. This is the way
             in for a reader who wants the dictionary itself. */}
         <Link href="/paribhasha" className="underline underline-offset-2">
-          <span lang="hi" className="hi">परिभाषा शब्दकोश</span>
+          Paribhasha glossary
         </Link>
       </p>
 
@@ -414,7 +412,7 @@ export function SearchScreen() {
           <p className="text-center text-sm text-ink-soft">Search is unavailable right now.</p>
         )}
         {/*
-          The परिभाषा card, above the passages (contract §9.1). Readers use
+          The Paribhasha card, above the passages (contract §9.1). Readers use
           one box for two questions — "where is this discussed" and "what does
           this word mean" — and the paragraph index answers the second badly:
           a one-word query returns the twenty places the word appears, none of
@@ -440,11 +438,11 @@ export function SearchScreen() {
               The citation lane, named. It only needs a name now that a second
               lane sits below it — and naming it is what keeps the promise
               legible: everything under this heading is quotable back to A.
-              Nagraj ji by canonical ref, and nothing under संसाधन is.
+              Nagraj ji by canonical ref, and nothing under Resources is.
             */}
             <p className="mb-3 flex flex-wrap items-baseline gap-x-2 px-1 text-xs text-ink-soft">
               <span className="text-[11px] font-bold uppercase tracking-[0.09em]">
-                <span lang="hi" className="hi">पुस्तकों में</span>
+                In the books
               </span>
               <span>{results.length === 1 ? "1 result" : `${results.length} results`}</span>
             </p>
@@ -467,7 +465,7 @@ export function SearchScreen() {
         )}
 
         {/*
-          The संसाधन lane, always its own lane and never merged into the
+          The Resources lane, always its own lane and never merged into the
           results above (contract §13.5). A citation is quotable back to A.
           Nagraj ji; a metadata hit is a title or a tag that happened to
           contain the word, and folding the two together would let a folder's
@@ -480,8 +478,7 @@ export function SearchScreen() {
           the results rather than above them: on an empty search it used to be
           the loudest thing on the screen, which read as an apology. */}
       <p className="mt-8 text-center text-xs text-ink-soft">
-        <span lang="hi" className="hi">स्मार्ट सहायक जल्द आ रहा है</span> · Smart assistant
-        coming soon
+        Smart assistant coming soon
       </p>
       </>
       )}
@@ -513,12 +510,12 @@ function ParibhashaCard({
 
   return (
     <section
-      aria-label="परिभाषा"
+      aria-label="Paribhasha"
       className="mb-4 overflow-hidden rounded-2xl border bg-white p-4"
       style={{ borderColor: "color-mix(in srgb, var(--ws-color) 35%, transparent)" }}
     >
       <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
-        <span lang="hi" className="hi">परिभाषा</span>
+        Paribhasha
       </p>
       <h2 lang="hi" className="hi mt-1 text-xl font-semibold leading-snug">
         {word.hindi}
@@ -546,22 +543,14 @@ function ParibhashaCard({
             className="font-medium underline underline-offset-2"
             style={{ color: "var(--ws-ink)" }}
           >
-            {open ? (
-              <span lang="hi" className="hi">समेटें</span>
-            ) : (
-              <span lang="hi" className="hi">पूरी परिभाषा</span>
-            )}
+            {open ? "Collapse" : "Full definition"}
           </button>
         )}
         <Link
           href={`/paribhasha?q=${encodeURIComponent(query)}`}
           className="text-ink-soft underline underline-offset-2"
         >
-          {more > 0 ? (
-            <span lang="hi" className="hi">और {more} शब्द · शब्दकोश में</span>
-          ) : (
-            <span lang="hi" className="hi">शब्दकोश में देखें</span>
-          )}
+          {more > 0 ? `${more} more words in the glossary` : "See in the glossary"}
         </Link>
       </div>
     </section>
@@ -662,7 +651,7 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
     <>
       {title && <span lang="hi" className="hi">{title}</span>}
       {result.page_number !== undefined && (
-        <span lang="hi" className="hi ml-2">पृष्ठ {result.page_number}</span>
+        <span className="ml-2">Page {result.page_number}</span>
       )}
       {ref && <span className="ml-2">{ref}</span>}
     </>
@@ -725,7 +714,7 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
           className="mt-4 block rounded-xl px-4 py-2.5 text-center text-sm font-medium text-white"
           style={{ background: "var(--ws-color)" }}
         >
-          <span lang="hi" className="hi">पुस्तक में खोलें</span> · Open in book
+          Open in book
         </Link>
         {/* An expanded passage runs over a screen tall, which would otherwise
             mean scrolling back up to the header just to close it. Collapsing
@@ -740,7 +729,7 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
           }}
           className="mt-1 block w-full px-4 py-2 text-center text-xs text-ink-soft"
         >
-          <span lang="hi" className="hi">समेटें</span> · Collapse
+          Collapse
         </button>
       </div>
     </li>

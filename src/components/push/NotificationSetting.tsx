@@ -30,12 +30,12 @@ export function NotificationSetting() {
           <p className="text-sm font-medium">Notifications</p>
           <p className="text-xs text-ink-soft">
             {status === "granted"
-              ? "You'll hear about new chapters, शिविर and announcements."
+              ? "You'll hear about new chapters, shivirs and announcements."
               : status === "denied"
                 ? "Blocked in your browser settings."
                 : status === "ios-install"
                   ? "Available once the app is on your home screen."
-                  : "New chapters, शिविर and announcements."}
+                  : "New chapters, shivirs and announcements."}
           </p>
         </div>
 

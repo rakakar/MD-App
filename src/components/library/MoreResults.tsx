@@ -8,7 +8,7 @@ import type { ShelfMap } from "@/lib/library";
 import type { LibrarySearchRow } from "@/lib/types";
 
 /**
- * "और दिखाएँ" — the rest of a long answer, a page at a time.
+ * "Show more" — the rest of a long answer, a page at a time.
  *
  * This replaces a silent cap. `library/search/` used to return fifty rows
  * and stop, so the fifty-first hit simply did not exist and nothing on screen
@@ -76,14 +76,12 @@ export function MoreResults({
             className="w-full px-4 py-3 text-xs font-semibold transition-colors hover:bg-black/[.03] disabled:opacity-60"
             style={{ color: "var(--ws-ink)" }}
           >
-            <span lang="hi" className="hi">
-              {busy ? "ला रहे हैं…" : "और दिखाएँ"}
-            </span>
+            <span>{busy ? "Loading…" : "Show more"}</span>
             {!busy && <span className="ms-1 tabular-nums opacity-70">{remaining}</span>}
           </button>
           {failed && (
-            <p lang="hi" className="hi pb-3 text-center text-xs text-ink-soft">
-              अभी नहीं ला सके — फिर से देखें।
+            <p className="pb-3 text-center text-xs text-ink-soft">
+              Couldn&apos;t load more. Try again.
             </p>
           )}
         </li>

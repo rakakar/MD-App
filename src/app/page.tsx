@@ -9,6 +9,7 @@ import { ChevronRight, PinIcon } from "@/components/shell/icons";
 import { EmptyState, PageContainer, SectionHeading, SeeAll } from "@/components/ui";
 import { getBooks, getEvents } from "@/lib/api";
 import { eventLocation, eventStart, eventTitle, shortDate, upcomingEvents } from "@/lib/events";
+import { SHIVIRS } from "@/lib/labels";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { BookSummary, EventItem, SutraOfTheDay } from "@/lib/types";
 
@@ -28,9 +29,9 @@ async function loadHome(): Promise<{
 }
 
 /**
- * Originals Home (design 1A): today's सूत्र, then straight back into the open
+ * Originals Home (design 1A): today's Sutra, then straight back into the open
  * chapter, then what else exists — books, media, the other workspaces, and
- * the शिविर calendar.
+ * the shivir calendar.
  *
  * The one section the spec draws that is missing here is "News & updates":
  * the BE publishes no announcements feed, and a hardcoded card pretending to
@@ -42,9 +43,9 @@ export default async function OriginalsHome() {
 
   return (
     <PageContainer size="shelf">
-      <h1 className="sr-only">Originals — मूल ग्रंथ</h1>
+      <h1 className="sr-only">Originals</h1>
 
-      {/* Above today's सूत्र only because it is dismissible and, once
+      {/* Above today's Sutra only because it is dismissible and, once
           dismissed, gone for good — below the fold it would never be seen at
           all, and the offer would exist without ever being made. */}
       <NotificationBanner />
@@ -52,7 +53,7 @@ export default async function OriginalsHome() {
       {sutra && <SutraCard sutra={sutra} />}
 
       {/*
-        The "नागराज जी की वाणी" door used to sit here, under today's सूत्र.
+        The Nagraj-ji's-own-voice door used to sit here, under today's Sutra.
         It is reachable from the resources section, and a second entrance on
         home was one door too many.
       */}
@@ -60,7 +61,7 @@ export default async function OriginalsHome() {
       {/*
         One column on a phone; from lg, the spec's three (1A desktop). Home is
         a page of short, unrelated sections — stacked at 1088px each one is a
-        stripe with a screenful of dead space beside it, and the शिविर at the
+        stripe with a screenful of dead space beside it, and the shivirs at the
         bottom fall below the fold on a screen that has room for everything.
 
         `items-start` so a tall section does not stretch its neighbours, and
@@ -78,7 +79,7 @@ export default async function OriginalsHome() {
               books.length > 0 ? <SeeAll href="/books">All {books.length}</SeeAll> : undefined
             }
           >
-            Books · <span lang="hi" className="hi">ग्रंथ</span>
+            Books
           </SectionHeading>
           {books.length > 0 ? (
             <BookRail books={books} />
@@ -103,7 +104,7 @@ export default async function OriginalsHome() {
           {shivirs.length > 0 && (
             <>
               <SectionHeading tier="title" action={<SeeAll href="/connect">See all</SeeAll>}>
-                Upcoming <span lang="hi" className="hi">शिविर</span>
+                Upcoming {SHIVIRS}
               </SectionHeading>
               <ul className="flex flex-col gap-2">
                 {shivirs.map((e) => {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookmarkIcon, ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
+import { SUTRA } from "@/lib/labels";
 import { citationText, refToHref } from "@/lib/refs";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { SutraOfTheDay } from "@/lib/types";
@@ -20,11 +21,11 @@ import type { SutraOfTheDay } from "@/lib/types";
  * the label row so browsing stays available without competing with Share,
  * which is the action the design puts its weight behind.
  */
-/** "2026-07-29" → "२९ जुलाई". Returns "" on anything unparseable. */
-function hindiDate(iso: string): string {
+/** "2026-07-29" → "29 July". Returns "" on anything unparseable. */
+function sutraDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
   if (isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("hi-IN", { day: "numeric", month: "long" }).format(d);
+  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long" }).format(d);
 }
 
 export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
@@ -76,7 +77,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
       className="rounded-3xl p-5"
       style={{
         // the spec's own peach ramp (1A) — a warm surface of its own rather
-        // than a wash of the workspace hue, because the सूत्र belongs to the
+        // than a wash of the workspace hue, because the sutra belongs to the
         // day, not to whichever workspace the reader happens to be in
         background: "linear-gradient(165deg, #FFF8F1, #FDEEE0 70%, #FAE3CE)",
       }}
@@ -89,9 +90,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
           className="text-[11px] font-bold uppercase tracking-[0.09em]"
           style={{ color: "var(--color-accent-deep)" }}
         >
-          <span lang="hi" className="hi">
-            {browsing ? "सूत्र" : "आज का सूत्र"}
-          </span>
+          {browsing ? SUTRA : `${SUTRA} of the day`}
         </figcaption>
 
         <span className="ml-auto flex items-center gap-0.5">
@@ -99,19 +98,19 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
             type="button"
             onClick={() => go(sutra.offset - 1)}
             disabled={!sutra.has_prev || busy}
-            aria-label="पिछला सूत्र"
+            aria-label={`Previous ${SUTRA}`}
             className={arrow}
           >
             <ChevronDown className="h-4 w-4 rotate-90" />
           </button>
-          <span lang="hi" className="hi text-[11px] font-semibold text-[#B08968]">
-            {hindiDate(sutra.sutra_date)}
+          <span className="text-[11px] font-semibold text-[#B08968]">
+            {sutraDate(sutra.sutra_date)}
           </span>
           <button
             type="button"
             onClick={() => go(sutra.offset + 1)}
             disabled={!sutra.has_next || busy}
-            aria-label="अगला सूत्र"
+            aria-label={`Next ${SUTRA}`}
             className={arrow}
           >
             <ChevronDown className="h-4 w-4 -rotate-90" />
@@ -151,12 +150,12 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
               disabled={busy}
               className="flex h-9 items-center rounded-xl bg-white/75 px-3 text-xs font-semibold text-[#8A6A4E] transition hover:bg-white"
             >
-              <span lang="hi" className="hi">आज का सूत्र</span>
+              {`${SUTRA} of the day`}
             </button>
           ) : (
             <Link
               href="/me/bookmarks"
-              aria-label="सहेजे गए"
+              aria-label="Saved"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/75 text-[#8A6A4E] transition hover:bg-white"
             >
               <BookmarkIcon className="h-4 w-4" />

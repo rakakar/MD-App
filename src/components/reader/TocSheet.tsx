@@ -70,7 +70,7 @@ export function TocSheet({
             {ch.title_hi}
           </span>
           <span className="shrink-0 text-xs tabular-nums text-(--reader-ink-soft)">
-            {bookType === "print" ? `पृ ${ch.start_page}` : ch.start_page}
+            {bookType === "print" ? `p. ${ch.start_page}` : ch.start_page}
           </span>
         </button>
       </li>
@@ -78,7 +78,7 @@ export function TocSheet({
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title="Contents · विषय-सूची">
+    <Sheet open={open} onClose={onClose} title="Contents">
       <ul>
         {frontMatter.length > 0 && (
           <>

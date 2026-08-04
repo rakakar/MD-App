@@ -75,7 +75,7 @@ export async function NodeView({
 
   // The album/index rule. A folder with no child folders and at least one file
   // is an album: a hero, a cover and the player, which is what a fourteen-part
-  // शिविर recording needs. A folder that holds folders is an index whatever
+  // shivir recording needs. A folder that holds folders is an index whatever
   // else is in it — its files list below them. Deterministic on purpose: a
   // rule that counted files against folders would flip an index into an album
   // the day someone added one more file, and the reader would experience that
@@ -124,8 +124,8 @@ export async function NodeView({
           */}
           {node.linked_children.length > 0 && (
             <section className="mt-7">
-              <h2 lang="hi" className="hi mb-3 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
-                और भी यहाँ से
+              <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+                Also filed here
               </h2>
               <ul className="flex flex-col gap-3">
                 {node.linked_children.map((card) => (
@@ -251,7 +251,7 @@ function WholeSetLink({ url, tone = "light" }: { url: string; tone?: "light" | "
           : "border-rule bg-white text-ink hover:bg-black/[.03]"
       }`}
     >
-      <span lang="hi" className="hi">पूरी शृंखला देखें</span>
+      <span>See the full series</span>
       <span aria-hidden>↗</span>
     </a>
   );
@@ -354,9 +354,7 @@ function Trail({
 function EmptyFolder() {
   return (
     <div className="mt-6 rounded-2xl border border-dashed border-rule px-4 py-8 text-center">
-      <p lang="hi" className="hi text-sm font-medium">
-        अभी कुछ प्रकाशित नहीं
-      </p>
+      <p className="text-sm font-medium">Nothing published yet</p>
       <p className="mt-1 text-xs text-ink-soft">
         Material appears here as it is published into this folder.
       </p>

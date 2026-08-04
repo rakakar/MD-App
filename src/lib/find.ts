@@ -17,12 +17,12 @@
 /**
  * The sieve, in the order it is drawn.
  *
- * प्रमाण first: "उनका अपना कौन सा है?" is the question this collection exists
- * to answer, and it outranks which year a thing is from. प्रकार last: "सिर्फ़
- * audio दिखाओ, चलते-फिरते सुनना है" is a real need but never the first one, and
+ * Source first: "which of these is his own?" is the question this collection
+ * exists to answer, and it outranks which year a thing is from. Type last:
+ * "just show me audio" is a real need but never the first one, and
  * a format filter at the top turns a library back into a file browser.
  *
- * विषय is not in this list, and that is a layout fact rather than a semantic
+ * Topic is not in this list, and that is a layout fact rather than a semantic
  * one now. It **is** a filter — see `ALL_AXES` — but it is drawn in its own
  * panel above these rather than as a seventh chip row, because it is the axis
  * a reader reaches for first and the only one whose values a manager writes.
@@ -37,10 +37,10 @@ export const FIND_AXES = [
 ] as const;
 
 /**
- * Every axis the URL and the endpoint carry, विषय included.
+ * Every axis the URL and the endpoint carry, Topic included.
  *
- * **विषय used to navigate away and now narrows in place.** It was drawn as a
- * *door* onto the whole library (§13.4): tapping अस्तित्व दर्शन on a shelf left
+ * **Topic used to navigate away and now narrows in place.** It was drawn as a
+ * *door* onto the whole library (§13.4): tapping a topic on a shelf left
  * the shelf for `/library?topic=`, a flat list from every depth and every
  * workspace, and the collections the reader had been looking at were gone. The
  * designer draws it as a filter instead — the tiles stay put and their counts
@@ -50,7 +50,7 @@ export const FIND_AXES = [
  * as a different kind of control.
  *
  * The door survives as a link inside the panel, because "everything filed under
- * व्यवस्था, wherever it lives" is still a real question — just not the one a
+ * a topic, wherever it lives" is still a real question — just not the one a
  * reader is asking while standing on a shelf looking at its collections.
  *
  * Anything that reads or writes the whole find — the URL, the chip count, the
@@ -61,7 +61,7 @@ export const ALL_AXES = [...FIND_AXES, "topic"] as const;
 
 export type FindAxis = (typeof ALL_AXES)[number];
 
-/** the six axes the sieve draws as chip rows — `FindAxis` minus विषय */
+/** the six axes the sieve draws as chip rows — `FindAxis` minus Topic */
 export type SieveAxis = (typeof FIND_AXES)[number];
 
 /**

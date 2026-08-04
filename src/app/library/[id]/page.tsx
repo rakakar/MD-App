@@ -40,7 +40,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const node = await load(id).catch(() => null);
-  if (!node) return { title: "संसाधन" };
+  if (!node) return { title: "Library" };
   const trail = node.breadcrumb.map((s) => s.name).join(" · ");
   return {
     title: trail ? `${node.name} · ${trail}` : node.name,

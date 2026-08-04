@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { KIND_HI } from "@/components/library/format";
+import { KIND_LABEL } from "@/components/library/format";
 import { provenanceLabel } from "@/components/library/ProvenanceBadge";
 import { ChevronDown, FilterIcon } from "@/components/shell/icons";
 import {
@@ -11,13 +11,14 @@ import {
   type FindAxis,
   type FindState,
 } from "@/lib/find";
+import { contentLang } from "@/lib/script";
 import type { FacetValue, FileKind, LibraryFacets, Provenance } from "@/lib/types";
 
 /**
- * The **sieve** — प्रमाण · वर्ष · स्थान · व्यक्ति · भाषा · प्रकार over the whole
- * scope the reader is looking at (contract §13.4).
+ * The **sieve** — Source · Year · Place · Person · Language · Type over the
+ * whole scope the reader is looking at (contract §13.4).
  *
- * विषय is drawn above this on a shelf, in its own panel, and it narrows in
+ * Topic is drawn above this on a shelf, in its own panel, and it narrows in
  * place like everything here does. It appears **in** this block on a folder
  * page, and only when it is already on: a reader carries their topic chip in
  * from the shelf (the designer asks that it persist as you move into a
@@ -26,9 +27,9 @@ import type { FacetValue, FileKind, LibraryFacets, Provenance } from "@/lib/type
  *
  * **The chips moved to the server on 2026-08-03, and they changed meaning when
  * they moved.** They used to be derived from the children the FE already held,
- * which made them a filter over *one level*: standing on a shelf root, the वर्ष
+ * which made them a filter over *one level*: standing on a shelf root, the Year
  * chip could only see the top-level doors, so a 2019 recording three levels
- * down was unreachable, and the प्रकार row — built from `kinds`, which counts a
+ * down was unreachable, and the Type row — built from `kinds`, which counts a
  * folder's **direct** files — did not render at all, because a shelf root holds
  * doors and not files. The chips said "filter this shelf" and meant "filter
  * this level". They now come from `facets` on §13.8, counted over the whole
@@ -41,30 +42,30 @@ import type { FacetValue, FileKind, LibraryFacets, Provenance } from "@/lib/type
  * switches the page from a browse to a find** — deep, ranked, a breadcrumb on
  * every row — which is exactly what "filter this shelf" always meant.
  */
-export const AXIS_HI: Record<FindAxis, string> = {
-  provenance: "प्रमाण",
-  year: "वर्ष",
-  place: "स्थान",
-  person: "व्यक्ति",
-  language: "भाषा",
-  kind: "प्रकार",
-  topic: "विषय",
+export const AXIS_LABEL: Record<FindAxis, string> = {
+  provenance: "Source",
+  year: "Year",
+  place: "Place",
+  person: "Person",
+  language: "Language",
+  kind: "Type",
+  topic: "Topic",
 };
 
 /**
  * What the chip says.
  *
  * The endpoint labels every value, but §13.8 is explicit that this is a
- * courtesy rather than an instruction: प्रमाण and प्रकार already have Hindi
- * here — and the BE's own provenance labels are long English admin strings —
- * so those two keep the FE's words. Everything else is either already a name
- * (a place, a person, a year) or a ready-made language label.
+ * courtesy rather than an instruction: the BE's own provenance labels are long
+ * admin strings, and its file kinds are codes, so those two axes keep the FE's
+ * words. Everything else is content — a place, a person, a year, a topic — and
+ * is rendered as it arrives.
  */
 export function chipLabel(axis: FindAxis, chip: FacetValue): string {
   if (axis === "provenance") {
     return provenanceLabel(chip.value as Provenance)?.label ?? chip.value;
   }
-  if (axis === "kind") return KIND_HI[chip.value as FileKind] ?? chip.value;
+  if (axis === "kind") return KIND_LABEL[chip.value as FileKind] ?? chip.value;
   return chip.label || chip.value;
 }
 
@@ -88,15 +89,15 @@ function SieveRow({
 
   return (
     <div className="flex items-start gap-2 py-1.5">
-      <span
-        lang="hi"
-        className="hi w-14 shrink-0 pt-1 text-[11px] font-bold uppercase tracking-wide text-ink-soft"
-      >
-        {AXIS_HI[axis]}
+      <span className="w-14 shrink-0 pt-1 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+        {AXIS_LABEL[axis]}
       </span>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label={AXIS_HI[axis]}>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={AXIS_LABEL[axis]}>
         {options.map((chip) => {
           const selected = isChipOn(state, axis, chip.value);
+          // The value may be either: "Audio" and "Original" are ours, a place
+          // or a person or a topic is the manager's and often Devanagari.
+          const label = chipLabel(axis, chip);
           return (
             <Link
               key={chip.value}
@@ -109,9 +110,7 @@ function SieveRow({
               }`}
               style={selected ? { background: "var(--ws-color)" } : undefined}
             >
-              <span lang="hi" className="hi">
-                {chipLabel(axis, chip)}
-              </span>
+              <span {...contentLang(label)}>{label}</span>
               <span className="ms-1 tabular-nums opacity-70">{chip.count}</span>
             </Link>
           );
@@ -121,7 +120,7 @@ function SieveRow({
   );
 }
 
-/** "साफ़ करें" — one tap back to the whole shelf, box and chips together. */
+/** "Clear" — one tap back to the whole shelf, box and chips together. */
 export function ClearFind({
   basePath,
   state,
@@ -137,7 +136,7 @@ export function ClearFind({
       className="text-xs font-semibold underline underline-offset-2"
       style={{ color: "var(--ws-ink)" }}
     >
-      <span lang="hi" className="hi">साफ़ करें</span> · Clear {active}
+      Clear {active}
     </Link>
   );
 }
@@ -152,7 +151,7 @@ export function ClearFind({
  * **Folded shut until it is wanted.** Counted over a whole shelf rather than
  * one level, this row of rows got long: seven years, three places and six
  * formats is five hundred pixels of controls, and open by default it pushed the
- * शिविर folders a reader came for off the bottom of a phone. So it is a
+ * shivir folders a reader came for off the bottom of a phone. So it is a
  * `<details>` — no JavaScript, no client component, and the browser keeps the
  * state — with the axes named in the summary so the fold advertises what is
  * behind it. It opens by itself whenever a chip is on, because a filtered page
@@ -169,8 +168,8 @@ export function Sieve({
   basePath: string;
   /**
    * Axes the surface above already offers, so the sieve does not offer them
-   * twice. The shelf passes प्रकार when its tiles *are* the formats: tapping
-   * the ऑडियो tile and tapping the ऑडियो chip then open the same thing, and
+   * twice. The shelf passes Type when its tiles *are* the formats: tapping
+   * the Audio tile and tapping the Audio chip then open the same thing, and
    * two controls for one choice is how a page starts feeling arbitrary.
    *
    * Never hides an axis a reader is currently inside — a filtered page must
@@ -179,7 +178,7 @@ export function Sieve({
    */
   hideAxes?: FindAxis[];
 }) {
-  // विषय only when it is already on — it has its own panel on a shelf, and on
+  // Topic only when it is already on — it has its own panel on a shelf, and on
   // a folder page it exists here purely so the chip a reader arrived with can
   // be seen and switched off.
   const axes: FindAxis[] = [
@@ -200,11 +199,9 @@ export function Sieve({
     <details open={chips > 0} className="group mt-3 rounded-2xl border border-rule bg-white">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-xs font-semibold text-ink [&::-webkit-details-marker]:hidden">
         <FilterIcon className="h-4 w-4 shrink-0 text-ink-soft" />
-        <span lang="hi" className="hi">छाँटें</span>
+        <span>Filter</span>
         <span className="min-w-0 flex-1 truncate font-normal text-ink-soft">
-          <span lang="hi" className="hi">
-            {rows.map((row) => AXIS_HI[row.axis]).join(" · ")}
-          </span>
+          {rows.map((row) => AXIS_LABEL[row.axis]).join(" · ")}
         </span>
         {chips > 0 && (
           <span

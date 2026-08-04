@@ -11,15 +11,15 @@ import type { BookSummary, Topic } from "@/lib/types";
 export const revalidate = 900;
 
 export const metadata: Metadata = {
-  title: "Resources · संसाधन",
+  title: "Resources",
   description:
-    "प्रवचन, शिविर सामग्री, संकलन, अध्ययन व शोध, चित्र व चार्ट — purpose-wise.",
+    "Discourses, shivir material, compilations, study and research, images and charts — purpose-wise.",
 };
 
 /**
  * Which format of the shelf is showing (PRD v2 §5.0.1).
  *
- * A workspace is a shelf, not a treatment: संसाधन holds the library tree *and*
+ * A workspace is a shelf, not a treatment: Resources holds the library tree *and*
  * whichever books are filed here. The tab exists for that, and it is never
  * drawn when there is only one — a single tab is a label for the thing already
  * on screen.
@@ -27,12 +27,12 @@ export const metadata: Metadata = {
 type Format = "library" | "books";
 
 const FORMAT_LABEL: Record<Format, string> = {
-  library: "सामग्री",
-  books: "पुस्तकें",
+  library: "Library",
+  books: "Books",
 };
 
 /**
- * The संसाधन shelf — the Resources workspace root, rendered as its contents.
+ * The Resources shelf — the workspace root, rendered as its contents.
  *
  * The root is a folder like any other and the seven purpose doors are now
  * ordinary folders inside it (Content Model v3 D8) — one fewer concept, one
@@ -77,8 +77,9 @@ export default async function ResourcesPage({
       <h1 className="mt-0.5 font-display text-[26px] font-medium tracking-[-0.015em] lg:text-4xl">
         <span lang="hi" className="hi">{root.name}</span>
       </h1>
-      <p lang="hi" className="hi mt-1 text-sm text-ink-soft">
-        शिविर सामग्री, संकलन, प्रवचन, शोध पत्र, चित्र व चार्ट — क्या खोज रहे हैं, उससे शुरू करें।
+      <p className="mt-1 text-sm text-ink-soft">
+        Shivir material, compilations, discourses, research papers, images and
+        charts — start from what you are looking for.
       </p>
 
       {available.length > 1 && (
@@ -86,11 +87,7 @@ export default async function ResourcesPage({
           <SegmentedNav
             label="Format"
             items={available.map((f) => ({
-              label: (
-                <span lang="hi" className="hi">
-                  {FORMAT_LABEL[f]}
-                </span>
-              ),
+              label: FORMAT_LABEL[f],
               href: f === "library" ? "/resources" : `/resources?format=${f}`,
               active: f === active,
             }))}
@@ -113,7 +110,7 @@ export default async function ResourcesPage({
           topics={topics}
           shelves={shelves}
           basePath="/resources"
-          emptyTitle="संसाधन अभी आ रहे हैं"
+          emptyTitle="Resources are on their way"
           emptyHint="The library is being filled folder by folder; material appears here as it is published."
         />
       )}

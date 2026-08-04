@@ -1,4 +1,4 @@
-// परिभाषा matching — entirely client-side (contract §14.3).
+// Paribhasha matching — entirely client-side (contract §14.3).
 //
 // The FE holds every headword (one ~25 KB download, cached in IndexedDB), so
 // deciding which words on a page have a definition costs no request at all.

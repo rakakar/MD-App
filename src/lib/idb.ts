@@ -7,7 +7,7 @@ const DB_NAME = "md-reader";
 const DB_VERSION = 2;
 const CHAPTERS = "chapters"; // key: `${code}/${number}`
 const DOWNLOADS = "downloads"; // key: book code → {code, chapters: n, saved_at}
-const GLOSSARY = "glossary"; // key: "index" → the one परिभाषा headword list
+const GLOSSARY = "glossary"; // key: "index" → the one Paribhasha headword list
 
 interface CachedChapter {
   key: string;
@@ -102,7 +102,7 @@ export async function putCachedChapter(
   }
 }
 
-// ---- परिभाषा (§14) ----
+// ---- Paribhasha (§14) ----
 //
 // Three kinds of row in one store, in the order a reader acquires them:
 //

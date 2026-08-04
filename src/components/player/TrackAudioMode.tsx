@@ -23,7 +23,7 @@ import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
  * Audio Mode for a recording — the full-screen surface for anything that is
  * not a chapter of a book.
  *
- * A प्रवचन and a chapter want the same room and differ only in what is in the
+ * A discourse and a chapter want the same room and differ only in what is in the
  * middle of it. The chapter has text that follows the voice, and that text is
  * the whole point of `AudioMode`. A recording has no text at all, so the same
  * screen with an empty middle would be a screen that looks broken. Here the
@@ -38,7 +38,7 @@ import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
  * them here.
  *
  * Mounted once in `AppShell`, beside the player bar, because a recording can be
- * playing from anywhere: a series page, a संसाधन collection, the folder tree.
+ * playing from anywhere: a series page, a Resources collection, the folder tree.
  * `AudioMode` can afford to live inside the reader; this cannot.
  */
 export function TrackAudioMode() {
@@ -165,13 +165,13 @@ export function TrackAudioMode() {
           <TransportBtn
             onClick={() => player.chapterNav?.prev?.()}
             disabled={!player.chapterNav?.prev}
-            label="पिछला भाग"
+            label="Previous track"
           >
             <PrevChapterIcon />
           </TransportBtn>
           <TransportBtn
             onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-            label={`${SKIP_SECONDS} सेकंड पीछे`}
+            label={`Back ${SKIP_SECONDS} seconds`}
             big
           >
             <SkipBackIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
@@ -186,7 +186,7 @@ export function TrackAudioMode() {
           </button>
           <TransportBtn
             onClick={() => player.skipSeconds(SKIP_SECONDS)}
-            label={`${SKIP_SECONDS} सेकंड आगे`}
+            label={`Forward ${SKIP_SECONDS} seconds`}
             big
           >
             <SkipForwardIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
@@ -194,7 +194,7 @@ export function TrackAudioMode() {
           <TransportBtn
             onClick={() => player.chapterNav?.next?.()}
             disabled={!player.chapterNav?.next}
-            label="अगला भाग"
+            label="Next track"
           >
             <NextChapterIcon />
           </TransportBtn>
@@ -206,7 +206,7 @@ export function TrackAudioMode() {
               onClick={() => setMenu(menu === "sleep" ? null : "sleep")}
               active={player.sleepRemainingMs !== null}
             >
-              {player.sleepRemainingMs !== null ? fmt(player.sleepRemainingMs) : "स्लीप"}
+              {player.sleepRemainingMs !== null ? fmt(player.sleepRemainingMs) : "Sleep"}
             </FootBtn>
             {menu === "sleep" && (
               <Menu className="bottom-full left-1/2 mb-1 w-32 -translate-x-1/2">
@@ -218,7 +218,7 @@ export function TrackAudioMode() {
                       setMenu(null);
                     }}
                   >
-                    {m} मिनट
+                    {m} min
                   </MenuItem>
                 ))}
                 <MenuItem
@@ -228,14 +228,14 @@ export function TrackAudioMode() {
                     setMenu(null);
                   }}
                 >
-                  बंद
+                  Off
                 </MenuItem>
               </Menu>
             )}
           </div>
           {/* Same promise the reader's Audio Mode makes: closing is not
               stopping. The bar keeps playing and its ⌃ brings this back. */}
-          <FootBtn onClick={closeAudioMode}>बंद करें</FootBtn>
+          <FootBtn onClick={closeAudioMode}>Close</FootBtn>
         </div>
       </div>
     </div>

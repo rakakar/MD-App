@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cardSummary, nodeFacts, tileSummary } from "@/components/library/format";
+import { contentLang } from "@/lib/script";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import {
   ChevronRight,
@@ -24,7 +25,7 @@ import type {
  * A folder icon on every tile is a folder icon on no tile — it repeats what
  * the grid already says. These earn their place only where a collection is
  * **of one kind**, which on this shelf is the ordinary case rather than the
- * lucky one: मूल ग्रंथ's five collections are videos, recordings, photographs
+ * lucky one: Originals' five collections are videos, recordings, photographs
  * and documents, and each is pure. A mixed collection gets the folder back,
  * because there is no one true thing to draw.
  */
@@ -125,8 +126,8 @@ export function NodeCardView({
             named "Samvaad, Talk, & Shivir - संवाद, वार्ता एवं शिविर" ran to
             three lines and left its neighbour two-thirds empty. */}
         <span
-          lang="hi"
-          className="hi line-clamp-2 text-[15px] font-semibold leading-snug group-hover:underline"
+          {...contentLang(card.name)}
+          className={`${contentLang(card.name).className} line-clamp-2 text-[15px] font-semibold leading-snug group-hover:underline`}
         >
           {card.name}
         </span>
@@ -134,7 +135,7 @@ export function NodeCardView({
           // Two lines, not one. This line is doing more work than it looks:
           // a folder is named in the language its material is in, so on a
           // Hindi shelf the description is where an English reader is met —
-          // "ऑडियो" over "Audio — Nagraj ji's recorded discourses". Clipped to
+          // "प्रवचन" over "Audio — Nagraj ji's recorded discourses". Clipped to
           // one line it became "Audio — Nagraj ji's record…", which is the
           // half of the sentence that says nothing. Still clamped, because
           // four lines would push the count off the bottom of the tile.
@@ -144,11 +145,10 @@ export function NodeCardView({
         )}
         <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2.5">
           <span
-            lang="hi"
-            className="hi text-[11.5px] font-semibold"
+            className="text-[11.5px] font-semibold"
             style={{ color: weight ? "var(--ws-ink)" : undefined }}
           >
-            {weight || <span className="text-muted">अभी कुछ नहीं</span>}
+            {weight || <span className="text-muted">Nothing yet</span>}
           </span>
           <ProvenanceBadge provenance={card.provenance} />
         </span>
@@ -164,13 +164,16 @@ export function NodeCardView({
       >
         <span className="min-w-0 flex-1">
           <span
-            lang="hi"
-            className="hi block text-[19px] font-semibold leading-snug group-hover:underline"
+            {...contentLang(card.name)}
+            className={`${contentLang(card.name).className} block text-[19px] font-semibold leading-snug group-hover:underline`}
           >
             {card.name}
           </span>
           {card.description && (
-            <span lang="hi" className="hi mt-1 block text-[13px] leading-relaxed text-ink-soft">
+            <span
+              {...contentLang(card.description)}
+              className={`${contentLang(card.description).className} mt-1 block text-[13px] leading-relaxed text-ink-soft`}
+            >
               {card.description}
             </span>
           )}
@@ -179,11 +182,10 @@ export function NodeCardView({
                 published so that content published inside them is visible
                 (§13.3). It says so rather than showing a bare "0". */}
             <span
-              lang="hi"
-              className="hi text-[11.5px] font-semibold"
+              className="text-[11.5px] font-semibold"
               style={{ color: summary ? "var(--ws-ink)" : undefined }}
             >
-              {summary || <span className="text-muted">अभी कुछ नहीं</span>}
+              {summary || <span className="text-muted">Nothing yet</span>}
             </span>
             <ProvenanceBadge provenance={card.provenance} />
           </span>
@@ -205,22 +207,26 @@ export function NodeCardView({
       </span>
       <span className="min-w-0 flex-1">
         {home && home.length > 0 && <BreadcrumbLine steps={home} />}
-        <span lang="hi" className="hi block text-[15px] font-medium leading-snug group-hover:underline">
+        <span
+          {...contentLang(card.name)}
+          className={`${contentLang(card.name).className} block text-[15px] font-medium leading-snug group-hover:underline`}
+        >
           {card.name}
         </span>
         {facts && (
-          <span lang="hi" className="hi mt-0.5 block text-xs text-ink-soft">
+          <span {...contentLang(facts)} className={`${contentLang(facts).className} mt-0.5 block text-xs text-ink-soft`}>
             {facts}
           </span>
         )}
         <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-soft">
-          <span lang="hi" className="hi">
-            {summary || "अभी कुछ नहीं"}
-          </span>
+          <span>{summary || "Nothing yet"}</span>
           <ProvenanceBadge provenance={card.provenance} />
         </span>
         {card.description && (
-          <span lang="hi" className="hi mt-1 block text-xs leading-relaxed text-ink-soft">
+          <span
+            {...contentLang(card.description)}
+            className={`${contentLang(card.description).className} mt-1 block text-xs leading-relaxed text-ink-soft`}
+          >
             {card.description}
           </span>
         )}

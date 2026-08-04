@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { useGlossary } from "@/components/reader/GlossaryProvider";
 import { Sheet } from "@/components/reader/Sheet";
 import { DefinitionText, useDefinitionSegments } from "./DefinitionText";
-import { devanagariNumber } from "./format";
 import { TrailContext } from "./trail-context";
 import type { ParibhashaWord } from "@/lib/types";
 
@@ -17,10 +16,10 @@ import type { ParibhashaWord } from "@/lib/types";
  * on screen, every step is a way back, and closing the sheet returns to where
  * you started rather than to some middle of the chain.
  *
- * **This is the only परिभाषा card in the app.** The reader used to carry a
+ * **This is the only Paribhasha card in the app.** The reader used to carry a
  * second, simpler one that printed definitions as plain text — so the same
  * word gave a different answer depending on whether you tapped it in a chapter
- * or in the शब्दकोश, and only one of the two let you follow the vocabulary.
+ * or in the glossary, and only one of the two let you follow the vocabulary.
  * The sheet is controlled by whoever opens it, which is what lets the reader
  * keep the open word in its own state (it drives the reader's chrome) while
  * still rendering this component.
@@ -97,7 +96,7 @@ export function ParibhashaTrailSheet({
   const trimTo = (i: number) => setPushed((p) => p.slice(0, i));
 
   return (
-    <Sheet open={current !== null} onClose={onClose} title="परिभाषा">
+    <Sheet open={current !== null} onClose={onClose} title="Paribhasha">
       {/* Definitions rendered below reach *this* trail, so following a word
           inside the sheet extends the chain instead of starting a new one. */}
       <TrailContext.Provider value={trailValue}>
@@ -106,7 +105,7 @@ export function ParibhashaTrailSheet({
             word has no history worth a row of chrome. */}
         {trail.length > 1 && (
           <nav
-            aria-label="देखे गए शब्द"
+            aria-label="Words viewed"
             className="-mt-1 mb-3 flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-(--reader-ink-soft)"
           >
             {trail.map((w, i) => (
@@ -140,7 +139,7 @@ export function ParibhashaTrailSheet({
             <button
               type="button"
               onClick={back}
-              aria-label="पिछला शब्द"
+              aria-label="Previous word"
               className="mt-1 shrink-0 rounded-full border border-(--reader-rule) px-2.5 py-1 text-sm leading-none text-(--reader-ink-soft)"
             >
               ←
@@ -158,16 +157,16 @@ export function ParibhashaTrailSheet({
 
         <div className="mt-4">
           {state === "loading" && (
-            <p className="py-4 text-sm text-(--reader-ink-soft)">देखा जा रहा है…</p>
+            <p className="py-4 text-sm text-(--reader-ink-soft)">Looking up…</p>
           )}
           {state === "missing" && (
-            <p lang="hi" className="hi py-2 text-sm text-(--reader-ink-soft)">
-              इस शब्द की परिभाषा उपलब्ध नहीं है।
+            <p className="py-2 text-sm text-(--reader-ink-soft)">
+              No definition is available for this word.
             </p>
           )}
           {state === "error" && (
-            <p lang="hi" className="hi py-2 text-sm text-(--reader-ink-soft)">
-              परिभाषा नहीं आ सकी — आप ऑफ़लाइन हो सकते हैं।
+            <p className="py-2 text-sm text-(--reader-ink-soft)">
+              Couldn&apos;t load the definition — you may be offline.
             </p>
           )}
           {state === "ready" && (
@@ -186,7 +185,7 @@ export function ParibhashaTrailSheet({
 
 /**
  * Page-level entry point: anything inside can call `open(word)` to raise the
- * sheet. Used by the शब्दकोश list and by a single-word page, where the opener
+ * sheet. Used by the glossary list and by a single-word page, where the opener
  * is a row rather than a piece of reader chrome.
  *
  * The sheet installs its own trail context over this one, so a tap on the page
@@ -231,8 +230,8 @@ export function DefinitionList({
 
   if (definitions.length === 0) {
     return (
-      <p lang="hi" className={`hi text-sm ${soft}`}>
-        इस शब्द की परिभाषा अभी दर्ज नहीं है।
+      <p className={`text-sm ${soft}`}>
+        No definition has been recorded for this word yet.
       </p>
     );
   }
@@ -256,14 +255,11 @@ export function DefinitionList({
   );
 }
 
-/** "२ परिभाषाएँ" — the count badge a row wears when it holds more than one. */
+/** "2 definitions" — the count badge a row wears when it holds more than one. */
 export function DefinitionCount({ n }: { n: number }) {
   return (
-    <span
-      lang="hi"
-      className="hi rounded-full border border-rule px-1.5 py-0.5 text-[10px] font-medium text-ink-soft"
-    >
-      {devanagariNumber(n)} परिभाषाएँ
+    <span className="rounded-full border border-rule px-1.5 py-0.5 text-[10px] font-medium text-ink-soft">
+      {n} definitions
     </span>
   );
 }

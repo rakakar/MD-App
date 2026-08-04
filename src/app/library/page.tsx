@@ -4,6 +4,7 @@ import { NodeCardView } from "@/components/library/NodeCard";
 import { EmptyState, PageContainer } from "@/components/ui";
 import { getTopics, openTopic } from "@/lib/api";
 import { shelfMap } from "@/lib/library";
+import { contentLang } from "@/lib/script";
 import type { LocatedNodeCard, Topic } from "@/lib/types";
 
 export const revalidate = 900;
@@ -16,7 +17,7 @@ export async function generateMetadata({
   const { topic } = await searchParams;
   const row = topic ? await findTopic(topic) : null;
   return {
-    title: row ? `${row.name} · संसाधन` : "संसाधन",
+    title: row ? `${row.name} · Library` : "Library",
     description: row?.description || undefined,
   };
 }
@@ -27,11 +28,11 @@ async function findTopic(code: string): Promise<Topic | null> {
 }
 
 /**
- * A विषय, across the whole library.
+ * A topic, across the whole library.
  *
- * विषय is a **door**, not a sieve (contract §13.4): tapping one leaves the
+ * Topic is a **door**, not a sieve (contract §13.4): tapping one leaves the
  * folder you were in, because what you are asking for is everything filed
- * under व्यवस्था wherever it lives — not the व्यवस्था inside this one shivir.
+ * under a topic wherever it lives — not that topic inside this one shivir.
  * That is why it navigates here rather than narrowing in place.
  *
  * Which is also why every row prints its path: these arrive from every depth
@@ -44,7 +45,7 @@ export default async function LibraryTopicPage({
   searchParams: Promise<{ topic?: string }>;
 }) {
   const { topic } = await searchParams;
-  // The only thing this page is for. Without a विषय there is no "whole
+  // The only thing this page is for. Without a topic there is no "whole
   // library" list worth showing — that is what the shelves are.
   if (!topic) notFound();
 
@@ -57,14 +58,18 @@ export default async function LibraryTopicPage({
 
   return (
     <PageContainer size="shelf">
-      <p lang="hi" className="hi text-[11.5px] font-bold uppercase tracking-wide text-ink-soft">
-        विषय
-      </p>
-      <h1 lang="hi" className="hi mt-0.5 text-[22px] font-semibold leading-tight lg:text-3xl">
+      <p className="text-[11.5px] font-bold uppercase tracking-wide text-ink-soft">Topic</p>
+      <h1
+        {...contentLang(row.name)}
+        className={`${contentLang(row.name).className} mt-0.5 text-[22px] font-semibold leading-tight lg:text-3xl`}
+      >
         {row.name}
       </h1>
       {row.description && (
-        <p lang="hi" className="hi mt-1 text-sm text-ink-soft">
+        <p
+          {...contentLang(row.description)}
+          className={`${contentLang(row.description).className} mt-1 text-sm text-ink-soft`}
+        >
           {row.description}
         </p>
       )}
@@ -80,8 +85,8 @@ export default async function LibraryTopicPage({
       ) : (
         <div className="mt-5">
           <EmptyState
-            title="इस विषय पर अभी कुछ नहीं"
-            hint="Folders appear here as material is published and filed under this विषय."
+            title="Nothing under this topic yet"
+            hint="Folders appear here as material is published and filed under this topic."
           />
         </div>
       )}

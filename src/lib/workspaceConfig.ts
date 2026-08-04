@@ -1,8 +1,7 @@
 // Five-workspace navigation model (PRD §2). The BE now calls them workspaces
 // too (Content Model v3), and its codes are these ids verbatim (contract §10)
 // — so there is no code→workspace mapping table on either side. What lives
-// here and not in the API is the reader-facing Hindi: the BE holds English
-// names only, on purpose (§10.1).
+// here and not in the API is the chrome: the name, the tagline and the tabs.
 
 export type WorkspaceId =
   | "originals"
@@ -43,7 +42,6 @@ export type NavIcon =
 export interface Workspace {
   id: WorkspaceId;
   name: string;
-  nameHi: string;
   /** identity colour (PRD §2 table) */
   color: string;
   /**
@@ -63,21 +61,20 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
   originals: {
     id: "originals",
     name: "Originals",
-    nameHi: "मूल ग्रंथ",
     // designer palette (spec 10A), each hue deepened only as far as AA on the
     // sepia reading surface requires — terracotta uses the spec's own 700
     color: "#A64E12",
-    tagline: "ग्रंथ · daily सूत्र · प्रवचन",
+    tagline: "Books · daily Sutra · discourses",
     home: "/",
     // The fourth slot was "Audio/Video → /audio", a shelf Content Model v3
-    // dissolved. It is सामग्री now, and points at the library rather than at
-    // one kind of file inside it: audio, video, photographs and documents are
-    // all Items in the same tree, and प्रकार on that shelf sieves between them.
+    // dissolved. It is Library now, and points at the tree rather than at one
+    // kind of file inside it: audio, video, photographs and documents are all
+    // Items in the same tree, and Type on that shelf sieves between them.
     // Re-splitting them into their own tabs is the arrangement v3 deleted.
     //
     // It was held back while there was nothing published to open, which the
-    // pCloud import has now changed. वाणी — the मूल-provenance door — is still
-    // held back, and is a different thing from this: a filter across the whole
+    // pCloud import has now changed. The Original-provenance door is still held
+    // back, and is a different thing from this: a filter across the whole
     // library, not one workspace's shelf.
     nav: [
       { label: "Home", href: "/", icon: "home" },
@@ -89,9 +86,8 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
   translations: {
     id: "translations",
     name: "Translations",
-    nameHi: "अनुवाद",
     color: "#4A7260",
-    tagline: "English · side-by-side with the मूल",
+    tagline: "English · side-by-side with the original",
     home: "/translations",
     nav: [
       { label: "Home", href: "/translations", icon: "home" },
@@ -102,7 +98,6 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
   resources: {
     id: "resources",
     name: "Resources",
-    nameHi: "संसाधन",
     color: "#5E5A8C",
     tagline: "Shivir notes · presentations · Yojana",
     home: "/resources",
@@ -118,7 +113,6 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
   journey: {
     id: "journey",
     name: "My Journey",
-    nameHi: "मेरी यात्रा",
     color: "#89631F",
     tagline: "Where you left off · bookmarks · notes",
     home: "/me",
@@ -132,13 +126,12 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
   connect: {
     id: "connect",
     name: "Connect",
-    nameHi: "संपर्क",
     color: "#2F6E86",
-    tagline: "शिविर calendar · JV centres",
+    tagline: "Shivir calendar · JV centres",
     home: "/connect",
-    // The fourth slot is the संपर्क shelf, not padding: it is a real surface
-    // with four doors of its own, and without a tab it is reachable only from
-    // a segmented control on two other pages.
+    // The fourth slot is Connect's own library, not padding: it is a real
+    // surface with four doors of its own, and without a tab it is reachable
+    // only from a segmented control on two other pages.
     nav: [
       { label: "Events", href: "/connect", icon: "events" },
       { label: "Centers", href: "/connect/centers", icon: "centers" },
@@ -181,10 +174,10 @@ export function contentWorkspace(code: string | null | undefined): ContentWorksp
  * A BE `workspace` code → the chrome a *folder* wears at `/library/[id]`.
  *
  * Wider than `contentWorkspace` because the library tree is wider than the
- * `?workspace=` filter: Connect holds folders (केंद्र · कार्यक्रम · संपर्क
- * सूत्र · सहभागिता) without being a filterable content shelf, and a reader who
- * opens one of its doors should still be standing in संपर्क — same accent,
- * same tab bar — rather than be quietly moved to Resources.
+ * `?workspace=` filter: Connect holds folders without being a filterable
+ * content shelf, and a reader who opens one of its doors should still be
+ * standing in Connect — same accent, same tab bar — rather than be quietly
+ * moved to Resources.
  */
 export function libraryWorkspace(code: string | null | undefined): WorkspaceId {
   return code?.toLowerCase() === "connect" ? "connect" : contentWorkspace(code);

@@ -22,14 +22,14 @@ interface ResumeCard {
 }
 
 /**
- * "अध्याय 5 · <name>" — unless the name already opens with अध्याय, as MVD's
- * TOC entries do ("अध्याय - पाँच निर्भ्रमता ही विश्राम"), where prefixing it
- * says the word twice and numbers the chapter in two scripts at once. There
- * the printed heading stands on its own.
+ * "Chapter 5 · <name>" — unless the name is itself a numbered chapter heading,
+ * as MVD's TOC entries are ("अध्याय - पाँच निर्भ्रमता ही विश्राम"), where
+ * prefixing it numbers the chapter twice. There the printed heading, which is
+ * the manager's own words, stands on its own.
  */
 function chapterLine(chapter: string, title: string | null): string {
-  if (!title) return `अध्याय ${chapter}`;
-  return /^अध्याय/.test(title.trim()) ? title : `अध्याय ${chapter} · ${title}`;
+  if (!title) return `Chapter ${chapter}`;
+  return /^अध्याय/.test(title.trim()) ? title : `Chapter ${chapter} · ${title}`;
 }
 
 /**
@@ -44,7 +44,7 @@ function chapterLine(chapter: string, title: string | null): string {
  * the book's page count, which is the only progress signal that exists: the BE
  * stores a resume position, not a completion figure. It is therefore "how far
  * into the book this page sits", not "how much has been read" — near enough
- * for a progress ring, and the reason the label says पृष्ठ N of M beside it
+ * for a progress ring, and the reason the label says page N of M beside it
  * rather than leaving the ring to speak alone.
  */
 export function ContinueReading({
@@ -96,7 +96,7 @@ export function ContinueReading({
     });
     setCards(base);
 
-    // The chapter's name is what tells a reader where they were — "अध्याय 1"
+    // The chapter's name is what tells a reader where they were — "Chapter 1"
     // alone names a position, not a subject. It lives in the book's TOC, which
     // the list endpoint does not carry, so it arrives a beat after the cards
     // do: the card is on screen and tappable first, and gains the name when it
@@ -128,7 +128,7 @@ export function ContinueReading({
       </h2>
       {/* A snapping rail rather than a stack (design 1A/1B): the card a reader
           wants is nearly always the first one, and laying three of them out
-          vertically pushed the ग्रंथ shelf below the fold on a phone. The rail
+          vertically pushed the book shelf below the fold on a phone. The rail
           bleeds to the screen edge so the second card peeks — which is what
           says "there are more" without a control saying it. */}
       <ul

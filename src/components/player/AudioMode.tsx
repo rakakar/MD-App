@@ -17,6 +17,7 @@ import {
   saveAudio,
 } from "@/lib/audioCache";
 import { bookHue } from "@/lib/bookHue";
+import { contentLang } from "@/lib/script";
 import type { AudioRendition, Paragraph } from "@/lib/types";
 import {
   CoverArt,
@@ -59,7 +60,7 @@ export interface AudioModeProps {
  *    should never learn to fear the close button.
  * 2. **The text is a control, not decoration.** Tapping a paragraph plays from
  *    it. For a study text that is the most-wanted action in the room — "read
- *    that सूत्र to me again" — and a scrub bar cannot express it.
+ *    that sutra to me again" — and a scrub bar cannot express it.
  *
  * Its palette is fixed dark rather than inherited from the reader's theme: the
  * screen is mostly a cover and a couple of lines, it is often the last thing
@@ -137,7 +138,7 @@ export function AudioMode({
     ? `${Math.min(player.deviceParaIndex + 1, source.paras.length)} / ${source.paras.length}`
     : null;
   const voiceLabel = device
-    ? (player.deviceVoiceLabel ?? "डिवाइस की आवाज़")
+    ? (player.deviceVoiceLabel ?? "Device voice")
     : (rendition?.voice_label ?? "");
 
   return (
@@ -208,27 +209,27 @@ export function AudioMode({
 
       {/* ---- cover + what is playing ---- */}
       <div className="flex flex-col items-center px-6 pt-5">
-        <CoverArt src={cover} hue={hue} fallback={source.bookTitle?.[0] ?? "ग्र"} />
+        <CoverArt src={cover} hue={hue} fallback={source.bookTitle?.[0] ?? "\u0917\u094D\u0930"} />
         <p lang="hi" className="hi mt-4 line-clamp-2 text-center text-base font-semibold">
           {source.chapterTitle}
         </p>
         <p className="mt-1 text-xs tabular-nums text-[#f2ece2]/55">
           {device
-            ? `पैरा ${paraProgress}`
+            ? `Para ${paraProgress}`
             : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
-          {voiceLabel && <span lang="hi" className="hi"> · {voiceLabel}</span>}
+          {voiceLabel && <span {...contentLang(voiceLabel)}> · {voiceLabel}</span>}
         </p>
         {/* The one honest sentence this mode owes the listener: the device
             voice is not background audio, and finding that out with the phone
             already in a pocket is how an app loses trust. */}
         {device && (
-          <p lang="hi" className="hi mt-2 text-center text-[11px] leading-snug text-[#e08b3e]/85">
-            डिवाइस की आवाज़ — स्क्रीन बंद होने पर रुक जाएगी
+          <p className="mt-2 text-center text-[11px] leading-snug text-[#e08b3e]/85">
+            Device voice — stops when the screen locks
           </p>
         )}
         {rendition?.is_stale && (
-          <p lang="hi" className="hi mt-2 text-center text-[11px] text-[#f2ece2]/45">
-            यह audio पाठ के पिछले संस्करण का है
+          <p className="mt-2 text-center text-[11px] text-[#f2ece2]/45">
+            This audio is of an earlier version of the text
           </p>
         )}
       </div>
@@ -261,7 +262,7 @@ export function AudioMode({
           })}
           {lines.length === 0 && (
             <p className="py-10 text-center text-sm text-[#f2ece2]/45">
-              इस अध्याय का पाठ यहाँ नहीं है।
+              The text of this chapter isn&apos;t here.
             </p>
           )}
         </div>
@@ -301,13 +302,13 @@ export function AudioMode({
           <TransportBtn
             onClick={() => player.chapterNav?.prev?.()}
             disabled={!player.chapterNav?.prev}
-            label={prevChapterTitle ? `पिछला अध्याय: ${prevChapterTitle}` : "पिछला अध्याय"}
+            label={prevChapterTitle ? `Previous chapter: ${prevChapterTitle}` : "Previous chapter"}
           >
             <PrevChapterIcon />
           </TransportBtn>
           <TransportBtn
             onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-            label={device ? "पिछला पैरा" : `${SKIP_SECONDS} सेकंड पीछे`}
+            label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
             big
           >
             <SkipBackIcon className="h-6 w-6" seconds={device ? "¶" : SKIP_SECONDS} />
@@ -326,7 +327,7 @@ export function AudioMode({
           </button>
           <TransportBtn
             onClick={() => player.skipSeconds(SKIP_SECONDS)}
-            label={device ? "अगला पैरा" : `${SKIP_SECONDS} सेकंड आगे`}
+            label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
             big
           >
             <SkipForwardIcon className="h-6 w-6" seconds={device ? "¶" : SKIP_SECONDS} />
@@ -334,7 +335,7 @@ export function AudioMode({
           <TransportBtn
             onClick={() => player.chapterNav?.next?.()}
             disabled={!player.chapterNav?.next}
-            label={nextChapterTitle ? `अगला अध्याय: ${nextChapterTitle}` : "अगला अध्याय"}
+            label={nextChapterTitle ? `Next chapter: ${nextChapterTitle}` : "Next chapter"}
           >
             <NextChapterIcon />
           </TransportBtn>
@@ -352,13 +353,13 @@ export function AudioMode({
                 onOpenContents();
               }}
             >
-              अध्याय
+              Chapters
             </FootBtn>
           )}
           {source.kind === "tts" && source.renditions.length > 1 && (
             <div className="relative">
               <FootBtn onClick={() => setMenu(menu === "voice" ? null : "voice")}>
-                आवाज़
+                Voice
               </FootBtn>
               {menu === "voice" && (
                 <div
@@ -393,7 +394,7 @@ export function AudioMode({
               onClick={() => setMenu(menu === "sleep" ? null : "sleep")}
               active={player.sleepRemainingMs !== null}
             >
-              {player.sleepRemainingMs !== null ? fmt(player.sleepRemainingMs) : "स्लीप"}
+              {player.sleepRemainingMs !== null ? fmt(player.sleepRemainingMs) : "Sleep"}
             </FootBtn>
             {menu === "sleep" && (
               <div
@@ -411,7 +412,7 @@ export function AudioMode({
                     }}
                     className="block w-full px-4 py-2 text-start text-sm text-[#f2ece2]/85"
                   >
-                    {m} मिनट
+                    {m} min
                   </button>
                 ))}
                 <button
@@ -423,7 +424,7 @@ export function AudioMode({
                   }}
                   className="block w-full px-4 py-2 text-start text-sm text-[#f2ece2]/55"
                 >
-                  बंद
+                  Off
                 </button>
               </div>
             )}
@@ -434,7 +435,7 @@ export function AudioMode({
           {/* The read↔listen handoff, said out loud. Closing keeps the audio
               running and the page behind is already scrolled to this very
               paragraph, so it is a switch of mode, not a stop. */}
-          <FootBtn onClick={closeAudioMode}>पढ़ें</FootBtn>
+          <FootBtn onClick={closeAudioMode}>Read</FootBtn>
         </div>
       </div>
     </div>
@@ -447,7 +448,7 @@ export function AudioMode({
  * Two things make this button unusual, and both come from the files being WAV
  * at 48 kB/s (see src/lib/audioCache.ts):
  *
- * - **The size is on the button**, before the tap. A control that says "सेव"
+ * - **The size is on the button**, before the tap. A control that says "Save"
  *   and silently pulls 70 MB over mobile data is a control that lies.
  * - **Anything large asks twice.** Over 40 MB the first tap only shows the
  *   number and waits, which is cheaper than an undo that costs the download
@@ -520,19 +521,19 @@ function SaveChapterButton({
 
   const label =
     state === "saved"
-      ? "✓ सेव्ड"
+      ? "✓ Saved"
       : state === "removing"
-        ? "मिटाएँ?"
+        ? "Remove?"
         : state === "saving"
           ? // A percentage where the bytes can be counted, and a plain "saving"
             // where they cannot — never a number this button had to invent.
             progress === null
-            ? "सेव हो रहा है…"
+            ? "Saving…"
             : `${Math.round(progress * 100)}%`
           : state === "confirm"
-            ? `${size} — पक्का?`
+            ? `${size} — sure?`
             : state === "failed"
-              ? "सेव नहीं हुआ"
+              ? "Not saved"
               : `⤓ ${size}`;
 
   return (

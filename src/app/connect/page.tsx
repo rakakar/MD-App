@@ -9,7 +9,7 @@ import type { EventItem } from "@/lib/types";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Connect · संपर्क",
+  title: "Connect",
   description: "Upcoming events, shivir calendar and centers.",
 };
 
@@ -18,7 +18,7 @@ export default async function ConnectPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-medium">Connect · <span lang="hi" className="hi">संपर्क</span></h1>
+      <h1 className="font-display text-2xl font-medium">Connect</h1>
       <p className="mt-1 text-sm text-ink-soft">Upcoming shivirs, gatherings and updates.</p>
       {/* One workspace, three sections (design 9A) — News waits on a BE feed. */}
       <div className="mt-3">

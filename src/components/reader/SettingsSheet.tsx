@@ -211,8 +211,8 @@ export function SettingsSheet(p: SettingsSheetProps) {
             still there, just not advertised — so nobody has to accept a
             marked-up page to get them. */}
         <Toggle
-          label="परिभाषा underline दिखाएँ"
-          hint="बंद रहने पर भी: किसी शब्द को दबाकर रखें → परिभाषा।"
+          label="Show Paribhasha underlines"
+          hint="Even with this off: press and hold any word for its definition."
           checked={p.glossaryUnderline}
           onChange={p.onGlossaryUnderline}
         />
