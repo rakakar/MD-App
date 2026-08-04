@@ -129,13 +129,14 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     color: "#2F6E86",
     tagline: "Shivir calendar · JV centres",
     home: "/connect",
-    // The fourth slot is Connect's own library, not padding: it is a real
-    // surface with four doors of its own, and without a tab it is reachable
-    // only from a segmented control on two other pages.
+    // Three slots. The fourth was Connect's own library, and it is gone: the
+    // four folders behind it ship published but empty (§13.3), so the tab
+    // promised a room with nothing in it — in the one workspace whose whole
+    // job is telling a reader where to go. The shelf still exists at
+    // `/connect/library`; see ConnectNav for when the tab comes back.
     nav: [
       { label: "Events", href: "/connect", icon: "events" },
       { label: "Centers", href: "/connect/centers", icon: "centers" },
-      { label: "Library", href: "/connect/library", icon: "browse" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
