@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AvatarMenu, EventChip, WorkspaceSwitcher } from "./Header";
+import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
 import type { NavItem } from "@/lib/workspaceConfig";
@@ -78,33 +79,43 @@ export function Sidebar() {
         <WorkspaceSwitcher variant="popover" />
         <EventChip />
       </div>
-      <nav aria-label={`${workspace.name} navigation`} className="flex-1 p-3">
-        <ul className="flex flex-col gap-1">
-          {workspace.nav.map((item) => {
-            const active = isActive(item, pathname);
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    active ? "text-white" : "text-ink hover:bg-black/5"
-                  }`}
-                  style={active ? { background: "var(--ws-color)" } : undefined}
-                >
-                  <Icon name={item.icon} className="h-4.5 w-4.5" />
-                  {item.label}
-                  {item.isSearch && (
-                    <kbd className="ml-auto rounded border border-rule px-1.5 py-0.5 text-[10px] text-ink-soft">
-                      ⌘K
-                    </kbd>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      {/* Nav and the route's own facets scroll together, and the avatar stays
+          pinned to the floor. A rail that is only four nav rows tall never
+          needed this; one that can also hold six axes of chips on a 800px-high
+          laptop does, and the alternative — the rail scrolling as a whole —
+          takes the account menu off screen with it. */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
+        <nav aria-label={`${workspace.name} navigation`} className="p-3">
+          <ul className="flex flex-col gap-1">
+            {workspace.nav.map((item) => {
+              const active = isActive(item, pathname);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      active ? "text-white" : "text-ink hover:bg-black/5"
+                    }`}
+                    style={active ? { background: "var(--ws-color)" } : undefined}
+                  >
+                    <Icon name={item.icon} className="h-4.5 w-4.5" />
+                    {item.label}
+                    {item.isSearch && (
+                      <kbd className="ml-auto rounded border border-rule px-1.5 py-0.5 text-[10px] text-ink-soft">
+                        ⌘K
+                      </kbd>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        {/* What this route sends up — the shelf's प्रकार · विषय · वर्ष on
+            /originals and /resources, and nothing at all everywhere else. */}
+        <RailHost />
+      </div>
       <div className="border-t border-rule p-3">
         <AvatarMenu />
       </div>

@@ -11,6 +11,7 @@ import { PushProvider } from "@/components/push/PushProvider";
 import { isReaderRoute } from "@/lib/routes";
 import { Header } from "./Header";
 import { BottomNav, Sidebar } from "./Nav";
+import { RailProvider } from "./Rail";
 import { ServiceWorker } from "./ServiceWorker";
 import { WorkspaceProvider } from "./WorkspaceProvider";
 
@@ -42,20 +43,25 @@ export function AppShell({ children }: { children: ReactNode }) {
     <AuthProvider>
       <WorkspaceProvider>
         <PlayerProvider>
-          {!bare && <Header />}
-          {!bare && <Sidebar />}
-          <CommandK />
-          <ServiceWorker />
-          <main
-            className={
-              bare
-                ? "min-h-dvh"
-                : // clears the bottom nav plus the home-indicator inset
-                  "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-64"
-            }
-          >
-            {children}
-          </main>
+          {/* The rail and the route are on opposite sides of the router — the
+              sidebar is mounted once here and a page's facets are fetched per
+              request — so the slot that joins them has to be above both. */}
+          <RailProvider>
+            {!bare && <Header />}
+            {!bare && <Sidebar />}
+            <CommandK />
+            <ServiceWorker />
+            <main
+              className={
+                bare
+                  ? "min-h-dvh"
+                  : // clears the bottom nav plus the home-indicator inset
+                    "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-64"
+              }
+            >
+              {children}
+            </main>
+          </RailProvider>
           <PlayerBar />
           {/* Full-screen listening for anything that is not a chapter. The
               reader mounts its own Audio Mode inside itself; a recording can

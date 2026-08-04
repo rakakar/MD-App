@@ -39,7 +39,7 @@ import type { FacetValue, FileKind, LibraryFacets, Provenance } from "@/lib/type
  * switches the page from a browse to a find** — deep, ranked, a breadcrumb on
  * every row — which is exactly what "filter this shelf" always meant.
  */
-const AXIS_HI: Record<FindAxis, string> = {
+export const AXIS_HI: Record<FindAxis, string> = {
   provenance: "प्रमाण",
   year: "वर्ष",
   place: "स्थान",
@@ -57,7 +57,7 @@ const AXIS_HI: Record<FindAxis, string> = {
  * so those two keep the FE's words. Everything else is either already a name
  * (a place, a person, a year) or a ready-made language label.
  */
-function chipLabel(axis: FindAxis, chip: FacetValue): string {
+export function chipLabel(axis: FindAxis, chip: FacetValue): string {
   if (axis === "provenance") {
     return provenanceLabel(chip.value as Provenance)?.label ?? chip.value;
   }

@@ -4,7 +4,9 @@ import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
 import { shelfTotals } from "./format";
 import { NodeCardView } from "./NodeCard";
+import { RailFacets } from "./RailFacets";
 import { Sieve } from "./Sieve";
+import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
 import { isAsked, type FindState } from "@/lib/find";
@@ -92,9 +94,27 @@ export async function WorkspaceShelf({
   if (finding) {
     return (
       <>
-        <TopicDoors topics={topics} facets={find.facets.topic} />
+        {/* Two copies of one set of controls, and only ever one of them on
+            screen: `lg:hidden` here, and the rail itself `display:none` below
+            `lg`. It buys the breakpoint back from JavaScript — no media query
+            hook, no measuring, nothing to be wrong about between the server's
+            HTML and the client's first paint — and it keeps every facet link in
+            the document even before hydration moves the desktop copy. */}
+        <div className="lg:hidden">
+          <TopicDoors topics={topics} facets={find.facets.topic} />
+        </div>
         <FindBar basePath={basePath} state={state} scope={root.name} />
-        <Sieve facets={find.facets} state={state} basePath={basePath} />
+        <div className="lg:hidden">
+          <Sieve facets={find.facets} state={state} basePath={basePath} />
+        </div>
+        <RailSlot>
+          <RailFacets
+            facets={find.facets}
+            topics={topics}
+            state={state}
+            basePath={basePath}
+          />
+        </RailSlot>
         <FindResults
           find={find}
           state={state}
@@ -120,6 +140,12 @@ export async function WorkspaceShelf({
     // So the order flips at `lg` rather than one placement losing somewhere.
     // Ordered in CSS and not in the markup, so the document still reads
     // shelf-then-controls for a screen reader on both.
+    //
+    // **Since the rail, this flip only governs the box.** छाँटें and विषय no
+    // longer head the desktop page at all — they are standing chrome in the
+    // left rail, where they cost the grid no height and stay put while the
+    // reader moves down it. What is left in the flip is the find box, which
+    // has nowhere else to be: the rail is 232px and this box takes a sentence.
     <div className="flex flex-col">
       <div className="order-1 lg:order-2">
         {doors.length > 0 ? (
@@ -160,16 +186,35 @@ export async function WorkspaceShelf({
           head it. */}
       <div className="order-2 mt-7 border-t border-rule pt-5 lg:order-1 lg:mt-1 lg:mb-2 lg:border-t-0 lg:border-b lg:pt-0 lg:pb-5">
         <FindBar basePath={basePath} state={state} scope={root.name} />
-        {find && (
-          <Sieve
+        {/* The phone's copy. Hidden rather than moved at `lg` — see the note in
+            the find branch above for why the breakpoint stays in CSS. */}
+        <div className="lg:hidden">
+          {find && (
+            <Sieve
+              facets={find.facets}
+              state={state}
+              basePath={basePath}
+              hideAxes={tilesAreTheKinds ? ["kind"] : undefined}
+            />
+          )}
+          <TopicDoors topics={topics} facets={find?.facets.topic} />
+        </div>
+      </div>
+
+      {/* The desktop's copy, drawn for a 232px column and living in the rail.
+          `tilesAreTheKinds` is deliberately not passed on: it suppressed प्रकार
+          because five chips sat a thumb-width under five identical tiles, and in
+          the rail they no longer do — see `RailFacets`. */}
+      {find && (
+        <RailSlot>
+          <RailFacets
             facets={find.facets}
+            topics={topics}
             state={state}
             basePath={basePath}
-            hideAxes={tilesAreTheKinds ? ["kind"] : undefined}
           />
-        )}
-        <TopicDoors topics={topics} facets={find?.facets.topic} />
-      </div>
+        </RailSlot>
+      )}
     </div>
   );
 }
