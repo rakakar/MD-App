@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { CloseIcon, Icon } from "@/components/shell/icons";
+import { SearchField } from "@/components/SearchField";
 import { findHref, MIN_QUERY_CHARS, type FindState } from "@/lib/find";
 
 /**
@@ -18,7 +18,7 @@ import { findHref, MIN_QUERY_CHARS, type FindState } from "@/lib/find";
  * result as "the library has nothing on this".
  *
  * The query rides in the URL rather than in state, so a search is a real
- * address (U9) and the chips beside it compose with it for free. Typing
+ * address (U9) and the chips beside it compose with it for free. It
  * `replace`s rather than pushes: a reader backing out of a search wants the
  * shelf they came from, not eleven keystrokes of it.
  *
@@ -92,74 +92,25 @@ export function FindBar({
     });
   }
 
-  /** something typed that has not been asked yet — what the button offers to do */
-  const unasked = q.trim() !== state.q;
-
   return (
     <div className="mt-4">
-      <form
-        role="search"
-        onSubmit={(e) => {
-          e.preventDefault();
-          commit(q.trim());
-          // Closes the phone keyboard, and hands the box back to the effect
-          // above so a later back button can move it.
-          inputRef.current?.blur();
+      <SearchField
+        inputRef={inputRef}
+        value={q}
+        onChange={setQ}
+        onSubmit={() => commit(q.trim())}
+        onClear={() => {
+          setQ("");
+          // Emptying the box has to empty the search too, or the rows stay
+          // narrowed by a word that is no longer written anywhere.
+          commit("");
+          inputRef.current?.focus();
         }}
-        // No vertical padding of its own: the button carries the height now,
-        // and `min-h-11` there comes to the same 44px the old `py-2.5` did.
-        className="flex items-center gap-1 rounded-2xl border border-rule bg-white ps-1 pe-3 focus-within:border-(--ws-color)"
-      >
-        <button
-          type="submit"
-          aria-label={`${scope} में खोजें`}
-          // The magnifier is the button rather than an ornament beside one:
-          // it is already where a reader looks for search, and on a phone the
-          // keyboard's own search key is the other way in (`enterKeyHint`).
-          // It carries the workspace colour only when there is something
-          // unasked in the box, so the one control that costs a round trip
-          // says when it would actually do something.
-          className={`flex min-h-11 shrink-0 items-center justify-center rounded-xl px-2.5 transition-colors ${
-            unasked ? "text-(--ws-color)" : "text-ink-soft"
-          }`}
-        >
-          <Icon
-            name="search"
-            className={`h-4.5 w-4.5 ${pending ? "animate-pulse" : ""}`}
-          />
-        </button>
-        <input
-          ref={inputRef}
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={`${scope} में खोजें…`}
-          aria-label={`${scope} में खोजें`}
-          enterKeyHint="search"
-          // The browser draws its own clear button inside a `type="search"`
-          // box, in its own colour and with a 10px hit area. Ours is beside it
-          // and does more — it empties the search as well as the box — so the
-          // native one is two controls for one job, and the wrong one wins on
-          // a phone because it is the harder of the two to hit.
-          className="hi w-full bg-transparent text-base outline-none [&::-webkit-search-cancel-button]:appearance-none"
-        />
-        {q && (
-          <button
-            type="button"
-            onClick={() => {
-              setQ("");
-              // Emptying the box has to empty the search too, or the rows stay
-              // narrowed by a word that is no longer written anywhere.
-              commit("");
-              inputRef.current?.focus();
-            }}
-            aria-label="Clear search"
-            className="flex min-h-11 shrink-0 items-center px-1 text-ink-soft transition-colors hover:text-ink"
-          >
-            <CloseIcon className="h-4 w-4" />
-          </button>
-        )}
-      </form>
+        placeholder={`${scope} में खोजें…`}
+        label={`${scope} में खोजें`}
+        unasked={q.trim() !== state.q}
+        pending={pending}
+      />
       <p lang="hi" className="hi mt-1.5 px-1 text-[11.5px] text-ink-soft">
         नाम, विषय, वर्ष, स्थान से — फ़ाइल के अंदर से नहीं।
       </p>

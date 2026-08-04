@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { WordRow } from "@/components/paribhasha/GlossaryBrowser";
 import { LibraryLane } from "@/components/library/LibraryLane";
-import { Icon } from "@/components/shell/icons";
+import { SearchField } from "@/components/SearchField";
 import { PageContainer } from "@/components/ui";
 import { track } from "@/lib/analytics";
-import { getParibhasha, search, searchLibrary } from "@/lib/api";
+import { getParibhasha, getParibhashaIndex, search, searchLibrary } from "@/lib/api";
+import {
+  ensureFullGlossary,
+  localGlossaryWords,
+  searchGlossary,
+} from "@/lib/glossary";
 import { refToHref } from "@/lib/refs";
 import type {
   ParibhashaHit,
@@ -53,6 +58,12 @@ export function SearchScreen() {
    * of claim — see the note where the lane is rendered.
    */
   const [resources, setResources] = useState<LibrarySearchRow[] | null>(null);
+  /**
+   * The query the results on screen answer — what the box is compared against
+   * to know whether there is anything left to ask. The response does not carry
+   * it back, and `q` is what the reader is still typing, so neither can say.
+   */
+  const [asked, setAsked] = useState("");
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -63,15 +74,29 @@ export function SearchScreen() {
     inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    const query = q.trim();
-    if (mode !== "all") return;
-    if (query.length < 2) {
-      setResponse(null);
-      setResources(null);
-      return;
-    }
-    const t = setTimeout(async () => {
+  /**
+   * **"All results" is asked for, never typed at.**
+   *
+   * This ran on a 300ms debounce, and every pause bought two paid calls: a
+   * billed Devanagari rewrite keyed on the exact string, and an embedding for
+   * the vector leg. So one word cost two or three of each, and the answers
+   * were for `anu` and `anub` rather than for the word the reader had in mind.
+   *
+   * The embedding is the part that actually hurt. A reader gets 60 vector
+   * searches an hour (`SEARCH_VECTOR_BUDGET_PER_HOUR`), and past that their
+   * search silently drops to keyword-only — so spending three of them per
+   * question meant semantic search quietly died after twenty. Asking once per
+   * question is what makes that budget mean sixty questions.
+   */
+  const runAll = useCallback(
+    async (query: string, asTyped: boolean) => {
+      if (query.length < 2) {
+        setResponse(null);
+        setResources(null);
+        setAsked("");
+        return;
+      }
+      setAsked(query);
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -81,14 +106,14 @@ export function SearchScreen() {
       // a metadata scan and the citation lane a retrieval engine, and one of
       // them being down is no reason to show the reader nothing.
       const [passages, lane] = await Promise.allSettled([
-        search(query, { raw, signal: ctrl.signal }),
+        search(query, { raw: asTyped, signal: ctrl.signal }),
         searchLibrary(query, ctrl.signal),
       ]);
       if (
         (passages.status === "rejected" && (passages.reason as Error)?.name === "AbortError") ||
         (lane.status === "rejected" && (lane.reason as Error)?.name === "AbortError")
       ) {
-        return; // superseded by a newer keystroke; leave the screen alone
+        return; // superseded by a newer search; leave the screen alone
       }
       if (passages.status === "fulfilled") {
         setResponse(passages.value);
@@ -104,41 +129,118 @@ export function SearchScreen() {
       setResources(lane.status === "fulfilled" ? lane.value : null);
       setBusy(false);
       router.replace(`/search?q=${encodeURIComponent(query)}`, { scroll: false });
-    }, 300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, raw, mode]);
+    },
+    [router]
+  );
 
-  // Dictionary mode: shorter debounce and a 1-character floor, because this
-  // behaves like a dictionary's own search box, not a passage query. The BE
-  // folds Roman spellings itself, so the box works from either keyboard.
+  // A shared link arrives with its question already asked, so it is answered
+  // without waiting to be asked again. Mount only — after this, the reader asks.
   useEffect(() => {
-    const query = q.trim();
+    if (mode === "all" && initialQ.trim().length >= 2) void runAll(initialQ.trim(), false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * The dictionary itself, brought to the device the moment परिभाषा is opened.
+   *
+   * Usually free: the reader's word-tap and the book download button load the
+   * same copy through the same module, and it is kept in IndexedDB. When it is
+   * not here, this is one ~143 KB request that then answers every keystroke
+   * for a day — and offline.
+   */
+  const [dictionary, setDictionary] = useState<ParibhashaWord[] | null>(null);
+  useEffect(() => {
     if (mode !== "paribhasha") return;
-    if (query.length < 1) {
-      setWords(null);
+    const here = localGlossaryWords();
+    if (here) {
+      setDictionary(here);
       return;
     }
+    let alive = true;
+    setBusy(true);
+    void (async () => {
+      try {
+        // The lean headword index is what says whether a cached copy is still
+        // current, and it is 25 KB against the full one's 143.
+        const { version } = await getParibhashaIndex();
+        await ensureFullGlossary(version);
+      } catch {
+        // Offline, or the glossary is down. The endpoint below still answers.
+      }
+      if (!alive) return;
+      setDictionary(localGlossaryWords());
+      setBusy(false);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [mode]);
+
+  /**
+   * **परिभाषा searches as you type, and that is not an inconsistency.**
+   *
+   * Every other box in this app waits to be asked because its answer is over
+   * the network. This one's answer is on the device, so it costs nothing and
+   * arrives in under a millisecond — the thing "search as you type" always
+   * promised and, at ~0.9s a keystroke, never delivered here either.
+   *
+   * `searchGlossary` is the BE's own ladder, rung for rung, over the same set
+   * of words (`lib/glossary.ts`), so this is faster without being weaker.
+   */
+  const localWords = useMemo(() => {
+    const query = q.trim();
+    if (mode !== "paribhasha" || !dictionary || !query) return null;
+    return searchGlossary(dictionary, query);
+  }, [q, mode, dictionary]);
+
+  /**
+   * What the परिभाषा list shows — the device's answer, or the endpoint's when
+   * there is no local copy. An emptied box shows nothing either way, which is
+   * why that is read off `q` here rather than written back into state.
+   */
+  const dictWords = dictionary ? localWords : q.trim() ? words : null;
+
+  /**
+   * The fallback, for a device that could not get the dictionary — offline on
+   * first use, or a glossary that is down. Keeps the debounce it always had,
+   * because now it is the only path here that touches the network.
+   */
+  useEffect(() => {
+    if (mode !== "paribhasha" || dictionary) return;
+    const query = q.trim();
+    if (!query) return;
     const t = setTimeout(async () => {
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
-      setBusy(true);
       setError(false);
       try {
         const page = await getParibhasha({ q: query });
         setWords(page.results);
-        track("search", { query_length: query.length, results: page.results.length, mode: "paribhasha" });
-        router.replace(
-          `/search?mode=paribhasha&q=${encodeURIComponent(query)}`,
-          { scroll: false }
-        );
       } catch (e) {
         if ((e as Error).name !== "AbortError") setError(true);
-      } finally {
-        setBusy(false);
       }
     }, 150);
+    return () => clearTimeout(t);
+  }, [q, mode, dictionary]);
+
+  /**
+   * The URL and the count, once the typing settles.
+   *
+   * Split from the results on purpose: the answer is instant, but writing an
+   * address and counting a search are things you do to a question somebody
+   * finished asking, not to every letter on the way there.
+   */
+  useEffect(() => {
+    if (mode !== "paribhasha") return;
+    const query = q.trim();
+    if (!query) return;
+    const t = setTimeout(() => {
+      track("search", { query_length: query.length, results: dictWords?.length ?? 0, mode: "paribhasha" });
+      router.replace(`/search?mode=paribhasha&q=${encodeURIComponent(query)}`, {
+        scroll: false,
+      });
+    }, 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, mode]);
@@ -150,21 +252,36 @@ export function SearchScreen() {
 
   return (
     <PageContainer>
-      <div className="flex items-center gap-2 rounded-2xl border border-rule bg-white px-4 py-2.5 focus-within:border-(--ws-color)">
-        <Icon name="search" className="h-4.5 w-4.5 shrink-0 text-ink-soft" />
-        <input
-          ref={inputRef}
-          type="search"
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setRaw(false);
-          }}
-          placeholder="खोजें… paribhasha, sutra, books"
-          aria-label="Search"
-          className="hi w-full bg-transparent text-base outline-none"
-        />
-      </div>
+      <SearchField
+        inputRef={inputRef}
+        value={q}
+        onChange={(value) => {
+          setQ(value);
+          setRaw(false);
+        }}
+        // परिभाषा has already answered by the time this fires — the box is
+        // reading a dictionary that is on the device — so submitting there is
+        // only what it is on any phone: the thing that puts the keyboard away.
+        onSubmit={() => {
+          if (mode === "all") void runAll(q.trim(), raw);
+        }}
+        onClear={() => {
+          setQ("");
+          setRaw(false);
+          setResponse(null);
+          setResources(null);
+          setWords(null);
+          setAsked("");
+          setError(false);
+          inputRef.current?.focus();
+        }}
+        placeholder="खोजें… paribhasha, sutra, books"
+        label="Search"
+        // Only "All results" has something unasked to offer; the dictionary is
+        // never behind what has been typed.
+        unasked={mode === "all" && q.trim().length >= 2 && q.trim() !== asked}
+        pending={busy}
+      />
 
       {/* Mode chips (design 2A). Two questions, one box: "where is this
           discussed" (All) and "what does this word mean" (परिभाषा). The mode
@@ -206,7 +323,7 @@ export function SearchScreen() {
             </Link>
           </p>
           <div className="mt-5">
-            {busy && words === null && (
+            {busy && dictWords === null && (
               <p className="text-center text-sm text-ink-soft">खोजा जा रहा है…</p>
             )}
             {error && (
@@ -214,14 +331,14 @@ export function SearchScreen() {
                 शब्दकोश अभी उपलब्ध नहीं है।
               </p>
             )}
-            {!error && words !== null && words.length === 0 && (
+            {!error && dictWords !== null && dictWords.length === 0 && (
               <p lang="hi" className="hi text-center text-sm text-ink-soft">
                 “{q.trim()}” शब्दकोश में नहीं मिला।
               </p>
             )}
-            {words !== null && words.length > 0 && (
+            {dictWords !== null && dictWords.length > 0 && (
               <ul className="flex flex-col gap-2">
-                {words.map((w) => (
+                {dictWords.map((w) => (
                   <WordRow key={w.id} word={w} />
                 ))}
               </ul>
@@ -275,9 +392,15 @@ export function SearchScreen() {
             {response.searchedAs}
           </span>
           {" · "}
+          {/* Asks again, as typed. It used to only flip the flag and let the
+              debounce notice; nothing is watching for that now, so the
+              correction runs the search it is asking for. */}
           <button
             type="button"
-            onClick={() => setRaw(true)}
+            onClick={() => {
+              setRaw(true);
+              void runAll(q.trim(), true);
+            }}
             className="underline underline-offset-2"
           >
             search for “{q.trim()}” instead
