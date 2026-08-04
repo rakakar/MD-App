@@ -107,48 +107,58 @@ export async function WorkspaceShelf({
   }
 
   return (
-    <>
-      {doors.length > 0 ? (
-        <>
-          <ShelfHeading doors={doors} rollup={rollup} />
-          {/* Two per row from the smallest phone up. A tile carries an icon, a
-              name and a weight — all of which survive half a screen — and the
-              shelf a reader came to browse fits on one screen instead of
-              scrolling past its own controls. */}
-          <ul className="mt-2 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
-            {doors.map((door) => (
-              <li key={door.id} className="contents">
-                <NodeCardView
-                  card={door}
-                  variant="tile"
-                  shelves={shelves}
-                  rollup={rollup[String(door.id)]}
-                />
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : (
-        <div className="mt-5">
-          <EmptyState title={emptyTitle} hint={emptyHint} />
-        </div>
-      )}
+    // **The controls sit below the shelf on a phone and above it on a
+    // desktop, and the reason is height rather than taste.** They used to be
+    // above everywhere: roughly four hundred pixels of find and filter in
+    // front of a reader who had asked for none of it, which on a phone put
+    // the second collection below the fold. A reader arriving at a shelf is
+    // browsing; find is what they reach for after looking.
+    //
+    // A desktop has no such scarcity — the whole grid clears in half a screen
+    // — and there the same move backfires: it buries the filters *past* the
+    // fold instead, where a reader has no reason to scroll looking for them.
+    // So the order flips at `lg` rather than one placement losing somewhere.
+    // Ordered in CSS and not in the markup, so the document still reads
+    // shelf-then-controls for a screen reader on both.
+    <div className="flex flex-col">
+      <div className="order-1 lg:order-2">
+        {doors.length > 0 ? (
+          <>
+            <ShelfHeading doors={doors} rollup={rollup} />
+            {/* Two per row from the smallest phone up. A tile carries an icon,
+                a name and a weight — all of which survive half a screen — and
+                the shelf a reader came to browse fits on one screen instead of
+                scrolling past its own controls. */}
+            <ul className="mt-2 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+              {doors.map((door) => (
+                <li key={door.id} className="contents">
+                  <NodeCardView
+                    card={door}
+                    variant="tile"
+                    shelves={shelves}
+                    rollup={rollup[String(door.id)]}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <div className="mt-5">
+            <EmptyState title={emptyTitle} hint={emptyHint} />
+          </div>
+        )}
 
-      {/* A file filed directly on the root — a lone PDF needs no wrapper now,
-          so the shelf has to be able to hold one. */}
-      {files.length > 0 && (
-        <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
-      )}
+        {/* A file filed directly on the root — a lone PDF needs no wrapper
+            now, so the shelf has to be able to hold one. */}
+        {files.length > 0 && (
+          <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
+        )}
+      </div>
 
-      {/* **Below the shelf, not above it.** These sat between the title and
-          the first card, which put roughly four hundred pixels of controls in
-          front of a reader who had asked for none of them — on a phone the
-          second collection began below the fold. A reader arriving at a shelf
-          is browsing; find is what they reach for *after* looking. It stays a
-          real address either way (§13.8), so a shared search still opens
-          filtered, and a filtered page draws these first because `finding`
-          takes the branch above. */}
-      <div className="mt-7 border-t border-rule pt-5">
+      {/* The rule follows the block: a divider *above* the controls on a phone,
+          where they trail the shelf, and *below* them on a desktop, where they
+          head it. */}
+      <div className="order-2 mt-7 border-t border-rule pt-5 lg:order-1 lg:mt-1 lg:mb-2 lg:border-t-0 lg:border-b lg:pt-0 lg:pb-5">
         <FindBar basePath={basePath} state={state} scope={root.name} />
         {find && (
           <Sieve
@@ -160,7 +170,7 @@ export async function WorkspaceShelf({
         )}
         <TopicDoors topics={topics} facets={find?.facets.topic} />
       </div>
-    </>
+    </div>
   );
 }
 
