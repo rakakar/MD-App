@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AXIS_HI, ClearFind, chipLabel } from "./Sieve";
+import { yearBands } from "./years";
 import {
   DocumentIcon,
   FolderIcon,
@@ -12,6 +13,7 @@ import {
   findHref,
   isChipOn,
   toggleChip,
+  toggleGroup,
   type FindAxis,
   type FindState,
 } from "@/lib/find";
@@ -52,12 +54,11 @@ export function RailFacets({
   basePath: string;
 }) {
   const kinds = facets.kind ?? [];
-  // The endpoint returns every axis ranked by count, which is the right order
-  // for words and the wrong one for numbers: as chips behind a fold it passes
-  // unnoticed, but as a four-wide grid of pills "2013 · 2005 · 1999 · 1997"
-  // reads as broken. Newest first, since that is how a reader asks for a
-  // shivir. Sorted only here — the phone's chip row is untouched.
-  const years = [...(facets.year ?? [])].sort((a, b) => b.value.localeCompare(a.value));
+  // Newest first, and grouped into ranges once there are more years than a
+  // 232px column can hold as pills — the design draws "1998–2000 · 2001–2005"
+  // against an archive that runs 1997 to 2015. A band is only a shorthand for
+  // the years inside it; nothing below this knows they exist. See `years.ts`.
+  const years = yearBands(facets.year);
   // प्रकार and वर्ष are drawn where the design puts them; the rest keep their
   // canonical order underneath, so a shelf with places and speakers still
   // offers them rather than losing them to a layout that only knew three.
@@ -84,20 +85,20 @@ export function RailFacets({
             tile as pills instead of stacking into a column of near-identical
             rows four words wide. */}
         <div className="flex flex-wrap gap-1.5 px-1">
-          {years.map((chip) => {
-            const on = isChipOn(state, "year", chip.value);
+          {years.map((band) => {
+            const on = band.values.every((v) => isChipOn(state, "year", v));
             return (
               <Link
-                key={chip.value}
-                href={findHref(basePath, toggleChip(state, "year", chip.value))}
+                key={band.label}
+                href={findHref(basePath, toggleGroup(state, "year", band.values))}
                 aria-current={on ? "true" : undefined}
                 className={`rounded-full border px-2.5 py-1 text-[11.5px] font-medium tabular-nums transition-colors ${
                   on ? "border-transparent text-white" : "border-rule bg-white text-ink hover:bg-black/[.03]"
                 }`}
                 style={on ? { background: "var(--ws-color)" } : undefined}
               >
-                {chipLabel("year", chip)}
-                <span className="ms-1 opacity-70">{chip.count}</span>
+                {band.label}
+                <span className="ms-1 opacity-70">{band.count}</span>
               </Link>
             );
           })}
@@ -124,13 +125,16 @@ export function RailFacets({
         </Axis>
       );
     }),
-    // **Last, because it is the one row here that leaves.** Every block above
-    // narrows this shelf and keeps the reader on it; a विषय opens the whole
-    // library. Ordering the sieve axes together and putting the door at the
-    // foot also buys back the fold: at six topics, वर्ष and स्थान sat below
-    // it on an 800px laptop — the two axes with the most useful counts on
-    // this shelf, invisible under the one control that navigates away.
-    <TopicRows key="topic" topics={topics} facets={facets.topic} />,
+    // Last, where the design puts it, and where it stopped costing the fold:
+    // at six topics heading the rail, वर्ष and स्थान sat below the crease on an
+    // 800px laptop — the two axes with the most useful counts on this shelf.
+    <TopicRows
+      key="topic"
+      topics={topics}
+      facets={facets.topic}
+      state={state}
+      basePath={basePath}
+    />,
   ].filter(Boolean);
 
   if (blocks.length === 0) return null;
@@ -156,6 +160,7 @@ const AXIS_EN: Record<FindAxis, string> = {
   person: "People",
   language: "Languages",
   kind: "Category",
+  topic: "Topics",
 };
 
 /**
@@ -238,21 +243,34 @@ function KindIcon({ kind }: { kind: FileKind }) {
 }
 
 /**
- * विषय in the rail — still **doors**, not a sieve.
+ * विषय in the rail — **rows that narrow, like every other row here.**
  *
- * Drawn as the same rows as the axes above them because the designer draws them
- * that way and because at 232px anything else is a second visual language for
- * no gain. What keeps the distinction honest is the note under the heading: a
- * विषय row leaves this shelf for the whole library, while every other row here
- * stays and narrows.
+ * They were links onto `/library?topic=`, and the note under the heading had to
+ * warn that this one block behaved unlike the four above it: tapping a topic
+ * left the shelf for a flat list of the whole library. The designer draws it as
+ * a filter, the endpoint has always counted `topic` as an ordinary axis, and a
+ * rail whose every row narrows in place needs no warning label. The whole-
+ * library view is still reachable — from the topic panel on a phone, which is
+ * where a reader asking that question has somewhere to be sent from.
  *
- * Counts come from the facets for the reason given on the shelf's own row —
- * `node_count` counts only what a manager tagged directly, and every axis in
- * this library is inherited, so the two numbers disagree by an order of
- * magnitude. Before the facets arrive there is no honest number and the rows
- * fall back to "used anywhere at all", unnumbered.
+ * Counts come from the facets, never from `topics/`: `node_count` counts only
+ * what a manager tagged *directly*, and every axis in this library is
+ * inherited, so a शिविर branch tagged once at its root counted as one where the
+ * chip actually reaches fifty-nine. `topics/` still supplies the row — it is
+ * the only thing that knows the labels and the order a manager set, and it can
+ * add a विषय without a deploy.
  */
-function TopicRows({ topics, facets }: { topics: Topic[]; facets?: FacetValue[] }) {
+function TopicRows({
+  topics,
+  facets,
+  state,
+  basePath,
+}: {
+  topics: Topic[];
+  facets?: FacetValue[];
+  state: FindState;
+  basePath: string;
+}) {
   const counts = new Map((facets ?? []).map((f) => [f.value, f.count]));
   const live = topics
     .map((t) => ({ topic: t, count: counts.get(t.code) ?? 0 }))
@@ -262,31 +280,21 @@ function TopicRows({ topics, facets }: { topics: Topic[]; facets?: FacetValue[] 
 
   return (
     <section>
-      <p className="px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+      <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
         Topics ·{" "}
         <span lang="hi" className="hi">
           विषय
         </span>
       </p>
-      <p lang="hi" className="hi mb-1.5 px-1 text-[10.5px] text-muted">
-        पूरी लाइब्रेरी में
-      </p>
       {live.map(({ topic, count }) => (
-        <Link
+        <FacetRow
           key={topic.code}
-          href={`/library?topic=${encodeURIComponent(topic.code)}`}
-          className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-ink transition-colors hover:bg-black/[.04]"
-        >
-          {/* The one taxonomy label a manager types, shown as they typed it. */}
-          <span lang="hi" className="hi min-w-0 flex-1 truncate">
-            {topic.name}
-          </span>
-          {count > 0 && (
-            <span className="shrink-0 text-[11px] font-medium tabular-nums text-ink-soft">
-              {count}
-            </span>
-          )}
-        </Link>
+          href={findHref(basePath, toggleChip(state, "topic", topic.code))}
+          /* The one taxonomy label a manager types, shown as they typed it. */
+          label={topic.name}
+          count={count}
+          on={isChipOn(state, "topic", topic.code)}
+        />
       ))}
     </section>
   );

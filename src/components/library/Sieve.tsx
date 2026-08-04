@@ -17,10 +17,12 @@ import type { FacetValue, FileKind, LibraryFacets, Provenance } from "@/lib/type
  * The **sieve** — प्रमाण · वर्ष · स्थान · व्यक्ति · भाषा · प्रकार over the whole
  * scope the reader is looking at (contract §13.4).
  *
- * Not to be confused with विषय, which sits above it and is a different kind of
- * control entirely: a विषय chip is a *door* onto the whole library and tapping
- * it leaves this folder, while these narrow what is on screen and tapping one
- * stays put.
+ * विषय is drawn above this on a shelf, in its own panel, and it narrows in
+ * place like everything here does. It appears **in** this block on a folder
+ * page, and only when it is already on: a reader carries their topic chip in
+ * from the shelf (the designer asks that it persist as you move into a
+ * collection), and a filtered page must always show the control that filtered
+ * it — otherwise the way back out of the chip is gone.
  *
  * **The chips moved to the server on 2026-08-03, and they changed meaning when
  * they moved.** They used to be derived from the children the FE already held,
@@ -46,6 +48,7 @@ export const AXIS_HI: Record<FindAxis, string> = {
   person: "व्यक्ति",
   language: "भाषा",
   kind: "प्रकार",
+  topic: "विषय",
 };
 
 /**
@@ -176,7 +179,14 @@ export function Sieve({
    */
   hideAxes?: FindAxis[];
 }) {
-  const rows = FIND_AXES.map((axis) => ({ axis, options: facets[axis] ?? [] })).filter(
+  // विषय only when it is already on — it has its own panel on a shelf, and on
+  // a folder page it exists here purely so the chip a reader arrived with can
+  // be seen and switched off.
+  const axes: FindAxis[] = [
+    ...FIND_AXES,
+    ...((state.selection.topic?.length ?? 0) > 0 ? (["topic"] as const) : []),
+  ];
+  const rows = axes.map((axis) => ({ axis, options: facets[axis] ?? [] })).filter(
     (row) => {
       if ((state.selection[row.axis]?.length ?? 0) > 0) return true;
       if (hideAxes?.includes(row.axis)) return false;

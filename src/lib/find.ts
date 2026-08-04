@@ -22,9 +22,10 @@
  * audio दिखाओ, चलते-फिरते सुनना है" is a real need but never the first one, and
  * a format filter at the top turns a library back into a file browser.
  *
- * विषय is deliberately **not** here. It is a *door* onto the whole library
- * rather than a sieve over the scope in hand — tapping one leaves the folder
- * you are in (§13.4) — so it is drawn above these and navigates.
+ * विषय is not in this list, and that is a layout fact rather than a semantic
+ * one now. It **is** a filter — see `ALL_AXES` — but it is drawn in its own
+ * panel above these rather than as a seventh chip row, because it is the axis
+ * a reader reaches for first and the only one whose values a manager writes.
  */
 export const FIND_AXES = [
   "provenance",
@@ -35,7 +36,33 @@ export const FIND_AXES = [
   "kind",
 ] as const;
 
-export type FindAxis = (typeof FIND_AXES)[number];
+/**
+ * Every axis the URL and the endpoint carry, विषय included.
+ *
+ * **विषय used to navigate away and now narrows in place.** It was drawn as a
+ * *door* onto the whole library (§13.4): tapping अस्तित्व दर्शन on a shelf left
+ * the shelf for `/library?topic=`, a flat list from every depth and every
+ * workspace, and the collections the reader had been looking at were gone. The
+ * designer draws it as a filter instead — the tiles stay put and their counts
+ * drop — and the endpoint has always been able to answer that: `topic` is one
+ * of the seven axes in `catalogue.AXES`, read by `Selection` and counted by
+ * `facets` exactly like the six above. The FE was the only thing treating it
+ * as a different kind of control.
+ *
+ * The door survives as a link inside the panel, because "everything filed under
+ * व्यवस्था, wherever it lives" is still a real question — just not the one a
+ * reader is asking while standing on a shelf looking at its collections.
+ *
+ * Anything that reads or writes the whole find — the URL, the chip count, the
+ * request — iterates this. Anything that *draws the sieve* iterates
+ * `FIND_AXES`, which is these six minus the one with its own panel.
+ */
+export const ALL_AXES = [...FIND_AXES, "topic"] as const;
+
+export type FindAxis = (typeof ALL_AXES)[number];
+
+/** the six axes the sieve draws as chip rows — `FindAxis` minus विषय */
+export type SieveAxis = (typeof FIND_AXES)[number];
 
 /**
  * The chips currently on, one list per axis.
@@ -78,7 +105,7 @@ function all(value: string | string[] | undefined): string[] {
 /** Read a page's `searchParams` into the find it describes. */
 export function readFind(params: RawParams): FindState {
   const selection: FindSelection = {};
-  for (const axis of FIND_AXES) {
+  for (const axis of ALL_AXES) {
     const values = all(params[axis]);
     if (values.length > 0) selection[axis] = values;
   }
@@ -87,7 +114,7 @@ export function readFind(params: RawParams): FindState {
 
 /** how many chips are on — what "Clear 3" counts */
 export function chipCount(state: FindState): number {
-  return FIND_AXES.reduce((n, axis) => n + (state.selection[axis]?.length ?? 0), 0);
+  return ALL_AXES.reduce((n, axis) => n + (state.selection[axis]?.length ?? 0), 0);
 }
 
 /**
@@ -120,13 +147,45 @@ export function isChipOn(state: FindState, axis: FindAxis, value: string): boole
 }
 
 /**
+ * Several values on one axis at once — what a **year band** writes.
+ *
+ * A band is not a new kind of filter, it is a shorthand for the years inside
+ * it: the endpoint ORs within an axis, so "2001–2005" is `year=2001&year=2002…`
+ * and needs nothing from the BE. On or off as a unit, and off means off for
+ * every year it covers — a reader who turned one band on and expects one tap to
+ * turn it off should not be left holding four of its five years.
+ */
+export function toggleGroup(
+  state: FindState,
+  axis: FindAxis,
+  values: string[]
+): FindState {
+  const current = state.selection[axis] ?? [];
+  const on = values.every((v) => current.includes(v));
+  const next = on
+    ? current.filter((v) => !values.includes(v))
+    : [...current, ...values.filter((v) => !current.includes(v))];
+  const selection = { ...state.selection };
+  if (next.length > 0) selection[axis] = next;
+  else delete selection[axis];
+  return { ...state, selection };
+}
+
+/** Everything on one axis off, leaving the other axes and the query alone. */
+export function clearAxis(state: FindState, axis: FindAxis): FindState {
+  const selection = { ...state.selection };
+  delete selection[axis];
+  return { ...state, selection };
+}
+
+/**
  * The find as query parameters — the same shape in the page's URL and in the
  * request, so what a reader can see in the address bar is what was asked.
  */
 export function findQuery(state: FindState): URLSearchParams {
   const params = new URLSearchParams();
   if (state.q) params.set("q", state.q);
-  for (const axis of FIND_AXES) {
+  for (const axis of ALL_AXES) {
     for (const value of state.selection[axis] ?? []) params.append(axis, value);
   }
   if (state.raw) params.set("raw", "1");
