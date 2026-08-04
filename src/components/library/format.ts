@@ -1,4 +1,4 @@
-import type { LibraryFile, FileKind, NodeCard } from "@/lib/types";
+import type { LibraryFile, FileKind, NodeCard, NodeRollup } from "@/lib/types";
 
 /** प्रकार, as a reader reads it. The sieve puts this axis last on purpose. */
 export const KIND_HI: Record<FileKind, string> = {
@@ -47,6 +47,70 @@ export function cardSummary(card: Pick<NodeCard, "child_count" | "item_count" | 
     );
   }
   return parts.join(" · ");
+}
+
+/**
+ * What a **tile** says about its collection — the deep line, from `rollup`.
+ *
+ * Deliberately different from `cardSummary` above, which reports the shallow
+ * counts a card carries and on a shelf root can only ever say "N फ़ोल्डर".
+ *
+ * **Hours lead where there are hours.** A count is a number a reader cannot
+ * weigh; twenty-seven hours of recordings is a promise, and it is the single
+ * most useful thing this shelf knows about its largest collection. Rounded to
+ * whole hours above one, because the tile is a decision aid rather than a
+ * manifest — and below one it falls back to minutes rather than printing a
+ * "0 घंटे" that reads as empty.
+ *
+ * The file count follows, named by kind while the kind is unambiguous. Folders
+ * are last and only when they add something: "4 फ़ोल्डर" beside "33 वीडियो"
+ * tells a reader the shape of what they are opening; alone it told them
+ * nothing, which is the whole reason this line exists.
+ */
+export function tileSummary(rollup: NodeRollup | undefined): string {
+  if (!rollup) return "";
+  const parts: string[] = [];
+
+  if (rollup.duration > 0) {
+    const hours = rollup.duration / 3600;
+    parts.push(
+      hours >= 1
+        ? `${Math.round(hours)} घंटे`
+        : `${Math.max(1, Math.round(rollup.duration / 60))} मिनट`
+    );
+  }
+
+  if (rollup.items > 0) {
+    const kinds = inKindOrder(rollup.kinds);
+    parts.push(
+      kinds.length === 1
+        ? `${rollup.items} ${KIND_HI[kinds[0]]}`
+        : `${rollup.items} फ़ाइलें`
+    );
+  }
+
+  if (rollup.folders > 0) parts.push(`${rollup.folders} फ़ोल्डर`);
+  return parts.join(" · ");
+}
+
+/**
+ * The shelf's own total, for the header above the tiles.
+ *
+ * Summed across the tiles rather than taken from `count`, which counts folders
+ * and files together — a reader reading "247 सामग्री" means files, and adding
+ * the folders they are filed in would inflate it by a fifth for no one.
+ */
+export function shelfTotals(rollups: (NodeRollup | undefined)[]): {
+  items: number;
+  duration: number;
+} {
+  return rollups.reduce(
+    (total, r) => ({
+      items: total.items + (r?.items ?? 0),
+      duration: total.duration + (r?.duration ?? 0),
+    }),
+    { items: 0, duration: 0 }
+  );
 }
 
 /** the same line where the files themselves are in hand, so each kind is counted */

@@ -2,12 +2,19 @@ import Link from "next/link";
 import { FileList } from "./FileList";
 import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
+import { shelfTotals } from "./format";
 import { NodeCardView } from "./NodeCard";
 import { Sieve } from "./Sieve";
 import { EmptyState } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
 import { isAsked, type FindState } from "@/lib/find";
-import type { LibraryFindResponse, LibraryNode, Topic } from "@/lib/types";
+import type {
+  FacetValue,
+  LibraryFindResponse,
+  LibraryNode,
+  LibraryRollup,
+  Topic,
+} from "@/lib/types";
 
 /**
  * A workspace root, drawn as its contents.
@@ -62,14 +69,32 @@ export async function WorkspaceShelf({
   );
   const finding = isAsked(state) && find !== null;
 
-  return (
-    <>
-      <TopicDoors topics={topics} />
+  const rollup: LibraryRollup = find?.rollup ?? {};
 
-      <FindBar basePath={basePath} state={state} scope={root.name} />
-      {find && <Sieve facets={find.facets} state={state} basePath={basePath} />}
+  /**
+   * Do the tiles already *are* the प्रकार axis?
+   *
+   * True only when every collection holding anything holds exactly one kind
+   * and no two share one — on मूल ग्रंथ that is the case, and there the chip
+   * row is five buttons that duplicate five tiles a thumb-width above them.
+   * A shelf whose collections mix formats keeps the chips, because there the
+   * two controls genuinely answer different questions.
+   */
+  const withItems = doors
+    .map((d) => rollup[String(d.id)])
+    .filter((r): r is NonNullable<typeof r> => (r?.items ?? 0) > 0);
+  const kindsShown = withItems.flatMap((r) => r.kinds);
+  const tilesAreTheKinds =
+    withItems.length > 0 &&
+    withItems.every((r) => r.kinds.length === 1) &&
+    new Set(kindsShown).size === kindsShown.length;
 
-      {finding ? (
+  if (finding) {
+    return (
+      <>
+        <TopicDoors topics={topics} facets={find.facets.topic} />
+        <FindBar basePath={basePath} state={state} scope={root.name} />
+        <Sieve facets={find.facets} state={state} basePath={basePath} />
         <FindResults
           find={find}
           state={state}
@@ -77,30 +102,96 @@ export async function WorkspaceShelf({
           scope={scope}
           shelves={shelves}
         />
-      ) : (
-        <>
-          {doors.length > 0 ? (
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-              {doors.map((door) => (
-                <li key={door.id}>
-                  <NodeCardView card={door} variant="door" shelves={shelves} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="mt-5">
-              <EmptyState title={emptyTitle} hint={emptyHint} />
-            </div>
-          )}
+      </>
+    );
+  }
 
-          {/* A file filed directly on the root — a lone PDF needs no wrapper
-              now, so the shelf has to be able to hold one. */}
-          {files.length > 0 && (
-            <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
-          )}
+  return (
+    <>
+      {doors.length > 0 ? (
+        <>
+          <ShelfHeading doors={doors} rollup={rollup} />
+          {/* Two per row from the smallest phone up. A tile carries an icon, a
+              name and a weight — all of which survive half a screen — and the
+              shelf a reader came to browse fits on one screen instead of
+              scrolling past its own controls. */}
+          <ul className="mt-2 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+            {doors.map((door) => (
+              <li key={door.id} className="contents">
+                <NodeCardView
+                  card={door}
+                  variant="tile"
+                  shelves={shelves}
+                  rollup={rollup[String(door.id)]}
+                />
+              </li>
+            ))}
+          </ul>
         </>
+      ) : (
+        <div className="mt-5">
+          <EmptyState title={emptyTitle} hint={emptyHint} />
+        </div>
       )}
+
+      {/* A file filed directly on the root — a lone PDF needs no wrapper now,
+          so the shelf has to be able to hold one. */}
+      {files.length > 0 && (
+        <FileList files={root.items} linked={root.linked_items} albumTitle={root.name} />
+      )}
+
+      {/* **Below the shelf, not above it.** These sat between the title and
+          the first card, which put roughly four hundred pixels of controls in
+          front of a reader who had asked for none of them — on a phone the
+          second collection began below the fold. A reader arriving at a shelf
+          is browsing; find is what they reach for *after* looking. It stays a
+          real address either way (§13.8), so a shared search still opens
+          filtered, and a filtered page draws these first because `finding`
+          takes the branch above. */}
+      <div className="mt-7 border-t border-rule pt-5">
+        <FindBar basePath={basePath} state={state} scope={root.name} />
+        {find && (
+          <Sieve
+            facets={find.facets}
+            state={state}
+            basePath={basePath}
+            hideAxes={tilesAreTheKinds ? ["kind"] : undefined}
+          />
+        )}
+        <TopicDoors topics={topics} facets={find?.facets.topic} />
+      </div>
     </>
+  );
+}
+
+/**
+ * What the grid below is, and how much of it there is.
+ *
+ * The total is summed from the rollups rather than taken from `count`, which
+ * counts folders and files together: a reader reading "247 सामग्री" means
+ * files, and folders are the furniture they are filed in.
+ */
+function ShelfHeading({
+  doors,
+  rollup,
+}: {
+  doors: { id: number }[];
+  rollup: LibraryRollup;
+}) {
+  const total = shelfTotals(doors.map((d) => rollup[String(d.id)]));
+  const hours = Math.round(total.duration / 3600);
+  return (
+    <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+      <p lang="hi" className="hi text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+        संग्रह
+      </p>
+      {total.items > 0 && (
+        <p lang="hi" className="hi text-[11.5px] tabular-nums text-muted">
+          {total.items} सामग्री
+          {hours > 0 && ` · ${hours} घंटे`}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -108,37 +199,52 @@ export async function WorkspaceShelf({
  * The विषय chips — a **door onto the whole library**, which is why tapping one
  * navigates away rather than narrowing what is on screen (contract §13.4).
  *
- * Kept above the box and outside the sieve for that reason, even though the
- * find endpoint will happily filter on विषय too: these are counted library-wide
- * and leave the shelf, while a sieve chip is counted over this shelf and stays.
+ * Kept outside the sieve for that reason, even though the find endpoint will
+ * happily filter on विषय too: these leave the shelf, while a sieve chip stays.
  * One row that navigates, one block that narrows.
  *
- * Zero-count chips are hidden: a chip that filters to nothing is a dead
- * control, so a shelf whose विषय are all empty simply does not draw the row.
+ * **The counts come from the facets, not from `topics/`.** `node_count` counts
+ * the folders a manager tagged *directly*, and every axis in this library is
+ * inherited — so a शिविर branch tagged once at its root counted as one, and
+ * this row read "अस्तित्व दर्शन 3" over a shelf where the chip actually
+ * reaches fifty-nine. Two numbers for the same word, from two endpoints, on
+ * one screen. `topics/` still supplies the row: it is the only thing that
+ * knows the labels and the order a manager set, and it can add a विषय without
+ * a deploy.
+ *
+ * Zero-count chips are hidden either way: a chip that filters to nothing is a
+ * dead control, so a shelf whose विषय are all empty draws no row.
  */
-function TopicDoors({ topics }: { topics: Topic[] }) {
-  const live = topics.filter((t) => t.node_count > 0).sort((a, b) => a.ordering - b.ordering);
+function TopicDoors({ topics, facets }: { topics: Topic[]; facets?: FacetValue[] }) {
+  const counts = new Map((facets ?? []).map((f) => [f.value, f.count]));
+  const live = topics
+    // Before the facets arrive there is nothing honest to show, so the row
+    // falls back to "is this topic used anywhere at all" rather than printing
+    // a number it cannot stand behind.
+    .map((t) => ({ topic: t, count: counts.get(t.code) ?? 0 }))
+    .filter(({ topic, count }) => (facets ? count > 0 : topic.node_count > 0))
+    .sort((a, b) => a.topic.ordering - b.topic.ordering);
   if (live.length === 0) return null;
 
   return (
     <div className="mt-5">
       <p lang="hi" className="hi mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
-        विषय
+        विषय — पूरी लाइब्रेरी में
       </p>
       <div className="flex flex-wrap gap-1.5">
-        {live.map((t) => (
+        {live.map(({ topic, count }) => (
           <Link
-            key={t.code}
-            href={`/library?topic=${encodeURIComponent(t.code)}`}
+            key={topic.code}
+            href={`/library?topic=${encodeURIComponent(topic.code)}`}
             className="rounded-full border border-rule bg-white px-3 py-1 text-xs font-medium text-ink transition-colors hover:bg-black/[.03]"
           >
             {/* The one taxonomy label that arrives in Hindi and is shown as a
                 manager typed it — they add topics without a deploy, so the FE
                 cannot hold a label it has never seen. */}
             <span lang="hi" className="hi">
-              {t.name}
+              {topic.name}
             </span>
-            <span className="ms-1 tabular-nums opacity-70">{t.node_count}</span>
+            {count > 0 && <span className="ms-1 tabular-nums opacity-70">{count}</span>}
           </Link>
         ))}
       </div>

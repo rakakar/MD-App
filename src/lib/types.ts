@@ -405,6 +405,28 @@ export interface FacetValue {
 export type LibraryFacets = Partial<Record<string, FacetValue[]>>;
 
 /**
+ * What is really inside one shelf card, counted all the way down.
+ *
+ * The counterpart to `NodeCard`'s counts, which are **shallow** by contract
+ * (§13.1) and therefore say almost nothing on a shelf root: a card holding
+ * folders reports folders, so the collection worth twenty-seven hours and the
+ * one holding two PDFs both read "N फ़ोल्डर". These are the same numbers a
+ * reader would arrive at by opening everything.
+ */
+export interface NodeRollup {
+  /** every folder below the card, at any depth — the card itself excluded */
+  folders: number;
+  /** every servable file below it */
+  items: number;
+  kinds: FileKind[];
+  /** seconds, audio and video only; `0` for documents and photographs */
+  duration: number;
+}
+
+/** rollups keyed by card id, as a string — JSON has no integer keys */
+export type LibraryRollup = Record<string, NodeRollup | undefined>;
+
+/**
  * `library/search/` — the library's one **find** (§13.8).
  *
  * An envelope rather than a list, and every part of it is load-bearing:
@@ -427,6 +449,12 @@ export interface LibraryFindResponse {
   count: number;
   results: LibrarySearchRow[];
   facets: LibraryFacets;
+  /**
+   * Deep counts per card on the shelf this scope draws — the one thing
+   * `nodes/` cannot answer. Like `facets`, it arrives even when nothing was
+   * asked, because that is exactly when the shelf is on screen.
+   */
+  rollup: LibraryRollup;
 }
 
 export type EventType = "shivir" | "workshop" | "satsang" | "other";

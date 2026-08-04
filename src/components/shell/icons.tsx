@@ -371,6 +371,27 @@ export function VideoIcon({ className }: { className?: string }) {
   );
 }
 
+/** a sheet with a turned corner — the `pdf` half of the document pair */
+export function DocumentIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 3v5h5" />
+    </Svg>
+  );
+}
+
+/** a framed picture with a horizon — file kind `image` */
+export function ImageIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="8.5" cy="10" r="1.5" />
+      <path d="m4 17 4.5-4.5L12 16l3-3 5 5" />
+    </Svg>
+  );
+}
+
 export function FolderIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

@@ -159,13 +159,29 @@ export function Sieve({
   facets,
   state,
   basePath,
+  hideAxes,
 }: {
   facets: LibraryFacets;
   state: FindState;
   basePath: string;
+  /**
+   * Axes the surface above already offers, so the sieve does not offer them
+   * twice. The shelf passes प्रकार when its tiles *are* the formats: tapping
+   * the ऑडियो tile and tapping the ऑडियो chip then open the same thing, and
+   * two controls for one choice is how a page starts feeling arbitrary.
+   *
+   * Never hides an axis a reader is currently inside — a filtered page must
+   * always show the control that filtered it, and the way back out of a chip
+   * on a phone is tapping it again.
+   */
+  hideAxes?: FindAxis[];
 }) {
   const rows = FIND_AXES.map((axis) => ({ axis, options: facets[axis] ?? [] })).filter(
-    (row) => row.options.length > 1 || (state.selection[row.axis]?.length ?? 0) > 0
+    (row) => {
+      if ((state.selection[row.axis]?.length ?? 0) > 0) return true;
+      if (hideAxes?.includes(row.axis)) return false;
+      return row.options.length > 1;
+    }
   );
   if (rows.length === 0) return null;
   const chips = chipCount(state);

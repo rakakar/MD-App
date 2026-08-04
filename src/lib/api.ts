@@ -334,6 +334,10 @@ export async function findLibrary(opts: {
     count: data.count ?? 0,
     results: data.results ?? [],
     facets: data.facets ?? {},
+    // A BE that predates the shelf tiles answers without it, and a tile that
+    // cannot say what is inside falls back to its shallow counts rather than
+    // to a crash.
+    rollup: data.rollup ?? {},
   };
 }
 
