@@ -240,6 +240,16 @@ export function FilterIcon({ className }: { className?: string }) {
   );
 }
 
+/** विषय — the tag the topic panel is headed with (designer, "ui 1"). */
+export function TagIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4 w-4"}>
+      <path d="M3.5 11.2V4.5a1 1 0 0 1 1-1h6.7a1 1 0 0 1 .7.3l8 8a1 1 0 0 1 0 1.4l-6.7 6.7a1 1 0 0 1-1.4 0l-8-8a1 1 0 0 1-.3-.7Z" />
+      <circle cx="7.75" cy="7.75" r="1.25" />
+    </Svg>
+  );
+}
+
 export function ChevronRight({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-4 w-4"}>

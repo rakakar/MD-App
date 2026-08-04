@@ -1,17 +1,16 @@
-import Link from "next/link";
 import { FileList } from "./FileList";
+import { FilterCards } from "./FilterCards";
 import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
 import { shelfTotals } from "./format";
 import { NodeCardView } from "./NodeCard";
+import { PhotoStrip } from "./PhotoStrip";
 import { RailFacets } from "./RailFacets";
-import { Sieve } from "./Sieve";
 import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
-import { isAsked, type FindState } from "@/lib/find";
+import { isAsked, scopeSize, type FindState } from "@/lib/find";
 import type {
-  FacetValue,
   LibraryFindResponse,
   LibraryNode,
   LibraryRollup,
@@ -72,24 +71,11 @@ export async function WorkspaceShelf({
   const finding = isAsked(state) && find !== null;
 
   const rollup: LibraryRollup = find?.rollup ?? {};
-
-  /**
-   * Do the tiles already *are* the प्रकार axis?
-   *
-   * True only when every collection holding anything holds exactly one kind
-   * and no two share one — on मूल ग्रंथ that is the case, and there the chip
-   * row is five buttons that duplicate five tiles a thumb-width above them.
-   * A shelf whose collections mix formats keeps the chips, because there the
-   * two controls genuinely answer different questions.
-   */
-  const withItems = doors
-    .map((d) => rollup[String(d.id)])
-    .filter((r): r is NonNullable<typeof r> => (r?.items ?? 0) > 0);
-  const kindsShown = withItems.flatMap((r) => r.kinds);
-  const tilesAreTheKinds =
-    withItems.length > 0 &&
-    withItems.every((r) => r.kinds.length === 1) &&
-    new Set(kindsShown).size === kindsShown.length;
+  // How much is in scope right now: the match count once something has been
+  // asked, and the size of the shelf before that. Both are the number the
+  // filter panels print in their footer, and neither is a count the browse can
+  // produce — `child_count` is shallow by contract.
+  const itemCount = finding ? find.count : scopeSize(find?.facets ?? {});
 
   if (finding) {
     return (
@@ -100,12 +86,15 @@ export async function WorkspaceShelf({
             hook, no measuring, nothing to be wrong about between the server's
             HTML and the client's first paint — and it keeps every facet link in
             the document even before hydration moves the desktop copy. */}
+        <FindBar basePath={basePath} state={state} scope={root.name} dense />
         <div className="lg:hidden">
-          <TopicDoors topics={topics} facets={find.facets.topic} />
-        </div>
-        <FindBar basePath={basePath} state={state} scope={root.name} />
-        <div className="lg:hidden">
-          <Sieve facets={find.facets} state={state} basePath={basePath} />
+          <FilterCards
+            topics={topics}
+            facets={find.facets}
+            state={state}
+            basePath={basePath}
+            itemCount={itemCount}
+          />
         </div>
         <RailSlot>
           <RailFacets
@@ -127,27 +116,50 @@ export async function WorkspaceShelf({
   }
 
   return (
-    // **The controls sit below the shelf on a phone and above it on a
-    // desktop, and the reason is height rather than taste.** They used to be
-    // above everywhere: roughly four hundred pixels of find and filter in
-    // front of a reader who had asked for none of it, which on a phone put
-    // the second collection below the fold. A reader arriving at a shelf is
-    // browsing; find is what they reach for after looking.
+    // **The controls head the shelf on every screen, and the filters are shut.**
     //
-    // A desktop has no such scarcity — the whole grid clears in half a screen
-    // — and there the same move backfires: it buries the filters *past* the
-    // fold instead, where a reader has no reason to scroll looking for them.
-    // So the order flips at `lg` rather than one placement losing somewhere.
-    // Ordered in CSS and not in the markup, so the document still reads
-    // shelf-then-controls for a screen reader on both.
+    // They were below the grid on a phone, and the reason was real: counted
+    // over a whole shelf, six axes of chips ran to some five hundred pixels,
+    // and open above the tiles that put the second collection off the bottom of
+    // the screen. Moving the block to the foot fixed the fold and took the
+    // search box with it — to the one place nobody looks for a search box, past
+    // six collections, where a reader has no reason to believe one exists.
     //
-    // **Since the rail, this flip only governs the box.** छाँटें and विषय no
-    // longer head the desktop page at all — they are standing chrome in the
-    // left rail, where they cost the grid no height and stay put while the
-    // reader moves down it. What is left in the flip is the find box, which
-    // has nowhere else to be: the rail is 232px and this box takes a sentence.
+    // The designer's shape keeps both: the box sits under the title where a
+    // hand expects it, and the filters are two closed rows that say what is
+    // behind them rather than five hundred pixels that show it. See
+    // `FilterCards`. The desktop's copy of the filters is standing chrome in
+    // the left rail, so this block is only ever the box there.
     <div className="flex flex-col">
-      <div className="order-1 lg:order-2">
+      {/* On a desktop the box joins the page's own header line, right-aligned
+          against the shelf's weight, as the design draws it — a full-width
+          search field over a 3-up grid is a form, not a page header. */}
+      <div className="lg:mb-1 lg:flex lg:items-center lg:justify-between lg:gap-6 lg:border-b lg:border-rule lg:pb-4">
+        <p className="hidden shrink-0 text-[13px] text-ink-soft lg:block">
+          {itemCount > 0 && <span className="tabular-nums">{itemCount} items</span>}
+          {itemCount > 0 && doors.length > 0 && " · "}
+          {doors.length > 0 && (
+            <span className="tabular-nums">{doors.length} collections</span>
+          )}
+        </p>
+        <div className="lg:w-80 lg:shrink-0">
+          <FindBar basePath={basePath} state={state} scope={root.name} dense />
+        </div>
+      </div>
+
+      <div className="lg:hidden">
+        {find && (
+          <FilterCards
+            topics={topics}
+            facets={find.facets}
+            state={state}
+            basePath={basePath}
+            itemCount={itemCount}
+          />
+        )}
+      </div>
+
+      <div>
         {doors.length > 0 ? (
           <>
             <ShelfHeading doors={doors} rollup={rollup} />
@@ -181,30 +193,18 @@ export async function WorkspaceShelf({
         )}
       </div>
 
-      {/* The rule follows the block: a divider *above* the controls on a phone,
-          where they trail the shelf, and *below* them on a desktop, where they
-          head it. */}
-      <div className="order-2 mt-7 border-t border-rule pt-5 lg:order-1 lg:mt-1 lg:mb-2 lg:border-t-0 lg:border-b lg:pt-0 lg:pb-5">
-        <FindBar basePath={basePath} state={state} scope={root.name} />
-        {/* The phone's copy. Hidden rather than moved at `lg` — see the note in
-            the find branch above for why the breakpoint stays in CSS. */}
-        <div className="lg:hidden">
-          {find && (
-            <Sieve
-              facets={find.facets}
-              state={state}
-              basePath={basePath}
-              hideAxes={tilesAreTheKinds ? ["kind"] : undefined}
-            />
-          )}
-          <TopicDoors topics={topics} facets={find?.facets.topic} />
-        </div>
-      </div>
+      {/* Below the grid, where the design puts it: a shelf's photographs are
+          worth *seeing* rather than counting, and a folder named चित्र says
+          nothing about what is in it. */}
+      <PhotoStrip
+        scope={scope}
+        facets={find?.facets}
+        basePath={basePath}
+        state={state}
+      />
 
-      {/* The desktop's copy, drawn for a 232px column and living in the rail.
-          `tilesAreTheKinds` is deliberately not passed on: it suppressed प्रकार
-          because five chips sat a thumb-width under five identical tiles, and in
-          the rail they no longer do — see `RailFacets`. */}
+      {/* The desktop's copy of the filters, drawn for a 232px column and living
+          in the rail. */}
       {find && (
         <RailSlot>
           <RailFacets
@@ -246,63 +246,6 @@ function ShelfHeading({
           {hours > 0 && ` · ${hours} घंटे`}
         </p>
       )}
-    </div>
-  );
-}
-
-/**
- * The विषय chips — a **door onto the whole library**, which is why tapping one
- * navigates away rather than narrowing what is on screen (contract §13.4).
- *
- * Kept outside the sieve for that reason, even though the find endpoint will
- * happily filter on विषय too: these leave the shelf, while a sieve chip stays.
- * One row that navigates, one block that narrows.
- *
- * **The counts come from the facets, not from `topics/`.** `node_count` counts
- * the folders a manager tagged *directly*, and every axis in this library is
- * inherited — so a शिविर branch tagged once at its root counted as one, and
- * this row read "अस्तित्व दर्शन 3" over a shelf where the chip actually
- * reaches fifty-nine. Two numbers for the same word, from two endpoints, on
- * one screen. `topics/` still supplies the row: it is the only thing that
- * knows the labels and the order a manager set, and it can add a विषय without
- * a deploy.
- *
- * Zero-count chips are hidden either way: a chip that filters to nothing is a
- * dead control, so a shelf whose विषय are all empty draws no row.
- */
-function TopicDoors({ topics, facets }: { topics: Topic[]; facets?: FacetValue[] }) {
-  const counts = new Map((facets ?? []).map((f) => [f.value, f.count]));
-  const live = topics
-    // Before the facets arrive there is nothing honest to show, so the row
-    // falls back to "is this topic used anywhere at all" rather than printing
-    // a number it cannot stand behind.
-    .map((t) => ({ topic: t, count: counts.get(t.code) ?? 0 }))
-    .filter(({ topic, count }) => (facets ? count > 0 : topic.node_count > 0))
-    .sort((a, b) => a.topic.ordering - b.topic.ordering);
-  if (live.length === 0) return null;
-
-  return (
-    <div className="mt-5">
-      <p lang="hi" className="hi mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
-        विषय — पूरी लाइब्रेरी में
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {live.map(({ topic, count }) => (
-          <Link
-            key={topic.code}
-            href={`/library?topic=${encodeURIComponent(topic.code)}`}
-            className="rounded-full border border-rule bg-white px-3 py-1 text-xs font-medium text-ink transition-colors hover:bg-black/[.03]"
-          >
-            {/* The one taxonomy label that arrives in Hindi and is shown as a
-                manager typed it — they add topics without a deploy, so the FE
-                cannot hold a label it has never seen. */}
-            <span lang="hi" className="hi">
-              {topic.name}
-            </span>
-            {count > 0 && <span className="ms-1 tabular-nums opacity-70">{count}</span>}
-          </Link>
-        ))}
-      </div>
     </div>
   );
 }

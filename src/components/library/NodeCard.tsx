@@ -28,6 +28,28 @@ import type {
  * and documents, and each is pure. A mixed collection gets the folder back,
  * because there is no one true thing to draw.
  */
+/**
+ * The tint behind a tile's glyph — **one per kind, not one per workspace**
+ * (designer, "ui 1": peach audio, blue video, lavender PDF, pink photographs).
+ *
+ * Every tile used to carry `--color-accent-tint`, the workspace's own hue, so a
+ * six-tile grid was six identical swatches and the icon was doing all the work
+ * of telling them apart at arm's length. Colour is the fastest thing on a phone
+ * screen and it was saying only "you are in Originals", which the whole rest of
+ * the chrome already says.
+ *
+ * Only the *tint* changes. The ink stays deep enough to carry AA on its own
+ * swatch, and nothing here is load-bearing: a mixed collection falls back to
+ * the workspace tint, and the glyph beside it still names the kind. Colour is
+ * never the only signal — see the same rule on the workspace switcher.
+ */
+const KIND_TINT: Partial<Record<FileKind, { bg: string; ink: string }>> = {
+  audio: { bg: "#F8E7D6", ink: "#8A4110" },
+  video: { bg: "#DFE9F0", ink: "#255A6E" },
+  pdf: { bg: "#E7E4F1", ink: "#4C4878" },
+  image: { bg: "#F6E2E9", ink: "#8A3B58" },
+};
+
 function KindIcon({ kinds, className }: { kinds: FileKind[]; className?: string }) {
   const only: FileKind | null = kinds.length === 1 ? kinds[0] : null;
   if (only === "audio") return <HeadphonesIcon className={className} />;
@@ -81,6 +103,8 @@ export function NodeCardView({
     // nothing to say — an unpublished branch or a collection still empty. A
     // tile never falls silent, because a tile with no third line reads broken.
     const weight = tileSummary(rollup) || summary;
+    const only = rollup?.kinds.length === 1 ? rollup.kinds[0] : null;
+    const tint = only ? KIND_TINT[only] : undefined;
     return (
       <Link
         href={nodeHref(card.id, shelves)}
@@ -89,7 +113,10 @@ export function NodeCardView({
         <span
           aria-hidden
           className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl"
-          style={{ background: "var(--color-accent-tint)", color: "var(--ws-ink)" }}
+          style={{
+            background: tint?.bg ?? "var(--color-accent-tint)",
+            color: tint?.ink ?? "var(--ws-ink)",
+          }}
         >
           <KindIcon kinds={rollup?.kinds ?? []} className="h-[18px] w-[18px]" />
         </span>

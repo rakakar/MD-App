@@ -46,10 +46,19 @@ export function FindBar({
   state,
   /** the shelf or folder this box looks inside — named, so the scope is visible */
   scope,
+  dense = false,
 }: {
   basePath: string;
   state: FindState;
   scope: string;
+  /**
+   * The box is sharing a header line on a desktop, so the caption under it
+   * drops there and keeps its phone. The line is worth its height where the
+   * box is full-width under a title and reads as noise beside a page heading
+   * — and a phone is where a reader most needs telling that this searches what
+   * the library *records* about a thing rather than what is inside the file.
+   */
+  dense?: boolean;
 }) {
   const router = useRouter();
   /**
@@ -93,7 +102,7 @@ export function FindBar({
   }
 
   return (
-    <div className="mt-4">
+    <div className={`mt-4 ${dense ? "lg:mt-0" : ""}`}>
       <SearchField
         inputRef={inputRef}
         value={q}
@@ -111,7 +120,10 @@ export function FindBar({
         unasked={q.trim() !== state.q}
         pending={pending}
       />
-      <p lang="hi" className="hi mt-1.5 px-1 text-[11.5px] text-ink-soft">
+      <p
+        lang="hi"
+        className={`hi mt-1.5 px-1 text-[11.5px] text-ink-soft ${dense ? "lg:hidden" : ""}`}
+      >
         नाम, विषय, वर्ष, स्थान से — फ़ाइल के अंदर से नहीं।
       </p>
     </div>

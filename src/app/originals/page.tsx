@@ -54,7 +54,13 @@ export default async function OriginalsLibraryPage({
   return (
     <PageContainer size="shelf">
       <WorkspaceScope ws="originals" />
-      <h1 className="font-display text-[26px] font-medium tracking-[-0.015em] lg:text-4xl">
+      {/* The design's eyebrow. सामग्री and संसाधन are the names of two shelves
+          and neither says which *kind* of page this is; the tab that got here
+          is four rows away at the foot of the screen. */}
+      <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+        Library
+      </p>
+      <h1 className="mt-0.5 font-display text-[26px] font-medium tracking-[-0.015em] lg:text-4xl">
         <span lang="hi" className="hi">सामग्री</span>
       </h1>
       <p lang="hi" className="hi mt-1 text-sm text-ink-soft">
