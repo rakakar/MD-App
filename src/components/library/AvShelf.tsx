@@ -5,6 +5,7 @@ import { FilterCards } from "./FilterCards";
 import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
 import { filesSummary, formatDuration } from "./format";
+import { HeadphonesIcon, VideoIcon } from "@/components/shell/icons";
 import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState } from "@/components/ui";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
@@ -42,19 +43,30 @@ export const AV_PAGE = 100;
  * shows up here and the folder stays on the Library shelf — with nobody filing
  * anything twice, and no field for anybody to get wrong.
  *
- * **Always a find, never a browse.** Everywhere else in the library the FE
- * switches on `isAsked` — no query and no chip means browse one level through
- * `nodes/`. Here a chip is always on, by construction, so the page is always
- * the deep faceted search: audio and video from every depth of the workspace,
- * ranked, with the same sieve the shelves carry.
+ * **One request, two shapes: collections when browsing, files when searching.**
  *
- * **Grouped by the folder each file lives in**, which is what makes that
- * bearable. A flat ranked list turns a fourteen-part shivir into fourteen rows
- * that each say "भाग 3" and nothing else; the folder is the album, and every
- * row already carries the breadcrumb needed to rebuild it, so the grouping
- * costs no request. Within a group `FileList` draws each kind as the thing it
- * is — audio through the app's one player in album mode, video embedded — the
- * same as on the folder's own page.
+ * This is the library's own browse/find switch, kept — but decided on a
+ * different test, because the usual one cannot work here. Everywhere else
+ * `isAsked` reads "no query and no chip"; on this tab a `kind` chip is always
+ * on by construction, so that test would answer "searching" forever. What
+ * counts here is whether the reader asked anything *besides* the two kinds this
+ * page is: the Audio/Video segment is the page, not a filter on it.
+ *
+ * - **Browsing** (`/av`, `?kind=audio`, `?kind=video`) → the collections, as
+ *   cards. Seven of them, about a screen and a half.
+ * - **Finding** (a word typed, or a year/place/topic chip) → the files
+ *   themselves, grouped under the folder each came from — because a reader who
+ *   searched for "Anubhav" wants the recordings that match, and a page of
+ *   folder cards would be hiding the answer behind one more tap.
+ *
+ * Both shapes come out of the **same response**: the find returns every A/V
+ * file with its breadcrumb, and a file's breadcrumb ends with its own folder,
+ * so the collections are grouped out of the rows already in hand. Switching
+ * between the two costs nothing and can never disagree with itself.
+ *
+ * In find mode `FileList` draws each kind as the thing it is — audio through
+ * the app's one player in album mode, video embedded — the same as on the
+ * folder's own page.
  */
 export function AvShelf({
   find,
@@ -160,11 +172,21 @@ export function AvShelf({
       )}
 
       {groups.length > 0 ? (
-        <div className="mt-2 flex flex-col">
-          {groups.map((group) => (
-            <FolderGroup key={group.id} group={group} shelves={shelves} />
-          ))}
-        </div>
+        asked ? (
+          <div className="mt-2 flex flex-col">
+            {groups.map((group) => (
+              <FolderGroup key={group.id} group={group} shelves={shelves} />
+            ))}
+          </div>
+        ) : (
+          <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+            {groups.map((group) => (
+              <li key={group.id} className="contents">
+                <CollectionCard group={group} shelves={shelves} />
+              </li>
+            ))}
+          </ul>
+        )
       ) : (
         <div className="mt-6">
           <EmptyState
@@ -299,6 +321,91 @@ function groupByFolder(results: LibraryFindResponse["results"]): FolderGroup[] {
   }
   return [...groups.values()];
 }
+
+/**
+ * One collection, as a card — **what browsing this tab actually shows**.
+ *
+ * The page opened every album inline to begin with, and the number that settled
+ * it was 18,753 pixels: thirty screens of scrolling, seventy-three files and
+ * thirty-eight video posters, with the twenty-hour collection at the bottom
+ * behind fifty-four other things. A tab built to make recordings reachable had
+ * become one long scroll.
+ *
+ * It was also the weaker of two drawings of the same thing. `/library/<id>`
+ * gives an album its cover, its description, its provenance badge and its link
+ * out to the full series; the inline copy here had none of those. So the card
+ * goes there rather than trying to be it.
+ *
+ * No cover of its own: these are built from the file rows the find returned,
+ * which carry their folder's id and name but not its artwork. The kind glyph
+ * and its tint do the work instead — the same pair the Library shelf's tiles
+ * use, and on this tab every collection is purely one kind or the other.
+ */
+function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
+  const duration = group.files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0);
+  const kinds = [...new Set(group.files.map((f) => f.kind))];
+  const only = kinds.length === 1 ? kinds[0] : null;
+  const tint = only === "audio" || only === "video" ? AV_TINT[only] : undefined;
+  const hours = duration / 3600;
+
+  return (
+    <Link
+      href={nodeHref(group.id, shelves)}
+      className="group flex h-full flex-col rounded-[18px] border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
+    >
+      <span
+        aria-hidden
+        className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl"
+        style={{
+          background: tint?.bg ?? "var(--color-accent-tint)",
+          color: tint?.ink ?? "var(--ws-ink)",
+        }}
+      >
+        {only === "video" ? (
+          <VideoIcon className="h-[18px] w-[18px]" />
+        ) : (
+          <HeadphonesIcon className="h-[18px] w-[18px]" />
+        )}
+      </span>
+      {group.trail.length > 0 && (
+        <span
+          lang="hi"
+          className="hi mb-0.5 block truncate text-xs font-semibold text-ink-soft"
+        >
+          {group.trail.map((step) => step.name).join(" / ")}
+        </span>
+      )}
+      <span
+        {...contentLang(group.name)}
+        className={`${contentLang(group.name).className} line-clamp-2 text-sm font-semibold leading-snug group-hover:underline`}
+      >
+        {group.name}
+      </span>
+      {/* Hours lead where there are hours: a count is a number a reader cannot
+          weigh, and twenty hours of recordings is a promise. Same line the
+          Library shelf's tiles print, for the same reason. */}
+      <span className="mt-auto pt-2.5 text-xs font-semibold" style={{ color: "var(--ws-ink)" }}>
+        {[
+          hours >= 1
+            ? `${Math.round(hours)} ${Math.round(hours) === 1 ? "hour" : "hours"}`
+            : duration > 0
+              ? `${Math.max(1, Math.round(duration / 60))} min`
+              : "",
+          filesSummary(group.files),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      </span>
+    </Link>
+  );
+}
+
+/** the two tints the Library shelf gives these kinds, so a card reads the same
+ *  whichever shelf it is standing on (see `NodeCard`'s `KIND_TINT`) */
+const AV_TINT: Record<"audio" | "video", { bg: string; ink: string }> = {
+  audio: { bg: "#F8E7D6", ink: "#8A4110" },
+  video: { bg: "#DFE9F0", ink: "#255A6E" },
+};
 
 /** one folder's recordings, under a heading that says which folder and where */
 function FolderGroup({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {

@@ -285,7 +285,7 @@ export async function WorkspaceShelf({
  * An unknown rollup means an unanswered question, and the safe answer to an
  * unanswered question is to show the folder.
  */
-function hidesDoor(kinds: FileKind[] | undefined, hidden: FileKind[]): boolean {
+export function hidesDoor(kinds: FileKind[] | undefined, hidden: FileKind[]): boolean {
   if (hidden.length === 0 || !kinds || kinds.length === 0) return false;
   return kinds.every((kind) => hidden.includes(kind));
 }
