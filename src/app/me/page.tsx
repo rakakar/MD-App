@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { ContinueAv } from "@/components/library/ContinueAv";
 import { EmptyState, PageContainer, SectionHeading } from "@/components/ui";
 import { getBooks } from "@/lib/api";
 import {
@@ -102,6 +103,14 @@ export default function MyJourneyPage() {
           hint="Open any book and your place is saved automatically."
         />
       )}
+
+      {/* Recordings, on the page about where the reader has got to — the same
+          component `/av` heads with. It names its own rows, so this page hands
+          it no files: it draws itself or, having nothing part-finished to show,
+          nothing at all. Which is why it sits below the reading section rather
+          than above it — books are what most readers have in progress, and a
+          heading that is usually absent should not lead the screen. */}
+      <ContinueAv sources={[]} limit={4} />
 
       <SectionHeading>Saved</SectionHeading>
       <div className="grid grid-cols-2 gap-3">

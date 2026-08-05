@@ -35,6 +35,8 @@ import {
   addLocalBookmark,
   addLocalNote,
   getLocalStore,
+  getPlayhead,
+  setPlayhead,
   removeLocalBookmark,
   removeLocalNote,
   setLocalProgress,
@@ -358,6 +360,34 @@ async function pull(): Promise<void> {
   }
 
   setLocalStore(store);
+
+  // Recordings, into the store the *player* reads. The loop above skips them
+  // (`book_code` is blank on a file) and must keep skipping them: a playhead is
+  // seconds into one file, not a paragraph in a book, and folding the two would
+  // give both the wrong unit.
+  //
+  // This is the other half of `savePlayhead`, and what actually makes a shivir
+  // begun on a phone resume on a laptop — the album player and `VideoView` both
+  // read the local playhead and neither knows the account exists.
+  for (const row of progress) {
+    const id = itemIdFromTarget(row.target);
+    if (id === null) continue;
+    const key = `library-file:${id}`;
+    const theirs = row.updated_at ?? "";
+    const mine = getPlayhead(key, { withMeta: true });
+    // Newest wins, and a tie goes to this device — it may hold seconds this
+    // server row has not been told about yet.
+    if (mine && theirs <= mine.updated_at) continue;
+    setPlayhead(key, (row.position ?? 0) * 1000, { at: theirs });
+  }
+}
+
+/** `item:88` → `88`; null for a book row, which this store has no use for */
+function itemIdFromTarget(target: string | undefined): number | null {
+  const match = /^item:(\d+)$/.exec(target ?? "");
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 /** A failure that retrying cannot fix (bad ref, gone, not ours). */

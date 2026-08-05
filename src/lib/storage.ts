@@ -414,18 +414,51 @@ export function clearListeningPosition(bookCode: string): void {
 
 const PLAYHEAD_KEY = "md.playhead.v1";
 
-type PlayheadStore = Record<string, { position_ms: number; updated_at: string }>;
+export interface Playhead {
+  position_ms: number;
+  updated_at: string;
+}
 
-/** `key` is stable per playable item, e.g. `library-file:88` */
-export function setPlayhead(key: string, positionMs: number): void {
+type PlayheadStore = Record<string, Playhead>;
+
+/**
+ * `key` is stable per playable item, e.g. `library-file:88`.
+ *
+ * `at` is for a playhead that came *back* from the account rather than from
+ * this device's player: the merge that folds another device's listening in has
+ * to keep that device's timestamp, or every sync would look newer than the
+ * seconds actually being played here and overwrite them.
+ */
+export function setPlayhead(
+  key: string,
+  positionMs: number,
+  { at }: { at?: string } = {}
+): void {
   if (!isBrowser) return;
   const store = read<PlayheadStore>(PLAYHEAD_KEY, {});
-  store[key] = { position_ms: Math.round(positionMs), updated_at: new Date().toISOString() };
+  store[key] = {
+    position_ms: Math.round(positionMs),
+    updated_at: at || new Date().toISOString(),
+  };
   write(PLAYHEAD_KEY, store);
 }
 
-export function getPlayhead(key: string): number | null {
-  return read<PlayheadStore>(PLAYHEAD_KEY, {})[key]?.position_ms ?? null;
+export function getPlayhead(key: string): number | null;
+export function getPlayhead(key: string, opts: { withMeta: true }): Playhead | null;
+export function getPlayhead(
+  key: string,
+  opts?: { withMeta: true }
+): number | Playhead | null {
+  const row = read<PlayheadStore>(PLAYHEAD_KEY, {})[key];
+  if (!row) return null;
+  return opts?.withMeta ? row : row.position_ms;
+}
+
+/** every saved playhead, newest first — what "continue listening" is drawn from */
+export function getPlayheads(): (Playhead & { key: string })[] {
+  return Object.entries(read<PlayheadStore>(PLAYHEAD_KEY, {}))
+    .map(([key, row]) => ({ key, ...row }))
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
 }
 
 export function clearPlayhead(key: string): void {

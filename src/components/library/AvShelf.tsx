@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ContinueAv } from "./ContinueAv";
 import { FileList } from "./FileList";
 import { FilterCards } from "./FilterCards";
 import { FindBar } from "./FindBar";
@@ -85,6 +86,11 @@ export function AvShelf({
 
   return (
     <>
+      {/* Above the controls, because it is the shortest path to the thing a
+          returning reader came for — and drawn client-side from playheads, so
+          it is simply absent for anyone who has not started anything. */}
+      <ContinueAv sources={groups} />
+
       <Segments facets={facets} chosen={chosen} state={state} basePath={basePath} />
 
       <FindBar basePath={basePath} state={state} scope="Audio and video" dense />
