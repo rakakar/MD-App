@@ -468,6 +468,75 @@ export function clearPlayhead(key: string): void {
   write(PLAYHEAD_KEY, store);
 }
 
+// ---- PDF places ----
+//
+// Where a reader stopped in a PDF, kept apart from the playheads above for the
+// same reason those are kept apart from `progress`: **the unit differs and
+// nothing may guess.** A playhead is milliseconds into a rendition; this is a
+// page number. Written into the same store they would be indistinguishable,
+// and `getPlayheads()` — which every resume card reads as `position_ms` —
+// would render page 12 of a document as twelve seconds of a recording.
+//
+// Keyed identically (`library-file:<id>`), because it is the same file in the
+// same library and that key is what carries the place to the account.
+
+const PDF_PAGE_KEY = "md.pdfpage.v1";
+
+export interface PdfPlace {
+  /** 1-based, as printed and as a reader would say it */
+  page: number;
+  /**
+   * How long the document is, so a resume card can draw a bar without opening
+   * the file. Zero when the place came back from the account, whose progress
+   * rows carry a position and no length — the card fills it from the library
+   * listing it already fetches, exactly as it does for a recording's duration.
+   */
+  page_count: number;
+  updated_at: string;
+}
+
+type PdfPlaceStore = Record<string, PdfPlace>;
+
+/**
+ * `at` carries the *other* device's timestamp for a place that arrived from
+ * the account, so a sync can never look newer than the page actually being
+ * read here and overwrite it. Same rule as {@link setPlayhead}.
+ */
+export function setPdfPlace(
+  key: string,
+  page: number,
+  { pageCount = 0, at }: { pageCount?: number; at?: string } = {}
+): void {
+  if (!isBrowser) return;
+  const store = read<PdfPlaceStore>(PDF_PAGE_KEY, {});
+  store[key] = {
+    page: Math.max(1, Math.round(page)),
+    // A pull knows the page and not the length; keep whatever this device
+    // already learned from opening the file rather than zeroing it.
+    page_count: pageCount || store[key]?.page_count || 0,
+    updated_at: at || new Date().toISOString(),
+  };
+  write(PDF_PAGE_KEY, store);
+}
+
+export function getPdfPlace(key: string): PdfPlace | null {
+  return read<PdfPlaceStore>(PDF_PAGE_KEY, {})[key] ?? null;
+}
+
+/** every saved place, newest first — what "continue reading" is drawn from */
+export function getPdfPlaces(): (PdfPlace & { key: string })[] {
+  return Object.entries(read<PdfPlaceStore>(PDF_PAGE_KEY, {}))
+    .map(([key, row]) => ({ key, ...row }))
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+}
+
+export function clearPdfPlace(key: string): void {
+  if (!isBrowser) return;
+  const store = read<PdfPlaceStore>(PDF_PAGE_KEY, {});
+  delete store[key];
+  write(PDF_PAGE_KEY, store);
+}
+
 /** recently-read list, newest first */
 export function getRecentlyRead(): LocalProgress[] {
   return Object.values(getLocalStore().progress).sort((a, b) =>
@@ -482,4 +551,5 @@ export function clearLocalStore(): void {
   window.localStorage.removeItem(LEGACY_KEY);
   window.localStorage.removeItem(LISTENING_KEY);
   window.localStorage.removeItem(PLAYHEAD_KEY);
+  window.localStorage.removeItem(PDF_PAGE_KEY);
 }

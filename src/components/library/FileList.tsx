@@ -25,12 +25,22 @@ export function FileList({
   linked = [],
   albumTitle,
   coverUrl = null,
+  openFile = null,
 }: {
   files: LibraryFile[];
   linked?: LocatedFile[];
   /** the folder's name — what the lock screen calls the album */
   albumTitle?: string;
   coverUrl?: string | null;
+  /**
+   * A document to open at a page, from a resume card's link. Threaded down as
+   * a prop rather than read from the URL where it is used: `/library/[id]`
+   * prerenders, and a client component calling `useSearchParams` under a
+   * prerendered route has to sit in a Suspense boundary or the production
+   * build fails — while working perfectly in dev, which is the worst way to
+   * find out.
+   */
+  openFile?: { id: number; page: number } | null;
 }) {
   const all: (LibraryFile | LocatedFile)[] = [...files, ...linked];
   const groups = KIND_ORDER.map((kind) => ({
@@ -59,6 +69,7 @@ export function FileList({
             files={kindFiles}
             albumTitle={albumTitle}
             coverUrl={coverUrl}
+            openFile={openFile}
           />
         </section>
       ))}
@@ -71,11 +82,13 @@ function KindGroup({
   files,
   albumTitle,
   coverUrl,
+  openFile,
 }: {
   kind: FileKind;
   files: (LibraryFile | LocatedFile)[];
   albumTitle?: string;
   coverUrl: string | null;
+  openFile: { id: number; page: number } | null;
 }) {
   if (kind === "audio") {
     return <AlbumAudio items={files} albumTitle={albumTitle} coverUrl={coverUrl} />;
@@ -103,7 +116,14 @@ function KindGroup({
           <li key={file.id} className="rounded-2xl border border-rule bg-card p-4">
             <FileHeading file={file} />
             <div className="mt-3">
-              <PdfView url={file.url} title={file.title} />
+              <PdfView
+                url={file.url}
+                title={file.title}
+                itemId={file.id}
+                pageCount={file.page_count}
+                fileSize={file.file_size}
+                openAt={openFile?.id === file.id ? openFile.page : null}
+              />
             </div>
           </li>
         ))}

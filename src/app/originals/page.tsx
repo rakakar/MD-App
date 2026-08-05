@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ContinuePdf } from "@/components/library/ContinuePdf";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
@@ -70,6 +71,12 @@ export default async function OriginalsLibraryPage({
         Photographs, letters and documents — A. Nagraj ji&apos;s own material,
         beyond the books. Recordings have a tab of their own.
       </p>
+
+      {/* Above the shelf, for the same reason the Audio/Video tab puts its own
+          there: it is the shortest path to the thing a returning reader came
+          for. Drawn client-side from saved places, so it is simply absent for
+          anyone who has not started a document. */}
+      <ContinuePdf />
 
       <WorkspaceShelf
         root={root}

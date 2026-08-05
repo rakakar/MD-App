@@ -45,6 +45,7 @@ export async function NodeView({
   shelves = {},
   /** the first breadcrumb step is the page's own title on a shelf, not a link */
   isShelf = false,
+  openFile = null,
 }: {
   node: LibraryNode;
   state?: FindState;
@@ -52,6 +53,8 @@ export async function NodeView({
   basePath: string;
   shelves?: ShelfMap;
   isShelf?: boolean;
+  /** a document to open at a page — where a resume card lands (see `FileList`) */
+  openFile?: { id: number; page: number } | null;
 }) {
   // Through the accessor, never `node.children` directly: when the pCloud
   // import forces `children` to be capped and paginated, that is the one place
@@ -142,6 +145,7 @@ export async function NodeView({
             linked={node.linked_items}
             albumTitle={node.name}
             coverUrl={node.cover_url}
+            openFile={openFile}
           />
 
           {children.length === 0 && node.linked_children.length === 0 && files.length === 0 && (

@@ -35,7 +35,9 @@ import {
   addLocalBookmark,
   addLocalNote,
   getLocalStore,
+  getPdfPlace,
   getPlayhead,
+  setPdfPlace,
   setPlayhead,
   removeLocalBookmark,
   removeLocalNote,
@@ -139,6 +141,36 @@ export function savePlayhead(
   // a recording they still have locally, and a failed sync must never surface
   // as an error over something they are listening to.
   void upsertItemProgress(itemId, positionSeconds).catch(() => {});
+}
+
+/**
+ * Which page of a **PDF** the reader reached, carried to the account.
+ *
+ * The same arrangement as `savePlayhead` and for the same reasons — local
+ * first, network occasionally, failures swallowed — with one difference that
+ * matters: `position` here is a **page number, not seconds**. The endpoint
+ * takes a bare integer and decides nothing about the unit; what says how to
+ * read it is the file's `kind` on the way back, which is why `pull` below
+ * routes on that rather than on the target alone.
+ *
+ * Pushed more eagerly than a playhead (a page turn is a deliberate act, not a
+ * tick, and a reader may turn three pages and close the tab), but still rarely
+ * enough that a fast scroll through a chart deck is one request, not forty.
+ */
+const PDF_PAGE_PUSH_MS = 30_000;
+const lastPdfPush = new Map<number, number>();
+
+export function savePdfPage(
+  itemId: number,
+  page: number,
+  signedIn: boolean,
+  { flush = false }: { flush?: boolean } = {}
+): void {
+  if (!signedIn) return;
+  const now = Date.now();
+  if (!flush && now - (lastPdfPush.get(itemId) ?? 0) < PDF_PAGE_PUSH_MS) return;
+  lastPdfPush.set(itemId, now);
+  void upsertItemProgress(itemId, page).catch(() => {});
 }
 
 /**
@@ -361,22 +393,40 @@ async function pull(): Promise<void> {
 
   setLocalStore(store);
 
-  // Recordings, into the store the *player* reads. The loop above skips them
-  // (`book_code` is blank on a file) and must keep skipping them: a playhead is
-  // seconds into one file, not a paragraph in a book, and folding the two would
-  // give both the wrong unit.
+  // Files, into whichever store speaks their unit. The loop above skips them
+  // (`book_code` is blank on a file) and must keep skipping them: a position in
+  // a file is not a paragraph in a book, and folding the two would give both
+  // the wrong unit.
   //
-  // This is the other half of `savePlayhead`, and what actually makes a shivir
-  // begun on a phone resume on a laptop — the album player and `VideoView` both
-  // read the local playhead and neither knows the account exists.
+  // **`kind` is what splits them, and it is not optional.** Every file row
+  // comes back as `item:<id>` carrying an integer `position`, and that integer
+  // is seconds for a recording and a page number for a PDF. Routed by target
+  // alone — as this did while recordings were the only files with progress —
+  // page 12 of a document lands in the playhead store as twelve seconds, and
+  // "Continue listening" grows a row for a PDF nobody can play.
+  //
+  // This is the other half of `savePlayhead` and `savePdfPage`, and what makes
+  // a shivir begun on a phone resume on a laptop — the album player, the video
+  // view and the PDF reader all read their local store and none of them knows
+  // the account exists.
   for (const row of progress) {
     const id = itemIdFromTarget(row.target);
     if (id === null) continue;
     const key = `library-file:${id}`;
     const theirs = row.updated_at ?? "";
+
+    if (row.kind === "pdf") {
+      const mine = getPdfPlace(key);
+      // Newest wins, and a tie goes to this device — it may hold a page this
+      // server row has not been told about yet.
+      if (mine && theirs <= mine.updated_at) continue;
+      // No page count on a progress row; the card fills that in from the
+      // library listing, and a place already opened here keeps the one it has.
+      setPdfPlace(key, row.position ?? 1, { at: theirs });
+      continue;
+    }
+
     const mine = getPlayhead(key, { withMeta: true });
-    // Newest wins, and a tie goes to this device — it may hold seconds this
-    // server row has not been told about yet.
     if (mine && theirs <= mine.updated_at) continue;
     setPlayhead(key, (row.position ?? 0) * 1000, { at: theirs });
   }
