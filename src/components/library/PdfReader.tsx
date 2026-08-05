@@ -135,12 +135,14 @@ function release(
 }
 
 interface PageBox {
-  /** the wrapper we observe and draw into */
+  /** the wrapper we measure and draw into */
   el: HTMLDivElement;
   canvas: HTMLCanvasElement | null;
   task: RenderTask | null;
   /** the scale it was drawn at, so a zoom knows what is stale */
   drawnAt: number;
+  /** the scale currently being drawn, so one page never draws twice at once */
+  drawingAt: number;
 }
 
 export function PdfReader({
@@ -205,6 +207,12 @@ export function PdfReader({
   const failed = useRef(false);
   const jumped = useRef(false);
   const appliedZoom = useRef(zoom);
+  /**
+   * "A page has painted", readable from `draw` without being a dependency of
+   * it. As state alone it rebuilt `draw` the instant the first page landed,
+   * and that cascade re-entered the render — see the note on `draw`.
+   */
+  const readyRef = useRef(false);
 
   // The page being read, reachable from effects that must not *depend* on it:
   // a zoom or a rotation redraws around wherever the reader is, but listing
@@ -308,6 +316,21 @@ export function PdfReader({
   }, [url, fail, onSlow]);
 
   // ---- draw one page ----
+  //
+  // **Every render gets its own canvas, and a page draws once at a time.**
+  // Both rules are here because of the same defect. `draw` awaits `getPage`
+  // before it renders, so two calls for the same page could each get past the
+  // guard and then call `render()` on one shared canvas — which pdf.js
+  // rejects outright: *"Cannot use the same canvas during multiple render()
+  // operations."* And two calls were not hypothetical: `ready` flipping on the
+  // first completed page rebuilt this callback, which rebuilt `focus`, which
+  // re-ran the effect that had just called it. Whether that raced depended on
+  // whether the first render had finished — so it struck one document on one
+  // phone and nothing on a desk.
+  //
+  // A fresh canvas makes the collision impossible rather than unlikely, and
+  // swapping it in only once it is painted means a redraw never blanks the
+  // page it is replacing.
   const draw = useCallback(
     async (n: number) => {
       const box = boxes.current.get(n);
@@ -317,48 +340,68 @@ export function PdfReader({
       if (width === 0) return;
       const scale = ZOOMS[zoom];
       if (box.canvas && box.drawnAt === scale) return; // already good at this zoom
+      if (box.drawingAt === scale) return; // already on its way at this zoom
 
-      box.task?.cancel();
-      box.task = null;
+      // Cancel what is in flight and **wait for it to unwind**. `cancel()` only
+      // asks; the task settles a beat later, and starting the next render
+      // before it does is the other half of the same bug.
+      if (box.task) {
+        const previous = box.task;
+        previous.cancel();
+        await previous.promise.catch(() => {});
+        if (box.task === previous) box.task = null;
+      }
 
+      box.drawingAt = scale;
       try {
         const page = pageCache.current.get(n) ?? (await doc.getPage(n));
         pageCache.current.set(n, page);
-        if (!boxes.current.has(n)) return; // scrolled away while awaiting
+        if (boxes.current.get(n) !== box) return; // torn down while awaiting
 
         const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
         const base = page.getViewport({ scale: 1 });
-        // Fit the column, then apply the zoom step. The canvas is laid out at
-        // CSS width and backed at DPR, which is what keeps Devanagari matras
-        // legible instead of smeared.
-        const viewport = page.getViewport({ scale: (width / base.width) * scale * dpr });
+        // `width` is the element's own width, which already carries the zoom —
+        // the page box is laid out at `scale * 100%`. Only the device ratio is
+        // applied on top, which is what keeps Devanagari matras legible instead
+        // of smeared.
+        const viewport = page.getViewport({ scale: (width / base.width) * dpr });
 
-        const canvas = box.canvas ?? document.createElement("canvas");
+        const canvas = document.createElement("canvas");
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         canvas.style.width = "100%";
         canvas.style.height = "auto";
         canvas.style.display = "block";
-        if (!box.canvas) {
-          canvas.className = "rounded-md";
-          box.el.replaceChildren(canvas);
-          box.canvas = canvas;
-        }
+        canvas.className = "rounded-md";
 
         const task = page.render({ canvas, viewport });
         box.task = task;
         await task.promise;
-        box.drawnAt = scale;
+        // `release` nulls the task when it lets a page go; finding it changed
+        // means this canvas is no longer wanted.
+        if (box.task !== task) return;
         box.task = null;
 
-        if (!ready) setReady(true);
+        box.el.replaceChildren(canvas);
+        box.canvas = canvas;
+        box.drawnAt = scale;
+
+        if (!readyRef.current) {
+          readyRef.current = true;
+          setReady(true);
+        }
       } catch (e) {
         // A cancelled render is the normal way a fast scroll ends, not a fault.
         if ((e as { name?: string })?.name === "RenderingCancelledException") return;
         fail(describe(e));
+      } finally {
+        if (box.drawingAt === scale) box.drawingAt = 0;
       }
     },
-    [doc, zoom, ready, fail]
+    // `ready` is deliberately absent — see `readyRef`. Listing it rebuilt this
+    // callback the moment the first page painted, and that cascade is what
+    // produced the double render above.
+    [doc, zoom, fail]
   );
 
   /**
@@ -499,7 +542,7 @@ export function PdfReader({
       return;
     }
     if (!boxes.current.has(n)) {
-      boxes.current.set(n, { el, canvas: null, task: null, drawnAt: 0 });
+      boxes.current.set(n, { el, canvas: null, task: null, drawnAt: 0, drawingAt: 0 });
     }
   }, []);
 
@@ -574,7 +617,10 @@ export function PdfReader({
         // `pinch-zoom` on top of our own steps: the browser's pinch is instant
         // and blurry, ours is a redraw and sharp. A reader inspecting a chart
         // wants the first; a reader settling in wants the second.
-        className="flex-1 overflow-y-auto overscroll-contain [touch-action:pinch-zoom]"
+        // `overflow-x` matters once zoomed: a page wider than the column has to
+        // be reachable sideways, or the right edge of every line is simply
+        // gone — which is worse than not zooming at all.
+        className="flex-1 overflow-y-auto overflow-x-auto overscroll-contain [touch-action:pinch-zoom]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label={title}
       >
@@ -614,11 +660,21 @@ export function PdfReader({
                   // drawn, taken from page one's shape — so the scrollbar is
                   // honest on a 390-page document from the first frame, rather
                   // than growing under the reader's thumb as pages arrive.
+                  //
+                  // **The zoom lives here, on the width, and that is the whole
+                  // of it.** It used to be applied to the canvas backing store
+                  // alone while the canvas stayed `width: 100%`, so stepping up
+                  // rendered four times the pixels into the same column: the
+                  // page got sharper and never got bigger, which to a reader
+                  // pressing a zoom control is simply a button that does
+                  // nothing. Widen the box and the text grows; `draw` reads
+                  // this width back and renders to fit it.
                   style={{
+                    width: `${ZOOMS[zoom] * 100}%`,
                     aspectRatio: `1 / ${aspect}`,
                     filter: THEME_FILTER[resolved],
                   }}
-                  className="w-full bg-white"
+                  className="max-w-none bg-white"
                 />
               </li>
             ))}
