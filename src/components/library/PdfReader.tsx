@@ -37,8 +37,18 @@ import type { ResolvedTheme } from "@/lib/storage";
  * on the native viewer when it does.
  */
 
-/** How long a reader will stare at nothing before we conclude this is not working. */
-const FIRST_PAGE_TIMEOUT_MS = 8_000;
+/**
+ * How long before we *offer* a way out — never before we take one.
+ *
+ * The first PDF a reader opens pays for ~1.6 MB of pdf.js on top of the
+ * document itself, and on mobile data that is legitimately slow rather than
+ * broken. An earlier version treated this as failure and switched to the
+ * browser's own viewer, which on Android is not a viewer at all: Chrome there
+ * has no inline PDF support, so the "fallback" was a grey placeholder and a
+ * download button. Giving up on the reader's behalf has to be the reader's
+ * decision, so this only surfaces the offer and the loading continues behind it.
+ */
+const SLOW_MS = 10_000;
 
 /** Pages kept drawn either side of the one being read. */
 const WINDOW = 2;
@@ -81,6 +91,7 @@ export function PdfReader({
   title,
   startPage = 1,
   onPage,
+  onSlow,
   onFail,
 }: {
   url: string;
@@ -89,8 +100,14 @@ export function PdfReader({
   startPage?: number;
   /** the page being read, reported as it changes; never called before first paint */
   onPage?: (page: number, pageCount: number) => void;
-  /** this document cannot be read here — the parent should fall back */
-  onFail?: (reason: "slow" | "error") => void;
+  /**
+   * Still working after {@link SLOW_MS}. An invitation for the parent to offer
+   * a way out — **not** a failure, and not a reason to unmount this: the
+   * document is still loading and usually still arrives.
+   */
+  onSlow?: () => void;
+  /** this document genuinely cannot be read here — the parent should fall back */
+  onFail?: (reason: "error") => void;
 }) {
   const { resolved } = useDisplay();
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -99,6 +116,8 @@ export function PdfReader({
   const [current, setCurrent] = useState(startPage);
   const [zoom, setZoom] = useState(0);
   const [ready, setReady] = useState(false);
+  /** how much of the document has arrived, 0–100; only meaningful before it opens */
+  const [loadedPct, setLoaded] = useState(0);
   /**
    * Page one's shape, applied to every placeholder — which is what gives a
    * 390-page document an honest scroll height from the first frame instead of
@@ -127,16 +146,18 @@ export function PdfReader({
     currentRef.current = current;
   }, [current]);
 
-  const fail = useCallback(
-    (reason: "slow" | "error") => {
-      if (failed.current) return; // one verdict per document
-      failed.current = true;
-      onFail?.(reason);
-    },
-    [onFail]
-  );
+  const fail = useCallback(() => {
+    if (failed.current) return; // one verdict per document
+    failed.current = true;
+    onFail?.("error");
+  }, [onFail]);
 
   // ---- open the document ----
+  //
+  // **Every callback this depends on must be memoised by the caller.** Reopening
+  // is not a cheap re-render: it tears down the worker and fetches the document
+  // again, so an inline arrow passed as `onSlow` or `onFail` would re-download a
+  // 27 MB file on every parent render. `PdfView` wraps all of them.
   useEffect(() => {
     let cancelled = false;
     // The *loading task*, not the document: `destroy()` lives here in pdf.js 6
@@ -147,11 +168,11 @@ export function PdfReader({
     let loading: PDFDocumentLoadingTask | null = null;
 
     // Armed before the library is even fetched: on a bad connection the import
-    // itself is part of what the reader is waiting through, and a timeout that
-    // only covers rendering would call a two-minute open a success.
+    // itself is most of what the reader is waiting through, so a timer that
+    // only covered the document would say nothing during the longest part.
     const timer = setTimeout(() => {
-      if (!cancelled) fail("slow");
-    }, FIRST_PAGE_TIMEOUT_MS);
+      if (!cancelled) onSlow?.();
+    }, SLOW_MS);
 
     (async () => {
       try {
@@ -174,6 +195,14 @@ export function PdfReader({
           rangeChunkSize: 65536,
           disableAutoFetch: true,
         });
+        // What the reader is actually waiting for, said in numbers. A bare
+        // "Opening…" over a 27 MB document is indistinguishable from a hang,
+        // and that guess is what makes people leave.
+        loading.onProgress = ({ loaded, total }: { loaded: number; total: number }) => {
+          if (cancelled || !total) return;
+          setLoaded(Math.min(100, Math.round((loaded / total) * 100)));
+        };
+
         const opened = await loading.promise;
         if (cancelled) return; // the cleanup below destroys the loading task
 
@@ -187,7 +216,7 @@ export function PdfReader({
         setDoc(opened);
       } catch {
         clearTimeout(timer);
-        if (!cancelled) fail("error");
+        if (!cancelled) fail();
       }
     })();
 
@@ -204,7 +233,7 @@ export function PdfReader({
       cached.clear();
       void loading?.destroy();
     };
-  }, [url, fail]);
+  }, [url, fail, onSlow]);
 
   // ---- draw one page ----
   const draw = useCallback(
@@ -254,7 +283,7 @@ export function PdfReader({
       } catch (e) {
         // A cancelled render is the normal way a fast scroll ends, not a fault.
         if ((e as { name?: string })?.name === "RenderingCancelledException") return;
-        fail("error");
+        fail();
       }
     },
     [doc, zoom, ready, fail]
@@ -441,8 +470,25 @@ export function PdfReader({
         aria-label={title}
       >
         {pageCount === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-sm text-ink-soft">Opening the document…</span>
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6">
+            <span className="text-sm text-ink-soft">
+              {loadedPct > 0 ? "Downloading the document…" : "Preparing the reader…"}
+            </span>
+            {loadedPct > 0 && (
+              <>
+                <span className="block h-1.5 w-40 overflow-hidden rounded-full bg-canvas">
+                  <span
+                    className="block h-full rounded-full transition-[width]"
+                    style={{
+                      width: `${loadedPct}%`,
+                      background:
+                        "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
+                    }}
+                  />
+                </span>
+                <span className="text-xs tabular-nums text-ink-soft">{loadedPct}%</span>
+              </>
+            )}
           </div>
         ) : (
           <ul className="flex flex-col gap-2">

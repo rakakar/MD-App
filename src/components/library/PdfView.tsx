@@ -74,6 +74,7 @@ export function PdfView({
   const { user } = useAuth();
   const [open, setOpen] = useState(expanded || openAt !== null);
   const [native, setNative] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [place, setPlace] = useState<number>(openAt ?? 1);
   const signedIn = Boolean(user);
   const key = itemId === null ? null : `library-file:${itemId}`;
@@ -120,6 +121,7 @@ export function PdfView({
   }, [itemId, signedIn]);
 
   const onFail = useCallback(() => setNative(true), []);
+  const onSlow = useCallback(() => setSlow(true), []);
 
   const facts = [
     pageCount ? `${pageCount} ${pageCount === 1 ? "page" : "pages"}` : null,
@@ -132,29 +134,38 @@ export function PdfView({
     <div>
       {open ? (
         native ? (
-          <div>
-            <iframe
-              src={url}
-              title={title}
-              className="h-[75vh] w-full rounded-xl border border-rule bg-card"
-            />
-            {/* Said plainly rather than left to be noticed. A reader who was
-                promised their place would be kept deserves to know why this
-                one will not keep it. */}
-            <p className="mt-2 text-xs text-ink-soft">
-              This document was too slow to open in the in-app reader, so it is
-              shown in your browser&apos;s own viewer. Your page won&apos;t be
-              remembered here.
-            </p>
-          </div>
+          <NativeFallback url={url} title={title} />
         ) : (
-          <PdfReader
-            url={url}
-            title={title}
-            startPage={place}
-            onPage={key ? onPage : undefined}
-            onFail={onFail}
-          />
+          <>
+            <PdfReader
+              url={url}
+              title={title}
+              startPage={place}
+              onPage={key ? onPage : undefined}
+              onSlow={onSlow}
+              onFail={onFail}
+            />
+            {/* An offer, not a switch. The document is still loading behind
+                this and usually still arrives; a reader out of patience can
+                take the browser's viewer instead, and one who waits keeps the
+                reader that remembers their page. */}
+            {slow && (
+              <div className="mt-2 rounded-xl border border-rule bg-card p-3">
+                <p className="text-xs text-ink-soft">
+                  This one is taking a while — it is a large document, and the
+                  first PDF you open also loads the reader itself.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setNative(true)}
+                  className="mt-2 text-xs font-semibold underline underline-offset-2"
+                  style={{ color: "var(--ws-ink)" }}
+                >
+                  Open it in your browser&apos;s viewer instead
+                </button>
+              </div>
+            )}
+          </>
         )
       ) : (
         <button
@@ -198,6 +209,70 @@ export function PdfView({
           <span>Download</span>
         </a>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The browser's own viewer — **only where the browser actually has one.**
+ *
+ * An `<iframe>` pointed at a PDF is not a universal fallback. Desktop Chrome,
+ * Firefox and Safari render one inline; **Chrome on Android has no inline PDF
+ * viewer at all** and draws a grey placeholder with a Download button instead.
+ * So the first version of this shipped a "fallback" that, on the platform most
+ * of these readers use, fell back to nothing — a stub where a document should
+ * be, with the app's own theme nowhere in sight.
+ *
+ * `navigator.pdfViewerEnabled` is the standard answer to exactly this question
+ * and is what decides here. Where it says no, the honest thing is to hand the
+ * file over rather than frame a placeholder: the system's PDF app opens it
+ * properly, which is more than the iframe was ever going to do.
+ *
+ * Resolved in an effect rather than during render because the server has no
+ * `navigator`, and guessing before hydration would flash the wrong one.
+ */
+function NativeFallback({ url, title }: { url: string; title: string }) {
+  const [canFrame, setCanFrame] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setCanFrame(navigator.pdfViewerEnabled ?? false);
+  }, []);
+
+  if (canFrame === null) return null; // one paint, not two
+
+  return (
+    <div>
+      {canFrame ? (
+        <iframe
+          src={url}
+          title={title}
+          className="h-[75vh] w-full rounded-xl border border-rule bg-card"
+        />
+      ) : (
+        <div className="rounded-xl border border-rule bg-card p-4">
+          <p className="text-sm font-semibold">Opening this outside the app</p>
+          <p className="mt-1 text-xs text-ink-soft">
+            Your browser can&apos;t show a PDF inside a page, so this one opens
+            in whichever app your phone uses for documents.
+          </p>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+            style={{ background: "var(--ws-color)" }}
+          >
+            Open the document
+          </a>
+        </div>
+      )}
+      {/* Said plainly rather than left to be noticed. A reader who was promised
+          their place would be kept deserves to know why this one will not keep
+          it — and that the in-app reader is one reload away. */}
+      <p className="mt-2 text-xs text-ink-soft">
+        Read this way, your page isn&apos;t remembered and the app&apos;s theme
+        doesn&apos;t apply. Reload the page to try the in-app reader again.
+      </p>
     </div>
   );
 }
