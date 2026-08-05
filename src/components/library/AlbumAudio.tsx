@@ -54,7 +54,7 @@ export function AlbumAudio({
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
 
   return (
-    <ol className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+    <ol className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
       {items.map((item, i) => {
         const key = trackId(item);
         const active = activeId === key;
@@ -67,7 +67,7 @@ export function AlbumAudio({
                 const entry = byId.get(key);
                 if (entry) play(entry);
               }}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-black/[.03]"
+              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-ink/[.03]"
             >
               <span
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums ${

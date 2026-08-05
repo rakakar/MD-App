@@ -46,7 +46,7 @@ export default function NotesPage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {rows.map((n) => (
-              <li key={n.canonical_ref} className="rounded-2xl border border-rule bg-white p-4">
+              <li key={n.canonical_ref} className="rounded-2xl border border-rule bg-card p-4">
                 {/* the passage first, then what you said about it — a note
                     without its subject is hard to place months later */}
                 {n.text_hi && (
@@ -71,7 +71,7 @@ export default function NotesPage() {
                     type="button"
                     onClick={() => remove(n.canonical_ref)}
                     aria-label={`Delete note on ${n.canonical_ref}`}
-                    className="rounded-full px-2 py-1 text-xs text-ink-soft hover:bg-black/5"
+                    className="rounded-full px-2 py-1 text-xs text-ink-soft hover:bg-ink/5"
                   >
                     Delete
                   </button>

@@ -99,7 +99,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#A64E12",
+  // The light surface, not the accent. This is the installed app's status bar,
+  // and it should be the colour of the page under it — a terracotta band above
+  // a cream header was always a seam. DisplayProvider rewrites this on
+  // hydration for a reader in sepia or dark; this is what the other two see,
+  // and what everyone sees for the first frame.
+  themeColor: "#fdfbf8",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -108,8 +113,15 @@ export const viewport: Viewport = {
 /**
  * Runs synchronously while the browser parses <head>, so the saved theme and
  * type settings are on <html> before the first paint. Without this a reader
- * with dark mode on gets a full-white flash every time a chapter loads — the
- * one moment where it is most jarring. See next/docs "Preventing Flash".
+ * with dark mode on gets a full-white flash every time a page loads — the one
+ * moment where it is most jarring. See next/docs "Preventing Flash".
+ *
+ * It runs on **every** route now, not only inside a book. While the theme was
+ * the reader's alone, painting the shell early was pointless; now the shell is
+ * the thing that would flash. `colorScheme` moved out of the reader branch for
+ * the same reason — it is what form controls, scrollbars and the iOS
+ * overscroll gutter follow, and they are on every screen.
+ *
  * The route test must match READER_ROUTE in lib/routes.ts.
  */
 const THEME_SCRIPT = `(function(){try{
@@ -117,15 +129,15 @@ var p=JSON.parse(localStorage.getItem("md.prefs.v1")||"{}");
 var t=p.theme||"system";
 if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
 var d=document.documentElement;
-d.setAttribute("data-reader-theme",t);
+d.setAttribute("data-theme",t);
+d.style.colorScheme=t==="dark"?"dark":"light";
 d.setAttribute("data-reader-margin",String(p.margin==null?1:p.margin));
 d.setAttribute("data-reader-face",p.face||"serif");
+if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale));
+if(p.boldText)d.setAttribute("data-bold","1");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
-if(/^\\/books\\/[^/]+\\/\\d+$/.test(location.pathname)){
-d.style.colorScheme=t==="dark"?"dark":"light";
-d.setAttribute("data-reading","1");
-}
+if(/^\\/books\\/[^/]+\\/\\d+$/.test(location.pathname))d.setAttribute("data-reading","1");
 }catch(e){}})()`;
 
 export default function RootLayout({
@@ -136,7 +148,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-reader-theme="light"
+      data-theme="light"
       data-reader-margin="1"
       data-reader-face="serif"
       suppressHydrationWarning

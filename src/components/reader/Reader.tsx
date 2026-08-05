@@ -46,6 +46,8 @@ import { Block } from "./blocks";
 import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
+import { useDisplay } from "@/components/shell/DisplayProvider";
+import { DisplaySheet } from "@/components/shell/DisplaySheet";
 import { Sheet } from "./Sheet";
 import { SettingsSheet } from "./SettingsSheet";
 import { TocSheet } from "./TocSheet";
@@ -89,13 +91,6 @@ interface ResumeHint {
   kind: "saved" | "other-device";
 }
 
-/** matches the swatches in SettingsSheet */
-const THEME_BG: Record<string, string> = {
-  light: "#fdfbf8",
-  sepia: "#f5ebdc",
-  dark: "#14110f",
-};
-
 /**
  * The glossary is loaded once for the whole reading session and shared by the
  * page text, the selection bar and the definition sheet — hence the provider
@@ -113,6 +108,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
   const { user, loading: authLoading } = useAuth();
   const { matcher } = useGlossary();
   const player = usePlayer();
+  // The theme is the app's, not the reader's. This component used to own it,
+  // which is exactly why the shell around it never followed.
+  const { theme, setTheme } = useDisplay();
   const loadChapter = useChapterLoader(book.code);
   useSeedCache(book.code, initialChapter);
 
@@ -120,7 +118,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
   const [chapterNumber, setChapterNumber] = useState(initialChapterNumber);
   const [chapterLoading, setChapterLoading] = useState(initialChapter === null);
   const [mode, setMode] = useState<ReadingMode>(book.book_type === "print" ? "page" : "scroll");
-  const [theme, setTheme] = useState<ReaderTheme>("system");
   const [fontScale, setFontScale] = useState(1);
   const [face, setFace] = useState<ReaderFace>("serif");
   const [lineHeight, setLineHeight] = useState(1.85);
@@ -130,6 +127,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
   /** the word whose definition is open, if any */
   const [defineWord, setDefineWord] = useState<string | null>(null);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const [displayOpen, setDisplayOpen] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [selection, setSelection] = useState<Selection | null>(null);
   // snapshot taken when the note sheet opens: focusing the textarea drops the
@@ -195,34 +193,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
     }
   }, []);
 
-  // ---- theme + type applied to <html> ----
+  // ---- type applied to <html> ----
+  // Theme, app text size and weight are the shell's (DisplayProvider); what is
+  // left here is the four settings that only mean something inside a book.
   // The inline script in layout.tsx already painted the saved values; this
   // keeps them in sync afterwards and on soft navigations. Guarded on
-  // prefsLoaded so the defaults never overwrite a saved dark theme.
-  useEffect(() => {
-    if (!prefsLoaded) return;
-    const root = document.documentElement;
-    const apply = () => {
-      const resolved = resolveTheme(theme);
-      root.setAttribute("data-reader-theme", resolved);
-      root.style.colorScheme = resolved === "dark" ? "dark" : "light";
-      let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-      if (!meta) {
-        meta = document.createElement("meta");
-        meta.name = "theme-color";
-        document.head.appendChild(meta);
-      }
-      meta.content = THEME_BG[resolved] ?? THEME_BG.light;
-    };
-    apply();
-    // follow the OS while "Auto" is selected
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    if (theme === "system") {
-      mq.addEventListener("change", apply);
-      return () => mq.removeEventListener("change", apply);
-    }
-  }, [theme, prefsLoaded]);
-
+  // prefsLoaded so the defaults never overwrite a saved choice.
   useEffect(() => {
     if (!prefsLoaded) return;
     const root = document.documentElement;
@@ -232,17 +208,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
     root.setAttribute("data-reader-face", face);
   }, [fontScale, lineHeight, margin, face, prefsLoaded]);
 
-  // reading takes over the whole page: no white rubber-band, no light
-  // scrollbars, and the app's own chrome colours are restored on the way out
+  // Reading takes over the whole page, so the background has to reach the
+  // edges — no white rubber-band on iOS. It no longer restores anything on the
+  // way out: the shell is on the same theme as the book now, so there is
+  // nothing left to restore.
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute("data-reading", "1");
-    return () => {
-      root.removeAttribute("data-reading");
-      root.style.colorScheme = "";
-      const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-      if (meta) meta.content = "#A64E12";
-    };
+    return () => root.removeAttribute("data-reading");
   }, []);
 
   // ---- analytics ----
@@ -948,7 +921,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
   // ---- prefs setters ----
   const changeTheme = (t: ReaderTheme) => {
     setTheme(t);
-    setPrefs({ theme: t });
     track("reader_theme_change", { theme: t });
   };
   const changeFontScale = (s: number) => {
@@ -1328,7 +1300,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
           setSettingsOpen(false);
           setGotoOpen(true);
         }}
+        onAppDisplay={() => {
+          setSettingsOpen(false);
+          setDisplayOpen(true);
+        }}
       />
+
+      {/* The other half of the pair. A reader who has just made the book text
+          as large as it goes is the likeliest person in the app to want the
+          menus larger too, and this is the moment they want it. */}
+      <DisplaySheet open={displayOpen} onClose={() => setDisplayOpen(false)} />
 
       <Sheet
         open={noteOpen && !!noteTarget}

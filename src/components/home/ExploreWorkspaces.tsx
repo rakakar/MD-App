@@ -26,7 +26,7 @@ export function ExploreWorkspaces({ current }: { current: WorkspaceId }) {
           <li key={id}>
             <Link
               href={ws.home}
-              className="flex h-full flex-col gap-3 rounded-2xl border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
+              className="flex h-full flex-col gap-3 rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
             >
               <span
                 aria-hidden

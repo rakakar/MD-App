@@ -105,7 +105,7 @@ export function FilterChips({
   if (options.length === 0) return null;
   const chip = (selected: boolean) =>
     `min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
-      selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
+      selected ? "border-transparent text-white" : "border-rule bg-card text-ink"
     }`;
   return (
     <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={label}>
@@ -147,7 +147,7 @@ export function SegmentedNav({
   return (
     <nav
       aria-label={label}
-      className="inline-flex overflow-hidden rounded-full border border-rule bg-white text-sm"
+      className="inline-flex overflow-hidden rounded-full border border-rule bg-card text-sm"
     >
       {items.map((it) => (
         <Link
@@ -174,7 +174,7 @@ export function EmptyState({
   hint?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-rule bg-white/50 p-8 text-center">
+    <div className="rounded-2xl border border-dashed border-rule bg-card/50 p-8 text-center">
       <p className="text-base font-medium text-ink">{title}</p>
       {/* An empty state is a whole sentence addressed to the reader, not a
           caption — it gets body size, not the metadata floor. */}
@@ -185,7 +185,7 @@ export function EmptyState({
 
 export function ErrorState({ message }: { message?: string }) {
   return (
-    <div className="rounded-2xl border border-rule bg-white p-8 text-center">
+    <div className="rounded-2xl border border-rule bg-card p-8 text-center">
       <p className="text-base font-medium text-ink">Couldn&apos;t load this right now.</p>
       <p className="mt-1 text-sm text-ink-soft">
         {message ?? "Check your connection and try again."}

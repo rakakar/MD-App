@@ -98,7 +98,7 @@ export function CoverTile({
       {showDash && (
         <span
           aria-hidden
-          className="relative mt-auto h-0.5 w-5 rounded-full bg-white/55"
+          className="relative mt-auto h-0.5 w-5 rounded-full bg-card/55"
         />
       )}
     </div>

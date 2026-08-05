@@ -100,7 +100,7 @@ function KindGroup({
     return (
       <ul className="flex flex-col gap-3">
         {files.map((file) => (
-          <li key={file.id} className="rounded-2xl border border-rule bg-white p-4">
+          <li key={file.id} className="rounded-2xl border border-rule bg-card p-4">
             <FileHeading file={file} />
             <div className="mt-3">
               <PdfView url={file.url} title={file.title} />
@@ -116,7 +116,7 @@ function KindGroup({
   // downloads. `url` is always present on a served file, so neither is dead.
   const opensOut = kind === "link";
   return (
-    <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+    <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
       {files.map((file) => (
         <li key={file.id}>
           <a
@@ -124,7 +124,7 @@ function KindGroup({
             target="_blank"
             rel="noopener noreferrer"
             {...(opensOut ? {} : { download: true })}
-            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[.03]"
+            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-ink/[.03]"
           >
             <span className="min-w-0 flex-1">
               <FileHeading file={file} />

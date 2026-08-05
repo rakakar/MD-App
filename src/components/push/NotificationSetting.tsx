@@ -24,7 +24,7 @@ export function NotificationSetting() {
   return (
     <>
       <SectionHeading>Notifications</SectionHeading>
-      <div className="rounded-2xl border border-rule bg-white p-4">
+      <div className="rounded-2xl border border-rule bg-card p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium">Notifications</p>

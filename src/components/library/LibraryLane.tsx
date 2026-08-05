@@ -50,7 +50,7 @@ export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
 
       <ProvenanceFilter rows={rows} active={provenance} onChange={setProvenance} />
 
-      <ul className="mt-3 divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+      <ul className="mt-3 divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
         {shown.slice(0, LANE_LIMIT).map((row) => (
           <li key={`${row.type}-${row.id}`}>
             <FindRow row={row} />
@@ -116,7 +116,7 @@ function ProvenanceFilter({
             onClick={() => onChange(selected ? null : value)}
             aria-pressed={selected}
             className={`min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
-              selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
+              selected ? "border-transparent text-white" : "border-rule bg-card text-ink"
             }`}
             style={selected ? { background: "var(--ws-color)" } : undefined}
           >

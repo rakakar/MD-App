@@ -28,7 +28,7 @@ export function RegisterForm({ eventId, open }: { eventId: number; open: boolean
 
   if (!open) {
     return (
-      <p className="rounded-xl bg-black/[.04] px-4 py-3 text-sm text-ink-soft">
+      <p className="rounded-xl bg-ink/[.04] px-4 py-3 text-sm text-ink-soft">
         Registration is closed for this event.
       </p>
     );
@@ -36,7 +36,7 @@ export function RegisterForm({ eventId, open }: { eventId: number; open: boolean
 
   if (status === "done") {
     return (
-      <div role="status" className="rounded-xl border border-rule bg-white px-4 py-4 text-center">
+      <div role="status" className="rounded-xl border border-rule bg-card px-4 py-4 text-center">
         <p className="text-sm font-semibold" style={{ color: "var(--ws-ink)" }}>
           You&apos;re registered ✓
         </p>
@@ -71,7 +71,7 @@ export function RegisterForm({ eventId, open }: { eventId: number; open: boolean
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
-          className="mt-1 w-full rounded-xl border border-rule bg-white p-2.5 text-sm outline-none focus:border-(--ws-color)"
+          className="mt-1 w-full rounded-xl border border-rule bg-card p-2.5 text-sm outline-none focus:border-(--ws-color)"
         />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -82,7 +82,7 @@ export function RegisterForm({ eventId, open }: { eventId: number; open: boolean
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             autoComplete="tel"
-            className="mt-1 w-full rounded-xl border border-rule bg-white p-2.5 text-sm outline-none focus:border-(--ws-color)"
+            className="mt-1 w-full rounded-xl border border-rule bg-card p-2.5 text-sm outline-none focus:border-(--ws-color)"
           />
         </label>
         <label className="text-sm font-medium">
@@ -92,7 +92,7 @@ export function RegisterForm({ eventId, open }: { eventId: number; open: boolean
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
-            className="mt-1 w-full rounded-xl border border-rule bg-white p-2.5 text-sm outline-none focus:border-(--ws-color)"
+            className="mt-1 w-full rounded-xl border border-rule bg-card p-2.5 text-sm outline-none focus:border-(--ws-color)"
           />
         </label>
       </div>

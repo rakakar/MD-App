@@ -109,7 +109,7 @@ export function NodeCardView({
     return (
       <Link
         href={nodeHref(card.id, shelves)}
-        className="group flex h-full flex-col rounded-[18px] border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
+        className="group flex h-full flex-col rounded-[18px] border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
       >
         <span
           aria-hidden
@@ -165,7 +165,7 @@ export function NodeCardView({
     return (
       <Link
         href={nodeHref(card.id, shelves)}
-        className="group flex h-full items-start gap-3 rounded-[18px] border border-rule bg-white p-5 transition-shadow hover:shadow-md"
+        className="group flex h-full items-start gap-3 rounded-[18px] border border-rule bg-card p-5 transition-shadow hover:shadow-md"
       >
         <span className="min-w-0 flex-1">
           <span
@@ -205,7 +205,7 @@ export function NodeCardView({
   return (
     <Link
       href={nodeHref(card.id, shelves)}
-      className="group flex items-start gap-3 rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
+      className="group flex items-start gap-3 rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md"
     >
       <span aria-hidden className="mt-0.5 shrink-0 text-muted">
         <FolderIcon />

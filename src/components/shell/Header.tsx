@@ -9,6 +9,7 @@ import { getEvents } from "@/lib/api";
 import { eventStart, shortDate, upcomingEvents } from "@/lib/events";
 import type { EventItem } from "@/lib/types";
 import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceConfig";
+import { DisplaySheet } from "./DisplaySheet";
 import { useWorkspace } from "./WorkspaceProvider";
 import {
   BrandMark,
@@ -94,13 +95,13 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           aria-checked={active}
           aria-label={`${ws.name} — ${ws.tagline}`}
           onClick={() => choose(id)}
-          className="flex min-h-14 items-center gap-3 rounded-2xl border bg-white p-3 transition-colors active:bg-black/[0.03]"
+          className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3 transition-colors active:bg-ink/[0.03]"
           style={
             active
               ? {
                   borderColor: ws.color,
                   boxShadow: `inset 0 0 0 1px ${ws.color}`,
-                  background: `color-mix(in srgb, ${ws.color} 7%, #fff)`,
+                  background: `color-mix(in srgb, ${ws.color} 7%, var(--color-card))`,
                 }
               : { borderColor: "var(--color-rule)" }
           }
@@ -149,7 +150,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           }`}
           style={
             active
-              ? { background: `color-mix(in srgb, ${ws.color} 8%, #fff)` }
+              ? { background: `color-mix(in srgb, ${ws.color} 8%, var(--color-card))` }
               : undefined
           }
         >
@@ -201,7 +202,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
             type="button"
             aria-label="Close"
             onClick={() => setOpen(false)}
-            className="-mr-2 -mt-1 shrink-0 rounded-full p-2 text-ink-soft active:bg-black/5"
+            className="-mr-2 -mt-1 shrink-0 rounded-full p-2 text-ink-soft active:bg-ink/5"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
@@ -225,7 +226,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
         aria-haspopup={variant === "sheet" ? "dialog" : "listbox"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex min-h-10 items-center gap-2 rounded-xl border bg-white pl-1.5 pr-2.5 text-left shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors ${
+        className={`flex min-h-10 items-center gap-2 rounded-xl border bg-card pl-1.5 pr-2.5 text-left shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors ${
           variant === "popover" ? "w-full" : "max-w-full"
         } ${open ? "" : "hover:bg-accent-tint"}`}
         style={
@@ -241,13 +242,17 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           aria-hidden
           className="flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-[7px] transition-colors duration-[180ms]"
           style={{
-            background: "color-mix(in srgb, var(--ws-color) 12%, #fff)",
+            background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
             color: "var(--ws-ink)",
           }}
         >
           <SwitcherIcon className="h-3.5 w-3.5" />
         </span>
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-[-0.01em]">
+        {/* min-w, not just min-w-0: at the largest text size the actions beside
+            this pushed the label to zero width, so the bar showed a tinted
+            square and a chevron and the reader could no longer tell which
+            workspace they were in. It may truncate; it may not vanish. */}
+        <span className="min-w-[4.5ch] flex-1 truncate text-sm font-semibold tracking-[-0.01em]">
           {workspace.name}
         </span>
         <ChevronDown
@@ -258,7 +263,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
       </button>
 
       {open && variant === "popover" && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-56 rounded-[14px] border border-rule bg-white p-1.5 shadow-[0_20px_44px_-16px_rgba(26,22,19,.35)]">
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-56 rounded-[14px] border border-rule bg-card p-1.5 shadow-[0_20px_44px_-16px_rgba(26,22,19,.35)]">
           <ul role="listbox" aria-label="Workspaces" className="flex flex-col gap-0.5">
             {popoverRow(workspace.id)}
             <li aria-hidden className="my-1 h-px bg-rule" />
@@ -299,7 +304,7 @@ function EventChip() {
     <Link
       href={`/connect/events/${next.id}`}
       onClick={() => track("header_event_chip_tap")}
-      className="flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-white px-3 text-xs font-medium text-ink transition-colors hover:border-ws-connect hover:text-ws-connect"
+      className="flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-card px-3 text-xs font-medium text-ink transition-colors hover:border-ws-connect hover:text-ws-connect"
       aria-label={`Upcoming event${date ? ` on ${shortDate(date)}` : ""}`}
     >
       <CalendarChipIcon className="h-3.5 w-3.5" />
@@ -323,7 +328,7 @@ function AvatarMenu() {
   }, [open]);
 
   if (loading) {
-    return <div className="h-10 w-10 rounded-xl bg-black/5" aria-hidden />;
+    return <div className="h-10 w-10 rounded-xl bg-ink/5" aria-hidden />;
   }
 
   if (!user) {
@@ -350,21 +355,21 @@ function AvatarMenu() {
         aria-expanded={open}
         aria-label="Account menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-10 w-10 items-center justify-center rounded-xl border border-rule bg-white text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
         <UserIcon className="h-4.5 w-4.5" />
       </button>
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl border border-rule bg-white py-1 shadow-lg"
+          className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl border border-rule bg-card py-1 shadow-lg"
         >
           <p className="truncate px-4 py-2 text-xs text-ink-soft">{user.email as string}</p>
           <Link
             role="menuitem"
             href="/me"
             onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm hover:bg-black/5"
+            className="block px-4 py-2 text-sm hover:bg-ink/5"
           >
             My Journey
           </Link>
@@ -372,7 +377,7 @@ function AvatarMenu() {
             role="menuitem"
             href="/me/settings"
             onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm hover:bg-black/5"
+            className="block px-4 py-2 text-sm hover:bg-ink/5"
           >
             Settings
           </Link>
@@ -383,13 +388,45 @@ function AvatarMenu() {
               setOpen(false);
               void logout();
             }}
-            className="block w-full px-4 py-2 text-left text-sm hover:bg-black/5"
+            className="block w-full px-4 py-2 text-left text-sm hover:bg-ink/5"
           >
             Sign out
           </button>
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Theme, text size and weight — one tap from any screen.
+ *
+ * In the header rather than inside the account menu, because that menu only
+ * exists for signed-in readers and most of this audience reads signed out.
+ * Buried behind My Journey → Settings → Appearance it would be three taps
+ * deep, which is where accessibility settings go to die.
+ *
+ * "Aa" rather than a glyph: it is what Apple Books, Kindle and Safari all use
+ * for this, so it is the one piece of chrome here nobody has to learn.
+ */
+export function DisplayButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Display settings"
+        aria-haspopup="dialog"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+      >
+        <span aria-hidden className="font-semibold leading-none">
+          <span className="text-xs">A</span>
+          <span className="text-[0.6875rem]">a</span>
+        </span>
+      </button>
+      <DisplaySheet open={open} onClose={() => setOpen(false)} />
+    </>
   );
 }
 
@@ -400,7 +437,10 @@ export function Header() {
     // pt-safe: installed as a PWA the viewport is viewport-fit=cover, so
     // without it the bar sits under the status bar / notch.
     <header className="sticky top-0 z-40 border-b border-rule bg-surface/85 pt-[env(safe-area-inset-top)] backdrop-blur-lg lg:hidden">
-      <div className="flex items-center gap-2.5 px-4 py-2">
+      {/* Wraps. At Larger and Largest the brand, the switcher and three actions
+          genuinely do not fit one phone-wide row, and the choice is between a
+          second row and squeezing something to nothing. */}
+      <div className="flex flex-wrap items-center gap-2.5 px-4 py-2">
         {/* the mark is a way home as well as identity — from four levels deep
             in a book list, the tab bar's Home is the only other route back */}
         <Link
@@ -413,6 +453,7 @@ export function Header() {
         <WorkspaceSwitcher />
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <EventChip />
+          <DisplayButton />
           <AvatarMenu />
         </div>
       </div>

@@ -102,7 +102,7 @@ export function ShelfCard({ book }: { book: BookSummary }) {
   return (
     <Link
       href={`/books/${encodeURIComponent(book.code)}`}
-      className="group flex h-full flex-col gap-2.5 rounded-[18px] border border-rule bg-white p-3 transition-shadow hover:shadow-md"
+      className="group flex h-full flex-col gap-2.5 rounded-[18px] border border-rule bg-card p-3 transition-shadow hover:shadow-md"
     >
       <CoverTile book={book} size="grid" />
       <span

@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { AccountSecurity } from "@/components/auth/AccountSecurity";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationSetting } from "@/components/push/NotificationSetting";
+import { DisplayControls } from "@/components/shell/DisplaySheet";
+import { useDisplay } from "@/components/shell/DisplayProvider";
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { applyConsent } from "@/lib/analytics";
 import {
@@ -15,15 +17,11 @@ import {
   type SavedAudio,
 } from "@/lib/audioCache";
 import { listDownloads, removeDownload, type DownloadRecord } from "@/lib/idb";
-import {
-  getPrefs,
-  setPrefs,
-  type Prefs,
-  type ReaderTheme,
-} from "@/lib/storage";
+import { getPrefs, setPrefs, type Prefs } from "@/lib/storage";
 
 export default function SettingsPage() {
   const { user, loading, logout } = useAuth();
+  const { reset } = useDisplay();
   const [prefs, setPrefsState] = useState<Prefs | null>(null);
   const [downloads, setDownloads] = useState<DownloadRecord[]>([]);
   const [audio, setAudio] = useState<SavedAudio[]>([]);
@@ -49,7 +47,7 @@ export default function SettingsPage() {
       <h1 className="font-display text-2xl font-medium">Settings</h1>
 
       <SectionHeading>Account</SectionHeading>
-      <div className="rounded-2xl border border-rule bg-white p-4">
+      <div className="rounded-2xl border border-rule bg-card p-4">
         {loading ? null : user ? (
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -81,31 +79,27 @@ export default function SettingsPage() {
       </div>
       {!loading && user && <AccountSecurity />}
 
+      {/* Second, under Account. Account stays first because it is identity and
+          one row tall; Appearance is here because it is the most-visited
+          setting on this screen — and the same controls the "Aa" button in the
+          header opens, laid out flat instead of in a sheet, because a settings
+          screen hiding its settings behind another tap is a menu, not a
+          screen. */}
+      <SectionHeading>Appearance</SectionHeading>
+      <div className="rounded-2xl border border-rule bg-card p-4">
+        <DisplayControls />
+        <button
+          type="button"
+          onClick={reset}
+          className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-rule text-sm font-medium"
+        >
+          Reset to defaults
+        </button>
+      </div>
+
       <SectionHeading>Reading</SectionHeading>
-      <div className="rounded-2xl  border border-rule bg-white p-4">
-        <p className="text-sm font-medium">Theme</p>
-        <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Reader theme">
-          {(["system", "light", "sepia", "dark"] as ReaderTheme[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="radio"
-              aria-checked={prefs.theme === t}
-              onClick={() => update({ theme: t })}
-              className={`inline-flex min-h-11 items-center rounded-full border px-4 text-xs capitalize ${
-                prefs.theme === t ? "border-transparent font-semibold text-white" : "border-rule"
-              }`}
-              style={prefs.theme === t ? { background: "var(--ws-color)" } : undefined}
-            >
-              {t === "system" ? "Auto" : t}
-            </button>
-          ))}
-        </div>
-        <p className="mt-1.5 text-xs text-ink-soft">
-          Auto follows your device&apos;s light/dark setting. Full type controls are in
-          the reader itself.
-        </p>
-        <p className="mt-4 text-sm font-medium">Reading mode</p>
+      <div className="rounded-2xl  border border-rule bg-card p-4">
+        <p className="text-sm font-medium">Reading mode</p>
         <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Reading mode">
           {([
             [null, "Automatic"],
@@ -136,7 +130,7 @@ export default function SettingsPage() {
       <NotificationSetting />
 
       <SectionHeading>Offline downloads</SectionHeading>
-      <div className="rounded-2xl border border-rule bg-white">
+      <div className="rounded-2xl border border-rule bg-card">
         {downloads.length === 0 ? (
           <p className="p-4 text-sm text-ink-soft">
             No books downloaded. Use “Download for offline” on any book page.
@@ -169,7 +163,7 @@ export default function SettingsPage() {
           whole downloaded book's text is a few. A reader who is short of space
           needs to see which chapters, and how much each one costs. */}
       <SectionHeading>Saved audio</SectionHeading>
-      <div className="rounded-2xl border border-rule bg-white">
+      <div className="rounded-2xl border border-rule bg-card">
         {audio.length === 0 ? (
           <p className="p-4 text-sm text-ink-soft">
             No chapters saved for offline listening. Open a chapter’s audio mode and tap the
@@ -218,7 +212,7 @@ export default function SettingsPage() {
       </div>
 
       <SectionHeading>Privacy</SectionHeading>
-      <div className="flex items-center justify-between rounded-2xl border border-rule bg-white p-4">
+      <div className="flex items-center justify-between rounded-2xl border border-rule bg-card p-4">
         <div>
           <p className="text-sm font-medium">Analytics</p>
           <p className="text-xs text-ink-soft">Anonymous usage statistics (Google Analytics).</p>
@@ -240,7 +234,7 @@ export default function SettingsPage() {
           style={prefs.consent === "granted" ? { background: "var(--ws-color)" } : undefined}
         >
           <span
-            className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            className={`block h-5 w-5 rounded-full bg-card shadow transition-transform ${
               prefs.consent === "granted" ? "translate-x-5" : ""
             }`}
           />

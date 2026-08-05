@@ -9,6 +9,7 @@ import { PlayerProvider } from "@/components/player/PlayerProvider";
 import { TrackAudioMode } from "@/components/player/TrackAudioMode";
 import { PushProvider } from "@/components/push/PushProvider";
 import { isReaderRoute } from "@/lib/routes";
+import { DisplayProvider } from "./DisplayProvider";
 import { Header } from "./Header";
 import { BottomNav, Sidebar } from "./Nav";
 import { RailProvider } from "./Rail";
@@ -40,6 +41,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const bare = neutral || reader;
 
   return (
+    // Outermost, because the theme is the one thing every screen reads —
+    // including the reader, which used to own it and now only asks for it.
+    <DisplayProvider>
     <AuthProvider>
       <WorkspaceProvider>
         <PlayerProvider>
@@ -76,5 +80,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </PlayerProvider>
       </WorkspaceProvider>
     </AuthProvider>
+    </DisplayProvider>
   );
 }

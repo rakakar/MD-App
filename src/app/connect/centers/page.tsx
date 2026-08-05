@@ -46,7 +46,7 @@ export default async function CentersPage() {
             </h2>
             <ul className="flex flex-col gap-3">
               {list.map((c) => (
-                <li key={c.id} className="rounded-2xl border border-rule bg-white p-4">
+                <li key={c.id} className="rounded-2xl border border-rule bg-card p-4">
                   <p lang="hi" className="hi text-base font-semibold">{c.name_hi}</p>
                   <p className="mt-0.5 text-sm text-ink-soft">
                     {[c.city, c.state, c.country].filter(Boolean).join(", ")}
@@ -65,17 +65,17 @@ export default async function CentersPage() {
                       device dialer / mail app / maps — no in-app form. */}
                   <div className="mt-3 flex flex-wrap gap-2 text-sm">
                     {c.contact_phone && (
-                      <a href={`tel:${c.contact_phone}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-white px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
+                      <a href={`tel:${c.contact_phone}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-card px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
                         <span aria-hidden>📞</span> Call
                       </a>
                     )}
                     {c.contact_email && (
-                      <a href={`mailto:${c.contact_email}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-white px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
+                      <a href={`mailto:${c.contact_email}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-card px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
                         <span aria-hidden>✉️</span> Email
                       </a>
                     )}
                     {c.map_url && (
-                      <a href={c.map_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-white px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
+                      <a href={c.map_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-card px-4 font-medium" style={{ color: "var(--ws-ink)" }}>
                         <span aria-hidden>📍</span> Directions
                       </a>
                     )}

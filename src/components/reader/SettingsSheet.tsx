@@ -54,6 +54,8 @@ interface SettingsSheetProps {
   glossaryUnderline: boolean;
   onGlossaryUnderline: (v: boolean) => void;
   onGoToPage: () => void;
+  /** out to the app-wide Display sheet — theme, app text size, bold */
+  onAppDisplay: () => void;
 }
 
 /** Reading settings. Everything here is device-local and works signed out. */
@@ -226,6 +228,18 @@ export function SettingsSheet(p: SettingsSheetProps) {
             Go to printed page…
           </button>
         )}
+
+        {/* Everything above sets this book. This sets the app the book is
+            sitting in — and it is the same Theme control, so a reader who
+            finds it here has not been sent somewhere else to change it. */}
+        <button
+          type="button"
+          onClick={p.onAppDisplay}
+          className="flex min-h-11 w-full items-center justify-between border-t border-(--reader-rule) pt-4 text-sm"
+        >
+          <span>App display settings</span>
+          <span aria-hidden className="text-(--reader-ink-soft)">→</span>
+        </button>
       </div>
     </Sheet>
   );
@@ -264,7 +278,7 @@ function Toggle({
         style={checked ? { background: "var(--ws-color)" } : undefined}
       >
         <span
-          className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+          className={`block h-5 w-5 rounded-full bg-card shadow transition-transform ${
             checked ? "translate-x-5" : ""
           }`}
         />

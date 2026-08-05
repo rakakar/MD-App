@@ -36,13 +36,13 @@ export function PdfView({
         <iframe
           src={url}
           title={title}
-          className="h-[75vh] w-full rounded-xl border border-rule bg-white"
+          className="h-[75vh] w-full rounded-xl border border-rule bg-card"
         />
       ) : (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="w-full rounded-xl border border-rule bg-white px-4 py-3 text-sm font-semibold"
+          className="w-full rounded-xl border border-rule bg-card px-4 py-3 text-sm font-semibold"
           style={{ color: "var(--ws-ink)" }}
         >
           Read here

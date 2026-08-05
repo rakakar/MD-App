@@ -304,7 +304,7 @@ export function SearchScreen() {
               inputRef.current?.focus();
             }}
             className={`min-h-11 inline-flex items-center rounded-full border px-3.5 text-xs font-medium ${
-              mode === m ? "border-transparent text-white" : "border-rule bg-white text-ink"
+              mode === m ? "border-transparent text-white" : "border-rule bg-card text-ink"
             }`}
             style={mode === m ? { background: "var(--ws-color)" } : undefined}
           >
@@ -455,7 +455,7 @@ export function SearchScreen() {
               <button
                 type="button"
                 onClick={() => setExpanded(true)}
-                className="mt-4 w-full rounded-2xl border border-rule bg-white px-4 py-3 text-sm font-medium"
+                className="mt-4 w-full rounded-2xl border border-rule bg-card px-4 py-3 text-sm font-medium"
                 style={{ color: "var(--ws-ink)" }}
               >
                 Show {results.length - FIRST_PAGE} more
@@ -511,7 +511,7 @@ function ParibhashaCard({
   return (
     <section
       aria-label="Paribhasha"
-      className="mb-4 overflow-hidden rounded-2xl border bg-white p-4"
+      className="mb-4 overflow-hidden rounded-2xl border bg-card p-4"
       style={{ borderColor: "color-mix(in srgb, var(--ws-color) 35%, transparent)" }}
     >
       <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
@@ -658,7 +658,7 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
   );
 
   return (
-    <li ref={cardRef} className="overflow-hidden rounded-2xl border border-rule bg-white">
+    <li ref={cardRef} className="overflow-hidden rounded-2xl border border-rule bg-card">
       <button
         type="button"
         aria-expanded={open}

@@ -47,7 +47,7 @@ export default function BookmarksPage() {
             hint="Select any passage in the reader and choose Bookmark."
           />
         ) : (
-          <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+          <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
             {rows.map((b) => (
               <li key={b.canonical_ref} className="flex items-center gap-3 px-4 py-3">
                 <Link href={refToHref(b.canonical_ref)} className="min-w-0 flex-1">
@@ -69,7 +69,7 @@ export default function BookmarksPage() {
                   type="button"
                   onClick={() => remove(b.canonical_ref)}
                   aria-label={`Remove bookmark ${b.canonical_ref}`}
-                  className="rounded-full px-2 py-1 text-xs text-ink-soft hover:bg-black/5"
+                  className="rounded-full px-2 py-1 text-xs text-ink-soft hover:bg-ink/5"
                 >
                   Remove
                 </button>

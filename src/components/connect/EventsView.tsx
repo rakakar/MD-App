@@ -30,7 +30,7 @@ function EventRow({ e }: { e: EventItem }) {
   return (
     <Link
       href={`/connect/events/${e.id}`}
-      className="flex items-center gap-4 rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
+      className="flex items-center gap-4 rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md"
     >
       <div
         className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl text-white"
@@ -97,15 +97,15 @@ function MonthCalendar({ events }: { events: EventItem[] }) {
   ];
 
   return (
-    <div className="rounded-2xl border border-rule bg-white p-4">
+    <div className="rounded-2xl border border-rule bg-card p-4">
       <div className="flex items-center justify-between">
-        <button type="button" onClick={() => setOffset((o) => o - 1)} aria-label="Previous month" className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-black/5">
+        <button type="button" onClick={() => setOffset((o) => o - 1)} aria-label="Previous month" className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-ink/5">
           ←
         </button>
         <p className="text-sm font-semibold">
           {month.toLocaleString("en-IN", { month: "long", year: "numeric" })}
         </p>
-        <button type="button" onClick={() => setOffset((o) => o + 1)} aria-label="Next month" className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-black/5">
+        <button type="button" onClick={() => setOffset((o) => o + 1)} aria-label="Next month" className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-ink/5">
           →
         </button>
       </div>
@@ -135,7 +135,7 @@ function MonthCalendar({ events }: { events: EventItem[] }) {
               key={i}
               href={`/connect/events/${first.id}`}
               aria-label={`${dayEvents.length} event(s) on day ${day}`}
-              className="flex aspect-square flex-col items-center justify-center rounded-lg bg-black/[.03] hover:bg-black/[.07]"
+              className="flex aspect-square flex-col items-center justify-center rounded-lg bg-ink/[.03] hover:bg-ink/[.07]"
             >
               {content}
             </Link>
@@ -176,7 +176,7 @@ export function EventsView({ events }: { events: EventItem[] }) {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex overflow-hidden rounded-full border border-rule bg-white text-xs" role="radiogroup" aria-label="View">
+        <div className="flex overflow-hidden rounded-full border border-rule bg-card text-xs" role="radiogroup" aria-label="View">
           {(["list", "calendar"] as const).map((v) => (
             <button
               key={v}
@@ -204,7 +204,7 @@ export function EventsView({ events }: { events: EventItem[] }) {
                   aria-checked={selected}
                   onClick={() => setTypeFilter(selected ? null : t)}
                   className={`min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium ${
-                    selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
+                    selected ? "border-transparent text-white" : "border-rule bg-card text-ink"
                   }`}
                   style={selected ? { background: "var(--ws-color)" } : undefined}
                 >
@@ -235,7 +235,7 @@ export function EventsView({ events }: { events: EventItem[] }) {
             ))}
           </div>
         ) : typeFilter !== null ? (
-          <div className="rounded-2xl border border-dashed border-rule bg-white/50 p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-rule bg-card/50 p-8 text-center">
             <p className="text-sm font-medium">No upcoming events of this type</p>
             <button
               type="button"
@@ -247,7 +247,7 @@ export function EventsView({ events }: { events: EventItem[] }) {
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-rule bg-white/50 p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-rule bg-card/50 p-8 text-center">
             <p className="text-sm font-medium">No upcoming events</p>
             <p className="mt-1 text-xs text-ink-soft">New shivirs and gatherings will appear here.</p>
           </div>

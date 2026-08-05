@@ -73,7 +73,7 @@ export function MoreResults({
             type="button"
             onClick={more}
             disabled={busy}
-            className="w-full px-4 py-3 text-xs font-semibold transition-colors hover:bg-black/[.03] disabled:opacity-60"
+            className="w-full px-4 py-3 text-xs font-semibold transition-colors hover:bg-ink/[.03] disabled:opacity-60"
             style={{ color: "var(--ws-ink)" }}
           >
             <span>{busy ? "Loading…" : "Show more"}</span>

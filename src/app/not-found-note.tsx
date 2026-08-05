@@ -18,7 +18,7 @@ export function MovedNote() {
   if (!wasCollection && !wasFolder) return null;
 
   return (
-    <p className="mt-4 rounded-2xl border border-rule bg-white p-4 text-sm leading-relaxed">
+    <p className="mt-4 rounded-2xl border border-rule bg-card p-4 text-sm leading-relaxed">
       This link points into the library&apos;s old structure. Everything lives in
       one place now — open it from Resources, or search above.
       <span className="mt-1 block text-xs text-ink-soft">

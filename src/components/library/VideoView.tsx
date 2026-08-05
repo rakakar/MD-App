@@ -114,7 +114,7 @@ export function VideoView({ file }: { file: LibraryFile }) {
   }, [activated, src?.host, src?.id]);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-rule bg-white">
+    <div className="overflow-hidden rounded-2xl border border-rule bg-card">
       <div className="relative aspect-video w-full bg-black">
         {!activated ? (
           <button

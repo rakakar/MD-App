@@ -31,9 +31,19 @@
      we were putting in front of a reader over forty. Those all moved to
      ink-soft. What may still take muted is what carries no words — the
      aria-hidden chevrons and folder glyphs — plus a control that is genuinely
-     inactive, where the colour gap *is* the state. */
+     inactive, where the colour gap *is* the state.
+
+     These are the light theme's values. Sepia and dark restate the same seven
+     below; every surface in the app goes through them, so a theme is that one
+     block and nothing else. `card` is new — it replaces 97 hard-coded
+     `bg-white`s, which are the reason a reader who chose Dark used to get a
+     dark book inside a blinding white app. */
   --color-surface: #fdfbf8;
   --color-canvas: #efeae3;
+  /* raised above the page: lighter than the surface in light and sepia,
+     lighter *again* in dark, because raised means "closer to the light"
+     whichever way the theme runs */
+  --color-card: #ffffff;
   --color-ink: #1a1613;
   --color-ink-soft: #4a413a;
   --color-muted: #9c9187;
@@ -76,11 +86,22 @@
      accent is the background and the theme cannot change it. */
   --ws-ink: var(--ws-color);
 
-  /* reader theme tokens (light default) — surfaces from spec 6A */
-  --reader-bg: #fdfbf8;
-  --reader-ink: #1a1613;
-  --reader-ink-soft: #4a413a;
-  --reader-rule: #e4dbd1;
+  /* The reader's tokens are now aliases, not a second palette. They used to
+     hold their own copies of the three themes, which is how the app ended up
+     with a themed reader inside an unthemeable shell. Kept as names because
+     the reader's components are written against them, and because inside the
+     reader "bg" and "ink" say more than "surface" and "ink" do. */
+  --reader-bg: var(--color-surface);
+  --reader-ink: var(--color-ink);
+  --reader-ink-soft: var(--color-ink-soft);
+  --reader-rule: var(--color-rule);
+
+  /* App-wide text size (Display → Text size). A multiplier on the browser's
+     own base rather than a px value, so an Android reader who has already
+     raised their system font keeps that and this multiplies it. Overriding
+     the root with `16px` would silently throw away an accessibility setting
+     they went looking for. */
+  --app-text-scale: 1;
 
   /* typography, written before first paint by the inline script in layout.tsx
      so a saved font size / spacing never flashes at its default first */
@@ -110,11 +131,95 @@
   --reader-measure: 33rem;
 }
 
-[data-reader-theme="dark"] {
-  --reader-bg: #14110f;
-  --reader-ink: #e8e2d8;
-  --reader-ink-soft: #a39a8c;
-  --reader-rule: #2e2921;
+/* ---- the two other themes ----
+
+   Each is the same seven tokens as the light default above, and nothing else.
+   Sepia's surface and ink come from what the reader already used; the app
+   only had to add `canvas` and `card`. Dark's likewise, with the same rule as
+   light — card sits one step *towards* the light from the surface, canvas one
+   step away — which is what makes a grouped list read as raised in both.
+
+   Every value here was measured against its own card, not against the page:
+   ink-soft on dark card is 6.2:1 and on sepia card 5.3:1, so the AA floor the
+   PRD asks for in all three themes holds where the text actually sits. */
+/* The sutra of the day has a surface of its own — the spec's peach ramp (1A),
+   deliberately not a wash of the workspace hue, because the verse belongs to
+   the day rather than to whichever workspace you are standing in. It is the
+   one card in the app that cannot take the shared tokens, so it gets its own
+   five, themed the same way. Left bright it would be a lit panel on a
+   near-black home screen at night, which is the whole thing dark mode is for. */
+:root {
+  --sutra-bg: linear-gradient(165deg, #fff8f1, #fdeee0 70%, #fae3ce);
+  --sutra-ink: #2e2419;
+  --sutra-soft: #8a6a4e;
+  --sutra-chip: rgb(255 255 255 / 0.75);
+  --sutra-rule: linear-gradient(90deg, #eedac4, rgb(238 218 196 / 0));
+}
+
+[data-theme="sepia"] {
+  /* a step deeper than light: on sepia paper the light ramp is so close to the
+     surface that the card stops being a card */
+  --sutra-bg: linear-gradient(165deg, #fdf3e6, #f8e8d3 70%, #f2dcc0);
+  --sutra-soft: #7a5c3f;
+  --sutra-chip: rgb(255 255 255 / 0.6);
+  --sutra-rule: linear-gradient(90deg, #e3ccae, rgb(227 204 174 / 0));
+}
+
+[data-theme="dark"] {
+  --sutra-bg: linear-gradient(165deg, #241d17, #1e1813 70%, #191410);
+  --sutra-ink: #f0e7da;
+  --sutra-soft: #c2a888; /* 7.7:1 on its own ground */
+  --sutra-chip: rgb(255 255 255 / 0.08);
+  --sutra-rule: linear-gradient(90deg, #4a3a2a, rgb(74 58 42 / 0));
+}
+
+[data-theme="sepia"] {
+  --color-surface: #f5ebdc;
+  --color-canvas: #ebdfca;
+  --color-card: #fcf6ec;
+  --color-ink: #3d2f1e;
+  /* was #7a6a52 — only 4.32:1 on this background, under the 4.5 AA floor the
+     PRD asks for in all three themes. #756449 measures 4.72:1. */
+  --color-ink-soft: #756449;
+  --color-muted: #a1937c;
+  --color-rule: #ddcdb0;
+}
+
+[data-theme="dark"] {
+  --color-surface: #14110f;
+  --color-canvas: #0e0c0b;
+  --color-card: #1e1a17;
+  --color-ink: #e8e2d8;
+  --color-ink-soft: #a39a8c;
+  --color-muted: #6e655a;
+  --color-rule: #2e2921;
+}
+
+/* Readers who have asked their OS for more contrast get it, in whichever
+   theme they are in — without a "High contrast" switch of our own.
+
+   A separate mode would double the QA surface of every screen in the app for
+   a setting the platform already collects, and collects more reliably: a
+   reader who needs it has usually turned it on system-wide long before
+   arriving here. Secondary text closes most of the way to full ink and the
+   hairlines get something to hold onto; the surfaces stay put, because it is
+   the text that was hard to read, not the paper. */
+@media (prefers-contrast: more) {
+  :root {
+    --color-ink-soft: #322b25;
+    --color-rule: #c6b8a9;
+    --color-muted: #6e6459;
+  }
+  [data-theme="sepia"] {
+    --color-ink-soft: #4a3c26;
+    --color-rule: #c2ad8a;
+    --color-muted: #7b6a4f;
+  }
+  [data-theme="dark"] {
+    --color-ink-soft: #cfc7ba;
+    --color-rule: #4c443a;
+    --color-muted: #93897b;
+  }
 }
 
 /* The workspace scope declares --ws-ink so the mix below can see the
@@ -124,20 +229,29 @@
   --ws-ink: var(--ws-color);
 }
 
-/* Dark reader only — the app shell outside the reader stays on a light
-   surface whatever the reader theme is, so the accent must not be lifted
-   there. 55% accent keeps the hue recognisable and measures 5.8–6.6:1. */
-html[data-reader-theme="dark"] .reader-surface {
-  --ws-ink: color-mix(in srgb, var(--ws-color) 55%, var(--reader-ink));
+/* Dark, everywhere — not just the reader.
+
+   The five workspace hues were tuned to clear AA as text on paper and on
+   sepia; on a near-black ground they land at 2.5–3.3:1, which is unreadable.
+   The reader already lifted them toward its own ink and this is that same fix,
+   now that the whole app can be dark: 55% accent keeps the hue recognisable
+   and measures 5.8–6.6:1. Both selectors are needed — the second because
+   `[data-ws]` re-declares --ws-ink further down the tree, and a value set on
+   <html> alone would never reach the elements that read it.
+
+   Fills are untouched. White on the accent passes in every theme, because
+   there the accent is the background and the theme cannot change it. */
+html[data-theme="dark"],
+html[data-theme="dark"] [data-ws] {
+  --ws-ink: color-mix(in srgb, var(--ws-color) 55%, var(--color-ink));
 }
 
-[data-reader-theme="sepia"] {
-  --reader-bg: #f5ebdc;
-  --reader-ink: #3d2f1e;
-  /* was #7a6a52 — only 4.32:1 on this background, under the 4.5 AA floor the
-     PRD asks for in all three themes. #756449 measures 4.72:1. */
-  --reader-ink-soft: #756449;
-  --reader-rule: #ddcdb0;
+/* The one lever the app-wide text size pulls. Every size in the app is in
+   rem, so this reaches all of them; `100%` is whatever the browser and the OS
+   already agreed on, which is the number we are multiplying rather than
+   replacing. The reader's own scale still multiplies on top of this. */
+html {
+  font-size: calc(100% * var(--app-text-scale, 1));
 }
 
 body {
@@ -145,6 +259,35 @@ body {
   color: var(--color-ink);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Display → Bold text. For older eyes weight often does more than size, and
+   it costs no layout.
+
+   It cannot be `font-weight: bold` on everything: Tiro ships a single 400
+   weight, so asking Devanagari for bold gets a synthesized smear — worst
+   exactly where the type is largest. So the Devanagari goes to Mukta, which
+   has real weights, and the Latin goes up one step rather than to 700. Text
+   that is already semibold or bold is left alone; there is nothing above it
+   worth having. */
+[data-bold="1"] body {
+  font-weight: 500;
+}
+[data-bold="1"] .hi {
+  font-family: var(--font-devanagari-sans);
+  font-weight: 500;
+}
+/* The book text is the one place this must not reach. The serif is what these
+   texts are printed in, and the reader has its own Typeface control for
+   anyone who wants the sans — a global "bolder chrome" switch has no business
+   re-setting a chapter. Weight goes back to 400 so the inherited 500 above
+   cannot ask single-weight Tiro for a bold it does not have. */
+[data-bold="1"] .reader-content {
+  font-weight: 400;
+}
+[data-bold="1"] .reader-content .hi {
+  font-family: var(--font-devanagari);
+  font-weight: 400;
 }
 
 /* Hindi content: Tiro Devanagari Hindi, generous line-height (PRD §5) */

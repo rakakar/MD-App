@@ -38,13 +38,13 @@ export default function NotFound() {
           </Link>
           <Link
             href="/search"
-            className="rounded-full border border-rule bg-white px-4 py-2 text-sm font-semibold"
+            className="rounded-full border border-rule bg-card px-4 py-2 text-sm font-semibold"
           >
             Search
           </Link>
           <Link
             href="/"
-            className="rounded-full border border-rule bg-white px-4 py-2 text-sm font-semibold"
+            className="rounded-full border border-rule bg-card px-4 py-2 text-sm font-semibold"
           >
             Home
           </Link>

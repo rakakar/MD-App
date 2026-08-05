@@ -79,13 +79,13 @@ export function AccountSecurity() {
   };
 
   const field =
-    "mt-1 w-full rounded-xl border border-rule bg-white p-2.5 text-sm outline-none focus:border-(--ws-color)";
+    "mt-1 w-full rounded-xl border border-rule bg-card p-2.5 text-sm outline-none focus:border-(--ws-color)";
   const button =
     "mt-2 self-start inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white disabled:opacity-60";
 
   return (
     <div className="mt-3 space-y-3">
-      <form onSubmit={saveName} className="flex flex-col rounded-2xl border border-rule bg-white p-4">
+      <form onSubmit={saveName} className="flex flex-col rounded-2xl border border-rule bg-card p-4">
         <label className="text-sm font-medium">
           Display name
           <input
@@ -103,7 +103,7 @@ export function AccountSecurity() {
         </button>
       </form>
 
-      <form onSubmit={savePassword} className="flex flex-col rounded-2xl border border-rule bg-white p-4">
+      <form onSubmit={savePassword} className="flex flex-col rounded-2xl border border-rule bg-card p-4">
         <p className="text-sm font-medium">Change password</p>
         <label className="mt-2 text-sm">
           Current password

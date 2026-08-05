@@ -1,0 +1,163 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  DEFAULT_PREFS,
+  getPrefs,
+  resolveTheme,
+  setPrefs,
+  type ResolvedTheme,
+  type Theme,
+} from "@/lib/storage";
+
+/**
+ * Who owns the look of the app.
+ *
+ * Theme used to live inside the reader, which is why choosing Dark gave you a
+ * dark chapter inside a white app: the reader was the only component that ever
+ * wrote the attribute, so every other screen kept the light tokens. It is
+ * hoisted here, above the router, and the reader now asks this for the theme
+ * like everything else does.
+ *
+ * Everything here is device-local and works signed out — a phone and a laptop
+ * legitimately want different sizes, so none of it syncs to the account.
+ */
+
+/** what the browser's chrome is painted with, per resolved theme */
+const THEME_BG: Record<ResolvedTheme, string> = {
+  light: "#fdfbf8",
+  sepia: "#f5ebdc",
+  dark: "#14110f",
+};
+
+interface DisplayValue {
+  theme: Theme;
+  /** `system` already resolved against the OS — what is actually painted */
+  resolved: ResolvedTheme;
+  appTextScale: number;
+  boldText: boolean;
+  setTheme: (v: Theme) => void;
+  setAppTextScale: (v: number) => void;
+  setBoldText: (v: boolean) => void;
+  /** back to the shipped defaults, for a reader who has painted themselves into a corner */
+  reset: () => void;
+  /** false until the saved prefs have been read, so nothing writes a default over them */
+  loaded: boolean;
+}
+
+const DisplayContext = createContext<DisplayValue | null>(null);
+
+export function DisplayProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>(DEFAULT_PREFS.theme);
+  const [appTextScale, setScaleState] = useState(DEFAULT_PREFS.appTextScale);
+  const [boldText, setBoldState] = useState(DEFAULT_PREFS.boldText);
+  const [loaded, setLoaded] = useState(false);
+  // Only meaningful while `theme` is "system"; kept in state so an OS flip at
+  // sunset repaints without a reload.
+  const [resolved, setResolved] = useState<ResolvedTheme>("light");
+
+  useEffect(() => {
+    const p = getPrefs();
+    setThemeState(p.theme);
+    setScaleState(p.appTextScale);
+    setBoldState(p.boldText);
+    setLoaded(true);
+  }, []);
+
+  // ---- paint the theme on <html> ----
+  //
+  // The inline script in layout.tsx has already done this for the first paint;
+  // this keeps it true afterwards, on soft navigations, and while the OS
+  // changes underneath a reader who chose Auto.
+  useEffect(() => {
+    if (!loaded) return;
+    const root = document.documentElement;
+    const apply = () => {
+      const next = resolveTheme(theme);
+      setResolved(next);
+      root.setAttribute("data-theme", next);
+      // form controls, scrollbars and the iOS overscroll gutter follow this
+      // rather than our tokens, and look obviously wrong without it
+      root.style.colorScheme = next === "dark" ? "dark" : "light";
+      let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.name = "theme-color";
+        document.head.appendChild(meta);
+      }
+      // Most of this audience installs to the home screen, where this is the
+      // status bar. A terracotta bar over a dark app reads as a broken app.
+      meta.content = THEME_BG[next];
+    };
+    apply();
+    if (theme !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [theme, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const root = document.documentElement;
+    root.style.setProperty("--app-text-scale", String(appTextScale));
+    if (boldText) root.setAttribute("data-bold", "1");
+    else root.removeAttribute("data-bold");
+  }, [appTextScale, boldText, loaded]);
+
+  const setTheme = useCallback((v: Theme) => {
+    setThemeState(v);
+    setPrefs({ theme: v });
+  }, []);
+
+  const setAppTextScale = useCallback((v: number) => {
+    setScaleState(v);
+    setPrefs({ appTextScale: v });
+  }, []);
+
+  const setBoldText = useCallback((v: boolean) => {
+    setBoldState(v);
+    setPrefs({ boldText: v });
+  }, []);
+
+  const reset = useCallback(() => {
+    setThemeState(DEFAULT_PREFS.theme);
+    setScaleState(DEFAULT_PREFS.appTextScale);
+    setBoldState(DEFAULT_PREFS.boldText);
+    setPrefs({
+      theme: DEFAULT_PREFS.theme,
+      appTextScale: DEFAULT_PREFS.appTextScale,
+      boldText: DEFAULT_PREFS.boldText,
+    });
+  }, []);
+
+  return (
+    <DisplayContext.Provider
+      value={{
+        theme,
+        resolved,
+        appTextScale,
+        boldText,
+        setTheme,
+        setAppTextScale,
+        setBoldText,
+        reset,
+        loaded,
+      }}
+    >
+      {children}
+    </DisplayContext.Provider>
+  );
+}
+
+export function useDisplay(): DisplayValue {
+  const ctx = useContext(DisplayContext);
+  if (!ctx) throw new Error("useDisplay must be used inside DisplayProvider");
+  return ctx;
+}

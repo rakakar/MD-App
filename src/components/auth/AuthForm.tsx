@@ -74,7 +74,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-rule bg-white p-2.5 text-sm outline-none focus:border-(--ws-color)"
+            className="mt-1 w-full rounded-xl border border-rule bg-card p-2.5 text-sm outline-none focus:border-(--ws-color)"
           />
         </label>
         <label className="text-sm font-medium">
@@ -85,7 +85,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-rule bg-white p-2.5 text-sm outline-none focus:border-(--ws-color)"
+            className="mt-1 w-full rounded-xl border border-rule bg-card p-2.5 text-sm outline-none focus:border-(--ws-color)"
           />
         </label>
 
@@ -128,7 +128,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             onClick={() => {
               window.location.href = googleLoginUrl(next);
             }}
-            className="rounded-full border border-rule bg-white px-4 py-2.5 text-sm font-semibold"
+            className="rounded-full border border-rule bg-card px-4 py-2.5 text-sm font-semibold"
           >
             Continue with Google
           </button>

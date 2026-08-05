@@ -145,7 +145,7 @@ export function ContinueReading({
           >
             <Link
               href={c.href}
-              className="flex h-full items-center gap-4 rounded-[20px] border border-rule bg-white p-4 transition-shadow hover:shadow-md"
+              className="flex h-full items-center gap-4 rounded-[20px] border border-rule bg-card p-4 transition-shadow hover:shadow-md"
             >
               <CoverTile
                 book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}

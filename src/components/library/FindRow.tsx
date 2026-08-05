@@ -39,7 +39,7 @@ export function FindRow({
   return (
     <Link
       href={href}
-      className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-black/[.03]"
+      className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-ink/[.03]"
     >
       {row.breadcrumb.length > 0 && <BreadcrumbLine steps={row.breadcrumb} />}
       <span

@@ -39,7 +39,7 @@ export function BookHeroActions({
             className="h-[5px] flex-1 overflow-hidden rounded-full bg-white/20"
           >
             <div
-              className="h-full rounded-full bg-white"
+              className="h-full rounded-full bg-card"
               style={{ width: `${Math.round(resume.percent)}%` }}
             />
           </div>

@@ -69,8 +69,8 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
   };
 
   const arrow =
-    "flex h-7 w-7 items-center justify-center rounded-full text-[#8A6A4E] transition " +
-    "hover:bg-white/60 disabled:opacity-25 disabled:hover:bg-transparent";
+    "flex h-7 w-7 items-center justify-center rounded-full text-(--sutra-soft) transition " +
+    "hover:bg-(--sutra-chip) disabled:opacity-25 disabled:hover:bg-transparent";
 
   return (
     <figure
@@ -79,7 +79,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
         // the spec's own peach ramp (1A) — a warm surface of its own rather
         // than a wash of the workspace hue, because the sutra belongs to the
         // day, not to whichever workspace the reader happens to be in
-        background: "linear-gradient(165deg, #FFF8F1, #FDEEE0 70%, #FAE3CE)",
+        background: "var(--sutra-bg)",
       }}
     >
       <div className="flex items-center gap-2">
@@ -124,7 +124,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
             Devanagari is unreadable however large the type is. */}
         <blockquote
           lang="hi"
-          className="hi mt-3 max-w-[46ch] text-[1.1875rem] leading-[1.75] text-[#2E2419] lg:text-2xl"
+          className="hi mt-3 max-w-[46ch] text-[1.1875rem] leading-[1.75] text-(--sutra-ink) lg:text-2xl"
         >
           {sutra.text_hi}
         </blockquote>
@@ -132,13 +132,13 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
         <div
           aria-hidden
           className="my-4 h-px"
-          style={{ background: "linear-gradient(90deg, #EEDAC4, rgba(238,218,196,0))" }}
+          style={{ background: "var(--sutra-rule)" }}
         />
 
         <div className="flex items-center gap-3">
           <Link
             href={refToHref(sutra.canonical_ref)}
-            className="min-w-0 flex-1 text-xs font-medium text-[#8A6A4E] underline-offset-2 hover:underline"
+            className="min-w-0 flex-1 text-xs font-medium text-(--sutra-soft) underline-offset-2 hover:underline"
           >
             <span lang="hi" className="hi">{sutra.book_title}</span> · {sutra.canonical_ref}
           </Link>
@@ -148,7 +148,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
               type="button"
               onClick={() => go(0)}
               disabled={busy}
-              className="flex h-9 items-center rounded-xl bg-white/75 px-3 text-xs font-semibold text-[#8A6A4E] transition hover:bg-white"
+              className="flex h-9 items-center rounded-xl bg-(--sutra-chip) px-3 text-xs font-semibold text-(--sutra-soft) transition hover:brightness-105"
             >
               {`${SUTRA} of the day`}
             </button>
@@ -156,7 +156,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
             <Link
               href="/me/bookmarks"
               aria-label="Saved"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/75 text-[#8A6A4E] transition hover:bg-white"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-(--sutra-chip) text-(--sutra-soft) transition hover:brightness-105"
             >
               <BookmarkIcon className="h-4 w-4" />
             </Link>

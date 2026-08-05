@@ -200,7 +200,7 @@ export default async function BookDetailPage({
         {book.is_pdf_only ? (
           <a
             href="#pdf"
-            className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold sm:max-w-sm"
+            className="mt-4 flex items-center justify-center rounded-xl bg-card px-4 py-3 text-sm font-semibold sm:max-w-sm"
             style={{ color: hue.to }}
           >
             Read the PDF
@@ -233,7 +233,7 @@ export default async function BookDetailPage({
         is the largest unit that does.
       */}
       {book.translation_of && (
-        <p className="mt-6 rounded-2xl border border-rule bg-white p-4 text-sm">
+        <p className="mt-6 rounded-2xl border border-rule bg-card p-4 text-sm">
           <span className="text-ink-soft">This is a translation ·</span>{" "}
           <Link
             href={`/books/${encodeURIComponent(book.translation_of)}`}
@@ -248,12 +248,12 @@ export default async function BookDetailPage({
       {book.translations.length > 0 && (
         <>
           <SectionHeading>Translations of this book</SectionHeading>
-          <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+          <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
             {book.translations.map((t) => (
               <li key={t.code}>
                 <Link
                   href={`/books/${encodeURIComponent(t.code)}`}
-                  className="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-black/[.03]"
+                  className="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-ink/[.03]"
                 >
                   <span className="flex items-baseline gap-2">
                     <span
@@ -291,7 +291,7 @@ export default async function BookDetailPage({
       */}
       {book.is_pdf_only ? (
         <section id="pdf" className="mt-7 scroll-mt-4">
-          <p className="rounded-2xl border border-rule bg-white p-4 text-sm text-ink-soft">
+          <p className="rounded-2xl border border-rule bg-card p-4 text-sm text-ink-soft">
             <span className="font-semibold text-ink">
               This book is currently available as a PDF.
             </span>{" "}
@@ -334,7 +334,7 @@ export default async function BookDetailPage({
               {i > 0 && <div aria-hidden className="ms-14 h-px bg-rule" />}
               <Link
                 href={`/books/${encodeURIComponent(book.code)}/${ch.number}`}
-                className="flex items-center gap-3 rounded-[14px] px-3.5 py-3 transition-colors hover:bg-black/[.04]"
+                className="flex items-center gap-3 rounded-[14px] px-3.5 py-3 transition-colors hover:bg-ink/[.04]"
               >
                 <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-canvas text-xs font-bold tabular-nums text-ink-soft">
                   {ch.number}

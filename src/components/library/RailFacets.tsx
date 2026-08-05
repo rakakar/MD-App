@@ -94,7 +94,7 @@ export function RailFacets({
                 href={findHref(basePath, toggleGroup(state, "year", band.values))}
                 aria-current={on ? "true" : undefined}
                 className={`min-h-11 inline-flex items-center rounded-full border px-2.5 text-xs font-medium tabular-nums transition-colors ${
-                  on ? "border-transparent text-white" : "border-rule bg-white text-ink hover:bg-black/[.03]"
+                  on ? "border-transparent text-white" : "border-rule bg-card text-ink hover:bg-ink/[.03]"
                 }`}
                 style={on ? { background: "var(--ws-color)" } : undefined}
               >
@@ -195,7 +195,7 @@ function FacetRow({
       href={href}
       aria-current={on ? "true" : undefined}
       className={`flex min-h-11 items-center gap-2 rounded-lg px-2 text-xs transition-colors ${
-        on ? "font-semibold" : "text-ink hover:bg-black/[.04]"
+        on ? "font-semibold" : "text-ink hover:bg-ink/[.04]"
       }`}
       style={
         on

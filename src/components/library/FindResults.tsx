@@ -68,7 +68,7 @@ export function FindResults({
       )}
 
       {results.length > 0 ? (
-        <ul className="mt-3 divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-white">
+        <ul className="mt-3 divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
           {results.map((row) => (
             <li key={`${row.type}-${row.id}`}>
               <FindRow row={row} shelves={shelves} />

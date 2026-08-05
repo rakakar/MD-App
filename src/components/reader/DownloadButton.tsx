@@ -120,7 +120,7 @@ export function DownloadButton({
       <button
         type="button"
         onClick={remove}
-        className="flex items-center gap-1.5 rounded-full border border-rule bg-white px-3 py-1.5 text-xs font-medium text-ink"
+        className="flex items-center gap-1.5 rounded-full border border-rule bg-card px-3 py-1.5 text-xs font-medium text-ink"
         title="Downloaded for offline reading — tap to remove"
       >
         <span
@@ -139,7 +139,7 @@ export function DownloadButton({
       type="button"
       onClick={download}
       disabled={status === "downloading"}
-      className="flex items-center gap-1.5 rounded-full border border-rule bg-white px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-60"
+      className="flex items-center gap-1.5 rounded-full border border-rule bg-card px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-60"
     >
       <DownloadIcon className="h-4 w-4" />
       {status === "downloading" ? `Downloading ${progress}%` : "Download for offline"}

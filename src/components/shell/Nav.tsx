@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AvatarMenu, EventChip, WorkspaceSwitcher } from "./Header";
+import { AvatarMenu, DisplayButton, EventChip, WorkspaceSwitcher } from "./Header";
 import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
@@ -37,7 +37,7 @@ export function BottomNav() {
         <Link
           href={nav.href}
           aria-current={active ? "page" : undefined}
-          className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 text-xs font-medium transition-colors active:bg-black/5"
+          className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 text-xs font-medium transition-colors active:bg-ink/5"
           style={{ color: active ? "var(--ws-ink)" : "var(--color-ink-soft)" }}
         >
           <Icon name={nav.icon} className="h-6 w-6" strokeWidth={active ? 2.1 : 1.7} />
@@ -50,7 +50,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label={`${workspace.name} navigation`}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="flex items-stretch">{workspace.nav.map(item)}</ul>
     </nav>
@@ -64,7 +64,7 @@ export function Sidebar() {
 
   return (
     // 256px, the width every desktop panel in the spec is drawn against
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-rule bg-white lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-rule bg-card lg:flex">
       {/* brand row, then the switcher under its own label (design 10A desktop):
           the pill alone read as a filter on the nav below it rather than as the
           thing that changes what the nav is */}
@@ -95,7 +95,7 @@ export function Sidebar() {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      active ? "text-white" : "text-ink hover:bg-black/5"
+                      active ? "text-white" : "text-ink hover:bg-ink/5"
                     }`}
                     style={active ? { background: "var(--ws-color)" } : undefined}
                   >
@@ -116,8 +116,11 @@ export function Sidebar() {
             /originals and /resources, and nothing at all everywhere else. */}
         <RailHost />
       </div>
-      <div className="border-t border-rule p-3">
+      <div className="flex items-center gap-2 border-t border-rule p-3">
         <AvatarMenu />
+        <div className="ml-auto">
+          <DisplayButton />
+        </div>
       </div>
     </aside>
   );

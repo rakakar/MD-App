@@ -106,7 +106,7 @@ function SieveRow({
               href={findHref(basePath, toggleChip(state, axis, chip.value))}
               aria-current={selected ? "true" : undefined}
               className={`min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
-                selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
+                selected ? "border-transparent text-white" : "border-rule bg-card text-ink"
               }`}
               style={selected ? { background: "var(--ws-color)" } : undefined}
             >
@@ -196,7 +196,7 @@ export function Sieve({
   const chips = chipCount(state);
 
   return (
-    <details open={chips > 0} className="group mt-3 rounded-2xl border border-rule bg-white">
+    <details open={chips > 0} className="group mt-3 rounded-2xl border border-rule bg-card">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-xs font-semibold text-ink [&::-webkit-details-marker]:hidden">
         <FilterIcon className="h-4 w-4 shrink-0 text-ink-soft" />
         <span>Filter</span>

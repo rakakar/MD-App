@@ -59,7 +59,7 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
       {/* One explanation in the order a manager arranged it (§14.1), never a
           numbered list of competing senses — bulleted only so a second
           definition is visibly a second one. */}
-      <div className="mt-5 rounded-2xl border border-rule bg-white p-4">
+      <div className="mt-5 rounded-2xl border border-rule bg-card p-4">
         <WordEntry word={word} />
       </div>
 

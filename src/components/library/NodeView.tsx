@@ -248,7 +248,7 @@ function WholeSetLink({ url, tone = "light" }: { url: string; tone?: "light" | "
       className={`mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
         dark
           ? "border-white/30 text-white/90 hover:bg-white/10"
-          : "border-rule bg-white text-ink hover:bg-black/[.03]"
+          : "border-rule bg-card text-ink hover:bg-ink/[.03]"
       }`}
     >
       <span>See the full series</span>
@@ -274,7 +274,7 @@ function IndexHeader({
         <Link
           href={nodeHref(parent.id, shelves)}
           aria-label={`Back to ${parent.name}`}
-          className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rule bg-white text-ink-soft transition-colors hover:bg-black/[.03]"
+          className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rule bg-card text-ink-soft transition-colors hover:bg-ink/[.03]"
         >
           <BackIcon />
         </Link>

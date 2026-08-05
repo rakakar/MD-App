@@ -107,7 +107,7 @@ function PlayerBarInner() {
       className={`fixed inset-x-0 z-40 border-t backdrop-blur ${
         reader
           ? "bottom-[env(safe-area-inset-bottom)] border-(--reader-rule) bg-(--reader-bg)/95 text-(--reader-ink)"
-          : "bottom-[calc(3.4rem+env(safe-area-inset-bottom))] border-rule bg-white/95 lg:bottom-0 lg:left-60"
+          : "bottom-[calc(3.4rem+env(safe-area-inset-bottom))] border-rule bg-card/95 lg:bottom-0 lg:left-60"
       }`}
     >
       {/* Progress. The device voice exposes no timeline, so it gets a
@@ -152,7 +152,7 @@ function PlayerBarInner() {
           type="button"
           onClick={() => player.skipSeconds(-SKIP_SECONDS)}
           aria-label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-black/5"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-ink/5"
         >
           <SkipBackIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
         </button>
@@ -171,7 +171,7 @@ function PlayerBarInner() {
           type="button"
           onClick={() => player.skipSeconds(SKIP_SECONDS)}
           aria-label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-black/5"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-ink/5"
         >
           <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
         </button>
@@ -215,7 +215,7 @@ function PlayerBarInner() {
               Voice
             </button>
             {menuOpen === "voice" && (
-              <div role="menu" className="absolute bottom-full right-0 mb-2 w-44 rounded-xl border border-rule bg-white py-1 shadow-lg">
+              <div role="menu" className="absolute bottom-full right-0 mb-2 w-44 rounded-xl border border-rule bg-card py-1 shadow-lg">
                 {source.renditions.map((r) => (
                   <button
                     key={r.voice_key}
@@ -225,7 +225,7 @@ function PlayerBarInner() {
                       player.switchVoice(r.voice_key);
                       setMenuOpen(null);
                     }}
-                    className={`hi block w-full px-3 py-1.5 text-left text-sm hover:bg-black/5 ${
+                    className={`hi block w-full px-3 py-1.5 text-left text-sm hover:bg-ink/5 ${
                       r.voice_key === source.voiceKey ? "font-bold" : ""
                     }`}
                   >
@@ -251,7 +251,7 @@ function PlayerBarInner() {
             {player.rate}×
           </button>
           {menuOpen === "rate" && (
-            <div role="menu" className="absolute bottom-full right-0 mb-2 w-20 rounded-xl border border-rule bg-white py-1 shadow-lg">
+            <div role="menu" className="absolute bottom-full right-0 mb-2 w-20 rounded-xl border border-rule bg-card py-1 shadow-lg">
               {RATES.map((r) => (
                 <button
                   key={r}
@@ -261,7 +261,7 @@ function PlayerBarInner() {
                     player.setRate(r);
                     setMenuOpen(null);
                   }}
-                  className={`block w-full px-3 py-1.5 text-left text-sm tabular-nums hover:bg-black/5 ${
+                  className={`block w-full px-3 py-1.5 text-left text-sm tabular-nums hover:bg-ink/5 ${
                     r === player.rate ? "font-bold" : ""
                   }`}
                 >
@@ -288,7 +288,7 @@ function PlayerBarInner() {
               : "Sleep"}
           </button>
           {menuOpen === "sleep" && (
-            <div role="menu" className="absolute bottom-full right-0 mb-2 w-28 rounded-xl border border-rule bg-white py-1 shadow-lg">
+            <div role="menu" className="absolute bottom-full right-0 mb-2 w-28 rounded-xl border border-rule bg-card py-1 shadow-lg">
               {SLEEP_OPTIONS.map((m) => (
                 <button
                   key={m}
@@ -298,7 +298,7 @@ function PlayerBarInner() {
                     player.setSleepTimer(m);
                     setMenuOpen(null);
                   }}
-                  className="block w-full px-3 py-1.5 text-left text-sm hover:bg-black/5"
+                  className="block w-full px-3 py-1.5 text-left text-sm hover:bg-ink/5"
                 >
                   {m} min
                 </button>
@@ -310,7 +310,7 @@ function PlayerBarInner() {
                   player.setSleepTimer(null);
                   setMenuOpen(null);
                 }}
-                className="block w-full px-3 py-1.5 text-left text-sm text-ink-soft hover:bg-black/5"
+                className="block w-full px-3 py-1.5 text-left text-sm text-ink-soft hover:bg-ink/5"
               >
                 Off
               </button>
@@ -322,7 +322,7 @@ function PlayerBarInner() {
           type="button"
           onClick={player.close}
           aria-label="Close player"
-          className="rounded-full p-1.5 text-ink-soft hover:bg-black/5"
+          className="rounded-full p-1.5 text-ink-soft hover:bg-ink/5"
         >
           <CloseIcon className="h-4 w-4" />
         </button>

@@ -66,7 +66,7 @@ export function PushProvider() {
       // the same band the service-worker update prompt uses.
       className="fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 lg:bottom-6"
     >
-      <div className="flex w-full max-w-sm items-start gap-3 rounded-2xl border border-rule bg-white p-3 shadow-lg">
+      <div className="flex w-full max-w-sm items-start gap-3 rounded-2xl border border-rule bg-card p-3 shadow-lg">
         <span aria-hidden className="text-lg leading-none">
           🔔
         </span>

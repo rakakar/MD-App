@@ -268,10 +268,10 @@ function SieveCard({
                     on
                       ? {
                           borderColor: "var(--ws-color)",
-                          background: "color-mix(in srgb, var(--ws-color) 9%, #fff)",
+                          background: "color-mix(in srgb, var(--ws-color) 9%, var(--color-card))",
                           color: "var(--ws-ink)",
                         }
-                      : { borderColor: "var(--color-rule)", background: "#fff" }
+                      : { borderColor: "var(--color-rule)", background: "var(--color-card)" }
                   }
                 >
                   <span className="shrink-0" style={{ color: on ? undefined : "var(--color-ink-soft)" }}>
@@ -361,7 +361,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <details open={open} className="group rounded-2xl border border-rule bg-white">
+    <details open={open} className="group rounded-2xl border border-rule bg-card">
       <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden
@@ -464,7 +464,7 @@ function Chip({
       // Tapping a lit chip clears it — the only way back out of one on a phone
       // without a second control beside every row.
       className={`min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
-        on ? "border-transparent text-white" : "border-rule bg-white text-ink"
+        on ? "border-transparent text-white" : "border-rule bg-card text-ink"
       }`}
       style={on ? { background: "var(--ws-color)" } : undefined}
     >

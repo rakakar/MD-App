@@ -113,7 +113,7 @@ export default async function OriginalsHome() {
                     <li key={e.id}>
                       <Link
                         href={`/connect/events/${e.id}`}
-                        className="flex items-center gap-3 rounded-2xl border border-rule bg-white p-3.5 transition-shadow hover:shadow-md"
+                        className="flex items-center gap-3 rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
                       >
                         <span className="min-w-0 flex-1">
                           <span lang="hi" className="hi block truncate text-sm font-semibold">

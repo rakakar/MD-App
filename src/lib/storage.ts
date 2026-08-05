@@ -35,8 +35,15 @@ function write(key: string, value: unknown): void {
 
 // ---- Preferences ----
 
-/** "system" follows prefers-color-scheme; the rest are explicit choices. */
-export type ReaderTheme = "system" | "light" | "dark" | "sepia";
+/**
+ * "system" follows prefers-color-scheme; the rest are explicit choices.
+ *
+ * This was `ReaderTheme` while only the reader could be themed. It now paints
+ * the whole app, which is what it always claimed to do on the settings screen.
+ */
+export type Theme = "system" | "light" | "dark" | "sepia";
+/** @deprecated the theme is app-wide now — use {@link Theme}. */
+export type ReaderTheme = Theme;
 /** what actually gets painted — `system` is resolved to one of these */
 export type ResolvedTheme = "light" | "dark" | "sepia";
 export type ReadingMode = "page" | "scroll";
@@ -59,6 +66,22 @@ export const FONT_SCALES = [0.85, 0.95, 1, 1.1, 1.2, 1.35, 1.5, 1.7];
  * text up, never compresses it; density is controlled with size and margins.
  */
 export const LINE_HEIGHTS = [1.85, 2.05, 2.3];
+
+/**
+ * App-wide text size — **the ladder only goes up.**
+ *
+ * There is no step below 1. The app's own baseline was set as a floor for
+ * readers over forty (13px minimum, 15px body), and a "Smaller" option is a
+ * one-tap way back to the illegibility that floor exists to prevent — tapped
+ * by accident more often than on purpose, by exactly the people it hurts. A
+ * reader who wants a denser screen still has the whole ladder's bottom rung;
+ * it is just the same rung everyone starts on.
+ *
+ * These multiply the browser's base rather than replace it, so a device that
+ * is already set to large text starts large and goes larger.
+ */
+export const APP_TEXT_SCALES = [1, 1.12, 1.25, 1.4];
+export const APP_TEXT_LABELS = ["Default", "Large", "Larger", "Largest"];
 /** index into the margin presets defined in globals.css */
 export const MARGIN_STEPS = [0, 1, 2];
 
@@ -70,7 +93,15 @@ export interface Prefs {
   lineHeight: number;
   /** 0 = narrow gutters, 1 = normal, 2 = wide */
   margin: number;
-  theme: ReaderTheme;
+  theme: Theme;
+  /** app-wide text size multiplier — one of {@link APP_TEXT_SCALES} */
+  appTextScale: number;
+  /**
+   * Heavier UI text app-wide. Not `font-weight: bold`: Tiro ships one weight,
+   * so the Devanagari moves to Mukta instead of being smeared by a
+   * synthesized bold. Book text is deliberately left alone — see globals.css.
+   */
+  boldText: boolean;
   /** user override of the print→page / digital→scroll default; null = automatic */
   readingMode: ReadingMode | null;
   /** tapping the left/right edge turns the page (Pages mode only) */
@@ -106,6 +137,10 @@ export const DEFAULT_PREFS: Prefs = {
   // a reader that opens bright at night is the single most common complaint
   // about reading apps — follow the OS unless the user says otherwise
   theme: "system",
+  // 1 is not "small". The baseline was already raised for this audience, so
+  // the default step is the one most readers should never need to leave.
+  appTextScale: 1,
+  boldText: false,
   readingMode: null,
   tapZones: true,
   glossaryUnderline: false,

@@ -21,7 +21,7 @@ interface Overview {
 
 function SyncCta() {
   return (
-    <div className="rounded-2xl border border-rule bg-white p-4">
+    <div className="rounded-2xl border border-rule bg-card p-4">
       <p className="text-sm font-medium">Saved on this device</p>
       <p className="mt-1 text-xs text-ink-soft">
         Your progress, bookmarks and notes live only on this device right now.
@@ -86,7 +86,7 @@ export default function MyJourneyPage() {
             <Link
               key={r.key}
               href={r.href}
-              className="rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md"
+              className="rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md"
             >
               <p lang="hi" className="hi text-sm font-semibold">{r.title}</p>
               <p className="mt-1 text-xs text-ink-soft">{r.detail}</p>
@@ -105,13 +105,13 @@ export default function MyJourneyPage() {
 
       <SectionHeading>Saved</SectionHeading>
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/me/bookmarks" className="rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md">
+        <Link href="/me/bookmarks" className="rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md">
           <p className="text-2xl font-bold" style={{ color: "var(--ws-ink)" }}>
             {data?.bookmarkCount ?? "–"}
           </p>
           <p className="text-sm text-ink-soft">Bookmarks</p>
         </Link>
-        <Link href="/me/notes" className="rounded-2xl border border-rule bg-white p-4 transition-shadow hover:shadow-md">
+        <Link href="/me/notes" className="rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md">
           <p className="text-2xl font-bold" style={{ color: "var(--ws-ink)" }}>
             {data?.noteCount ?? "–"}
           </p>

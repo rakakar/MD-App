@@ -78,7 +78,7 @@ export default async function EventDetailPage({
       )}
 
       <SectionHeading>Registration</SectionHeading>
-      <div className="rounded-2xl border border-rule bg-white p-4">
+      <div className="rounded-2xl border border-rule bg-card p-4">
         <RegisterForm eventId={event.id} open={event.registration_open !== false} />
       </div>
     </PageContainer>

@@ -41,7 +41,7 @@ export function ImageGallery({ items }: { items: LibraryFile[] }) {
                 alt={item.title}
                 loading="lazy"
                 decoding="async"
-                className="aspect-[4/3] w-full rounded-xl border border-rule bg-white object-contain transition-shadow group-hover:shadow-md"
+                className="aspect-[4/3] w-full rounded-xl border border-rule bg-card object-contain transition-shadow group-hover:shadow-md"
               />
               <span lang="hi" className="hi mt-1.5 block truncate text-xs font-medium">
                 {item.title}
