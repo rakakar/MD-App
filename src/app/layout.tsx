@@ -98,13 +98,21 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * **No `themeColor` here on purpose.**
+ *
+ * It is the phone's status bar, and it has to follow the reader's chosen
+ * theme, which is device-local and unknowable on the server. Declaring it here
+ * makes it Next-managed metadata, and Next re-applies a route's metadata on
+ * every client-side navigation — so the static value overwrote whatever the
+ * theme had set, and the bar snapped back to cream on the next tap while the
+ * app stayed dark. `data-theme` and `color-scheme` survived, because those are
+ * ours; this one tag was not.
+ *
+ * The tag is written by the pre-paint script below and kept in sync by
+ * DisplayProvider. Nothing else may claim it.
+ */
 export const viewport: Viewport = {
-  // The light surface, not the accent. This is the installed app's status bar,
-  // and it should be the colour of the page under it — a terracotta band above
-  // a cream header was always a seam. DisplayProvider rewrites this on
-  // hydration for a reader in sepia or dark; this is what the other two see,
-  // and what everyone sees for the first frame.
-  themeColor: "#fdfbf8",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -122,6 +130,11 @@ export const viewport: Viewport = {
  * the same reason — it is what form controls, scrollbars and the iOS
  * overscroll gutter follow, and they are on every screen.
  *
+ * It also writes `theme-color`, which the `viewport` export above deliberately
+ * does not. Written here it is a tag nobody else owns, so a client-side
+ * navigation cannot reset it; written there it was reset on every one.
+ * THEME_BG in DisplayProvider must hold the same three values.
+ *
  * The route test must match READER_ROUTE in lib/routes.ts.
  */
 const THEME_SCRIPT = `(function(){try{
@@ -131,6 +144,9 @@ if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"lig
 var d=document.documentElement;
 d.setAttribute("data-theme",t);
 d.style.colorScheme=t==="dark"?"dark":"light";
+var m=document.querySelector('meta[name="theme-color"]');
+if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m)}
+m.setAttribute("content",t==="dark"?"#14110f":t==="sepia"?"#f5ebdc":"#fdfbf8");
 d.setAttribute("data-reader-margin",String(p.margin==null?1:p.margin));
 d.setAttribute("data-reader-face",p.face||"serif");
 if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale));

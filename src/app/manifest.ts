@@ -12,7 +12,18 @@ export default function manifest(): MetadataRoute.Manifest {
     // back down the list to plain standalone
     display_override: ["standalone", "minimal-ui"],
     background_color: "#fdfbf8",
-    theme_color: "#A64E12",
+    // The two must agree, and both are the light surface rather than the
+    // accent. This pair is what the installed app shows *before* a page runs —
+    // the splash and the first frame of the system bars — and the page's own
+    // `theme-color` takes over the moment the pre-paint script runs. Terracotta
+    // here meant every cold start flashed a band of accent above a cream app,
+    // and now that the app can be dark it flashed above a black one too.
+    //
+    // A static manifest cannot know a device-local theme, so a dark reader
+    // still gets a light splash for that one frame. That is the trade the
+    // format forces; agreeing with `background_color` at least makes it one
+    // colour rather than two.
+    theme_color: "#fdfbf8",
     lang: "hi",
     dir: "ltr",
     categories: ["books", "education", "lifestyle"],

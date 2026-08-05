@@ -99,9 +99,32 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
     };
     apply();
     if (theme !== "system") return;
+
+    // Three ways the OS setting can move under us, and `change` alone catches
+    // only the first:
+    //
+    // - it changes while the app is in front — the event fires;
+    // - it changes while the app is backgrounded, which on a phone is the
+    //   common case (Android and iOS both flip at sunset, and nobody is
+    //   looking at the app at sunset). A hidden page is throttled or frozen
+    //   and may never deliver the event, so we re-resolve on the way back in;
+    // - the page is restored from the back/forward cache, where the whole DOM
+    //   comes back as it was and no effect re-runs at all.
+    //
+    // `apply` reads matchMedia fresh every time and writes the same three
+    // things, so calling it more often than strictly needed costs nothing.
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onReturn = () => {
+      if (document.visibilityState === "visible") apply();
+    };
     mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
+    document.addEventListener("visibilitychange", onReturn);
+    window.addEventListener("pageshow", apply);
+    return () => {
+      mq.removeEventListener("change", apply);
+      document.removeEventListener("visibilitychange", onReturn);
+      window.removeEventListener("pageshow", apply);
+    };
   }, [theme, loaded]);
 
   useEffect(() => {
