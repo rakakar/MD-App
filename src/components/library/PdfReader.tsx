@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   PDFDocumentLoadingTask,
@@ -7,8 +8,24 @@ import type {
   PDFPageProxy,
   RenderTask,
 } from "pdfjs-dist";
+import { BackIcon } from "@/components/shell/icons";
 import { useDisplay } from "@/components/shell/DisplayProvider";
+import { contentLang } from "@/lib/script";
 import type { ResolvedTheme } from "@/lib/storage";
+
+/**
+ * An error, in the few words a fix can be built from.
+ *
+ * Deliberately the machine's own words rather than a friendly paraphrase:
+ * this is read off a screenshot from a phone that cannot be borrowed, and
+ * `ChunkLoadError` names a cause that "something went wrong" never will.
+ */
+function describe(e: unknown): string {
+  const err = e as { name?: string; message?: string } | null;
+  const name = err?.name || "Error";
+  const message = (err?.message || "").slice(0, 120);
+  return message ? `${name}: ${message}` : name;
+}
 
 /**
  * A PDF rendered **by us**, page by page, onto canvas.
@@ -54,6 +71,18 @@ const SLOW_MS = 10_000;
 const WINDOW = 2;
 
 /**
+ * How far below the top edge the "page you are reading" is judged from.
+ *
+ * Not the very top: a reader who has scrolled two centimetres into page 7 is
+ * reading page 7, but its top edge has already left the screen, and measuring
+ * at zero would call that page 8 and save the wrong place.
+ */
+const READING_LINE = 80;
+
+/** A flick fires hundreds of scroll events; only the rest at the end counts. */
+const SETTLE_MS = 120;
+
+/**
  * Cap on canvas backing-store density. A phone reporting DPR 3 on a 390-page
  * scan buys sharpness nobody asked for at nine times the pixels per page, and
  * pages are the thing we hold several of at once.
@@ -77,6 +106,34 @@ const THEME_FILTER: Record<ResolvedTheme, string> = {
   dark: "invert(1) hue-rotate(180deg) brightness(0.92) contrast(1.05)",
 };
 
+/**
+ * Give back every page outside `from..to` — its canvas, its render task and
+ * its decoded operator list.
+ *
+ * Five canvases at a capped DPR is a bounded cost on a 390-page document;
+ * keeping all 390 is not. Module-level rather than a hook: it mutates the box
+ * records, and the React compiler rightly treats values reached through a
+ * memoised callback as frozen.
+ */
+function release(
+  boxes: Map<number, PageBox>,
+  cache: Map<number, PDFPageProxy>,
+  from: number,
+  to: number
+): void {
+  for (const [n, box] of boxes) {
+    if (n >= from && n <= to) continue;
+    box.task?.cancel();
+    box.task = null;
+    if (box.canvas) {
+      box.el.replaceChildren();
+      box.canvas = null;
+      box.drawnAt = 0;
+    }
+    cache.get(n)?.cleanup();
+  }
+}
+
 interface PageBox {
   /** the wrapper we observe and draw into */
   el: HTMLDivElement;
@@ -93,6 +150,7 @@ export function PdfReader({
   onPage,
   onSlow,
   onFail,
+  backHref,
 }: {
   url: string;
   title: string;
@@ -106,8 +164,19 @@ export function PdfReader({
    * document is still loading and usually still arrives.
    */
   onSlow?: () => void;
-  /** this document genuinely cannot be read here — the parent should fall back */
-  onFail?: (reason: "error") => void;
+  /**
+   * This document genuinely cannot be read here — the parent should fall back.
+   *
+   * Carries the error's own name and message, and the fallback puts it on
+   * screen. Not for the reader's benefit: a PDF that dies instantly on one
+   * make of phone and works everywhere else is unreproducible on a desk, and
+   * "it just says Open the document" is not something a fix can be built from.
+   * One screenshot with `ChunkLoadError` or `TypeError: … is not a function`
+   * in it names the cause immediately.
+   */
+  onFail?: (detail: string) => void;
+  /** where the back control goes; without it the reader draws none */
+  backHref?: string;
 }) {
   const { resolved } = useDisplay();
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -146,11 +215,14 @@ export function PdfReader({
     currentRef.current = current;
   }, [current]);
 
-  const fail = useCallback(() => {
-    if (failed.current) return; // one verdict per document
-    failed.current = true;
-    onFail?.("error");
-  }, [onFail]);
+  const fail = useCallback(
+    (detail: string) => {
+      if (failed.current) return; // one verdict per document
+      failed.current = true;
+      onFail?.(detail);
+    },
+    [onFail]
+  );
 
   // ---- open the document ----
   //
@@ -214,9 +286,9 @@ export function PdfReader({
         setAspect(vp.height / vp.width);
         setPageCount(opened.numPages);
         setDoc(opened);
-      } catch {
+      } catch (e) {
         clearTimeout(timer);
-        if (!cancelled) fail();
+        if (!cancelled) fail(describe(e));
       }
     })();
 
@@ -283,77 +355,93 @@ export function PdfReader({
       } catch (e) {
         // A cancelled render is the normal way a fast scroll ends, not a fault.
         if ((e as { name?: string })?.name === "RenderingCancelledException") return;
-        fail();
+        fail(describe(e));
       }
     },
     [doc, zoom, ready, fail]
   );
 
-  // ---- decide what is on screen, and what to draw around it ----
-  useEffect(() => {
-    if (!doc || pageCount === 0) return;
+  /**
+   * The page at the reading line, found by bisection.
+   *
+   * This was an `IntersectionObserver` first. What replaced it is not more
+   * robust — scroll events and observer callbacks are both dispatched in the
+   * rendering steps, so a tab at zero frames delivers neither, and no
+   * arrangement of this survives that (what does is the opening `focus` below,
+   * which asks rather than waits). It is here because it answers a sharper
+   * question: an observer knows which pages *intersect*, and with a 200px
+   * margin that set still holds the page a reader has just left, so the lowest
+   * of them is a page or so behind the truth. A line 80px down the viewport is
+   * exactly "the page being read", which is the number that gets saved.
+   *
+   * Bisection rather than a scan because a 390-page document has 390 boxes and
+   * this runs on every settled scroll. Pages are laid out in order, so the last
+   * one whose top has passed the line is the one being read.
+   */
+  const pageAtTop = useCallback((): number => {
     const scroller = scrollerRef.current;
-    if (!scroller) return;
+    if (!scroller || pageCount === 0) return 1;
+    const top = scroller.getBoundingClientRect().top + READING_LINE;
 
-    const visible = new Set<number>();
+    let lo = 1;
+    let hi = pageCount;
+    let found = 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const el = boxes.current.get(mid)?.el;
+      if (!el) break;
+      if (el.getBoundingClientRect().top <= top) {
+        found = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return found;
+  }, [pageCount]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const n = Number((entry.target as HTMLElement).dataset.page);
-          if (entry.isIntersecting) visible.add(n);
-          else visible.delete(n);
-        }
-        if (visible.size === 0) return;
+  /** Draw around a page and release the canvases that are nowhere near it. */
+  const focus = useCallback(
+    (n: number) => {
+      const from = Math.max(1, n - WINDOW);
+      const to = Math.min(pageCount, n + WINDOW);
+      for (let i = from; i <= to; i++) void draw(i);
+      release(boxes.current, pageCache.current, from, to);
+    },
+    [pageCount, draw]
+  );
 
-        // The page being read is the lowest-numbered one on screen. Not the
-        // largest slice: on a phone in the middle of a spread that flickers
-        // between two numbers as a thumb moves, and a reader who stops halfway
-        // down page 7 means page 7.
-        const now = Math.min(...visible);
-        setCurrent(now);
-
-        const from = Math.max(1, now - WINDOW);
-        const to = Math.min(pageCount, now + WINDOW);
-        for (let n = from; n <= to; n++) void draw(n);
-
-        // Let go of everything outside the window. Five canvases at a capped
-        // DPR is a bounded cost on a 390-page document; keeping them all is not.
-        for (const [n, box] of boxes.current) {
-          if (n >= from && n <= to) continue;
-          box.task?.cancel();
-          box.task = null;
-          if (box.canvas) {
-            box.el.replaceChildren();
-            box.canvas = null;
-            box.drawnAt = 0;
-          }
-          // The page proxy holds its own decoded operator list; drop it too.
-          pageCache.current.get(n)?.cleanup();
-        }
-      },
-      { root: scroller, rootMargin: "200px 0px" }
-    );
-
-    for (const box of boxes.current.values()) observer.observe(box.el);
-    return () => observer.disconnect();
-  }, [doc, pageCount, draw]);
-
-  // ---- draw the pages it opens onto ----
-  //
-  // Deliberately not left to the observer above. Its first callback arrives a
-  // frame after the placeholders mount, and a frame is not something to rely
-  // on: a tab that is backgrounded, occluded or throttled delivers no frames
-  // at all, and a reader returning to it would find a document that says
-  // "Page 1 of 220" over a blank column. What the reader opens onto is drawn
-  // by asking, not by waiting to be told.
+  // ---- follow the reader ----
   useEffect(() => {
-    if (!doc || pageCount === 0) return;
-    const at = Math.min(Math.max(1, startPage), pageCount);
-    const from = Math.max(1, at - WINDOW);
-    const to = Math.min(pageCount, at + WINDOW);
-    for (let n = from; n <= to; n++) void draw(n);
-  }, [doc, pageCount, startPage, draw]);
+    const scroller = scrollerRef.current;
+    if (!doc || pageCount === 0 || !scroller) return;
+
+    let timer: ReturnType<typeof setTimeout>;
+    const settle = () => {
+      const n = pageAtTop();
+      setCurrent(n);
+      focus(n);
+    };
+    const onScroll = () => {
+      clearTimeout(timer);
+      // A thumb-flick through a shivir fires hundreds of these. Only where it
+      // comes to rest is worth a page number or five renders.
+      timer = setTimeout(settle, SETTLE_MS);
+    };
+
+    // The opening draw, immediately and not on a scroll that may never come.
+    // This is the one part that must not wait to be told: a reader who opens a
+    // document and reads without touching it never scrolls, and a tab restored
+    // from the background may deliver no events for a while — either way the
+    // first pages have to be on screen already.
+    focus(Math.min(Math.max(1, startPage), pageCount));
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      scroller.removeEventListener("scroll", onScroll);
+      clearTimeout(timer);
+    };
+  }, [doc, pageCount, startPage, pageAtTop, focus]);
 
   // ---- open at the saved place ----
   useEffect(() => {
@@ -375,11 +463,8 @@ export function PdfReader({
   /** Throw away what is drawn and draw the window again, wherever it is now. */
   const redrawWindow = useCallback(() => {
     for (const box of boxes.current.values()) box.drawnAt = 0;
-    const at = currentRef.current;
-    const from = Math.max(1, at - WINDOW);
-    const to = Math.min(pageCount, at + WINDOW);
-    for (let n = from; n <= to; n++) void draw(n);
-  }, [pageCount, draw]);
+    focus(currentRef.current);
+  }, [focus]);
 
   // ---- redraw on zoom ----
   useEffect(() => {
@@ -424,14 +509,37 @@ export function PdfReader({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-rule bg-card">
-      {/* The bar states the page a reader is on, which is the fact the native
-          viewer hid and the whole feature turns on. */}
-      <div className="flex items-center gap-2 border-b border-rule px-3 py-2">
-        <span className="text-xs font-semibold tabular-nums text-ink-soft">
-          {pageCount > 0 ? `Page ${current} of ${pageCount}` : "Opening…"}
+    // The whole screen, and only as much chrome as a reader needs to leave,
+    // know where they are, and change the size. `h-dvh` rather than `h-screen`
+    // so the bar does not sit under a phone's URL bar as it collapses.
+    <div className="flex h-dvh flex-col bg-canvas">
+      <div
+        className="flex items-center gap-1 border-b border-rule bg-card px-2 py-2"
+        style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top))" }}
+      >
+        {backHref && (
+          <Link
+            href={backHref}
+            aria-label="Back"
+            className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            <BackIcon />
+          </Link>
+        )}
+        <span className="min-w-0 flex-1">
+          <span
+            {...contentLang(title)}
+            className={`${contentLang(title).className} block truncate text-sm font-semibold leading-tight`}
+          >
+            {title}
+          </span>
+          {/* The page a reader is on — the fact the native viewer hid, and the
+              one the whole feature turns on. */}
+          <span className="block text-xs font-medium tabular-nums text-ink-soft">
+            {pageCount > 0 ? `Page ${current} of ${pageCount}` : "Opening…"}
+          </span>
         </span>
-        <span className="flex-1" />
         <button
           type="button"
           onClick={() => jump(current - 1)}
@@ -466,7 +574,8 @@ export function PdfReader({
         // `pinch-zoom` on top of our own steps: the browser's pinch is instant
         // and blurry, ours is a redraw and sharp. A reader inspecting a chart
         // wants the first; a reader settling in wants the second.
-        className="h-[75vh] overflow-y-auto overscroll-contain bg-canvas p-2 [touch-action:pinch-zoom]"
+        className="flex-1 overflow-y-auto overscroll-contain [touch-action:pinch-zoom]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label={title}
       >
         {pageCount === 0 ? (
@@ -491,7 +600,11 @@ export function PdfReader({
             )}
           </div>
         ) : (
-          <ul className="flex flex-col gap-2">
+          // Pages run edge to edge on a phone and are held to a readable
+          // column on a desktop, where a 27-inch-wide scan is not reading
+          // either. The gap is the only thing separating one page from the
+          // next, which is how a paper book reads on a screen.
+          <ul className="mx-auto flex max-w-3xl flex-col gap-2 p-2">
             {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
               <li key={n}>
                 <div

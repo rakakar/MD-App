@@ -151,11 +151,12 @@ function ResumeCard({ row }: { row: ResumeRow }) {
   const percent = Math.min(100, (row.page / row.pageCount) * 100);
 
   return (
-    // A file has no page of its own — its folder is where it is read (§13.6) —
-    // so the card carries the page in the query, and `NodeView` opens that
-    // document there.
+    // Straight into the document at the page it was left on — not to the
+    // folder holding it. The card's whole promise is that the reader is one
+    // tap from where they stopped, and a folder page with the document
+    // somewhere down it is two taps and a scroll.
     <Link
-      href={`/library/${row.nodeId}?file=${row.itemId}&page=${row.page}`}
+      href={`/library/${row.nodeId}/read/${row.itemId}?page=${row.page}`}
       className="flex h-full w-full items-start gap-3 rounded-[20px] border border-rule bg-card p-3.5 text-left transition-shadow hover:shadow-md"
     >
       <span

@@ -17,29 +17,6 @@ function parseId(raw: string): number | null {
 }
 
 /**
- * `?file=276&page=12` — a resume card's landing.
- *
- * A file has no page of its own (§13.6), so "continue reading a document"
- * has to mean opening the folder it lives in and pointing at it. Read here, on
- * the server, and handed down: this route prerenders, and reading the query
- * from the client component that needs it would put a `useSearchParams` under
- * a prerendered tree — which builds in dev and fails in production.
- *
- * Both halves must parse or neither is used; a link with one of them is not a
- * link this wrote.
- */
-function readOpenFile(
-  params: Record<string, string | string[] | undefined>
-): { id: number; page: number } | null {
-  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-  const id = Number(one(params.file));
-  const page = Number(one(params.page));
-  if (!Number.isSafeInteger(id) || id <= 0) return null;
-  if (!Number.isSafeInteger(page) || page <= 0) return null;
-  return { id, page };
-}
-
-/**
  * A folder is visible only while it *and every one of its ancestors* is
  * published, so a 404 here is an ordinary answer rather than a failure:
  * un-publishing one folder hides its whole branch and links into it start
@@ -117,7 +94,6 @@ export default async function LibraryNodePage({
         state={state}
         basePath={`/library/${node.id}`}
         shelves={shelves}
-        openFile={readOpenFile(rawParams)}
       />
     </PageContainer>
   );

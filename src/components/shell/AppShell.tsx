@@ -8,7 +8,7 @@ import { PlayerBar } from "@/components/player/PlayerBar";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
 import { TrackAudioMode } from "@/components/player/TrackAudioMode";
 import { PushProvider } from "@/components/push/PushProvider";
-import { isReaderRoute } from "@/lib/routes";
+import { ownsViewport } from "@/lib/routes";
 import { DisplayProvider } from "./DisplayProvider";
 import { Header } from "./Header";
 import { BottomNav, Sidebar } from "./Nav";
@@ -35,9 +35,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   // auth screens are neutral chrome (PRD §4)
   const neutral = pathname === "/login" || pathname === "/signup";
-  // the reader owns the viewport: it has its own back, contents and settings,
-  // and app chrome on top of it costs a quarter of a phone screen
-  const reader = isReaderRoute(pathname);
+  // a reader owns the viewport: it has its own back, contents and settings,
+  // and app chrome on top of it costs a quarter of a phone screen. Both
+  // readers qualify — the book's and the PDF's.
+  const reader = ownsViewport(pathname);
   const bare = neutral || reader;
 
   return (

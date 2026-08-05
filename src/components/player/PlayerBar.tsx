@@ -10,7 +10,7 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
 } from "@/components/shell/icons";
-import { isReaderRoute } from "@/lib/routes";
+import { ownsViewport } from "@/lib/routes";
 import { SKIP_SECONDS, activeRendition, usePlayer } from "./PlayerProvider";
 
 const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -40,9 +40,11 @@ function PlayerBarInner() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState<"rate" | "sleep" | "voice" | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
-  // no bottom nav to clear inside the reader, and the reader stacks its own
-  // controls on top of this bar via --player-h
-  const reader = isReaderRoute(usePathname());
+  // no bottom nav to clear inside a reader, and the reader stacks its own
+  // controls on top of this bar via --player-h. True of the PDF reader too:
+  // it drops the same chrome, so padding for a nav that isn't there would
+  // float this bar above the bottom of the screen.
+  const reader = ownsViewport(usePathname());
 
   useEffect(() => {
     const el = barRef.current;

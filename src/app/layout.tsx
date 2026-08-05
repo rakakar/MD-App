@@ -135,7 +135,9 @@ export const viewport: Viewport = {
  * navigation cannot reset it; written there it was reset on every one.
  * THEME_BG in DisplayProvider must hold the same three values.
  *
- * The route test must match READER_ROUTE in lib/routes.ts.
+ * The route test must match READER_ROUTE **and** PDF_READER_ROUTE in
+ * lib/routes.ts — `ownsViewport` is the union, and `data-reading` is what
+ * stops iOS rubber-banding to white behind either reader.
  */
 const THEME_SCRIPT = `(function(){try{
 var p=JSON.parse(localStorage.getItem("md.prefs.v1")||"{}");
@@ -153,7 +155,7 @@ if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale))
 if(p.boldText)d.setAttribute("data-bold","1");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
-if(/^\\/books\\/[^/]+\\/\\d+$/.test(location.pathname))d.setAttribute("data-reading","1");
+if(/^\\/books\\/[^/]+\\/\\d+$|^\\/library\\/\\d+\\/read\\/\\d+$/.test(location.pathname))d.setAttribute("data-reading","1");
 }catch(e){}})()`;
 
 export default function RootLayout({
