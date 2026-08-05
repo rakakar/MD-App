@@ -15,7 +15,9 @@ export type GaEvent =
   | "book_open"
   | "chapter_read"
   | "page_turn"
-  | "reader_theme_change"
+  /** renamed from reader_theme_change: the theme is app-wide, and can now
+      be changed from the header and Settings as well as inside a book */
+  | "theme_change"
   | "font_size_change"
   // which Devanagari face readers actually choose — the answer decides
   // whether the serif stays the default

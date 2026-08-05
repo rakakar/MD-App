@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { track } from "@/lib/analytics";
 import {
   DEFAULT_PREFS,
   getPrefs,
@@ -114,6 +115,10 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
   const setTheme = useCallback((v: Theme) => {
     setThemeState(v);
     setPrefs({ theme: v });
+    // Tracked here rather than at the control: the theme can now be changed
+    // from the header, from Settings and from inside a book, and one event
+    // per door was three events measuring the same decision.
+    track("theme_change", { theme: v });
   }, []);
 
   const setAppTextScale = useCallback((v: number) => {

@@ -42,8 +42,6 @@ function write(key: string, value: unknown): void {
  * the whole app, which is what it always claimed to do on the settings screen.
  */
 export type Theme = "system" | "light" | "dark" | "sepia";
-/** @deprecated the theme is app-wide now — use {@link Theme}. */
-export type ReaderTheme = Theme;
 /** what actually gets painted — `system` is resolved to one of these */
 export type ResolvedTheme = "light" | "dark" | "sepia";
 export type ReadingMode = "page" | "scroll";
@@ -152,7 +150,7 @@ export const DEFAULT_PREFS: Prefs = {
 };
 
 /** Resolve `system` against the OS setting. SSR-safe (assumes light). */
-export function resolveTheme(theme: ReaderTheme): ResolvedTheme {
+export function resolveTheme(theme: Theme): ResolvedTheme {
   if (theme !== "system") return theme;
   if (!isBrowser) return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";

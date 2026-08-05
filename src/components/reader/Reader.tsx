@@ -31,13 +31,11 @@ import {
   getListeningPosition,
   getPrefs,
   nearestStep,
-  resolveTheme,
   setPrefs,
   FONT_SCALES,
   FONT_FACES,
   LINE_HEIGHTS,
   type ReaderFace,
-  type ReaderTheme,
   type ReadingMode,
 } from "@/lib/storage";
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
@@ -46,7 +44,6 @@ import { Block } from "./blocks";
 import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
-import { useDisplay } from "@/components/shell/DisplayProvider";
 import { DisplaySheet } from "@/components/shell/DisplaySheet";
 import { Sheet } from "./Sheet";
 import { SettingsSheet } from "./SettingsSheet";
@@ -108,9 +105,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
   const { user, loading: authLoading } = useAuth();
   const { matcher } = useGlossary();
   const player = usePlayer();
-  // The theme is the app's, not the reader's. This component used to own it,
-  // which is exactly why the shell around it never followed.
-  const { theme, setTheme } = useDisplay();
   const loadChapter = useChapterLoader(book.code);
   useSeedCache(book.code, initialChapter);
 
@@ -177,7 +171,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
   // ---- prefs bootstrap ----
   useEffect(() => {
     const p = getPrefs();
-    setTheme(p.theme);
     setFontScale(nearestStep(FONT_SCALES, p.fontScale));
     setFace(FONT_FACES.includes(p.face) ? p.face : "serif");
     setLineHeight(nearestStep(LINE_HEIGHTS, p.lineHeight));
@@ -919,10 +912,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
   );
 
   // ---- prefs setters ----
-  const changeTheme = (t: ReaderTheme) => {
-    setTheme(t);
-    track("reader_theme_change", { theme: t });
-  };
   const changeFontScale = (s: number) => {
     setFontScale(s);
     setPrefs({ fontScale: s });
@@ -1287,8 +1276,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
         onLineHeight={changeLineHeight}
         margin={margin}
         onMargin={changeMargin}
-        theme={theme}
-        onTheme={changeTheme}
         mode={mode}
         onMode={changeMode}
         tapZones={tapZones}

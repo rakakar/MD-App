@@ -56,49 +56,63 @@ export function DisplaySheet({ open, onClose }: { open: boolean; onClose: () => 
 }
 
 /**
+ * The four theme chips, on their own so the reader's settings sheet shows the
+ * same control rather than its own copy.
+ *
+ * It had a copy, and the copy drifted: its dark chip was a #14110F block on a
+ * #14110F sheet, which is an empty outline. One component means the next fix
+ * lands in both places.
+ */
+export function ThemeSwatches({ rule = "--color-rule" }: { rule?: string }) {
+  const { theme, setTheme } = useDisplay();
+  return (
+    <div role="radiogroup" aria-label="Theme" className="flex gap-3">
+      {THEMES.map((t) => {
+        const active = theme === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={`${t.label} theme`}
+            onClick={() => setTheme(t.id)}
+            className="flex flex-1 flex-col items-center gap-1.5"
+          >
+            <span
+              className="flex h-11 w-full items-center justify-center rounded-xl border text-sm font-semibold"
+              style={{
+                background: t.bg,
+                color: t.ink,
+                borderColor: active ? "var(--ws-ink)" : `var(${rule})`,
+                boxShadow: active ? "0 0 0 2px var(--ws-ink)" : undefined,
+              }}
+              aria-hidden
+            >
+              Aa
+            </span>
+            <span className={`text-xs ${active ? "font-semibold" : "text-ink-soft"}`}>
+              {t.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * The controls without the sheet around them, so the Settings screen can show
  * the same three rows inline instead of hiding them behind another tap.
  */
 export function DisplayControls() {
-  const { theme, setTheme, appTextScale, setAppTextScale, boldText, setBoldText } =
-    useDisplay();
+  const { appTextScale, setAppTextScale, boldText, setBoldText } = useDisplay();
 
   return (
     <div className="space-y-6">
       <section>
         <h3 className="mb-2 text-sm font-medium">Theme</h3>
-        <div role="radiogroup" aria-label="Theme" className="flex gap-3">
-          {THEMES.map((t) => {
-            const active = theme === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                aria-label={t.label}
-                onClick={() => setTheme(t.id)}
-                className="flex flex-1 flex-col items-center gap-1.5"
-              >
-                <span
-                  className="flex h-11 w-full items-center justify-center rounded-xl border text-sm font-semibold"
-                  style={{
-                    background: t.bg,
-                    color: t.ink,
-                    borderColor: active ? "var(--ws-ink)" : "var(--color-rule)",
-                    boxShadow: active ? "0 0 0 2px var(--ws-ink)" : undefined,
-                  }}
-                  aria-hidden
-                >
-                  Aa
-                </span>
-                <span className={`text-xs ${active ? "font-semibold" : "text-ink-soft"}`}>
-                  {t.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <ThemeSwatches />
         <p className="mt-2 text-xs text-ink-soft">
           Auto follows your device&apos;s light and dark setting, and changes with it.
         </p>

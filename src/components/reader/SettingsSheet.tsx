@@ -4,17 +4,10 @@ import {
   FONT_SCALES,
   LINE_HEIGHTS,
   type ReaderFace,
-  type ReaderTheme,
   type ReadingMode,
 } from "@/lib/storage";
+import { ThemeSwatches } from "@/components/shell/DisplaySheet";
 import { Sheet } from "./Sheet";
-
-const THEMES: { id: ReaderTheme; label: string; swatch: string; ring: string }[] = [
-  { id: "system", label: "Auto", swatch: "linear-gradient(135deg,#fdfbf8 50%,#14110f 50%)", ring: "#8a8073" },
-  { id: "light", label: "Light", swatch: "#fdfbf8", ring: "#262019" },
-  { id: "sepia", label: "Sepia", swatch: "#f5ebdc", ring: "#3d2f1e" },
-  { id: "dark", label: "Dark", swatch: "#14110f", ring: "#e8e2d8" },
-];
 
 const FACES: { id: ReaderFace; label: string; stack: string }[] = [
   { id: "serif", label: "Serif", stack: "var(--font-devanagari)" },
@@ -44,8 +37,6 @@ interface SettingsSheetProps {
   onLineHeight: (v: number) => void;
   margin: number;
   onMargin: (v: number) => void;
-  theme: ReaderTheme;
-  onTheme: (v: ReaderTheme) => void;
   mode: ReadingMode;
   onMode: (v: ReadingMode) => void;
   tapZones: boolean;
@@ -153,38 +144,11 @@ export function SettingsSheet(p: SettingsSheetProps) {
           />
         </Row>
 
+        {/* The app's control, not a reader-local one — the theme has painted
+            the whole app since the shell learned to follow it, and a reader
+            changing it here is changing the same thing the "Aa" button does. */}
         <Row label="Theme">
-          <div role="radiogroup" aria-label="Theme" className="flex gap-3">
-            {THEMES.map((t) => {
-              const active = p.theme === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={`${t.label} theme`}
-                  onClick={() => p.onTheme(t.id)}
-                  className="flex flex-1 flex-col items-center gap-1.5"
-                >
-                  <span
-                    className="h-11 w-full rounded-xl border transition-shadow"
-                    style={{
-                      background: t.swatch,
-                      borderColor: active ? "var(--ws-ink)" : "var(--reader-rule)",
-                      boxShadow: active ? "0 0 0 2px var(--ws-ink)" : undefined,
-                    }}
-                    aria-hidden
-                  />
-                  <span
-                    className={`text-xs ${active ? "font-semibold" : "text-(--reader-ink-soft)"}`}
-                  >
-                    {t.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <ThemeSwatches rule="--reader-rule" />
         </Row>
 
         <Row label="Layout">
