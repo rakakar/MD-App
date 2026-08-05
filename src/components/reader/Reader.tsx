@@ -1035,10 +1035,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
             <BackIcon className="h-5 w-5" />
           </Link>
           <div className="min-w-0 flex-1 text-center">
-            <p lang="hi" className="hi truncate text-[13px] font-semibold leading-tight">
+            <p lang="hi" className="hi truncate text-xs font-semibold leading-tight">
               {chapter?.title_hi ?? book.title_hi}
             </p>
-            <p className="truncate text-[11px] leading-tight text-(--reader-ink-soft)">
+            <p className="truncate text-xs leading-tight text-(--reader-ink-soft)">
               <span lang="hi" className="hi">{book.title_hi}</span>
             </p>
           </div>
@@ -1343,7 +1343,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
             <p lang="hi" className="hi line-clamp-3 text-sm text-(--reader-ink-soft)">
               {noteTarget.text || noteTarget.para.text_hi}
             </p>
-            <p className="mt-1 text-[11px] text-(--reader-ink-soft)">
+            <p className="mt-1 text-xs text-(--reader-ink-soft)">
               {noteTarget.para.canonical_ref}
             </p>
             <textarea

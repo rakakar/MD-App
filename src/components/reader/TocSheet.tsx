@@ -65,7 +65,7 @@ export function TocSheet({
           </span>
           <span
             lang="hi"
-            className={`hi min-w-0 flex-1 text-[15px] leading-snug ${active ? "font-semibold" : ""}`}
+            className={`hi min-w-0 flex-1 text-sm leading-snug ${active ? "font-semibold" : ""}`}
           >
             {ch.title_hi}
           </span>
@@ -82,7 +82,7 @@ export function TocSheet({
       <ul>
         {frontMatter.length > 0 && (
           <>
-            <li className="px-5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-(--reader-ink-soft)">
+            <li className="px-5 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-(--reader-ink-soft)">
               Front matter
             </li>
             {frontMatter.map(row)}

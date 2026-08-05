@@ -44,12 +44,12 @@ export function FindRow({
       {row.breadcrumb.length > 0 && <BreadcrumbLine steps={row.breadcrumb} />}
       <span
         {...contentLang(title)}
-        className={`${contentLang(title).className} text-[15px] font-medium leading-snug`}
+        className={`${contentLang(title).className} text-sm font-medium leading-snug`}
       >
         {title}
       </span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
-        <span className="rounded-full bg-canvas px-2 py-0.5 text-[11px] font-semibold">
+        <span className="rounded-full bg-canvas px-2 py-0.5 text-xs font-semibold">
           {row.type === "folder" ? "Folder" : KIND_LABEL[row.kind]}
         </span>
         <ProvenanceBadge provenance={row.provenance} />

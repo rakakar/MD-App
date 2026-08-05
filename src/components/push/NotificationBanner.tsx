@@ -58,7 +58,7 @@ export function NotificationBanner() {
             type="button"
             onClick={() => void enable()}
             disabled={busy}
-            className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+            className="inline-flex min-h-11 items-center rounded-full px-4 text-xs font-semibold text-white disabled:opacity-50"
             style={{ background: "var(--ws-color)" }}
           >
             {busy ? "Enabling…" : "Enable notifications"}
@@ -66,7 +66,7 @@ export function NotificationBanner() {
           <button
             type="button"
             onClick={dismiss}
-            className="rounded-full border border-rule px-3.5 py-1.5 text-xs font-semibold text-ink"
+            className="inline-flex min-h-11 items-center rounded-full border border-rule px-4 text-xs font-semibold text-ink"
           >
             Not now
           </button>

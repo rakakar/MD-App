@@ -35,7 +35,7 @@ export function BookRail({ books }: { books: BookSummary[] }) {
             <CoverTile book={b} size="rail" />
             <span
               lang="hi"
-              className="hi mt-2.5 block line-clamp-2 text-[13px] font-semibold leading-snug group-hover:underline"
+              className="hi mt-2.5 block line-clamp-2 text-xs font-semibold leading-snug group-hover:underline"
             >
               {b.title_hi}
             </span>
@@ -44,12 +44,12 @@ export function BookRail({ books }: { books: BookSummary[] }) {
                 it is what these covers have in common, and on a translation the
                 line is the one place the two names differ. */}
             {b.author ? (
-              <span lang="hi" className="hi mt-1 block truncate text-[12px] text-ink-soft">
+              <span lang="hi" className="hi mt-1 block truncate text-xs text-ink-soft">
                 {b.author}
               </span>
             ) : null}
             {b.page_count ? (
-              <span className="mt-0.5 block text-[12px] text-muted">
+              <span className="mt-0.5 block text-xs text-ink-soft">
                 {b.page_count} pages
               </span>
             ) : null}

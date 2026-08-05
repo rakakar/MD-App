@@ -37,7 +37,7 @@ export function BottomNav() {
         <Link
           href={nav.href}
           aria-current={active ? "page" : undefined}
-          className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 text-[11.5px] font-medium transition-colors active:bg-black/5"
+          className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 text-xs font-medium transition-colors active:bg-black/5"
           style={{ color: active ? "var(--ws-ink)" : "var(--color-ink-soft)" }}
         >
           <Icon name={nav.icon} className="h-6 w-6" strokeWidth={active ? 2.1 : 1.7} />
@@ -73,7 +73,7 @@ export function Sidebar() {
         <span className="text-sm font-semibold tracking-[-0.01em]">MD Study</span>
       </div>
       <div className="flex flex-col gap-1.5 border-b border-rule p-3">
-        <p className="px-2 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+        <p className="px-2 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
           Workspace
         </p>
         <WorkspaceSwitcher variant="popover" />
@@ -102,7 +102,7 @@ export function Sidebar() {
                     <Icon name={item.icon} className="h-4.5 w-4.5" />
                     {item.label}
                     {item.isSearch && (
-                      <kbd className="ml-auto rounded border border-rule px-1.5 py-0.5 text-[10px] text-ink-soft">
+                      <kbd className="ml-auto rounded border border-rule px-1.5 py-0.5 text-xs text-ink-soft">
                         ⌘K
                       </kbd>
                     )}

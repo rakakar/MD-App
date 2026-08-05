@@ -70,7 +70,7 @@ export function AlbumAudio({
               className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-black/[.03]"
             >
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums ${
                   active ? "text-white" : "border border-rule text-ink-soft"
                 }`}
                 style={active ? { background: "var(--ws-color)" } : undefined}
@@ -80,7 +80,7 @@ export function AlbumAudio({
               <span className="min-w-0 flex-1">
                 <span
                   {...contentLang(item.title)}
-                  className={`${contentLang(item.title).className} block truncate text-[15px] leading-snug`}
+                  className={`${contentLang(item.title).className} block truncate text-sm leading-snug`}
                 >
                   {item.title}
                 </span>

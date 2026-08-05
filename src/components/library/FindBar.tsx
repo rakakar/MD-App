@@ -120,7 +120,7 @@ export function FindBar({
         unasked={q.trim() !== state.q}
         pending={pending}
       />
-      <p className={`mt-1.5 px-1 text-[11.5px] text-ink-soft ${dense ? "lg:hidden" : ""}`}>
+      <p className={`mt-1.5 px-1 text-xs text-ink-soft ${dense ? "lg:hidden" : ""}`}>
         By name, topic, year or place — not inside the files.
       </p>
     </div>

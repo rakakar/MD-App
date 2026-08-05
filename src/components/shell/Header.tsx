@@ -116,8 +116,8 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           </span>
 
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold leading-tight">{ws.name}</span>
-            <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-soft">
+            <span className="block text-sm font-semibold leading-tight">{ws.name}</span>
+            <span className="mt-0.5 block text-xs leading-snug text-ink-soft">
               {ws.tagline}
             </span>
           </span>
@@ -144,7 +144,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           aria-selected={active}
           aria-label={`${ws.name} — ${ws.tagline}`}
           onClick={() => choose(id)}
-          className={`flex items-center gap-2.5 rounded-[10px] px-2.5 py-2.5 text-[13px] transition-colors ${
+          className={`flex items-center gap-2.5 rounded-[10px] px-2.5 py-2.5 text-xs transition-colors ${
             active ? "font-semibold" : "font-medium text-ink-soft hover:bg-canvas/60"
           }`}
           style={
@@ -190,10 +190,10 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
         <div className="mx-auto h-1 w-10 rounded-full bg-rule" aria-hidden />
         <div className="mt-4 flex items-start justify-between gap-3">
           <div>
-            <p id="ws-sheet-title" className="text-[17px] font-semibold tracking-[-0.01em]">
+            <p id="ws-sheet-title" className="text-[1.0625rem] font-semibold tracking-[-0.01em]">
               Choose a workspace
             </p>
-            <p className="mt-1 text-[13px] leading-snug text-ink-soft">
+            <p className="mt-1 text-xs leading-snug text-ink-soft">
               Each workspace changes the home feed, colour and menu — the four tabs stay put.
             </p>
           </div>
@@ -299,7 +299,7 @@ function EventChip() {
     <Link
       href={`/connect/events/${next.id}`}
       onClick={() => track("header_event_chip_tap")}
-      className="flex items-center gap-1.5 rounded-full border border-rule bg-white px-2.5 py-1 text-xs font-medium text-ink transition-colors hover:border-ws-connect hover:text-ws-connect"
+      className="flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-white px-3 text-xs font-medium text-ink transition-colors hover:border-ws-connect hover:text-ws-connect"
       aria-label={`Upcoming event${date ? ` on ${shortDate(date)}` : ""}`}
     >
       <CalendarChipIcon className="h-3.5 w-3.5" />
@@ -330,7 +330,7 @@ function AvatarMenu() {
     return (
       <Link
         href="/login"
-        className="rounded-full px-3 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         style={{ background: "var(--ws-color)" }}
       >
         Sign in

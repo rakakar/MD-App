@@ -87,7 +87,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
           <SunIcon />
         </span>
         <figcaption
-          className="text-[11px] font-bold uppercase tracking-[0.09em]"
+          className="text-xs font-bold uppercase tracking-[0.09em]"
           style={{ color: "var(--color-accent-deep)" }}
         >
           {browsing ? SUTRA : `${SUTRA} of the day`}
@@ -103,7 +103,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
           >
             <ChevronDown className="h-4 w-4 rotate-90" />
           </button>
-          <span className="text-[11px] font-semibold text-[#B08968]">
+          <span className="text-xs font-semibold text-[#B08968]">
             {sutraDate(sutra.sutra_date)}
           </span>
           <button
@@ -124,7 +124,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
             Devanagari is unreadable however large the type is. */}
         <blockquote
           lang="hi"
-          className="hi mt-3 max-w-[46ch] text-[19px] leading-[1.75] text-[#2E2419] lg:text-2xl"
+          className="hi mt-3 max-w-[46ch] text-[1.1875rem] leading-[1.75] text-[#2E2419] lg:text-2xl"
         >
           {sutra.text_hi}
         </blockquote>
@@ -165,7 +165,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
           <button
             type="button"
             onClick={share}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
             style={{ background: "var(--color-accent)" }}
           >
             <ShareIcon className="h-3.5 w-3.5" />

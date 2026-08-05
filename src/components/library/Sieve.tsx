@@ -89,7 +89,7 @@ function SieveRow({
 
   return (
     <div className="flex items-start gap-2 py-1.5">
-      <span className="w-14 shrink-0 pt-1 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+      <span className="w-14 shrink-0 pt-1 text-xs font-bold uppercase tracking-wide text-ink-soft">
         {AXIS_LABEL[axis]}
       </span>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label={AXIS_LABEL[axis]}>
@@ -105,7 +105,7 @@ function SieveRow({
               // a phone without a second control beside every row.
               href={findHref(basePath, toggleChip(state, axis, chip.value))}
               aria-current={selected ? "true" : undefined}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              className={`min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
                 selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
               }`}
               style={selected ? { background: "var(--ws-color)" } : undefined}
@@ -205,7 +205,7 @@ export function Sieve({
         </span>
         {chips > 0 && (
           <span
-            className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
+            className="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold text-white"
             style={{ background: "var(--ws-color)" }}
           >
             {chips}

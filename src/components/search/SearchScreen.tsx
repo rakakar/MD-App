@@ -303,7 +303,7 @@ export function SearchScreen() {
               setError(false);
               inputRef.current?.focus();
             }}
-            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
+            className={`min-h-11 inline-flex items-center rounded-full border px-3.5 text-xs font-medium ${
               mode === m ? "border-transparent text-white" : "border-rule bg-white text-ink"
             }`}
             style={mode === m ? { background: "var(--ws-color)" } : undefined}
@@ -441,7 +441,7 @@ export function SearchScreen() {
               Nagraj ji by canonical ref, and nothing under Resources is.
             */}
             <p className="mb-3 flex flex-wrap items-baseline gap-x-2 px-1 text-xs text-ink-soft">
-              <span className="text-[11px] font-bold uppercase tracking-[0.09em]">
+              <span className="text-xs font-bold uppercase tracking-[0.09em]">
                 In the books
               </span>
               <span>{results.length === 1 ? "1 result" : `${results.length} results`}</span>
@@ -514,7 +514,7 @@ function ParibhashaCard({
       className="mb-4 overflow-hidden rounded-2xl border bg-white p-4"
       style={{ borderColor: "color-mix(in srgb, var(--ws-color) 35%, transparent)" }}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
+      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
         Paribhasha
       </p>
       <h2 lang="hi" className="hi mt-1 text-xl font-semibold leading-snug">
@@ -523,13 +523,13 @@ function ParibhashaCard({
       {word.hinglish && <p className="text-xs text-ink-soft">{word.hinglish}</p>}
 
       {word.definitions[0] && (
-        <p lang="hi" className="hi mt-2 text-[15px] leading-relaxed">
+        <p lang="hi" className="hi mt-2 text-sm leading-relaxed">
           {word.definitions[0]}
         </p>
       )}
       {open &&
         rest.map((d, i) => (
-          <p key={i} lang="hi" className="hi mt-3 text-[15px] leading-relaxed text-ink-soft">
+          <p key={i} lang="hi" className="hi mt-3 text-sm leading-relaxed text-ink-soft">
             {d}
           </p>
         ))}
@@ -670,7 +670,7 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
         className="block w-full p-4 text-left"
       >
         {badge && (
-          <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
+          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
             {badge}
             {result.timestamp !== undefined && ` · ${fmtTimestamp(result.timestamp)}`}
           </span>
@@ -680,7 +680,7 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
             — preceding paragraph, passage, following paragraph — instead of
             being repeated here. */}
         {!open && (
-          <p lang="hi" className="hi line-clamp-3 text-[15px] leading-relaxed">
+          <p lang="hi" className="hi line-clamp-3 text-sm leading-relaxed">
             <Highlight text={snippet} terms={terms} />
           </p>
         )}
@@ -700,7 +700,7 @@ function ResultCard({ result, terms }: { result: SearchResult; terms: string[] }
             {before}
           </p>
         )}
-        <p lang="hi" className="hi text-[15px] leading-relaxed">
+        <p lang="hi" className="hi text-sm leading-relaxed">
           <Highlight text={full} terms={terms} />
         </p>
         {after && (

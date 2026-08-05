@@ -44,7 +44,7 @@ export function NotificationSetting() {
             type="button"
             onClick={() => void disable()}
             disabled={busy}
-            className="shrink-0 rounded-full border border-rule px-3 py-1.5 text-sm disabled:opacity-50"
+            className="shrink-0 inline-flex min-h-11 items-center rounded-full border border-rule px-4 text-sm disabled:opacity-50"
           >
             Turn off
           </button>
@@ -53,7 +53,7 @@ export function NotificationSetting() {
             type="button"
             onClick={() => void enable()}
             disabled={busy}
-            className="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="shrink-0 inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-white disabled:opacity-50"
             style={{ background: "var(--ws-color)" }}
           >
             {busy ? "Enabling…" : "🔔 Enable notifications"}

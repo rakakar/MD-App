@@ -24,13 +24,38 @@
   --color-accent-tint: #fdf3ea;
 
   /* Warm ink & paper neutrals (spec 6A). "Muted" #9C9187 is 2.98:1 on paper
-     — decoration only, never text; secondary text uses Body. */
+     — decoration only, never text; secondary text uses Body.
+
+     That rule had drifted: muted was carrying folder descriptions, breadcrumbs,
+     item counts and page counts at 11–12px, which is the least readable thing
+     we were putting in front of a reader over forty. Those all moved to
+     ink-soft. What may still take muted is what carries no words — the
+     aria-hidden chevrons and folder glyphs — plus a control that is genuinely
+     inactive, where the colour gap *is* the state. */
   --color-surface: #fdfbf8;
   --color-canvas: #efeae3;
   --color-ink: #1a1613;
   --color-ink-soft: #4a413a;
   --color-muted: #9c9187;
   --color-rule: #e4dbd1;
+
+  /* Type scale, set for this audience rather than for the comp.
+
+     Most readers here are over forty, and the sizes a design tool makes look
+     tidy are not the sizes that hand holds up at arm's length. Tailwind's
+     stock 12px/14px pair was carrying almost the whole app — 118 uses of
+     text-xs and 162 of text-sm — so raising the pair here is the one edit
+     that reaches every screen at once.
+
+     13px is a floor, not a preference: nothing in the app is allowed below it.
+     The px literals that used to sit at 9–12px were all bumped up to meet it,
+     and they were converted to this scale rather than to a bigger px value so
+     that a future app-wide text-size setting can scale them from the root.
+     Sizes above the floor keep the spec's rhythm untouched. */
+  --text-xs: 0.8125rem; /* 13px — the floor */
+  --text-xs--line-height: calc(1.125 / 0.8125);
+  --text-sm: 0.9375rem; /* 15px — default UI and body size */
+  --text-sm--line-height: calc(1.375 / 0.9375);
 
   --font-devanagari: var(--font-tiro-devanagari), "Tiro Devanagari Hindi",
     serif;

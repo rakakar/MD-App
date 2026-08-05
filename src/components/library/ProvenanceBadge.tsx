@@ -51,7 +51,7 @@ export function ProvenanceBadge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
         tone === "dark" ? "bg-white/15 text-white/90" : "bg-canvas text-ink-soft"
       }`}
     >

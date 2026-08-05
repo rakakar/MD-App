@@ -66,7 +66,7 @@ export function Sheet({
       >
         <div className="sticky top-0 z-10 bg-(--reader-bg) pt-2.5">
           <div className="mx-auto h-1 w-9 rounded-full bg-current opacity-20" aria-hidden />
-          <p className="px-5 pb-2 pt-3 text-[11px] font-semibold uppercase tracking-wider text-(--reader-ink-soft)">
+          <p className="px-5 pb-2 pt-3 text-xs font-semibold uppercase tracking-wider text-(--reader-ink-soft)">
             {title}
           </p>
         </div>

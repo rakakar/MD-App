@@ -47,7 +47,7 @@ export default async function EventDetailPage({
       />
 
       {event.event_type && (
-        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
+        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ws-ink)" }}>
           {event.event_type}
         </p>
       )}
@@ -72,7 +72,7 @@ export default async function EventDetailPage({
       )}
 
       {event.description && (
-        <p lang="hi" className="hi mt-5 whitespace-pre-wrap text-[15px] leading-relaxed">
+        <p lang="hi" className="hi mt-5 whitespace-pre-wrap text-sm leading-relaxed">
           {event.description}
         </p>
       )}

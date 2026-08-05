@@ -138,7 +138,7 @@ export default async function BookDetailPage({
         <div className="flex items-end gap-4">
           <CoverTile book={book} size="lg" />
           <div className="min-w-0 flex-1 pb-1">
-            <h1 lang="hi" className="hi text-[21px] font-semibold leading-tight text-white">
+            <h1 lang="hi" className="hi text-[1.3125rem] font-semibold leading-tight text-white">
               {book.title_hi}
             </h1>
             {book.subtitle_hi && (
@@ -146,7 +146,7 @@ export default async function BookDetailPage({
                 {book.subtitle_hi}
               </p>
             )}
-            <p className="mt-2 text-[12.5px] font-medium text-white/75">
+            <p className="mt-2 text-xs font-medium text-white/75">
               <span {...contentLang(book.author)}>{book.author}</span>
               {mainChapters.length > 0 && (
                 <span>
@@ -163,7 +163,7 @@ export default async function BookDetailPage({
               with someone else's English.
             */}
             {book.translation_of && book.translator && (
-              <p className="mt-1 text-[12.5px] text-white/75">
+              <p className="mt-1 text-xs text-white/75">
                 Translator:{" "}
                 <span className="font-semibold text-white">{book.translator}</span>
                 {book.language_label && <span> · {book.language_label}</span>}
@@ -264,7 +264,7 @@ export default async function BookDetailPage({
                     </span>
                     <span
                       {...contentLang(t.title_hi)}
-                      className={`${contentLang(t.title_hi).className} min-w-0 flex-1 truncate text-[15px]`}
+                      className={`${contentLang(t.title_hi).className} min-w-0 flex-1 truncate text-sm`}
                     >
                       {t.title_hi}
                     </span>
@@ -309,7 +309,7 @@ export default async function BookDetailPage({
           not a card: the hero above is the page's one object, and boxing the
           contents made the chapters read as a second, competing one. */}
       <div className="mt-7 flex items-center gap-2.5 border-b border-rule pb-3">
-        <h2 className="text-[15px] font-semibold">Chapters</h2>
+        <h2 className="text-sm font-semibold">Chapters</h2>
         {mainChapters.length > 0 && (
           <span className="rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold tabular-nums text-ink-soft">
             {mainChapters.length}
@@ -318,7 +318,7 @@ export default async function BookDetailPage({
       </div>
       <ol className="pt-1">
         {frontMatter.length > 0 && (
-          <li className="px-3.5 pt-2 pb-1 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+          <li className="px-3.5 pt-2 pb-1 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
             Front matter
           </li>
         )}
@@ -336,18 +336,18 @@ export default async function BookDetailPage({
                 href={`/books/${encodeURIComponent(book.code)}/${ch.number}`}
                 className="flex items-center gap-3 rounded-[14px] px-3.5 py-3 transition-colors hover:bg-black/[.04]"
               >
-                <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-canvas text-[12.5px] font-bold tabular-nums text-ink-soft">
+                <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-canvas text-xs font-bold tabular-nums text-ink-soft">
                   {ch.number}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span
                     lang="hi"
-                    className="hi block truncate text-[14.5px] font-medium leading-snug"
+                    className="hi block truncate text-sm font-medium leading-snug"
                   >
                     {ch.title_hi}
                   </span>
                   {Number.isFinite(pages) && pages > 0 && (
-                    <span className="mt-0.5 block text-[11.5px] font-medium text-ink-soft">
+                    <span className="mt-0.5 block text-xs font-medium text-ink-soft">
                       {pages} {pages === 1 ? "page" : "pages"}
                     </span>
                   )}
@@ -371,7 +371,7 @@ export default async function BookDetailPage({
 /** A fact chip on the tinted hero (design 1C) — translucent white, not paper. */
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-[7px] bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white/90">
+    <span className="rounded-[7px] bg-white/15 px-2 py-0.5 text-xs font-semibold text-white/90">
       {children}
     </span>
   );

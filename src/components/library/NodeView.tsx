@@ -124,7 +124,7 @@ export async function NodeView({
           */}
           {node.linked_children.length > 0 && (
             <section className="mt-7">
-              <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
                 Also filed here
               </h2>
               <ul className="flex flex-col gap-3">
@@ -197,11 +197,11 @@ function AlbumHeader({
         </div>
         <div className="min-w-0 flex-1 pb-1">
           <Trail node={node} shelves={shelves} tone="dark" />
-          <h1 lang="hi" className="hi mt-0.5 text-[21px] font-semibold leading-tight text-white">
+          <h1 lang="hi" className="hi mt-0.5 text-[1.3125rem] font-semibold leading-tight text-white">
             {node.name}
           </h1>
           {nodeFacts(node) && (
-            <p lang="hi" className="hi mt-2 text-[12.5px] font-medium text-white/75">
+            <p lang="hi" className="hi mt-2 text-xs font-medium text-white/75">
               {nodeFacts(node)}
             </p>
           )}
@@ -210,7 +210,7 @@ function AlbumHeader({
                 the screen where someone actually reads or listens, and it is
                 the last place to say whose word this is. */}
             <ProvenanceBadge provenance={node.provenance} tone="dark" />
-            <span lang="hi" className="hi text-[11.5px] font-semibold text-white/75">
+            <span lang="hi" className="hi text-xs font-semibold text-white/75">
               {filesSummary(files)}
             </span>
           </div>
@@ -245,7 +245,7 @@ function WholeSetLink({ url, tone = "light" }: { url: string; tone?: "light" | "
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+      className={`mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
         dark
           ? "border-white/30 text-white/90 hover:bg-white/10"
           : "border-rule bg-white text-ink hover:bg-black/[.03]"
@@ -282,7 +282,7 @@ function IndexHeader({
       <Trail node={node} shelves={shelves} />
       <h1
         lang="hi"
-        className="hi text-[22px] font-semibold leading-tight lg:text-3xl"
+        className="hi text-[1.375rem] font-semibold leading-tight lg:text-3xl"
       >
         {node.name}
       </h1>
@@ -326,7 +326,7 @@ function Trail({
     <nav
       aria-label="Breadcrumb"
       lang="hi"
-      className={`hi mb-0.5 flex flex-wrap items-center gap-x-1 text-[11.5px] font-semibold ${
+      className={`hi mb-0.5 flex flex-wrap items-center gap-x-1 text-xs font-semibold ${
         tone === "dark" ? "text-white/70" : "text-ink-soft"
       }`}
     >

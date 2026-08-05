@@ -163,10 +163,10 @@ export function AudioMode({
           <CloseIcon className="h-5.5 w-5.5" />
         </button>
         <div className="min-w-0 flex-1 pt-1.5 text-center">
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-[#e08b3e]">
+          <p className="text-xs font-semibold tracking-[0.18em] text-[#e08b3e]">
             AUDIO MODE
           </p>
-          <p lang="hi" className="hi truncate text-[13px] text-[#f2ece2]/70">
+          <p lang="hi" className="hi truncate text-xs text-[#f2ece2]/70">
             {source.bookTitle} · {source.chapterTitle}
           </p>
         </div>
@@ -223,12 +223,12 @@ export function AudioMode({
             voice is not background audio, and finding that out with the phone
             already in a pocket is how an app loses trust. */}
         {device && (
-          <p className="mt-2 text-center text-[11px] leading-snug text-[#e08b3e]/85">
+          <p className="mt-2 text-center text-xs leading-snug text-[#e08b3e]/85">
             Device voice — stops when the screen locks
           </p>
         )}
         {rendition?.is_stale && (
-          <p className="mt-2 text-center text-[11px] text-[#f2ece2]/45">
+          <p className="mt-2 text-center text-xs text-[#f2ece2]/45">
             This audio is of an earlier version of the text
           </p>
         )}

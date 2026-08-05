@@ -260,7 +260,7 @@ export function WordRow({ word }: { word: ParibhashaWord }) {
           <DefinitionList definitions={word.definitions} segments={segments} />
         ) : (
           word.definitions[0] && (
-            <p lang="hi" className="hi line-clamp-3 text-[15px] leading-relaxed">
+            <p lang="hi" className="hi line-clamp-3 text-sm leading-relaxed">
               <DefinitionText text={word.definitions[0]} segments={segments[0]} />
             </p>
           )

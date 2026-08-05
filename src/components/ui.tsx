@@ -34,7 +34,7 @@ export function PageContainer({
  * Section headings come in two tiers, which the spec is consistent about and
  * which carry different meaning:
  *
- * - `eyebrow` (11px / 700 / uppercase) labels a shelf of things that belong to
+ * - `eyebrow` (13px / 700 / uppercase) labels a shelf of things that belong to
  *   the page — CONTINUE READING, BOOKS, EXPLORE WORKSPACES. It is a
  *   caption; the covers under it are the content.
  * - `title` (17px, sentence case, full ink) heads a section that is its own
@@ -57,8 +57,8 @@ export function SectionHeading({
       <h2
         className={
           tier === "title"
-            ? "text-[17px] font-semibold tracking-[-0.01em] text-ink"
-            : "text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft"
+            ? "text-[1.0625rem] font-semibold tracking-[-0.01em] text-ink"
+            : "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
         }
       >
         {children}
@@ -73,7 +73,7 @@ export function SeeAll({ href, children }: { href: string; children: React.React
   return (
     <Link
       href={href}
-      className="shrink-0 text-xs font-semibold transition-opacity hover:opacity-75"
+      className="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold transition-opacity hover:opacity-75"
       style={{ color: "var(--ws-ink)" }}
     >
       {children} →
@@ -104,7 +104,7 @@ export function FilterChips({
 }) {
   if (options.length === 0) return null;
   const chip = (selected: boolean) =>
-    `rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+    `min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
       selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
     }`;
   return (
@@ -154,7 +154,9 @@ export function SegmentedNav({
           key={it.href}
           href={it.href}
           aria-current={it.active ? "page" : undefined}
-          className={`px-4 py-1.5 ${it.active ? "font-semibold text-white" : "text-ink"}`}
+          className={`inline-flex min-h-11 items-center px-4 ${
+            it.active ? "font-semibold text-white" : "text-ink"
+          }`}
           style={it.active ? { background: "var(--ws-color)" } : undefined}
         >
           {it.label}
@@ -173,8 +175,10 @@ export function EmptyState({
 }) {
   return (
     <div className="rounded-2xl border border-dashed border-rule bg-white/50 p-8 text-center">
-      <p className="text-sm font-medium text-ink">{title}</p>
-      {hint && <p className="mt-1 text-xs text-ink-soft">{hint}</p>}
+      <p className="text-base font-medium text-ink">{title}</p>
+      {/* An empty state is a whole sentence addressed to the reader, not a
+          caption — it gets body size, not the metadata floor. */}
+      {hint && <p className="mt-1 text-sm text-ink-soft">{hint}</p>}
     </div>
   );
 }
@@ -182,8 +186,8 @@ export function EmptyState({
 export function ErrorState({ message }: { message?: string }) {
   return (
     <div className="rounded-2xl border border-rule bg-white p-8 text-center">
-      <p className="text-sm font-medium text-ink">Couldn&apos;t load this right now.</p>
-      <p className="mt-1 text-xs text-ink-soft">
+      <p className="text-base font-medium text-ink">Couldn&apos;t load this right now.</p>
+      <p className="mt-1 text-sm text-ink-soft">
         {message ?? "Check your connection and try again."}
       </p>
     </div>

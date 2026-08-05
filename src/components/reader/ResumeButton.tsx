@@ -76,7 +76,7 @@ export function ResumeButton({
   return (
     <Link
       href={href}
-      className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[14px] bg-white px-4 text-[14.5px] font-semibold text-ink shadow-[0_8px_18px_-8px_rgba(0,0,0,.5)] transition-transform active:scale-[.98]"
+      className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[14px] bg-white px-4 text-sm font-semibold text-ink shadow-[0_8px_18px_-8px_rgba(0,0,0,.5)] transition-transform active:scale-[.98]"
     >
       <PlayIcon className="h-4 w-4" />
       {r ? (

@@ -58,10 +58,10 @@ export default async function LibraryTopicPage({
 
   return (
     <PageContainer size="shelf">
-      <p className="text-[11.5px] font-bold uppercase tracking-wide text-ink-soft">Topic</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">Topic</p>
       <h1
         {...contentLang(row.name)}
-        className={`${contentLang(row.name).className} mt-0.5 text-[22px] font-semibold leading-tight lg:text-3xl`}
+        className={`${contentLang(row.name).className} mt-0.5 text-[1.375rem] font-semibold leading-tight lg:text-3xl`}
       >
         {row.name}
       </h1>

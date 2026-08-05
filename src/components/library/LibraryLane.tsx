@@ -35,7 +35,7 @@ export function LibraryLane({ rows }: { rows: LibrarySearchRow[] }) {
 
   return (
     <section aria-label="Library" className="mt-8">
-      <h2 className="text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+      <h2 className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
         Library materials
       </h2>
       {/*
@@ -115,7 +115,7 @@ function ProvenanceFilter({
             type="button"
             onClick={() => onChange(selected ? null : value)}
             aria-pressed={selected}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            className={`min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
               selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
             }`}
             style={selected ? { background: "var(--ws-color)" } : undefined}

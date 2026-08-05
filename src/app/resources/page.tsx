@@ -76,10 +76,10 @@ export default async function ResourcesPage({
           `root.name` — which said "संसाधन" under an eyebrow already reading
           "Library", the same word twice, and left the heading of a bottom-nav
           destination editable in the admin. */}
-      <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+      <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
         Resources
       </p>
-      <h1 className="mt-0.5 font-display text-[26px] font-medium tracking-[-0.015em] lg:text-4xl">
+      <h1 className="mt-0.5 font-display text-[1.625rem] font-medium tracking-[-0.015em] lg:text-4xl">
         Library
       </h1>
       <p className="mt-1 text-sm text-ink-soft">

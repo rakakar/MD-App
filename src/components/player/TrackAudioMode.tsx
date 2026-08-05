@@ -96,9 +96,9 @@ export function TrackAudioMode() {
           <CloseIcon className="h-5.5 w-5.5" />
         </button>
         <div className="min-w-0 flex-1 pt-1.5 text-center">
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-[#e08b3e]">AUDIO MODE</p>
+          <p className="text-xs font-semibold tracking-[0.18em] text-[#e08b3e]">AUDIO MODE</p>
           {source.subtitle && (
-            <p {...subtitle} className={`${subtitle.className} truncate text-[13px] text-[#f2ece2]/70`}>
+            <p {...subtitle} className={`${subtitle.className} truncate text-xs text-[#f2ece2]/70`}>
               {source.subtitle}
             </p>
           )}

@@ -275,7 +275,7 @@ function Lightbox({
           onClick={() => onIndex(index - 1)}
           disabled={index === 0}
         />
-        <p className="text-center text-[11px] text-white/50">
+        <p className="text-center text-xs text-white/50">
           Pinch or double-tap to zoom
         </p>
         <NavButton

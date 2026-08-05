@@ -123,7 +123,7 @@ export function ContinueReading({
 
   return (
     <section aria-label={heading}>
-      <h2 className="mb-3 mt-7 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+      <h2 className="mb-3 mt-7 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
         {heading}
       </h2>
       {/* A snapping rail rather than a stack (design 1A/1B): the card a reader
@@ -152,12 +152,12 @@ export function ContinueReading({
                 size="resume"
               />
               <span className="min-w-0 flex-1">
-                <span lang="hi" className="hi block truncate text-[17px] font-semibold">
+                <span lang="hi" className="hi block truncate text-[1.0625rem] font-semibold">
                   {c.title}
                 </span>
                 <span
                   lang="hi"
-                  className="hi mt-1 block truncate text-[12.5px] font-medium text-ink-soft"
+                  className="hi mt-1 block truncate text-xs font-medium text-ink-soft"
                 >
                   {chapterLine(c.chapter, c.chapterTitle)}
                 </span>
@@ -169,13 +169,13 @@ export function ContinueReading({
                         are, and the percentage on the right. */}
                     <ProgressBar percent={c.percent} showValue={false} className="mt-3" />
                     <span className="mt-1.5 flex items-baseline justify-between gap-2">
-                      <span className="truncate text-[12.5px] font-medium text-ink-soft">
+                      <span className="truncate text-xs font-medium text-ink-soft">
                         {c.page !== null && c.pageCount !== null
                           ? `Page ${c.page} of ${c.pageCount}`
                           : ""}
                       </span>
                       <span
-                        className="shrink-0 text-[13px] font-bold tabular-nums"
+                        className="shrink-0 text-xs font-bold tabular-nums"
                         style={{ color: "var(--ws-ink)" }}
                       >
                         {Math.round(c.percent)}%
@@ -184,7 +184,7 @@ export function ContinueReading({
                   </>
                 ) : (
                   <span
-                    className="mt-2.5 block text-[13px] font-semibold"
+                    className="mt-2.5 block text-xs font-semibold"
                     style={{ color: "var(--ws-ink)" }}
                   >
                     Resume →

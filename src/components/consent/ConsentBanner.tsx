@@ -64,7 +64,7 @@ export function ConsentBanner() {
         <button
           type="button"
           onClick={() => choose(true)}
-          className="rounded-full px-4 py-1.5 text-sm font-semibold text-white"
+          className="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
           style={{ background: "var(--ws-color)" }}
         >
           Allow analytics
@@ -72,7 +72,7 @@ export function ConsentBanner() {
         <button
           type="button"
           onClick={() => choose(false)}
-          className="rounded-full border border-rule px-4 py-1.5 text-sm font-semibold text-ink"
+          className="inline-flex min-h-11 items-center rounded-full border border-rule px-5 text-sm font-semibold text-ink"
         >
           No thanks
         </button>

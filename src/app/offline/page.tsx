@@ -15,7 +15,7 @@ export default function OfflinePage() {
       </p>
       <Link
         href="/me/settings"
-        className="mt-4 rounded-full px-4 py-1.5 text-sm font-semibold text-white"
+        className="mt-4 inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
         style={{ background: "var(--ws-color)" }}
       >
         My downloads

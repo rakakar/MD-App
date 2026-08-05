@@ -37,7 +37,7 @@ export function ExploreWorkspaces({ current }: { current: WorkspaceId }) {
               >
                 <WorkspaceIcon id={id} />
               </span>
-              <span className="text-[13.5px] font-semibold tracking-[-0.01em]">
+              <span className="text-sm font-semibold tracking-[-0.01em]">
                 {ws.name}
               </span>
             </Link>

@@ -37,7 +37,7 @@ function EventRow({ e }: { e: EventItem }) {
         style={{ background: "var(--ws-color)" }}
       >
         <span className="text-base font-bold leading-none">{d ? d.getDate() : "?"}</span>
-        <span className="text-[10px] uppercase">
+        <span className="text-xs uppercase">
           {d ? d.toLocaleString("en-IN", { month: "short" }) : ""}
         </span>
       </div>
@@ -48,7 +48,7 @@ function EventRow({ e }: { e: EventItem }) {
           {eventLocation(e) ? ` · ${eventLocation(e)}` : ""}
         </p>
         {type && (
-          <p lang="hi" className="hi mt-1 inline-block rounded-full border border-rule px-2 py-0.5 text-[11px] text-ink-soft">
+          <p lang="hi" className="hi mt-1 inline-block rounded-full border border-rule px-2 py-0.5 text-xs text-ink-soft">
             {eventTypeLabel(type)}
           </p>
         )}
@@ -99,17 +99,17 @@ function MonthCalendar({ events }: { events: EventItem[] }) {
   return (
     <div className="rounded-2xl border border-rule bg-white p-4">
       <div className="flex items-center justify-between">
-        <button type="button" onClick={() => setOffset((o) => o - 1)} aria-label="Previous month" className="rounded-full px-2 py-1 hover:bg-black/5">
+        <button type="button" onClick={() => setOffset((o) => o - 1)} aria-label="Previous month" className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-black/5">
           ←
         </button>
         <p className="text-sm font-semibold">
           {month.toLocaleString("en-IN", { month: "long", year: "numeric" })}
         </p>
-        <button type="button" onClick={() => setOffset((o) => o + 1)} aria-label="Next month" className="rounded-full px-2 py-1 hover:bg-black/5">
+        <button type="button" onClick={() => setOffset((o) => o + 1)} aria-label="Next month" className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-black/5">
           →
         </button>
       </div>
-      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] text-ink-soft">
+      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-xs text-ink-soft">
         {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
           <span key={i}>{d}</span>
         ))}
@@ -203,7 +203,7 @@ export function EventsView({ events }: { events: EventItem[] }) {
                   role="radio"
                   aria-checked={selected}
                   onClick={() => setTypeFilter(selected ? null : t)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                  className={`min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium ${
                     selected ? "border-transparent text-white" : "border-rule bg-white text-ink"
                   }`}
                   style={selected ? { background: "var(--ws-color)" } : undefined}

@@ -124,7 +124,7 @@ export function SettingsSheet(p: SettingsSheetProps) {
                   >
                     सत्य
                   </span>
-                  <span className={`block text-[11px] ${active ? "font-semibold" : ""}`}>
+                  <span className={`block text-xs ${active ? "font-semibold" : ""}`}>
                     {f.label}
                   </span>
                 </button>
@@ -175,7 +175,7 @@ export function SettingsSheet(p: SettingsSheetProps) {
                     aria-hidden
                   />
                   <span
-                    className={`text-[11px] ${active ? "font-semibold" : "text-(--reader-ink-soft)"}`}
+                    className={`text-xs ${active ? "font-semibold" : "text-(--reader-ink-soft)"}`}
                   >
                     {t.label}
                   </span>

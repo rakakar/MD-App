@@ -41,8 +41,8 @@ const BOX: Record<Size, string> = {
 };
 
 const LETTER: Record<Size, string> = {
-  resume: "text-[24px]",
-  rail: "text-[26px]",
+  resume: "text-2xl",
+  rail: "text-[1.625rem]",
   grid: "text-2xl",
   lg: "text-3xl",
 };
@@ -147,7 +147,7 @@ export function ProgressBar({
       </span>
       {showValue && (
         <span
-          className="shrink-0 text-[11px] font-bold tabular-nums"
+          className="shrink-0 text-xs font-bold tabular-nums"
           style={{ color: "var(--ws-ink)" }}
         >
           {pct}%

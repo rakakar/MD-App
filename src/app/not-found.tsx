@@ -21,7 +21,7 @@ export default function NotFound() {
   return (
     <PageContainer size="shelf">
       <div className="mx-auto max-w-md py-16 text-center">
-        <h1 className="text-[22px] font-semibold">This page was not found</h1>
+        <h1 className="text-[1.375rem] font-semibold">This page was not found</h1>
         <p className="mt-2 text-sm text-ink-soft">
           The page you followed is not here.
         </p>

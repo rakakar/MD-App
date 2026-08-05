@@ -119,7 +119,7 @@ export default async function OriginalsHome() {
                           <span lang="hi" className="hi block truncate text-sm font-semibold">
                             {eventTitle(e)}
                           </span>
-                          <span className="mt-1 flex items-center gap-1 text-[11.5px] text-ink-soft">
+                          <span className="mt-1 flex items-center gap-1 text-xs text-ink-soft">
                             <span aria-hidden className="shrink-0">
                               <PinIcon />
                             </span>

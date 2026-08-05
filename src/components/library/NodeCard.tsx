@@ -127,28 +127,33 @@ export function NodeCardView({
             three lines and left its neighbour two-thirds empty. */}
         <span
           {...contentLang(card.name)}
-          className={`${contentLang(card.name).className} line-clamp-2 text-[15px] font-semibold leading-snug group-hover:underline`}
+          className={`${contentLang(card.name).className} line-clamp-2 text-sm font-semibold leading-snug group-hover:underline`}
         >
           {card.name}
         </span>
         {card.description && (
-          // Two lines, not one. This line is doing more work than it looks:
+          // Three lines, not one. This line is doing more work than it looks:
           // a folder is named in the language its material is in, so on a
           // Hindi shelf the description is where an English reader is met —
           // "प्रवचन" over "Audio — Nagraj ji's recorded discourses". Clipped to
           // one line it became "Audio — Nagraj ji's record…", which is the
-          // half of the sentence that says nothing. Still clamped, because
-          // four lines would push the count off the bottom of the tile.
-          <span className="mt-0.5 line-clamp-2 text-[11.5px] leading-snug text-muted">
+          // half of the sentence that says nothing.
+          //
+          // The one description in the app that keeps the 13px floor rather
+          // than going up to body size with its siblings: a tile is half a
+          // phone wide, and at 15px two lines came back to "Audio — Nagraj
+          // ji's recorded…" — the very clipping the lines above exist to
+          // prevent. Legibility here is bought with the third line instead.
+          <span className="mt-0.5 line-clamp-3 text-xs leading-snug text-ink-soft">
             {card.description}
           </span>
         )}
         <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2.5">
           <span
-            className="text-[11.5px] font-semibold"
+            className="text-xs font-semibold"
             style={{ color: weight ? "var(--ws-ink)" : undefined }}
           >
-            {weight || <span className="text-muted">Nothing yet</span>}
+            {weight || <span className="text-ink-soft">Nothing yet</span>}
           </span>
           <ProvenanceBadge provenance={card.provenance} />
         </span>
@@ -165,14 +170,14 @@ export function NodeCardView({
         <span className="min-w-0 flex-1">
           <span
             {...contentLang(card.name)}
-            className={`${contentLang(card.name).className} block text-[19px] font-semibold leading-snug group-hover:underline`}
+            className={`${contentLang(card.name).className} block text-[1.1875rem] font-semibold leading-snug group-hover:underline`}
           >
             {card.name}
           </span>
           {card.description && (
             <span
               {...contentLang(card.description)}
-              className={`${contentLang(card.description).className} mt-1 block text-[13px] leading-relaxed text-ink-soft`}
+              className={`${contentLang(card.description).className} mt-1 block text-sm leading-relaxed text-ink-soft`}
             >
               {card.description}
             </span>
@@ -182,10 +187,10 @@ export function NodeCardView({
                 published so that content published inside them is visible
                 (§13.3). It says so rather than showing a bare "0". */}
             <span
-              className="text-[11.5px] font-semibold"
+              className="text-xs font-semibold"
               style={{ color: summary ? "var(--ws-ink)" : undefined }}
             >
-              {summary || <span className="text-muted">Nothing yet</span>}
+              {summary || <span className="text-ink-soft">Nothing yet</span>}
             </span>
             <ProvenanceBadge provenance={card.provenance} />
           </span>
@@ -209,7 +214,7 @@ export function NodeCardView({
         {home && home.length > 0 && <BreadcrumbLine steps={home} />}
         <span
           {...contentLang(card.name)}
-          className={`${contentLang(card.name).className} block text-[15px] font-medium leading-snug group-hover:underline`}
+          className={`${contentLang(card.name).className} block text-sm font-medium leading-snug group-hover:underline`}
         >
           {card.name}
         </span>
@@ -225,7 +230,7 @@ export function NodeCardView({
         {card.description && (
           <span
             {...contentLang(card.description)}
-            className={`${contentLang(card.description).className} mt-1 block text-xs leading-relaxed text-ink-soft`}
+            className={`${contentLang(card.description).className} mt-1 block text-sm leading-relaxed text-ink-soft`}
           >
             {card.description}
           </span>
@@ -248,7 +253,7 @@ export function NodeCardView({
  */
 export function BreadcrumbLine({ steps }: { steps: BreadcrumbStep[] }) {
   return (
-    <span lang="hi" className="hi mb-0.5 block truncate text-[11px] text-muted">
+    <span lang="hi" className="hi mb-0.5 block truncate text-xs text-ink-soft">
       {steps.map((s) => s.name).join(" / ")}
     </span>
   );

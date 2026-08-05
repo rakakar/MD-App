@@ -169,7 +169,7 @@ function TopicCard({
         <p className="mt-3 border-t border-rule pt-2.5">
           <Link
             href={`/library?topic=${encodeURIComponent(single.topic.code)}`}
-            className="text-[11.5px] font-semibold"
+            className="text-xs font-semibold"
             style={{ color: "var(--ws-ink)" }}
           >
             <span {...contentLang(single.topic.name)}>{single.topic.name}</span>
@@ -263,7 +263,7 @@ function SieveCard({
                   key={chip.value}
                   href={findHref(basePath, toggleChip(state, "kind", chip.value))}
                   aria-current={on ? "true" : undefined}
-                  className="flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2 text-[13px] font-medium transition-colors"
+                  className="flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2 text-xs font-medium transition-colors"
                   style={
                     on
                       ? {
@@ -278,7 +278,7 @@ function SieveCard({
                     <KindIcon kind={chip.value as FileKind} />
                   </span>
                   <span className="min-w-0 flex-1 truncate">{chipLabel("kind", chip)}</span>
-                  <span className="shrink-0 text-[11.5px] tabular-nums text-ink-soft">
+                  <span className="shrink-0 text-xs tabular-nums text-ink-soft">
                     {chip.count}
                   </span>
                 </Link>
@@ -371,14 +371,14 @@ function Panel({
           {icon}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[13.5px] font-semibold leading-tight">{title}</span>
-          <span className="mt-0.5 block truncate text-[11.5px] leading-snug text-ink-soft">
+          <span className="block text-sm font-semibold leading-tight">{title}</span>
+          <span className="mt-0.5 block truncate text-xs leading-snug text-ink-soft">
             {summary}
           </span>
         </span>
         {selected > 0 && (
           <span
-            className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
+            className="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold text-white"
             style={{ background: "var(--ws-color)" }}
           >
             {selected}
@@ -419,6 +419,10 @@ function Footer({
           Clear all
         </Link>
       ) : (
+        // The one legitimate `text-muted` on a piece of text: this is the
+        // inactive twin of the link above, and the colour gap is the only
+        // thing saying so. WCAG exempts inactive controls from the contrast
+        // floor for exactly this reason.
         <span className="text-xs text-muted">Clear all</span>
       )}
       <span
@@ -433,7 +437,7 @@ function Footer({
 
 function Legend({ en, note }: { en: string; note?: string }) {
   return (
-    <p className="mb-1.5 flex items-baseline justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+    <p className="mb-1.5 flex items-baseline justify-between gap-2 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
       <span>{en}</span>
       {note && <span className="font-medium tabular-nums normal-case tracking-normal">{note}</span>}
     </p>
@@ -459,7 +463,7 @@ function Chip({
       aria-current={on ? "true" : undefined}
       // Tapping a lit chip clears it — the only way back out of one on a phone
       // without a second control beside every row.
-      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+      className={`min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
         on ? "border-transparent text-white" : "border-rule bg-white text-ink"
       }`}
       style={on ? { background: "var(--ws-color)" } : undefined}

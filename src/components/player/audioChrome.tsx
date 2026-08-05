@@ -156,7 +156,7 @@ export function ScrubBar({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-11 shrink-0 text-[11px] tabular-nums text-[#f2ece2]/55">
+      <span className="w-11 shrink-0 text-xs tabular-nums text-[#f2ece2]/55">
         {fmt(positionMs)}
       </span>
       <input
@@ -173,7 +173,7 @@ export function ScrubBar({
           }%, rgba(255,255,255,.14) 0)`,
         }}
       />
-      <span className="w-11 shrink-0 text-end text-[11px] tabular-nums text-[#f2ece2]/55">
+      <span className="w-11 shrink-0 text-end text-xs tabular-nums text-[#f2ece2]/55">
         {fmt(durationMs)}
       </span>
     </div>

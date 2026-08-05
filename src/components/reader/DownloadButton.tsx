@@ -98,14 +98,14 @@ export function DownloadButton({
         className="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] border border-white/25 bg-white/12 text-white transition-colors hover:bg-white/20 disabled:opacity-70"
       >
         {status === "downloading" ? (
-          <span className="text-[11px] font-bold tabular-nums">{progress}%</span>
+          <span className="text-xs font-bold tabular-nums">{progress}%</span>
         ) : (
           <DownloadIcon className="h-5 w-5" />
         )}
         {status === "done" && (
           <span
             aria-hidden
-            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-black/20"
+            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-black/20"
             style={{ background: "var(--color-accent)" }}
           >
             ✓
@@ -124,7 +124,7 @@ export function DownloadButton({
         title="Downloaded for offline reading — tap to remove"
       >
         <span
-          className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white"
+          className="flex h-4 w-4 items-center justify-center rounded-full text-xs text-white"
           style={{ background: "var(--ws-color)" }}
         >
           ✓

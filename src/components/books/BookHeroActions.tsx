@@ -43,7 +43,7 @@ export function BookHeroActions({
               style={{ width: `${Math.round(resume.percent)}%` }}
             />
           </div>
-          <span className="shrink-0 text-[11px] font-bold tabular-nums text-white/90">
+          <span className="shrink-0 text-xs font-bold tabular-nums text-white/90">
             {Math.round(resume.percent)}% complete
           </span>
         </div>

@@ -189,7 +189,7 @@ function PlayerBarInner() {
             <span className="block truncate text-xs text-ink-soft">
               {subtitle}
               {rendition?.is_stale && (
-                <span className="ml-1 text-[10px] text-ink-soft/80" title="Text was edited after this audio was generated">
+                <span className="ml-1 text-xs text-ink-soft/80" title="Text was edited after this audio was generated">
                   · Older audio
                 </span>
               )}
@@ -230,7 +230,7 @@ function PlayerBarInner() {
                     }`}
                   >
                     {r.voice_label}
-                    {r.is_stale && <span className="ml-1 text-[10px] text-ink-soft">·</span>}
+                    {r.is_stale && <span className="ml-1 text-xs text-ink-soft">·</span>}
                   </button>
                 ))}
               </div>

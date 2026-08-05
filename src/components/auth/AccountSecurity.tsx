@@ -81,7 +81,7 @@ export function AccountSecurity() {
   const field =
     "mt-1 w-full rounded-xl border border-rule bg-white p-2.5 text-sm outline-none focus:border-(--ws-color)";
   const button =
-    "mt-2 self-start rounded-full px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-60";
+    "mt-2 self-start inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white disabled:opacity-60";
 
   return (
     <div className="mt-3 space-y-3">

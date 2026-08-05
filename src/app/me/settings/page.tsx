@@ -61,7 +61,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="shrink-0 rounded-full border border-rule px-3 py-1.5 text-sm"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-rule px-4 text-sm"
             >
               Sign out
             </button>
@@ -71,7 +71,7 @@ export default function SettingsPage() {
             <p className="text-sm text-ink-soft">Reading as guest — saved on this device only.</p>
             <Link
               href="/login?next=/me/settings"
-              className="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold text-white"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold text-white"
               style={{ background: "var(--ws-color)" }}
             >
               Sign in
@@ -92,7 +92,7 @@ export default function SettingsPage() {
               role="radio"
               aria-checked={prefs.theme === t}
               onClick={() => update({ theme: t })}
-              className={`rounded-full border px-3 py-1 text-xs capitalize ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-4 text-xs capitalize ${
                 prefs.theme === t ? "border-transparent font-semibold text-white" : "border-rule"
               }`}
               style={prefs.theme === t ? { background: "var(--ws-color)" } : undefined}
@@ -118,7 +118,7 @@ export default function SettingsPage() {
               role="radio"
               aria-checked={prefs.readingMode === m}
               onClick={() => update({ readingMode: m })}
-              className={`rounded-full border px-3 py-1 text-xs ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-4 text-xs ${
                 prefs.readingMode === m
                   ? "border-transparent font-semibold text-white"
                   : "border-rule"
@@ -154,7 +154,7 @@ export default function SettingsPage() {
                   onClick={() =>
                     void removeDownload(d.code).then(() => listDownloads().then(setDownloads))
                   }
-                  className="shrink-0 rounded-full border border-rule px-3 py-1 text-xs"
+                  className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-rule px-4 text-xs"
                 >
                   Remove
                 </button>
@@ -185,7 +185,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => void removeAllAudio().then(() => setAudio([]))}
-                className="shrink-0 rounded-full border border-rule px-3 py-1 text-xs"
+                className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-rule px-4 text-xs"
               >
                 Remove all
               </button>
@@ -206,7 +206,7 @@ export default function SettingsPage() {
                     onClick={() =>
                       void removeAudio(a.url).then(() => listSavedAudio().then(setAudio))
                     }
-                    className="shrink-0 rounded-full border border-rule px-3 py-1 text-xs"
+                    className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-rule px-4 text-xs"
                   >
                     Remove
                   </button>
@@ -230,7 +230,11 @@ export default function SettingsPage() {
           onClick={() =>
             update({ consent: prefs.consent === "granted" ? "denied" : "granted" })
           }
-          className={`h-6 w-11 rounded-full p-0.5 transition-colors ${
+          // A switch is drawn 24px tall because that is what a switch looks
+          // like. The pseudo-element grows the *target* to 44px without
+          // growing the track — the reader's own toggles get this for free by
+          // sitting inside a <label>, and this one has no label to sit in.
+          className={`relative h-6 w-11 rounded-full p-0.5 transition-colors before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-[''] ${
             prefs.consent === "granted" ? "" : "bg-rule"
           }`}
           style={prefs.consent === "granted" ? { background: "var(--ws-color)" } : undefined}

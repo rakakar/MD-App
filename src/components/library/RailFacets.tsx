@@ -93,7 +93,7 @@ export function RailFacets({
                 key={band.label}
                 href={findHref(basePath, toggleGroup(state, "year", band.values))}
                 aria-current={on ? "true" : undefined}
-                className={`rounded-full border px-2.5 py-1 text-[11.5px] font-medium tabular-nums transition-colors ${
+                className={`min-h-11 inline-flex items-center rounded-full border px-2.5 text-xs font-medium tabular-nums transition-colors ${
                   on ? "border-transparent text-white" : "border-rule bg-white text-ink hover:bg-black/[.03]"
                 }`}
                 style={on ? { background: "var(--ws-color)" } : undefined}
@@ -168,7 +168,7 @@ const AXIS_EN: Record<FindAxis, string> = {
 function Axis({ en, children }: { en: string; children: React.ReactNode }) {
   return (
     <section>
-      <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+      <p className="mb-1.5 px-1 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
         {en}
       </p>
       {children}
@@ -194,7 +194,7 @@ function FacetRow({
     <Link
       href={href}
       aria-current={on ? "true" : undefined}
-      className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] transition-colors ${
+      className={`flex min-h-11 items-center gap-2 rounded-lg px-2 text-xs transition-colors ${
         on ? "font-semibold" : "text-ink hover:bg-black/[.04]"
       }`}
       style={
@@ -212,7 +212,7 @@ function FacetRow({
       <span {...contentLang(label)} className={`${contentLang(label).className} min-w-0 flex-1 truncate`}>
         {label}
       </span>
-      <span className="shrink-0 text-[11px] font-medium tabular-nums text-ink-soft">
+      <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
         {count}
       </span>
     </Link>
@@ -266,7 +266,7 @@ function TopicRows({
 
   return (
     <section>
-      <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-soft">
+      <p className="mb-1.5 px-1 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
         Topics
       </p>
       {live.map(({ topic, count }) => (

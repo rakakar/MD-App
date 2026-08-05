@@ -59,15 +59,15 @@ export async function PhotoStrip({
   return (
     <section className="mt-8">
       <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="text-[15px] font-semibold tracking-[-0.01em]">
+        <h2 className="text-sm font-semibold tracking-[-0.01em]">
           Photos
-          <span className="ms-1.5 text-[12.5px] font-medium text-ink-soft">
+          <span className="ms-1.5 text-xs font-medium text-ink-soft">
             · <span className="tabular-nums">{total}</span>
           </span>
         </h2>
         <Link
           href={gallery}
-          className="text-[12.5px] font-semibold"
+          className="text-xs font-semibold"
           style={{ color: "var(--ws-ink)" }}
         >
           Open gallery →
@@ -105,7 +105,7 @@ export async function PhotoStrip({
           <li>
             <Link
               href={gallery}
-              className="flex aspect-square items-center justify-center gap-1 rounded-xl border border-rule text-[12.5px] font-semibold text-white"
+              className="flex aspect-square items-center justify-center gap-1 rounded-xl border border-rule text-xs font-semibold text-white"
               style={{ background: "var(--ws-color)" }}
               aria-label={`${rest} more photographs`}
             >

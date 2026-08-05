@@ -49,7 +49,7 @@ export function FileList({
           {groups.length > 1 && (
             <h2
               lang="hi"
-              className="hi mb-3 text-[11px] font-bold uppercase tracking-[0.09em] text-ink-soft"
+              className="hi mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
             >
               {KIND_LABEL[kind]} · {kindFiles.length}
             </h2>
@@ -150,7 +150,7 @@ function FileHeading({ file }: { file: LibraryFile | LocatedFile }) {
       <Located file={file} />
       <span
         {...contentLang(file.title)}
-        className={`${contentLang(file.title).className} block text-[15px] font-medium leading-snug`}
+        className={`${contentLang(file.title).className} block text-sm font-medium leading-snug`}
       >
         {file.title}
       </span>

@@ -28,7 +28,7 @@ function SyncCta() {
       </p>
       <Link
         href="/login?next=/me"
-        className="mt-3 inline-block rounded-full px-4 py-1.5 text-sm font-semibold text-white"
+        className="mt-3 inline-block inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
         style={{ background: "var(--ws-color)" }}
       >
         Sign in to sync across devices

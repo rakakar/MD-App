@@ -135,7 +135,7 @@ export async function WorkspaceShelf({
           against the shelf's weight, as the design draws it — a full-width
           search field over a 3-up grid is a form, not a page header. */}
       <div className="lg:mb-1 lg:flex lg:items-center lg:justify-between lg:gap-6 lg:border-b lg:border-rule lg:pb-4">
-        <p className="hidden shrink-0 text-[13px] text-ink-soft lg:block">
+        <p className="hidden shrink-0 text-xs text-ink-soft lg:block">
           {itemCount > 0 && <span className="tabular-nums">{itemCount} items</span>}
           {itemCount > 0 && doors.length > 0 && " · "}
           {doors.length > 0 && (
@@ -237,9 +237,9 @@ function ShelfHeading({
   const hours = Math.round(total.duration / 3600);
   return (
     <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">Collections</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">Collections</p>
       {total.items > 0 && (
-        <p className="text-[11.5px] tabular-nums text-muted">
+        <p className="text-xs tabular-nums text-ink-soft">
           {total.items} {total.items === 1 ? "item" : "items"}
           {hours > 0 && ` · ${hours} ${hours === 1 ? "hour" : "hours"}`}
         </p>

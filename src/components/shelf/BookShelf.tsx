@@ -107,7 +107,7 @@ export function ShelfCard({ book }: { book: BookSummary }) {
       <CoverTile book={book} size="grid" />
       <span
         lang="hi"
-        className="hi line-clamp-2 text-[13.5px] font-semibold leading-snug group-hover:underline"
+        className="hi line-clamp-2 text-sm font-semibold leading-snug group-hover:underline"
       >
         {book.title_hi}
       </span>
@@ -115,18 +115,18 @@ export function ShelfCard({ book }: { book: BookSummary }) {
           a cover expecting the reader and gets a scanned PDF has been misled
           by the card, and the fact is one word long. */}
       {book.is_pdf_only && (
-        <span className="-mt-1.5 block text-[10.5px] font-bold uppercase tracking-wide text-ink-soft">
+        <span className="-mt-1.5 block text-xs font-bold uppercase tracking-wide text-ink-soft">
           PDF
         </span>
       )}
-      <span className="mt-auto block text-[11px] font-medium text-ink-soft">
+      <span className="mt-auto block text-xs font-medium text-ink-soft">
         {book.translation_of && book.language_label ? (
           <span lang="hi" className="hi">{book.language_label} · </span>
         ) : null}
         {book.page_count ? `${book.page_count} pages` : book.author}
       </span>
       {book.translation_of && book.translator && (
-        <span className="-mt-1.5 block truncate text-[11px] text-ink-soft">
+        <span className="-mt-1.5 block truncate text-xs text-ink-soft">
           Translator: {book.translator}
         </span>
       )}

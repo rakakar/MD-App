@@ -246,7 +246,7 @@ export function DefinitionList({
               className={`mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full opacity-70 ${bullet}`}
             />
           )}
-          <p lang="hi" className={`hi text-[15px] leading-relaxed ${i === 0 ? "" : soft}`}>
+          <p lang="hi" className={`hi text-sm leading-relaxed ${i === 0 ? "" : soft}`}>
             <DefinitionText text={d} segments={segments[i]} />
           </p>
         </li>
@@ -258,7 +258,7 @@ export function DefinitionList({
 /** "2 definitions" — the count badge a row wears when it holds more than one. */
 export function DefinitionCount({ n }: { n: number }) {
   return (
-    <span className="rounded-full border border-rule px-1.5 py-0.5 text-[10px] font-medium text-ink-soft">
+    <span className="rounded-full border border-rule px-1.5 py-0.5 text-xs font-medium text-ink-soft">
       {n} definitions
     </span>
   );
