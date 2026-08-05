@@ -647,6 +647,29 @@ export interface Progress {
   canonical_ref: string;
   completed?: boolean;
   updated_at?: string;
+  /**
+   * `book:12` / `item:88` — what this saved place points at.
+   *
+   * The discriminator: a book row is read through `book_code` + `canonical_ref`
+   * and a library file through the fields below, and this is what says which.
+   */
+  target?: string;
+  /**
+   * Seconds into a recording, or a paragraph sequence in a book. The unit is
+   * decided by `target`, which is why nothing may read it without checking.
+   */
+  position?: number;
+  // ---- library files only; blank or null on a book row, never absent ----
+  /** the file's own name, often just "भाग 3" */
+  title?: string;
+  /** the folder it lives in — what makes the title mean something */
+  subtitle?: string;
+  kind?: FileKind | "";
+  thumbnail_url?: string | null;
+  /** the whole recording's length, so a card can draw how far in this is */
+  duration_seconds?: number | null;
+  /** the folder to open — a single file has no page of its own */
+  node?: number | null;
   [key: string]: unknown;
 }
 

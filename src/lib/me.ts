@@ -177,6 +177,30 @@ export const upsertProgress = (canonical_ref: string): Promise<unknown> =>
     body: JSON.stringify({ canonical_ref }),
   });
 
+/**
+ * Where the reader stopped in a **library file** — a recording or a video.
+ *
+ * The other address the endpoint takes (contract §6). A file has no
+ * canonical_ref to be anchored to, so it is named by `target` and its position
+ * is whole seconds rather than a paragraph sequence.
+ *
+ * This is what makes a playhead survive the device it was made on. Locally one
+ * is written every few seconds against `library-file:<id>`, which is the same
+ * id in a different dress; this carries it to the account, so a shivir begun on
+ * a phone resumes on a laptop.
+ */
+export const upsertItemProgress = (
+  itemId: number,
+  positionSeconds: number
+): Promise<unknown> =>
+  authedFetch(meUrl("progress/"), {
+    method: "POST",
+    body: JSON.stringify({
+      target: `item:${itemId}`,
+      position: Math.max(0, Math.round(positionSeconds)),
+    }),
+  });
+
 // ---- allauth headless (`app` client) ----
 
 const ALLAUTH_BASE = "/_allauth/app/v1";

@@ -66,20 +66,37 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     color: "#A64E12",
     tagline: "Books · daily Sutra · discourses",
     home: "/",
-    // The fourth slot was "Audio/Video → /audio", a shelf Content Model v3
-    // dissolved. It is Library now, and points at the tree rather than at one
-    // kind of file inside it: audio, video, photographs and documents are all
-    // Items in the same tree, and Type on that shelf sieves between them.
-    // Re-splitting them into their own tabs is the arrangement v3 deleted.
-    //
-    // It was held back while there was nothing published to open, which the
-    // pCloud import has now changed. The Original-provenance door is still held
-    // back, and is a different thing from this: a filter across the whole
-    // library, not one workspace's shelf.
+    /**
+     * Five slots, and the only workspace with five.
+     *
+     * **Audio/Video is a door, not a room.** There was an `/audio` shelf once
+     * and Content Model v3 dissolved it, rightly: audio, video, photographs and
+     * documents are all Items in one tree, and re-splitting them into parallel
+     * containers is what that model exists to prevent. Nothing about that has
+     * changed — `/av` moves no data and owns nothing. It is `?kind=audio|video`
+     * over the same tree, which is why a shivir folder holding a recording, a
+     * transcript and photographs will appear on both tabs the day it lands,
+     * with nobody filing it twice.
+     *
+     * What changed is the weight. Originals now holds forty hours of his own
+     * voice, and on a shelf whose loudest content by count is photographs it
+     * sat two taps down behind a tile grid. A door onto the material a reader
+     * came for is worth a slot; a second home for it would not be.
+     *
+     * The Library slot keeps the tree itself, minus whatever is purely audio or
+     * video — see `WorkspaceShelf`'s `hideKinds`. It is `browse` now rather than
+     * `av`, which this tab has the better claim to.
+     *
+     * PRD §2 caps the bottom nav at four. This is the exception and it is
+     * deliberate: the fifth is the Assistant slot, which §7 asks to hold the
+     * same position in every workspace, so the tab that gives way cannot be
+     * that one.
+     */
     nav: [
       { label: "Home", href: "/", icon: "home" },
       { label: "Read", href: "/books", icon: "read" },
-      { label: "Library", href: "/originals", icon: "av" },
+      { label: "Audio/Video", href: "/av", icon: "av" },
+      { label: "Library", href: "/originals", icon: "browse" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
@@ -186,6 +203,9 @@ export function libraryWorkspace(code: string | null | undefined): WorkspaceId {
 
 export function workspaceForPath(path: string): WorkspaceId | null {
   if (path === "/") return "originals";
+  // `/av` is Originals' own door onto its recordings — the tree behind it is
+  // scoped to that workspace, so the chrome must be too.
+  if (path.startsWith("/av")) return "originals";
   if (path.startsWith("/translations")) return "translations";
   if (path.startsWith("/resources")) return "resources";
   if (path.startsWith("/me")) return "journey";

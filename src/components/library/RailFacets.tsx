@@ -37,33 +37,51 @@ import type { FacetValue, FileKind, LibraryFacets, Topic } from "@/lib/types";
  * a reader has to open before they can see what is filterable is exactly what
  * the rail exists to stop being.
  *
- * **Nor does `hideAxes`.** The shelf suppresses Type when its tiles already
- * *are* the formats, and on Originals they are — but that rule was about two
- * controls for one choice sitting a thumb-width apart. In the rail they are not
- * near each other and the designer draws both: the tiles are the shelf, and
- * CATEGORY is the standing way to cut it. So the rail asks for every axis.
+ * **A shelf's fold does not come along, and neither does its `hideAxes`.** The
+ * shelf suppresses Type when its tiles already *are* the formats — but that
+ * rule was about two controls for one choice sitting a thumb-width apart. In
+ * the rail they are not near each other and the designer draws both: the tiles
+ * are the shelf, and CATEGORY is the standing way to cut it.
+ *
+ * `hideAxes` here is a narrower thing, for a page that does not merely echo an
+ * axis but **owns** it. `/av` is Type, held to audio and video and switched by
+ * the segment control at the top; a CATEGORY row in the rail there would offer
+ * PDF and Image chips that the page strips back off the moment they are
+ * tapped, which is the "a control that cannot change the page is furniture"
+ * rule below, applied one level up.
  */
 export function RailFacets({
   facets,
   topics,
   state,
   basePath,
+  hideAxes = [],
 }: {
   facets: LibraryFacets;
   topics: Topic[];
   state: FindState;
   basePath: string;
+  /**
+   * Axes the page owns elsewhere. Hidden unconditionally — unlike
+   * {@link Sieve}'s prop of the same name, which keeps an axis on screen while
+   * the reader is inside it. The difference is which control the reader would
+   * reach for: there the sieve is the only way back out of a chip, here the
+   * page's own control is, and it is never off screen.
+   */
+  hideAxes?: FindAxis[];
 }) {
-  const kinds = facets.kind ?? [];
+  const kinds = hideAxes.includes("kind") ? [] : (facets.kind ?? []);
   // Newest first, and grouped into ranges once there are more years than a
   // 232px column can hold as pills — the design draws "1998–2000 · 2001–2005"
   // against an archive that runs 1997 to 2015. A band is only a shorthand for
   // the years inside it; nothing below this knows they exist. See `years.ts`.
-  const years = yearBands(facets.year);
+  const years = hideAxes.includes("year") ? [] : yearBands(facets.year);
   // Type and Year are drawn where the design puts them; the rest keep their
   // canonical order underneath, so a shelf with places and speakers still
   // offers them rather than losing them to a layout that only knew three.
-  const rest = FIND_AXES.filter((axis) => axis !== "kind" && axis !== "year");
+  const rest = FIND_AXES.filter(
+    (axis) => axis !== "kind" && axis !== "year" && !hideAxes.includes(axis)
+  );
 
   const blocks = [
     kinds.length > 0 && (
@@ -129,16 +147,25 @@ export function RailFacets({
     // Last, where the design puts it, and where it stopped costing the fold:
     // at six topics heading the rail, Year and Place sat below the crease on an
     // 800px laptop — the two axes with the most useful counts on this shelf.
-    <TopicRows
-      key="topic"
-      topics={topics}
-      facets={facets.topic}
-      state={state}
-      basePath={basePath}
-    />,
+    !hideAxes.includes("topic") && (
+      <TopicRows
+        key="topic"
+        topics={topics}
+        facets={facets.topic}
+        state={state}
+        basePath={basePath}
+      />
+    ),
   ].filter(Boolean);
 
   if (blocks.length === 0) return null;
+
+  // The axes the page owns survive a "Clear"; everything else goes.
+  const kept: FindState["selection"] = {};
+  for (const axis of hideAxes) {
+    const values = state.selection[axis];
+    if (values?.length) kept[axis] = values;
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -147,11 +174,31 @@ export function RailFacets({
           filter — a reader who wants it wants it now, and should never have to
           scroll through the controls that got them here to find it. */}
       <div className="px-1 empty:hidden">
-        <ClearFind basePath={basePath} state={state} />
+        {/* Counts only what the reader actually set — on a page that owns an
+            axis its chips are always on, so an unfiltered `/av` would otherwise
+            offer to "Clear 2" filters nobody chose — and lands back on that
+            page's own axis rather than widening past it. */}
+        <ClearFind
+          basePath={basePath}
+          state={withoutAxes(state, hideAxes)}
+          href={
+            hideAxes.length > 0
+              ? findHref(basePath, { q: "", raw: false, selection: kept })
+              : undefined
+          }
+        />
       </div>
       {blocks}
     </div>
   );
+}
+
+/** the find as the reader made it, with any axis the page owns taken back out */
+function withoutAxes(state: FindState, axes: FindAxis[]): FindState {
+  if (axes.length === 0) return state;
+  const selection = { ...state.selection };
+  for (const axis of axes) delete selection[axis];
+  return { ...state, selection };
 }
 
 const AXIS_EN: Record<FindAxis, string> = {

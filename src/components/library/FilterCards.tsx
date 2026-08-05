@@ -56,6 +56,7 @@ export function FilterCards({
   state,
   basePath,
   itemCount,
+  hideAxes = [],
 }: {
   topics: Topic[];
   facets: LibraryFacets;
@@ -63,24 +64,35 @@ export function FilterCards({
   basePath: string;
   /** how much is in scope right now — the number in each panel's footer */
   itemCount: number;
+  /**
+   * Axes this page controls elsewhere, so the sieve must neither draw them nor
+   * count them (`/av` promotes Type to the segment control at the top of the
+   * page). Both halves matter: a hidden axis that still counted would leave the
+   * panel permanently reading "2 selected" for chips the reader never set and
+   * has no way to clear.
+   */
+  hideAxes?: FindAxis[];
 }) {
   return (
     // `empty:hidden`: a shelf whose material is all one year, one kind and
     // untagged draws neither panel, and the margin of a block that is not there
     // is a hole in the page above the collections.
     <div className="mt-3 flex flex-col gap-2.5 empty:hidden">
-      <TopicCard
-        topics={topics}
-        facets={facets.topic}
-        state={state}
-        basePath={basePath}
-        itemCount={itemCount}
-      />
+      {!hideAxes.includes("topic") && (
+        <TopicCard
+          topics={topics}
+          facets={facets.topic}
+          state={state}
+          basePath={basePath}
+          itemCount={itemCount}
+        />
+      )}
       <SieveCard
         facets={facets}
         state={state}
         basePath={basePath}
         itemCount={itemCount}
+        hideAxes={hideAxes}
       />
     </div>
   );
@@ -201,11 +213,13 @@ function SieveCard({
   state,
   basePath,
   itemCount,
+  hideAxes = [],
 }: {
   facets: LibraryFacets;
   state: FindState;
   basePath: string;
   itemCount: number;
+  hideAxes?: FindAxis[];
 }) {
   const kinds = orderedKinds(facets.kind);
   const bands = yearBands(facets.year);
@@ -213,23 +227,45 @@ function SieveCard({
   // row would be an instruction to press a button that changes nothing. An
   // axis stays on screen once it is in use however narrow the scope has become,
   // so a shared link never hides the control that produced what is on it.
-  const rows = FIND_AXES.filter((axis) => axis !== "kind" && axis !== "year").filter(
+  const rows = FIND_AXES.filter(
+    (axis) => axis !== "kind" && axis !== "year" && !hideAxes.includes(axis)
+  ).filter(
     (axis) => (facets[axis] ?? []).length > 1 || (state.selection[axis]?.length ?? 0) > 0
   );
 
-  const showKinds = kinds.length > 1 || (state.selection.kind?.length ?? 0) > 0;
-  const showYears = bands.length > 1 || (state.selection.year?.length ?? 0) > 0;
+  const showKinds =
+    !hideAxes.includes("kind") &&
+    (kinds.length > 1 || (state.selection.kind?.length ?? 0) > 0);
+  const showYears =
+    !hideAxes.includes("year") &&
+    (bands.length > 1 || (state.selection.year?.length ?? 0) > 0);
   if (!showKinds && !showYears && rows.length === 0) return null;
 
-  const axes: FindAxis[] = ["kind", "year", ...rows];
+  // Only the axes this panel is actually offering. A hidden one must drop out
+  // here too: `selected` is the badge and `clearHref` is the way out, and both
+  // would otherwise speak for chips that are not on screen to be cleared.
+  const axes: FindAxis[] = [
+    ...(showKinds ? (["kind"] as const) : []),
+    ...(hideAxes.includes("year") ? [] : (["year"] as const)),
+    ...rows,
+  ];
   const selected = axes.reduce((n, axis) => n + (state.selection[axis]?.length ?? 0), 0);
-  const span = yearSpan(facets.year);
-  const kindWords = kinds.map((k) => KIND_LABEL[k.value as FileKind] ?? k.value).join(", ");
+  const span = showYears ? yearSpan(facets.year) : "";
+  // Both the name and the preview describe what is behind the fold, so a
+  // suppressed axis has to drop out of them too. On `/av` the panel still
+  // carries Year, Place and the rest — it just must not advertise a Category
+  // row that is on the page above instead, nor name PDFs the page never shows.
+  const kindWords = showKinds
+    ? kinds.map((k) => KIND_LABEL[k.value as FileKind] ?? k.value).join(", ")
+    : "";
+  const title = [showYears && "Year", showKinds && "category"]
+    .filter(Boolean)
+    .join(" and ") || "Filters";
 
   return (
     <Panel
       icon={<FilterIcon className="h-4.5 w-4.5" />}
-      title="Year and category"
+      title={title}
       summary={
         selected > 0
           ? `${selected} selected · ${itemCount} items`

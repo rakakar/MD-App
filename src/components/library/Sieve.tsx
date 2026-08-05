@@ -124,15 +124,23 @@ function SieveRow({
 export function ClearFind({
   basePath,
   state,
+  href,
 }: {
   basePath: string;
   state: FindState;
+  /**
+   * Where "cleared" actually is, when it is not the bare page. A surface that
+   * owns an axis keeps it: on `/av`, clearing the year should leave the reader
+   * on Video rather than quietly widening to everything, which is a different
+   * question than the one they asked.
+   */
+  href?: string;
 }) {
   const active = chipCount(state) + (state.q ? 1 : 0);
   if (active === 0) return null;
   return (
     <Link
-      href={basePath}
+      href={href ?? basePath}
       className="text-xs font-semibold underline underline-offset-2"
       style={{ color: "var(--ws-ink)" }}
     >

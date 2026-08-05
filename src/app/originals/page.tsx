@@ -26,10 +26,13 @@ export const metadata: Metadata = {
  * pCloud. Content Model v3 §5 gave the workspace room for both; this is the
  * half that was missing.
  *
- * No format tabs. Resources draws them because one shelf holds its tree *and* its
- * books; here the books already have `/books` with its own genre chips and
- * resume rows, and a tab that merely jumps between two finished pages is a
- * worse control than the nav slot that already does it.
+ * **Recordings are not here — they are on `/av`**, and this shelf is the rest of
+ * the tree. Not because audio is a different kind of thing (it is an Item in
+ * this same tree, and `/av` is a sieve over it, not a second home), but because
+ * forty hours of his voice outgrew a tile on a grid. What leaves is decided by
+ * what is actually inside each collection rather than by a list of ids — see
+ * `hideKinds` — so a folder holding recordings *and* a transcript stays right
+ * here, where the transcript can still be found.
  */
 export default async function OriginalsLibraryPage({
   searchParams,
@@ -64,8 +67,8 @@ export default async function OriginalsLibraryPage({
         Library
       </h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Discourses, photographs, letters and documents — A. Nagraj ji&apos;s own
-        material, beyond the books.
+        Photographs, letters and documents — A. Nagraj ji&apos;s own material,
+        beyond the books. Recordings have a tab of their own.
       </p>
 
       <WorkspaceShelf
@@ -74,8 +77,9 @@ export default async function OriginalsLibraryPage({
         topics={topics}
         shelves={shelves}
         basePath="/originals"
+        hideKinds={["audio", "video"]}
         emptyTitle="The library is on its way"
-        emptyHint="Recordings, photographs and documents appear here as they are published."
+        emptyHint="Photographs, letters and documents appear here as they are published."
       />
     </PageContainer>
   );

@@ -28,6 +28,7 @@ import {
   getNotes,
   getProgress,
   updateNote,
+  upsertItemProgress,
   upsertProgress,
 } from "./me";
 import {
@@ -98,6 +99,59 @@ export function saveProgress(t: SaveTarget & { chapter_number: number }, signedI
 /** Push whatever is still pending before the tab goes away. */
 export function flushProgress(signedIn: boolean): void {
   if (signedIn) void syncPersonal();
+}
+
+/**
+ * Where the reader stopped in a **recording** — the playhead, carried to the
+ * account.
+ *
+ * The local half already worked and is untouched: the player writes a playhead
+ * against `library-file:<id>` every few seconds, which is what makes resume
+ * instant and offline-proof. What it never did was leave the device, so a
+ * ninety-minute shivir begun on a phone started again from nothing on a laptop.
+ *
+ * **Deliberately far slower than the local write.** A playing recording fires
+ * its `remember` every five seconds, and none of those matters except the last
+ * one; at one request a minute a full shivir costs about ninety, and the
+ * `pagehide` flush below is what makes the *last* one land — a killed tab being
+ * the commonest way listening ends.
+ *
+ * Sent per file rather than through `syncPersonal`, which is a whole-store
+ * reconcile built around canonical_refs; a playhead has none, and pushing one
+ * fact does not need the other three read back.
+ */
+const PLAYHEAD_PUSH_MS = 60_000;
+const lastPlayheadPush = new Map<number, number>();
+
+export function savePlayhead(
+  itemId: number,
+  positionSeconds: number,
+  signedIn: boolean,
+  { flush = false }: { flush?: boolean } = {}
+): void {
+  if (!signedIn) return;
+  const now = Date.now();
+  if (!flush && now - (lastPlayheadPush.get(itemId) ?? 0) < PLAYHEAD_PUSH_MS) return;
+  lastPlayheadPush.set(itemId, now);
+  // Best effort by design. A dropped playhead costs the reader a few seconds of
+  // a recording they still have locally, and a failed sync must never surface
+  // as an error over something they are listening to.
+  void upsertItemProgress(itemId, positionSeconds).catch(() => {});
+}
+
+/**
+ * `library-file:88` → `88`, the id the endpoint knows it by.
+ *
+ * The player keys playheads by the string the surface that started them handed
+ * over, and only library files carry this shape — a book chapter's audio is a
+ * different source kind entirely and keeps its place through the reader's
+ * paragraph position, not here. Anything else returns null and is not pushed.
+ */
+export function itemIdFromResumeKey(key: string | undefined): number | null {
+  const match = /^library-file:(\d+)$/.exec(key ?? "");
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 // ---- reads ----

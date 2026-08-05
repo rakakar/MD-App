@@ -1,12 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { track } from "@/lib/analytics";
+import { savePlayhead } from "@/lib/personal";
 import { contentLang } from "@/lib/script";
+import { clearPlayhead, getPlayhead, setPlayhead } from "@/lib/storage";
 import type { LibraryFile } from "@/lib/types";
 
 // Official YouTube IFrame Player API only (PRD §3.3) — never download or
 // extract YouTube audio.
+
+/**
+ * Only what this file calls. `getCurrentTime` is the whole reason the IFrame
+ * API is used rather than a bare `<iframe>`: a plain embed cannot say where the
+ * viewer is, so a video could never keep its place the way a recording does.
+ */
+interface YouTubePlayer {
+  getCurrentTime: () => number;
+  getDuration: () => number;
+}
 
 declare global {
   interface Window {
@@ -17,11 +30,12 @@ declare global {
           videoId: string;
           playerVars?: Record<string, number | string>;
           events?: {
+            onReady?: (e: { target: YouTubePlayer }) => void;
             onStateChange?: (e: { data: number }) => void;
           };
         }
-      ) => unknown;
-      PlayerState?: { PLAYING: number };
+      ) => YouTubePlayer;
+      PlayerState?: { PLAYING: number; PAUSED?: number; ENDED?: number };
     };
     onYouTubeIframeAPIReady?: () => void;
   }
@@ -81,6 +95,68 @@ function source(url: string): { host: "youtube" | "vimeo"; id: string } | null {
 }
 
 /**
+ * A video's place, kept the same way a recording's is.
+ *
+ * Audio has had this since the album player was built — a playhead written
+ * locally every few seconds under `library-file:<id>`, so a ninety-minute
+ * shivir resumes instead of restarting. Video had none of it: the only thing
+ * this component reported was an analytics ping, so a two-hour sammelan
+ * watched in three sittings began at zero every time.
+ *
+ * **One mechanism, not a second one.** The key, the store, the rate limit and
+ * the endpoint are all exactly what audio uses, which is what lets "continue
+ * listening" and "continue watching" be one list the day they are drawn.
+ *
+ * Vimeo is left out. Its player is a bare `<iframe>` here and cannot be asked
+ * where the viewer is, so there is nothing honest to record; it plays, and it
+ * starts at the beginning.
+ */
+function useKeepPlace(file: LibraryFile) {
+  const { user } = useAuth();
+  const signedIn = useRef(false);
+  useEffect(() => {
+    signedIn.current = user !== null;
+  }, [user]);
+
+  const key = `library-file:${file.id}`;
+  // Read once, before anything plays: the value is wanted at construction, and
+  // re-reading it later would fight the writes below.
+  const [resumeAt] = useState(() => {
+    const ms = getPlayhead(key);
+    // Under five seconds is not a place anyone left off, and resuming within a
+    // few seconds of the end is worse than starting again — the same two
+    // guards the audio queue applies.
+    return ms && ms > 5_000 ? Math.floor(ms / 1000) : 0;
+  });
+
+  // The native element reports four times a second; the embed is polled every
+  // five. Both land here, and neither needs to touch localStorage more often
+  // than the audio player does — a flush is always let through, because those
+  // are the writes that are certain to be the viewer's actual place.
+  const LOCAL_WRITE_MS = 5_000;
+  const lastLocalWrite = useRef(0);
+
+  const write = useCallback(
+    (seconds: number, duration: number, flush: boolean) => {
+      if (!Number.isFinite(seconds) || seconds < 0) return;
+      const done = Number.isFinite(duration) && duration > 0 && seconds >= duration - 1;
+      const now = Date.now();
+      if (flush || done || now - lastLocalWrite.current >= LOCAL_WRITE_MS) {
+        lastLocalWrite.current = now;
+        if (done) clearPlayhead(key);
+        else setPlayhead(key, seconds * 1000);
+      }
+      savePlayhead(file.id, done ? duration : seconds, signedIn.current, {
+        flush: flush || done,
+      });
+    },
+    [key, file.id]
+  );
+
+  return useMemo(() => ({ resumeAt, write }), [resumeAt, write]);
+}
+
+/**
  * One video file: an embedded player for a YouTube or Vimeo link, the native
  * element for an uploaded file (§13.5).
  *
@@ -92,26 +168,58 @@ export function VideoView({ file }: { file: LibraryFile }) {
   const src = source(file.url);
   const [activated, setActivated] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
+  const keep = useKeepPlace(file);
 
   useEffect(() => {
     if (!activated || src?.host !== "youtube" || !hostRef.current) return;
     let cancelled = false;
+    let ticker: ReturnType<typeof setInterval> | null = null;
+    let player: YouTubePlayer | null = null;
+
+    const stop = () => {
+      if (ticker !== null) clearInterval(ticker);
+      ticker = null;
+    };
+    const mark = (flush: boolean) => {
+      if (!player) return;
+      keep.write(player.getCurrentTime(), player.getDuration(), flush);
+    };
+    // The tab going away is the commonest way watching ends, and it fires no
+    // pause — the same hole the audio player closes the same way.
+    const leaving = () => mark(true);
+
     void loadIframeApi().then(() => {
       if (cancelled || !hostRef.current || !window.YT) return;
-      new window.YT.Player(hostRef.current, {
+      player = new window.YT.Player(hostRef.current, {
         videoId: src.id,
-        playerVars: { autoplay: 1, rel: 0 },
+        // Where the viewer stopped last time. Passed at construction rather
+        // than seeked afterwards: a seek would play the opening seconds first.
+        playerVars: { autoplay: 1, rel: 0, start: keep.resumeAt },
         events: {
           onStateChange: (e) => {
-            if (e.data === (window.YT?.PlayerState?.PLAYING ?? 1)) track("video_play");
+            const states = window.YT?.PlayerState;
+            if (e.data === (states?.PLAYING ?? 1)) {
+              track("video_play");
+              stop();
+              ticker = setInterval(() => mark(false), 5000);
+              window.addEventListener("pagehide", leaving);
+            } else {
+              // Paused or ended — a real stopping point, so it is written
+              // without waiting out the push interval.
+              stop();
+              mark(true);
+            }
           },
         },
       });
     });
     return () => {
       cancelled = true;
+      stop();
+      window.removeEventListener("pagehide", leaving);
+      mark(true);
     };
-  }, [activated, src?.host, src?.id]);
+  }, [activated, src?.host, src?.id, keep]);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-rule bg-card">
@@ -158,7 +266,23 @@ export function VideoView({ file }: { file: LibraryFile }) {
             autoPlay
             preload="metadata"
             className="absolute inset-0 h-full w-full"
+            // Where it was left, applied once the element knows its own length
+            // — before that, setting `currentTime` is discarded.
+            onLoadedMetadata={(e) => {
+              if (keep.resumeAt > 0) e.currentTarget.currentTime = keep.resumeAt;
+            }}
             onPlay={() => track("video_play")}
+            // The element's own 4Hz signal, rate-limited to disk and to the
+            // account by the same guards the embedded player uses.
+            onTimeUpdate={(e) =>
+              keep.write(e.currentTarget.currentTime, e.currentTarget.duration, false)
+            }
+            onPause={(e) =>
+              keep.write(e.currentTarget.currentTime, e.currentTarget.duration, true)
+            }
+            onEnded={(e) =>
+              keep.write(e.currentTarget.duration, e.currentTarget.duration, true)
+            }
           />
         )}
       </div>

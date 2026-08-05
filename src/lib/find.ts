@@ -217,6 +217,29 @@ export function scopeSize(facets: Partial<Record<string, { count: number }[]>>):
 }
 
 /**
+ * The find a page gets when it **owns** an axis rather than merely offering it.
+ *
+ * `/av` is the whole library sieved to audio and video: the reader can narrow
+ * to one of the two, and cannot widen past both, because widening past both is
+ * a different page. So the axis is read from the URL and then held inside the
+ * page's own range — three legitimate addresses (`/av`, `?kind=audio`,
+ * `?kind=video`) and nothing else.
+ *
+ * Clamping rather than trusting matters because the URL is public: a hand-typed
+ * or stale `?kind=pdf` would otherwise put documents on a page that says
+ * Audio/Video at the top. Out-of-range values fall back to the full lock rather
+ * than to nothing, since an empty selection would turn the find back into a
+ * browse and quietly show the reader everything.
+ */
+export function lockAxis(state: FindState, axis: FindAxis, allowed: string[]): FindState {
+  const asked = (state.selection[axis] ?? []).filter((v) => allowed.includes(v));
+  return {
+    ...state,
+    selection: { ...state.selection, [axis]: asked.length > 0 ? asked : allowed },
+  };
+}
+
+/**
  * Below this many rows beneath a folder, the folder *is* the answer.
  *
  * Six files listed on screen are read faster than a search box is understood,

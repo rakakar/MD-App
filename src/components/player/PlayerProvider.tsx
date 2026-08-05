@@ -10,7 +10,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { track as ga } from "@/lib/analytics";
+import { itemIdFromResumeKey, savePlayhead } from "@/lib/personal";
 import {
   clearListeningPosition,
   clearPlayhead,
@@ -169,6 +171,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     navRef.current = chapterNav;
   }, [chapterNav]);
+
+  // Whether a playhead has an account to travel to. Through a ref because
+  // `remember` is also called from a `pagehide` listener and an interval, both
+  // registered once — reading the value directly would pin them to whatever it
+  // was when playback started, and signing in mid-session is exactly when a
+  // reader most expects their place to start being kept.
+  const { user } = useAuth();
+  const signedIn = useRef(false);
+  useEffect(() => {
+    signedIn.current = user !== null;
+  }, [user]);
 
   // one <audio> element for the whole app — survives route changes
   const audio = useCallback((): HTMLAudioElement => {
@@ -436,7 +449,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
    * A finished chapter clears its entry — resuming 3 seconds before the end is
    * the one place "continue" is worse than "start again".
    */
-  const remember = useCallback(() => {
+  const remember = useCallback(
+    (flush = false) => {
     const src = source;
     if (!src) return;
     // A track keeps its place only when the surface that started it gave it a
@@ -445,8 +459,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (src.kind === "track") {
       if (!src.resumeKey) return;
       const el = audio();
-      if (el.duration && el.currentTime >= el.duration - 1) clearPlayhead(src.resumeKey);
+      const done = Boolean(el.duration) && el.currentTime >= el.duration - 1;
+      if (done) clearPlayhead(src.resumeKey);
       else setPlayhead(src.resumeKey, el.currentTime * 1000);
+      // …and, for a library file, to the account as well, so the place survives
+      // the device it was made on. Rate-limited far below this 5s cadence and
+      // best-effort — see `savePlayhead`. A finished track posts its end rather
+      // than nothing: the server has no "clear", and a row sitting at the last
+      // second is what marks it done.
+      const itemId = itemIdFromResumeKey(src.resumeKey);
+      if (itemId !== null) {
+        savePlayhead(
+          itemId,
+          done ? el.duration : el.currentTime,
+          signedIn.current,
+          { flush: flush || done }
+        );
+      }
       return;
     }
     const el = audio();
@@ -469,22 +498,30 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       para_seq: paraSeq,
       voice_key: src.kind === "tts" ? src.voiceKey : undefined,
     });
-  }, [source, audio, deviceParaSeq]);
+    },
+    [source, audio, deviceParaSeq]
+  );
 
   // While playing, every few seconds; and whenever playback stops, the tab
   // hides, or this effect tears down — a killed tab is the commonest way a
   // listening session ends, and it fires no pause.
   useEffect(() => {
     if (!playing) {
-      remember();
+      // Stopping is a real end, so the account gets this one rather than
+      // waiting out the push interval on a position that will not change.
+      remember(true);
       return;
     }
-    const id = setInterval(remember, 5000);
-    window.addEventListener("pagehide", remember);
+    const tick = () => remember();
+    // The last write before the tab goes away must not be rate-limited: it is
+    // the only one that is certain to be the reader's actual place.
+    const leaving = () => remember(true);
+    const id = setInterval(tick, 5000);
+    window.addEventListener("pagehide", leaving);
     return () => {
       clearInterval(id);
-      window.removeEventListener("pagehide", remember);
-      remember();
+      window.removeEventListener("pagehide", leaving);
+      remember(true);
     };
   }, [playing, remember]);
 

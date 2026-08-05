@@ -11,6 +11,8 @@ import { EmptyState } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
 import { isAsked, scopeSize, type FindState } from "@/lib/find";
 import type {
+  FileKind,
+  LibraryFacets,
   LibraryFindResponse,
   LibraryNode,
   LibraryRollup,
@@ -49,6 +51,7 @@ export async function WorkspaceShelf({
   basePath,
   emptyTitle,
   emptyHint,
+  hideKinds = [],
 }: {
   root: LibraryNode;
   state: FindState;
@@ -58,8 +61,20 @@ export async function WorkspaceShelf({
   basePath: string;
   emptyTitle: string;
   emptyHint: string;
+  /**
+   * Kinds this workspace has a tab of its own for, so the shelf does not offer
+   * the same collections twice. Originals passes audio and video; nothing else
+   * passes anything.
+   *
+   * **Opt-in per shelf, deliberately.** Applied everywhere, the day Resources
+   * gained a folder of recordings it would vanish from Resources — and there is
+   * no Audio/Video tab over there to catch it. A shelf may only hide what
+   * something else in the same workspace is showing.
+   *
+   * See `hidesDoor` for why a *mixed* folder is never hidden.
+   */
+  hideKinds?: FileKind[];
 }) {
-  const doors = nodeChildren(root);
   const files = [...root.items, ...root.linked_items];
   const scope = { workspace: root.workspace };
 
@@ -71,11 +86,47 @@ export async function WorkspaceShelf({
   const finding = isAsked(state) && find !== null;
 
   const rollup: LibraryRollup = find?.rollup ?? {};
+
+  // The doors, minus any whose whole contents belong to another tab. Done here
+  // rather than on the endpoint because the answer is already in hand: `rollup`
+  // says which kinds live under each card, all the way down.
+  const doors = nodeChildren(root).filter(
+    (door) => !hidesDoor(rollup[String(door.id)]?.kinds, hideKinds)
+  );
+
   // How much is in scope right now: the match count once something has been
   // asked, and the size of the shelf before that. Both are the number the
   // filter panels print in their footer, and neither is a count the browse can
   // produce — `child_count` is shallow by contract.
-  const itemCount = finding ? find.count : scopeSize(find?.facets ?? {});
+  //
+  // Counted off the Type facet where the shelf hides a kind, and by
+  // `scopeSize`'s widest-axis estimate where it does not. Type is the one axis
+  // every file answers exactly once, which makes its total the true file count
+  // — and the only way to subtract what has moved to another tab without the
+  // estimate's slack turning the difference into a number that is wrong rather
+  // than merely cautious. A find is left alone either way: its `count` is of
+  // rows actually returned.
+  const kindCounts = find?.facets.kind ?? [];
+  const countable = kindCounts.filter(
+    (chip) => !hideKinds.includes(chip.value as FileKind)
+  );
+
+  // The sieve is offered the same shelf the tiles are. A Category row listing
+  // "Audio 35" directly under a page that has just said recordings have a tab
+  // of their own is the page contradicting itself in the same eyeful — and the
+  // chip would drop the reader into a filtered Library showing exactly what the
+  // Library is no longer for. Only these *values* go; the axis itself stays, so
+  // PDFs and photographs are still siftable, and the search box is untouched
+  // and still reaches every word in the workspace.
+  const facets: LibraryFacets =
+    hideKinds.length > 0 && find
+      ? { ...find.facets, kind: countable }
+      : (find?.facets ?? {});
+  const inScope =
+    hideKinds.length > 0 && kindCounts.length > 0
+      ? countable.reduce((n, chip) => n + chip.count, 0)
+      : scopeSize(find?.facets ?? {});
+  const itemCount = finding ? find.count : inScope;
 
   if (finding) {
     return (
@@ -90,7 +141,7 @@ export async function WorkspaceShelf({
         <div className="lg:hidden">
           <FilterCards
             topics={topics}
-            facets={find.facets}
+            facets={facets}
             state={state}
             basePath={basePath}
             itemCount={itemCount}
@@ -98,7 +149,7 @@ export async function WorkspaceShelf({
         </div>
         <RailSlot>
           <RailFacets
-            facets={find.facets}
+            facets={facets}
             topics={topics}
             state={state}
             basePath={basePath}
@@ -151,7 +202,7 @@ export async function WorkspaceShelf({
         {find && (
           <FilterCards
             topics={topics}
-            facets={find.facets}
+            facets={facets}
             state={state}
             basePath={basePath}
             itemCount={itemCount}
@@ -198,7 +249,7 @@ export async function WorkspaceShelf({
           nothing about what is in it. */}
       <PhotoStrip
         scope={scope}
-        facets={find?.facets}
+        facets={facets}
         basePath={basePath}
         state={state}
       />
@@ -208,7 +259,7 @@ export async function WorkspaceShelf({
       {find && (
         <RailSlot>
           <RailFacets
-            facets={find.facets}
+            facets={facets}
             topics={topics}
             state={state}
             basePath={basePath}
@@ -217,6 +268,26 @@ export async function WorkspaceShelf({
       )}
     </div>
   );
+}
+
+/**
+ * Whether a door belongs to another tab entirely — **all of it, or none of it**.
+ *
+ * `every`, never `some`, and that is the rule the whole split rests on. A
+ * folder holding only recordings is the Audio/Video tab's, and showing it here
+ * too would be the same collection on two tabs. A folder holding recordings
+ * *and* a transcript *and* photographs belongs to both and stays: its
+ * recordings surface on the other tab by kind, while the folder itself remains
+ * where the rest of it can be found. That is the case the library is about to
+ * be full of — a shivir arrives as one folder of mixed material — and hiding it
+ * would put its transcript and its photographs nowhere.
+ *
+ * An unknown rollup means an unanswered question, and the safe answer to an
+ * unanswered question is to show the folder.
+ */
+function hidesDoor(kinds: FileKind[] | undefined, hidden: FileKind[]): boolean {
+  if (hidden.length === 0 || !kinds || kinds.length === 0) return false;
+  return kinds.every((kind) => hidden.includes(kind));
 }
 
 /**
