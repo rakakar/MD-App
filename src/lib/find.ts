@@ -1,6 +1,6 @@
 /**
  * **Find** — the query and chips a shelf or folder page is being asked
- * (contract §13.8, `docs/Catalogue_Search_v1.md`).
+ * (contract §13.8, the backend repo's `docs/product/Catalogue_Search.md`).
  *
  * The library has two ways of listing folders and they are different calls.
  * *Browsing* (`nodes/`, §13.2) is one level, cached, no breadcrumbs — the
