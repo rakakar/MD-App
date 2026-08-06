@@ -16,7 +16,7 @@ base URL from an environment variable, never hardcode it).
 > ranked, paginated, Hinglish-aware, and returning `facets` so the chips
 > describe the whole scope instead of one level. `books/` (§11.2) gains `?q=`,
 > `?tag=`, `?year=` and the same facets block. `nodes/` (§13.2) is unchanged and
-> stays the browse. Objective and boundary: `docs/Catalogue_Search_v1.md`.
+> stays the browse. Objective and boundary: `docs/product/Catalogue_Search.md`.
 
 > **Changed on 2026-08-01 (Content Model v3).** §§0–8 — the reader contract for
 > books — are untouched. What moved: `sections/` is now `workspaces/` and
@@ -400,7 +400,7 @@ read-only (except event register), published-only, cached.
   call the same §9.1 retrieval underneath.
 - **Push notifications** — Web Push (VAPID) subscribe/unsubscribe endpoints
   are planned, not present. What *is* live is FCM, documented in
-  `docs/push_notifications_manual.md`.
+  `docs/manuals/push_notifications_manual.md`.
 
 Both will be documented here (or in a v2 contract) when they land; nothing in
 §§0–8 will change shape because of them.
@@ -1037,7 +1037,7 @@ information, not a way to browse.
 
 **The one "find" endpoint for the library.** It answers *"where is the अमरकंटक
 2019 audio?"* — what the library **records** about a thing, never what is inside
-it. See `docs/Catalogue_Search_v1.md` for the three-searches boundary this sits
+it. See `docs/product/Catalogue_Search.md` for the three-searches boundary this sits
 inside; the short version is that this reads the catalogue, §9.1 reads the
 books, and they are never merged into one list.
 
@@ -1198,7 +1198,7 @@ reader treatment, it is re-created as a proper Book (possibly PDF-only first,
 §13.8 reads the catalogue; §9.1 reads the books; nothing reads a resource's
 bytes, because nothing in this tree has paragraphs to index. That boundary is
 not an apology, and the FE's job at it is to hand the reader across rather than
-explain it — see `docs/Catalogue_Search_v1.md` §4.
+explain it — see `docs/product/Catalogue_Search.md` §4.
 
 ### 13.10 PDF-only Books (§5.1.3)
 

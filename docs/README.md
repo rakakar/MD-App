@@ -1,0 +1,64 @@
+# MD Study के दस्तावेज़ (FE)
+
+यह reader app का repo है। यहाँ सिर्फ़ वही रहता है जो **app के अपने बारे में** है
+— content कैसे अंदर आता है, roles, panel, deployment, यह सब backend repo
+(`../MDApp`) में है।
+
+---
+
+## किस काम के लिए क्या
+
+| आपको यह करना है | यह पढ़िए |
+|---|---|
+| पढ़ने वाले हिस्से को छूना है | **[reader.md](reader.md)** — दो readers, display system, offline. यही product है |
+| Shelf, folder या find-bar पर काम है | [library.md](library.md) |
+| कोई payload चाहिए | [API_Contract_v1.md](API_Contract_v1.md) — §13 library |
+| Feedback वाला हिस्सा | [feedback.md](feedback.md) |
+| Notifications वाला हिस्सा | [push-notifications.md](push-notifications.md) |
+| Product का इरादा जानना है | [PRD_v2.md](PRD_v2.md) — banners ज़रूर पढ़ें |
+| Code लिखने जा रहे हैं | `../AGENTS.md` — **पहले** |
+
+## पाँच फ़ाइलें, एक-एक पंक्ति में
+
+**[API_Contract_v1.md](API_Contract_v1.md)** — हर payload पर authority.
+यह **BE की copy है** (`MDApp/docs/api/API_Contract_v1.md`). यहाँ कभी edit मत
+कीजिए — वहाँ बदलिए और दोबारा copy कीजिए। जाँचने के लिए:
+
+```bash
+diff "MDApp/docs/api/API_Contract_v1.md" "MD-App-FE/docs/API_Contract_v1.md"
+```
+
+**[reader.md](reader.md)** — book reader और PDF reader, दोनों पूरी viewport क्यों
+लेते हैं, chrome ख़ुद क्यों हटता है, display system (theme · text size · face ·
+line height) के पीछे के फ़ैसले, और offline text बनाम offline audio.
+
+**[library.md](library.md)** — `/library/[id]` हर गहराई पर एक ही component क्यों
+है, URLs workspace-neutral क्यों हैं, browse और find के बीच का एक-test वाला
+switch, sieve की chips का क्रम, और यह search कहाँ जाकर रुक जाती है।
+
+**[feedback.md](feedback.md)** — चार दरवाज़े, context में क्या जाता है और क्या
+कभी नहीं, offline queue, और pixel-screenshot क्यों नहीं है।
+
+**[push-notifications.md](push-notifications.md)** — FCM setup, दो service
+workers दो scopes में क्यों हैं, और iOS की सीमा।
+
+**[PRD_v2.md](PRD_v2.md)** — 27 जुलाई 2026 का product spec. **इसका
+non-book वाला पूरा हिस्सा superseded है** — ऊपर का banner पढ़िए। पाँच-workspace
+model, reader, search की दो lanes, personal features, PWA, analytics और type/रंग
+के फ़ैसले अब भी खड़े हैं।
+
+## दूसरे repo में
+
+| चाहिए | कहाँ |
+|---|---|
+| Content कैसे अंदर आता है | `MDApp/docs/manuals/library_manager_manual.md` — §9 हर panel action को पाठक की screen से जोड़ता है |
+| Book कैसे जुड़ती है | `MDApp/docs/manuals/how-to-add-a-book.md` |
+| Non-book content का model | `MDApp/docs/product/Content_Model_v3.md` |
+| तीन searches का फ़र्क़ | `MDApp/docs/product/Catalogue_Search.md` |
+| पूरा docs index | `MDApp/docs/README.md` |
+
+## जब ये दस्तावेज़ बहक जाएँ
+
+BE repo का **`docs/dev/doc_audit.md`** चलाइए। वह दोनों repos पर लागू होता है,
+और उसका rule 5 इसीलिए है कि पिछली बार की सबसे बुरी ख़ामी **उसी session में लिखी
+गई फ़ाइल में गढ़ा हुआ एक route** था।

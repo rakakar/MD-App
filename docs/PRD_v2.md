@@ -27,8 +27,25 @@
 > decision about type and colour. Read §3's route table and the audio/video
 > milestones as history.
 >
-> Current: `docs/API_Contract_v1.md` §13 · the backend repo's
-> `docs/Content_Model_v3.md` and `docs/library_manager_manual.md`.
+> Current: `API_Contract_v1.md` §13 · backend repo का
+> `docs/product/Content_Model_v3.md` और `docs/manuals/library_manager_manual.md`.
+
+> ### जो इसके लिखे जाने के बाद बना, और यहाँ नहीं है
+>
+> *(2026-08-06 को जोड़ा गया.)* यह spec 27 जुलाई की तस्वीर है। तबसे जो ship हुआ
+> उसके अपने दस्तावेज़ हैं — नीचे §3 का route table उन्हें नहीं जानता:
+>
+> | बना | कहाँ लिखा है |
+> |---|---|
+> | PDF reader (`/library/[id]/read/[fileId]`), app-wide display system, offline audio | [reader.md](reader.md) |
+> | `/originals`, `/av`, `/connect/library`, find-bar, विषय का filter बनना | [library.md](library.md) |
+> | पाठक की feedback (`/me/feedback` और चार दरवाज़े) | [feedback.md](feedback.md) |
+> | Push notifications | [push-notifications.md](push-notifications.md) |
+>
+> §7 और §9 कहते हैं कि chat assistant और push notifications BE पर बने ही नहीं
+> हैं और उन्हें सिर्फ़ placeholder मिलेंगे। **Push अब पूरा बना और live है**;
+> assistant अब भी नहीं है — nav का assistant slot search पर जाता है
+> (`src/lib/workspaceConfig.ts`).
 
 ---
 

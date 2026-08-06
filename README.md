@@ -44,17 +44,24 @@ Delete it before building.
 | Route | What it is |
 |---|---|
 | `/` | Home — sutra of the day, resume reading, the shelves |
-| `/books`, `/books/[code]` | Originals shelf, and one book |
-| `/translations` | Translations shelf |
+| `/books`, `/books/[code]` | The books shelf, and one book |
 | `/books/[code]/[chapter]` | **The reader.** Renders outside the app shell on purpose — header plus bottom nav cost ~26% of a phone screen and none of it is useful mid-chapter (`src/lib/routes.ts`) |
 | `/books/[code]/page/[n]` | A printed page number, resolved to its chapter |
 | `/paras/[ref]` | A citation like `MVD 3.42.5`, opened at that paragraph |
-| `/resources` | The library's top level: the doors, and the विषय chips |
+| `/originals` | Originals' **library** shelf — his recordings, photographs, letters and papers. Books are at `/books`; this is everything else |
+| `/av` | Originals' recordings addressed directly — a door onto ~40 hours, not a room |
+| `/translations` | Translations shelf |
+| `/resources` | Resources' library shelf |
+| `/connect`, `/connect/centers`, `/connect/events/[id]` | Events feed, centres, one event |
+| `/connect/library` | Connect's own library shelf — same renderer as `/resources` |
 | `/library/[id]` | **Any folder, at any depth** — one component, recursed by route |
+| `/library/[id]/read/[fileId]` | **The PDF reader.** Also outside the shell — a document is reading, and reading owns the screen |
 | `/library?topic=` | One विषय, across the whole library |
-| `/paribhasha` | The glossary |
+| `/paribhasha`, `/paribhasha/[id]` | The glossary, and one word |
 | `/search` | Book citations and the संसाधन lane, side by side, never merged |
-| `/connect`, `/me` | Centers and events; the reader's own notes and bookmarks |
+| `/me` | The reader's own — `/me/notes`, `/me/bookmarks`, `/me/feedback`, `/me/settings` |
+| `/login`, `/signup` | allauth headless, session cookies |
+| `/offline` | What the service worker serves when there is no network |
 
 `/library/[id]` is the piece worth understanding first. The backend returns the
 **same shape at every depth**, so depth 1 and depth 6 are one component: a
@@ -63,22 +70,29 @@ holding sub-folders renders as an index.
 
 ## Documents
 
-- **`docs/API_Contract_v1.md`** — the backend contract, and the authority on
-  every payload. Copied from the BE repo; re-copy it rather than editing it
-  here. §13 is the library.
-- **`docs/MD_FE_PRD_v2.md`** — the product spec for this app.
-- **`docs/push-notifications.md`** — the FCM setup.
+पूरा index: **[`docs/README.md`](docs/README.md)**.
+
+- **[`docs/API_Contract_v1.md`](docs/API_Contract_v1.md)** — the backend
+  contract, and the authority on every payload. Copied from the BE repo;
+  re-copy it rather than editing it here. §13 is the library.
+- **[`docs/reader.md`](docs/reader.md)** — दोनों readers, display system,
+  offline. पढ़ना ही यह product है, इसलिए यह पहले पढ़ने लायक़ है।
+- **[`docs/library.md`](docs/library.md)** — shelves, `/library/[id]` की
+  recursion, और browse बनाम find.
+- **[`docs/feedback.md`](docs/feedback.md)** · **[`docs/push-notifications.md`](docs/push-notifications.md)**
+  — इन दो modules के FE वाले आधे हिस्से।
+- **[`docs/PRD_v2.md`](docs/PRD_v2.md)** — the product spec for this app.
 - **`AGENTS.md`** — read before writing code. This Next.js version has breaking
   changes from what most models were trained on, and the local docs in
   `node_modules/next/dist/docs/` are the authority.
 
 For how content gets *into* the app, see the backend repo's
-`docs/library_manager_manual.md` — §9 maps every panel action to what a reader
-ends up seeing.
+`docs/manuals/library_manager_manual.md` — §9 maps every panel action to what a
+reader ends up seeing.
 
-**When these documents drift**, run the backend repo's `docs/doc_audit.md`. It
-covers both repos, and its rule 5 exists because the last run's worst finding
-was a route invented in a file written that same session.
+**When these documents drift**, run the backend repo's `docs/dev/doc_audit.md`.
+It covers both repos, and its rule 5 exists because that run's worst finding was
+a route invented in a file written that same session.
 
 ## Conventions
 
