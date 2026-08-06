@@ -72,6 +72,23 @@ const SLOW_MS = 10_000;
 const WINDOW = 2;
 
 /**
+ * How many decoded page proxies to hold before letting the oldest go.
+ *
+ * Wider than the drawn window on purpose: turning back one page should not
+ * mean decoding it again. pdf.js's viewer keeps ten for the same reason.
+ */
+const PAGE_CACHE = 12;
+
+/**
+ * Under this, fetch the whole document rather than page-by-page ranges.
+ *
+ * Twelve megabytes is roughly three photographs, and buys every page of a
+ * document instantly for the rest of the session. Above it, a reader who opens
+ * a 97 MB scan to check one page should not be charged for all of it.
+ */
+const EAGER_MAX_BYTES = 12 * 1024 * 1024;
+
+/**
  * How far below the top edge the "page you are reading" is judged from.
  *
  * Not the very top: a reader who has scrolled two centimetres into page 7 is
@@ -117,20 +134,21 @@ const THEME_FILTER: Record<ResolvedTheme, string> = {
 };
 
 /**
- * Give back every page outside `from..to` — its canvas, its render task and
- * its decoded operator list.
+ * Give back the canvases of every page outside `from..to`.
  *
  * Five canvases at a capped DPR is a bounded cost on a 390-page document;
  * keeping all 390 is not. Module-level rather than a hook: it mutates the box
  * records, and the React compiler rightly treats values reached through a
  * memoised callback as frozen.
+ *
+ * **It no longer touches the page proxies.** It used to call `cleanup()` on
+ * each one as it went, which is what left pages permanently blank: a cleaned
+ * proxy stayed in the cache and was handed back to the next render, which drew
+ * nothing and never recovered — reliably, a handful of pages into a scroll.
+ * pdf.js's own viewer does not do this either; it cleans up on an idle timer,
+ * not on every scroll. Proxies are bounded by {@link trimPages} instead.
  */
-function release(
-  boxes: Map<number, PageBox>,
-  cache: Map<number, PDFPageProxy>,
-  from: number,
-  to: number
-): void {
+function release(boxes: Map<number, PageBox>, from: number, to: number): void {
   for (const [n, box] of boxes) {
     if (n >= from && n <= to) continue;
     box.task?.cancel();
@@ -140,7 +158,21 @@ function release(
       box.canvas = null;
       box.drawnAt = 0;
     }
-    cache.get(n)?.cleanup();
+  }
+}
+
+/**
+ * Keep the page-proxy cache bounded, oldest first — and **only** clean up a
+ * proxy on its way out, never one that might be drawn again.
+ *
+ * A `Map` keeps insertion order, so the oldest entries are the front of it.
+ */
+function trimPages(cache: Map<number, PDFPageProxy>, keep: number): void {
+  while (cache.size > keep) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) return;
+    cache.get(oldest)?.cleanup();
+    cache.delete(oldest);
   }
 }
 
@@ -151,8 +183,6 @@ interface PageBox {
   task: RenderTask | null;
   /** the scale it was drawn at, so a zoom knows what is stale */
   drawnAt: number;
-  /** the scale currently being drawn, so one page never draws twice at once */
-  drawingAt: number;
 }
 
 export function PdfReader({
@@ -163,6 +193,7 @@ export function PdfReader({
   onSlow,
   onFail,
   backHref,
+  fileSize = null,
 }: {
   url: string;
   title: string;
@@ -189,6 +220,8 @@ export function PdfReader({
   onFail?: (detail: string) => void;
   /** where the back control goes; without it the reader draws none */
   backHref?: string;
+  /** bytes, when known — decides whether the file is fetched whole or rationed */
+  fileSize?: number | null;
 }) {
   const { resolved } = useDisplay();
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -297,12 +330,23 @@ export function PdfReader({
 
         loading = pdfjs.getDocument({
           url,
-          // Fetch what a page needs rather than the whole file. R2 answers
-          // ranged GETs and exposes Content-Range to this origin, so on a
-          // healthy document this is the difference between opening a book and
-          // downloading one.
           rangeChunkSize: 65536,
-          disableAutoFetch: true,
+          /*
+           * **Small files are fetched whole; only the heavy ones are rationed.**
+           *
+           * `disableAutoFetch` was on for everything, which meant every page a
+           * reader reached needed its own range request — one round trip per
+           * page, on mobile latency, forever. On a 441 KB book that is absurd:
+           * the whole document costs less than a single photograph, and paying
+           * for it once buys every one of its 220 pages instantly. It is also
+           * what pdf.js's own viewer does by default, and why it feels
+           * immediate after the first moment.
+           *
+           * Above the threshold the rationing earns its keep: a 97 MB scan
+           * fetched eagerly is 97 MB of someone's data plan for a document
+           * they may read three pages of.
+           */
+          disableAutoFetch: (fileSize ?? 0) > EAGER_MAX_BYTES,
         });
         // What the reader is actually waiting for, said in numbers. A bare
         // "Opening…" over a 27 MB document is indistinguishable from a hang,
@@ -342,25 +386,20 @@ export function PdfReader({
       cached.clear();
       void loading?.destroy();
     };
-  }, [url, fail, onSlow]);
+  }, [url, fail, onSlow, fileSize]);
 
   // ---- draw one page ----
   //
-  // **Every render gets its own canvas, and a page draws once at a time.**
-  // Both rules are here because of the same defect. `draw` awaits `getPage`
-  // before it renders, so two calls for the same page could each get past the
-  // guard and then call `render()` on one shared canvas — which pdf.js
-  // rejects outright: *"Cannot use the same canvas during multiple render()
-  // operations."* And two calls were not hypothetical: `ready` flipping on the
-  // first completed page rebuilt this callback, which rebuilt `focus`, which
-  // re-ran the effect that had just called it. Whether that raced depended on
-  // whether the first render had finished — so it struck one document on one
-  // phone and nothing on a desk.
+  // Called only by the queue below, and therefore never concurrently. That is
+  // the whole design: pdf.js's own viewer renders one page at a time through a
+  // `PDFRenderingQueue`, and the reason is not politeness — five renders racing
+  // for one worker finish later than five in a row, and every guard needed to
+  // keep them from colliding is a place to get it wrong. This ran five at once
+  // and grew exactly those guards, and one of them is what left pages blank.
   //
-  // A fresh canvas makes the collision impossible rather than unlikely, and
-  // swapping it in only once it is painted means a redraw never blanks the
-  // page it is replacing.
-  const draw = useCallback(
+  // Each render still gets a fresh canvas, swapped in only once painted, so a
+  // redraw never blanks the page it is replacing.
+  const drawOne = useCallback(
     async (n: number) => {
       const box = boxes.current.get(n);
       if (!doc || !box) return;
@@ -369,22 +408,11 @@ export function PdfReader({
       if (width === 0) return;
       const scale = ZOOMS[zoom];
       if (box.canvas && box.drawnAt === scale) return; // already good at this zoom
-      if (box.drawingAt === scale) return; // already on its way at this zoom
 
-      // Cancel what is in flight and **wait for it to unwind**. `cancel()` only
-      // asks; the task settles a beat later, and starting the next render
-      // before it does is the other half of the same bug.
-      if (box.task) {
-        const previous = box.task;
-        previous.cancel();
-        await previous.promise.catch(() => {});
-        if (box.task === previous) box.task = null;
-      }
-
-      box.drawingAt = scale;
       try {
         const page = pageCache.current.get(n) ?? (await doc.getPage(n));
         pageCache.current.set(n, page);
+        trimPages(pageCache.current, PAGE_CACHE);
         if (boxes.current.get(n) !== box) return; // torn down while awaiting
 
         const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
@@ -431,15 +459,38 @@ export function PdfReader({
         // A cancelled render is the normal way a fast scroll ends, not a fault.
         if ((e as { name?: string })?.name === "RenderingCancelledException") return;
         fail(describe(e));
-      } finally {
-        if (box.drawingAt === scale) box.drawingAt = 0;
       }
     },
     // `ready` is deliberately absent — see `readyRef`. Listing it rebuilt this
-    // callback the moment the first page painted, and that cascade is what
-    // produced the double render above.
+    // callback the moment the first page painted, and that cascade re-entered
+    // the render loop.
     [doc, zoom, fail]
   );
+
+  /**
+   * The render queue — one page at a time, nearest first.
+   *
+   * Re-queuing *replaces* what was waiting rather than appending to it, which
+   * is the other half of what the official viewer's "highest priority page"
+   * does: a reader who has scrolled on has said, by scrolling, that the pages
+   * they left are no longer the ones to spend the worker on.
+   */
+  const queue = useRef<number[]>([]);
+  const pumping = useRef(false);
+
+  const pump = useCallback(async () => {
+    if (pumping.current) return;
+    pumping.current = true;
+    try {
+      while (queue.current.length > 0) {
+        const n = queue.current.shift();
+        if (n === undefined) break;
+        await drawOne(n);
+      }
+    } finally {
+      pumping.current = false;
+    }
+  }, [drawOne]);
 
   /**
    * The page at the reading line, found by bisection.
@@ -483,15 +534,29 @@ export function PdfReader({
     return found;
   }, [pageCount, barHeight]);
 
-  /** Draw around a page and release the canvases that are nowhere near it. */
+  /**
+   * Draw around a page and release the canvases nowhere near it.
+   *
+   * The order matters as much as the set: the page being read first, then out
+   * in both directions. A reader waiting on the page in front of them should
+   * not be behind two neighbours in the queue.
+   */
   const focus = useCallback(
     (n: number) => {
       const from = Math.max(1, n - WINDOW);
       const to = Math.min(pageCount, n + WINDOW);
-      for (let i = from; i <= to; i++) void draw(i);
-      release(boxes.current, pageCache.current, from, to);
+
+      const wanted: number[] = [n];
+      for (let d = 1; d <= WINDOW; d++) {
+        if (n + d <= to) wanted.push(n + d);
+        if (n - d >= from) wanted.push(n - d);
+      }
+      queue.current = wanted;
+      void pump();
+
+      release(boxes.current, from, to);
     },
-    [pageCount, draw]
+    [pageCount, pump]
   );
 
   // ---- follow the reader ----
@@ -703,7 +768,7 @@ export function PdfReader({
       return;
     }
     if (!boxes.current.has(n)) {
-      boxes.current.set(n, { el, canvas: null, task: null, drawnAt: 0, drawingAt: 0 });
+      boxes.current.set(n, { el, canvas: null, task: null, drawnAt: 0 });
     }
   }, []);
 

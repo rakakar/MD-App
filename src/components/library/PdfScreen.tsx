@@ -105,6 +105,7 @@ export function PdfScreen({
         title={file.title}
         startPage={start}
         backHref={backHref}
+        fileSize={file.file_size}
         onPage={onPage}
         onSlow={onSlow}
         onFail={onFail}
