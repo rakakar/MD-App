@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { ReadingMode } from "@/lib/storage";
 
 /**
@@ -14,8 +14,17 @@ import type { ReadingMode } from "@/lib/storage";
  *  - a tap in the middle of the page toggles it, in either mode;
  *  - anything modal (a sheet, the note dialog) pins it visible, because the
  *    controls that opened it must not vanish underneath.
+ *
+ * Shared by both readers. The book scrolls the window; the PDF scrolls a box
+ * inside itself and passes `scroller` — which is the only difference between
+ * them, and a poor reason for two copies of these rules that would drift.
  */
-export function useReaderChrome(mode: ReadingMode, locked: boolean) {
+export function useReaderChrome(
+  mode: ReadingMode,
+  locked: boolean,
+  /** the element that scrolls, when it is not the window */
+  scroller?: RefObject<HTMLElement | null>
+) {
   const [visible, setVisible] = useState(true);
 
   const show = useCallback(() => setVisible(true), []);
@@ -40,13 +49,17 @@ export function useReaderChrome(mode: ReadingMode, locked: boolean) {
 
   useEffect(() => {
     if (mode !== "scroll" || locked) return;
-    let last = window.scrollY;
+    const box = scroller?.current ?? null;
+    const target: HTMLElement | Window = box ?? window;
+    const readY = () => (box ? box.scrollTop : window.scrollY);
+
+    let last = readY();
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
-        const y = window.scrollY;
+        const y = readY();
         const dy = y - last;
         // ignore the jitter of a finger resting on the glass
         if (Math.abs(dy) > 10) {
@@ -59,9 +72,9 @@ export function useReaderChrome(mode: ReadingMode, locked: boolean) {
         ticking = false;
       });
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [mode, locked]);
+    target.addEventListener("scroll", onScroll, { passive: true });
+    return () => target.removeEventListener("scroll", onScroll);
+  }, [mode, locked, scroller]);
 
   return { visible, show, hide, toggle };
 }

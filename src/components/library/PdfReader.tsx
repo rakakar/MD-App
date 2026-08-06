@@ -8,10 +8,11 @@ import type {
   PDFPageProxy,
   RenderTask,
 } from "pdfjs-dist";
+import { useReaderChrome } from "@/components/reader/useReaderChrome";
 import { BackIcon } from "@/components/shell/icons";
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import { contentLang } from "@/lib/script";
-import type { ResolvedTheme } from "@/lib/storage";
+import { DEFAULT_PREFS, getPrefs, type ResolvedTheme } from "@/lib/storage";
 
 /**
  * An error, in the few words a fix can be built from.
@@ -81,6 +82,15 @@ const READING_LINE = 80;
 
 /** A flick fires hundreds of scroll events; only the rest at the end counts. */
 const SETTLE_MS = 120;
+
+/** How far two fingers must spread or close before the scale steps. */
+const PINCH_IN = 0.77;
+const PINCH_OUT = 1.3;
+
+/** distance between two touches */
+function spread(t: React.TouchList): number {
+  return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+}
 
 /**
  * Cap on canvas backing-store density. A phone reporting DPR 3 on a 390-page
@@ -182,6 +192,18 @@ export function PdfReader({
 }) {
   const { resolved } = useDisplay();
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  // Never locked: this reader has no sheet or dialog to pin the chrome open for.
+  const chrome = useReaderChrome("scroll", false, scrollerRef);
+  const [tapZones, setTapZones] = useState(DEFAULT_PREFS.tapZones);
+  /**
+   * The bar's height, held as a number and spent as top padding on the page
+   * list. The bar overlays the pages rather than sitting above them, so that
+   * hiding it slides it away over the document instead of reflowing the column
+   * — a reflow would resize every page and redraw the lot, which is a heavy
+   * price for a bar politely getting out of the way.
+   */
+  const [barHeight, setBarHeight] = useState(0);
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [current, setCurrent] = useState(startPage);
@@ -222,6 +244,13 @@ export function PdfReader({
   useEffect(() => {
     currentRef.current = current;
   }, [current]);
+
+  /**
+   * The page last *asked for*, updated the instant it is asked rather than
+   * when the scroll settles. What Prev/Next and the edge taps count from —
+   * see {@link jump}.
+   */
+  const targetRef = useRef(startPage);
 
   const fail = useCallback(
     (detail: string) => {
@@ -369,9 +398,17 @@ export function PdfReader({
         const canvas = document.createElement("canvas");
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        // **Taken out of layout entirely.** As a normal child with `height:
+        // auto` the canvas decided its own box, so a page was one height while
+        // drawn and another while blank — and since pages are drawn and
+        // released constantly as the reader moves, every page below the window
+        // shifted each time. The reading line then landed on a different page
+        // than the geometry said, and the place saved on leaving was a page or
+        // two out. The wrapper owns the size now; the canvas only fills it.
+        canvas.style.position = "absolute";
+        canvas.style.inset = "0";
         canvas.style.width = "100%";
-        canvas.style.height = "auto";
-        canvas.style.display = "block";
+        canvas.style.height = "100%";
         canvas.className = "rounded-md";
 
         const task = page.render({ canvas, viewport });
@@ -424,7 +461,10 @@ export function PdfReader({
   const pageAtTop = useCallback((): number => {
     const scroller = scrollerRef.current;
     if (!scroller || pageCount === 0) return 1;
-    const top = scroller.getBoundingClientRect().top + READING_LINE;
+    // Below the bar, not below the scroller: the bar floats over the pages, so
+    // the first thing a reader can actually see starts `barHeight` down. Judging
+    // from the scroller's own top would read a page that is behind the bar.
+    const top = scroller.getBoundingClientRect().top + barHeight + READING_LINE;
 
     let lo = 1;
     let hi = pageCount;
@@ -441,7 +481,7 @@ export function PdfReader({
       }
     }
     return found;
-  }, [pageCount]);
+  }, [pageCount, barHeight]);
 
   /** Draw around a page and release the canvases that are nowhere near it. */
   const focus = useCallback(
@@ -462,6 +502,10 @@ export function PdfReader({
     let timer: ReturnType<typeof setTimeout>;
     const settle = () => {
       const n = pageAtTop();
+      // Scrolling by hand is also "asking to be" somewhere — without this a
+      // finger-scroll from page 3 to page 40 would leave the next tap of Next
+      // counting from 3.
+      targetRef.current = n;
       setCurrent(n);
       focus(n);
     };
@@ -502,6 +546,123 @@ export function PdfReader({
     if (!ready || pageCount === 0) return;
     onPage?.(current, pageCount);
   }, [current, pageCount, ready, onPage]);
+
+  // ---- the reader's own preference for edge taps ----
+  useEffect(() => {
+    setTapZones(getPrefs().tapZones);
+  }, []);
+
+  // ---- how much room the bar takes ----
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const measure = () => setBarHeight(bar.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, []);
+
+  // ---- gestures ----
+  //
+  // The same vocabulary the book reader speaks (see `Reader.onPointerUp`), so
+  // that "reading" means one thing in this app: a tap in the middle shows or
+  // hides the chrome, a tap at either edge turns a page when the chrome is
+  // already out of the way.
+  //
+  // **No horizontal swipe, deliberately.** It is the obvious gesture to reach
+  // for and the wrong one here: a zoomed page is wider than the screen and has
+  // to be dragged sideways to be read, so a swipe-to-turn would fight the pan
+  // at exactly the magnification where the pan matters most. Vertical scroll
+  // is the page turn — it is what every document reader does, and it is what a
+  // continuous scroll of pages already means.
+  const gesture = useRef<{ x: number; y: number; t: number } | null>(null);
+
+  /**
+   * Go to a page, and count from where the reader **asked** to be.
+   *
+   * `targetRef` rather than `currentRef` because the two disagree for a moment
+   * and the difference is visible: `current` is only refreshed once a scroll
+   * settles, so two taps of Next inside {@link SETTLE_MS} both read the same
+   * page and jumped to the same place — the second tap did nothing at all.
+   * The label and the drawing are moved here too, so a tap answers on the tap
+   * rather than a tenth of a second later.
+   */
+  const jump = useCallback(
+    (to: number) => {
+      if (pageCount === 0) return;
+      const n = Math.min(Math.max(1, to), pageCount);
+      targetRef.current = n;
+      setCurrent(n);
+      boxes.current.get(n)?.el.scrollIntoView({ block: "start", behavior: "auto" });
+      focus(n);
+    },
+    [pageCount, focus]
+  );
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    // never hijack a control
+    if ((e.target as HTMLElement).closest("[data-pdf-chrome],a,button")) {
+      gesture.current = null;
+      return;
+    }
+    gesture.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+  }, []);
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      const g = gesture.current;
+      gesture.current = null;
+      if (!g) return;
+
+      const dx = e.clientX - g.x;
+      const dy = e.clientY - g.y;
+      // A tap is a press that went nowhere. Anything else was a scroll, a drag
+      // across a zoomed page, or a pinch — none of which wants a page turn.
+      if (Math.abs(dx) >= 12 || Math.abs(dy) >= 12 || Date.now() - g.t >= 400) return;
+
+      const zone = g.x / window.innerWidth;
+      if (tapZones && !chrome.visible) {
+        if (zone < 0.28) return jump(targetRef.current - 1);
+        if (zone > 0.72) return jump(targetRef.current + 1);
+      }
+      chrome.toggle();
+    },
+    [tapZones, chrome, jump]
+  );
+
+  /**
+   * Pinch, mapped onto our own scale ladder.
+   *
+   * The browser's pinch is switched off (see `touch-action` below), so this is
+   * what a reader's two fingers now do. Stepping rather than tracking the
+   * gesture continuously is on purpose: each step is a real re-render at the
+   * new scale, which is sharp, and a continuous pinch would ask for hundreds
+   * of them. The thresholds are wide enough that a small wobble does nothing.
+   */
+  const pinch = useRef<number | null>(null);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    pinch.current = e.touches.length === 2 ? spread(e.touches) : null;
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 2 || pinch.current === null) return;
+    const now = spread(e.touches);
+    const ratio = now / pinch.current;
+    if (ratio > PINCH_OUT) {
+      setZoom((z) => Math.min(z + 1, ZOOMS.length - 1));
+      pinch.current = now;
+    } else if (ratio < PINCH_IN) {
+      setZoom((z) => Math.max(z - 1, 0));
+      pinch.current = now;
+    }
+  }, []);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) pinch.current = null;
+  }, []);
 
   /** Throw away what is drawn and draw the window again, wherever it is now. */
   const redrawWindow = useCallback(() => {
@@ -546,18 +707,19 @@ export function PdfReader({
     }
   }, []);
 
-  const jump = (to: number) => {
-    const n = Math.min(Math.max(1, to), pageCount);
-    boxes.current.get(n)?.el.scrollIntoView({ block: "start", behavior: "auto" });
-  };
-
   return (
-    // The whole screen, and only as much chrome as a reader needs to leave,
-    // know where they are, and change the size. `h-dvh` rather than `h-screen`
-    // so the bar does not sit under a phone's URL bar as it collapses.
-    <div className="flex h-dvh flex-col bg-canvas">
+    // The whole screen. `h-dvh` rather than `h-screen` so the layout does not
+    // sit under a phone's URL bar as it collapses, and `relative` because the
+    // bar floats over the pages rather than pushing them down.
+    <div className="relative h-dvh overflow-hidden bg-canvas">
       <div
-        className="flex items-center gap-1 border-b border-rule bg-card px-2 py-2"
+        ref={barRef}
+        data-pdf-chrome
+        data-hidden={!chrome.visible}
+        // `reader-chrome` is the book reader's own transition — the bar slides
+        // up and fades rather than blinking out, and a hidden one stops taking
+        // taps so the page beneath it is fully readable.
+        className="reader-chrome reader-chrome-top absolute inset-x-0 top-0 z-20 flex items-center gap-1 border-b border-rule bg-card/95 px-2 py-2 backdrop-blur"
         style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top))" }}
       >
         {backHref && (
@@ -614,18 +776,38 @@ export function PdfReader({
 
       <div
         ref={scrollerRef}
-        // `pinch-zoom` on top of our own steps: the browser's pinch is instant
-        // and blurry, ours is a redraw and sharp. A reader inspecting a chart
-        // wants the first; a reader settling in wants the second.
-        // `overflow-x` matters once zoomed: a page wider than the column has to
-        // be reachable sideways, or the right edge of every line is simply
-        // gone — which is worse than not zooming at all.
-        className="flex-1 overflow-y-auto overflow-x-auto overscroll-contain [touch-action:pinch-zoom]"
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        /*
+         * `pan-x pan-y`, and the omission of `pinch-zoom` is the point.
+         *
+         * This said `pinch-zoom` alone, which does not mean "pinch as well" —
+         * it means **only** pinch, and a one-finger drag stopped scrolling the
+         * document at all. Two fingers to read a page is not reading.
+         *
+         * Dropping the browser's own pinch is a gain twice over. Its zoom is a
+         * blurry upscale of pixels already drawn, while the pinch handled below
+         * steps our own scale and re-renders sharp; and because it magnifies
+         * the *visual viewport*, it dragged the title bar around with it —
+         * which is the other thing that had to stop.
+         *
+         * `overflow-x` matters once zoomed: a page wider than the column has to
+         * be reachable sideways, or the right edge of every line is simply
+         * gone, which is worse than not zooming at all.
+         */
+        className="absolute inset-0 overflow-y-auto overflow-x-auto overscroll-contain [touch-action:pan-x_pan-y] [-webkit-tap-highlight-color:transparent]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label={title}
       >
         {pageCount === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-6">
+          <div
+            className="flex h-full flex-col items-center justify-center gap-2 px-6"
+            // clears the bar, which floats over this too
+            style={{ paddingTop: barHeight || undefined }}
+          >
             <span className="text-sm text-ink-soft">
               {loadedPct > 0 ? "Downloading the document…" : "Preparing the reader…"}
             </span>
@@ -650,7 +832,15 @@ export function PdfReader({
           // column on a desktop, where a 27-inch-wide scan is not reading
           // either. The gap is the only thing separating one page from the
           // next, which is how a paper book reads on a screen.
-          <ul className="mx-auto flex max-w-3xl flex-col gap-2 p-2">
+          //
+          // The top padding is the bar's own height, so the first page starts
+          // below it and stays there — the padding does not change when the bar
+          // hides, which is what keeps a vanishing bar from reflowing and
+          // redrawing the whole document.
+          <ul
+            className="mx-auto flex max-w-3xl flex-col gap-2 p-2"
+            style={{ paddingTop: barHeight || undefined }}
+          >
             {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
               <li key={n}>
                 <div
@@ -674,7 +864,7 @@ export function PdfReader({
                     aspectRatio: `1 / ${aspect}`,
                     filter: THEME_FILTER[resolved],
                   }}
-                  className="max-w-none bg-white"
+                  className="relative max-w-none bg-white"
                 />
               </li>
             ))}
