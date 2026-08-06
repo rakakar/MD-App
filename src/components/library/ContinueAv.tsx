@@ -203,6 +203,14 @@ export function ContinueAv({
 
   if (rows.length === 0) return null;
 
+  // The verb names what the reader was actually doing. A rail of nothing but
+  // recordings says "listening"; anything with a video in it says "watching",
+  // which is the phrase every player has taught them and which no listener
+  // reads as wrong.
+  const heading = rows.every((row) => row.kind === "audio")
+    ? "Continue listening"
+    : "Continue watching";
+
   const play = (row: ResumeRow) => {
     if (!row.file) return;
     player.playTrack(
@@ -220,9 +228,9 @@ export function ContinueAv({
   };
 
   return (
-    <section aria-label="Continue" className="mt-5">
+    <section aria-label={heading} className="mt-5">
       <h2 className="mb-2.5 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        Pick up where you left off
+        {heading}
       </h2>
       {/* A bleeding, snapping rail — the card wanted is nearly always the first,
           and stacking four of them would push the collections a reader came for

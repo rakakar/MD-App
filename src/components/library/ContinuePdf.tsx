@@ -131,7 +131,7 @@ export function ContinuePdf({ limit = 4 }: { limit?: number }) {
   return (
     <section aria-label="Continue reading" className="mt-5">
       <h2 className="mb-2.5 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        Pick up where you left off
+        Continue reading
       </h2>
       {/* A bleeding, snapping rail, as on the Audio/Video tab: the card wanted
           is nearly always the first, and stacking four would push the
