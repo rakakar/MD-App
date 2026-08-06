@@ -15,6 +15,7 @@
 // the reason the app renders no user-supplied HTML anywhere.
 
 import { apiBase } from "./api";
+import { recordApiFailure } from "./clientErrors";
 import type { Bookmark, MeUser, Note, Progress } from "./types";
 
 const TOKEN_KEY = "md.session_token";
@@ -54,6 +55,8 @@ export async function authedFetch<T>(
   }
   const res = await fetch(url, { ...init, headers });
   if (!res.ok) {
+    // Kept for the next bug report — status and path only (lib/clientErrors).
+    recordApiFailure(url, res.status);
     const err = new Error(`Request failed: ${res.status}`) as Error & {
       status: number;
       data?: unknown;

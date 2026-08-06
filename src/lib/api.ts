@@ -1,3 +1,4 @@
+import { recordApiFailure } from "./clientErrors";
 import { findQuery, type FindState } from "./find";
 import type {
   ApiWorkspace,
@@ -103,7 +104,12 @@ async function apiFetch<T>(path: string, opts: FetchOpts = {}): Promise<T> {
     init.next = { revalidate: opts.revalidate ?? CONTENT_REVALIDATE_SECONDS };
   }
   const res = await fetch(url, init);
-  if (!res.ok) throw new ApiError(res.status, url);
+  if (!res.ok) {
+    // Remembered so the next bug report carries it. Status and path only —
+    // see lib/feedback.ts.
+    recordApiFailure(url, res.status);
+    throw new ApiError(res.status, url);
+  }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }

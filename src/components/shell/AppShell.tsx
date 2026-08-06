@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
 import { PlayerBar } from "@/components/player/PlayerBar";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
 import { TrackAudioMode } from "@/components/player/TrackAudioMode";
@@ -47,6 +48,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     <DisplayProvider>
     <AuthProvider>
       <WorkspaceProvider>
+        {/* Above the router, because the screen a reader most wants to report
+            from is one that has just failed to render — a sheet mounted inside
+            a route could not open then. Paints nothing until it is opened. */}
+        <FeedbackProvider>
         <PlayerProvider>
           {/* The rail and the route are on opposite sides of the router — the
               sidebar is mounted once here and a page's facets are fetched per
@@ -79,6 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               seen — it is the reader's own opt-in, not app chrome. */}
           <PushProvider />
         </PlayerProvider>
+        </FeedbackProvider>
       </WorkspaceProvider>
     </AuthProvider>
     </DisplayProvider>

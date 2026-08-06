@@ -59,7 +59,13 @@ export type GaEvent =
   | "push_banner_dismiss"
   | "push_notification_click"
   | "install_pwa"
-  | "header_event_chip_tap";
+  | "header_event_chip_tap"
+  // Where feedback actually comes from. The reader's selection bar and the
+  // account menu are two very different asks — one is a correction on a
+  // passage, the other is everything else — and only the ratio can tell us
+  // whether the in-reader door is worth the tap it costs the toolbar.
+  | "feedback_open"
+  | "feedback_submit";
 
 export function track(event: GaEvent, params: Record<string, string | number> = {}): void {
   if (typeof window === "undefined" || !window.gtag) return;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { track } from "@/lib/analytics";
 import { getEvents } from "@/lib/api";
 import { eventStart, shortDate, upcomingEvents } from "@/lib/events";
@@ -315,6 +316,7 @@ function EventChip() {
 
 function AvatarMenu() {
   const { user, loading, logout } = useAuth();
+  const { open: openFeedback } = useFeedback();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -380,6 +382,28 @@ function AvatarMenu() {
             className="block px-4 py-2 text-sm hover:bg-ink/5"
           >
             Settings
+          </Link>
+          {/* Feedback lives here rather than behind a floating button: this
+              menu is on every screen, and a bubble over the text is the one
+              piece of chrome a reading app cannot afford. */}
+          <button
+            role="menuitem"
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              openFeedback({ source: "menu" });
+            }}
+            className="block w-full px-4 py-2 text-left text-sm hover:bg-ink/5"
+          >
+            Send feedback
+          </button>
+          <Link
+            role="menuitem"
+            href="/me/feedback"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2 text-sm hover:bg-ink/5"
+          >
+            My feedback
           </Link>
           <button
             role="menuitem"

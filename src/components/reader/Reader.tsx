@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { AudioMode } from "@/components/player/AudioMode";
 import { spokenParas } from "@/components/player/deviceSpeech";
 import {
@@ -103,6 +104,7 @@ export function Reader(props: ReaderProps) {
 
 function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps) {
   const { user, loading: authLoading } = useAuth();
+  const { open: openFeedback } = useFeedback();
   const { matcher } = useGlossary();
   const player = usePlayer();
   const loadChapter = useChapterLoader(book.code);
@@ -872,6 +874,22 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
     [showToast, clearSelection]
   );
 
+  const doReport = useCallback(
+    (s: Selection) => {
+      // The selected words, or the whole paragraph when the reader tapped
+      // rather than dragged — a correction with no passage attached is one
+      // somebody has to go and find.
+      openFeedback({
+        kind: "content",
+        canonical_ref: s.para.canonical_ref,
+        quoted_text: s.text || s.para.text_hi,
+        source: "reader",
+      });
+      clearSelection();
+    },
+    [openFeedback, clearSelection]
+  );
+
   const commitNote = useCallback(() => {
     if (!noteTarget || !noteText.trim()) return;
     track("note_add");
@@ -1227,6 +1245,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
             Note
           </ActionBtn>
           <ActionBtn onClick={() => void doCopy(selection)}>Copy</ActionBtn>
+          {/* The reason the whole feedback module earns its place: the corpus
+              came out of OCR, and the person who spots a broken matra is the
+              one reading the line. This hands us the exact paragraph, so the
+              editor opens proofreading on it instead of hunting for it. */}
+          <ActionBtn onClick={() => doReport(selection)} ariaLabel="Report a problem with this passage">
+            Report
+          </ActionBtn>
           {canListen && (
             <ActionBtn onClick={() => playFromPara(selection.para)}>▶ Here</ActionBtn>
           )}
