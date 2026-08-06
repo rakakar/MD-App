@@ -1,7 +1,7 @@
 import { AlbumAudio } from "@/components/library/AlbumAudio";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ImageGallery } from "@/components/library/ImageGallery";
-import { PdfView } from "@/components/library/PdfView";
+import { PdfCard } from "@/components/library/PdfCard";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { VideoView } from "@/components/library/VideoView";
 import { KIND_LABEL, KIND_ORDER, fileFacts } from "@/components/library/format";
@@ -97,24 +97,14 @@ function KindGroup({
   }
 
   if (kind === "pdf") {
+    // The card owns its own heading, unlike every other kind here: a document
+    // is one tappable object, and a title outside the thing you tap is a title
+    // that does nothing. See `PdfCard`.
     return (
       <ul className="flex flex-col gap-3">
         {files.map((file) => (
-          <li key={file.id} className="rounded-2xl border border-rule bg-card p-4">
-            <FileHeading file={file} />
-            <div className="mt-3">
-              <PdfView
-                url={file.url}
-                title={file.title}
-                // A cross-posted file reads in the folder it really lives in —
-                // its own breadcrumb ends there, and that is where its Back
-                // should return to.
-                readHref={`/library/${file.node}/read/${file.id}`}
-                itemId={file.id}
-                pageCount={file.page_count}
-                fileSize={file.file_size}
-              />
-            </div>
+          <li key={file.id}>
+            <PdfCard file={file} />
           </li>
         ))}
       </ul>

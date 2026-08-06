@@ -300,7 +300,7 @@ export default async function BookDetailPage({
             becomes the full reader then, and every link to it keeps working.
           </p>
           <div className="mt-3">
-            <PdfView url={bookPdfUrl(book.code)} title={book.title_hi} expanded />
+            <PdfView url={bookPdfUrl(book.code)} title={book.title_hi} />
           </div>
         </section>
       ) : (
