@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
+import { FileCover } from "@/components/library/FileCover";
 import { formatBytes } from "@/components/library/format";
 import {
   ChevronRight,
@@ -87,7 +88,17 @@ export function ReadingCard({
       )}
 
       <div className="flex items-start gap-3.5">
-        <Cover src={cover} title={file.title} />
+        {/* Portrait, with a spine's worth of shadow: that silhouette is what
+            says "book" before a single word is read, and it is the signal that
+            survives being scanned at arm's length — which is how a folder of
+            ten is actually read. The document card's frame is squarer for the
+            same reason, from the other side. */}
+        <FileCover
+          src={cover}
+          title={file.title}
+          id={file.id}
+          className="h-[5.5rem] w-[4.125rem] rounded-lg shadow-[0_1px_3px_rgba(0,0,0,.18)]"
+        />
 
         <div className="min-w-0 flex-1">
           <Link
@@ -189,48 +200,5 @@ export function ReadingCard({
         </a>
       </div>
     </div>
-  );
-}
-
-/**
- * The cover, portrait and with a spine's worth of shadow.
- *
- * Portrait rather than the document card's square icon tile, because that
- * silhouette is what says "book" before a single word is read — and it is the
- * signal that survives being scanned at arm's length, which is how a folder of
- * ten is actually read.
- *
- * `<img>` and not `next/image`: these come from R2 on a domain that is one env
- * var away from changing, the BE already sized them for exactly this box, and
- * a loader in front of a 40 KB JPEG buys nothing.
- */
-function Cover({ src, title }: { src: string | null; title: string }) {
-  return (
-    <span
-      className="relative block h-[5.5rem] w-[4.125rem] shrink-0 overflow-hidden rounded-lg shadow-[0_1px_3px_rgba(0,0,0,.18)] ring-1 ring-black/[.06]"
-      style={{ background: TINT.bg }}
-    >
-      {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={src}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          // `cover`, so a first page whose aspect is not 3:4 fills the frame
-          // instead of leaving letterbox bars that make a shelf look broken.
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <span
-          aria-hidden
-          className="flex h-full w-full items-center justify-center"
-          style={{ color: TINT.ink }}
-        >
-          <DocumentIcon className="h-6 w-6" />
-        </span>
-      )}
-      <span className="sr-only">{title}</span>
-    </span>
   );
 }

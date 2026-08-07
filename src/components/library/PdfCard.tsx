@@ -3,15 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
+import { FileCover } from "@/components/library/FileCover";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { ReadingCard } from "@/components/library/ReadingCard";
 import { formatBytes } from "@/components/library/format";
-import {
-  ChevronRight,
-  DocumentIcon,
-  DownloadIcon,
-  ExternalLinkIcon,
-} from "@/components/shell/icons";
+import { ChevronRight, DownloadIcon, ExternalLinkIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import { getPdfPlace } from "@/lib/storage";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
@@ -38,9 +34,6 @@ import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
  * is drawn rather than badged. The branch is here, taken on `file.reading`, so
  * that exactly one place in the app decides which of the two a row is.
  */
-
-/** Matches the tint the folder tiles use for a PDF, so a document looks the same everywhere. */
-const PDF_TINT = { bg: "#E7E4F1", ink: "#4C4878" };
 
 /** Above this the row warns before the reader spends the data. See `PdfView`. */
 const HEAVY_BYTES = 20 * 1024 * 1024;
@@ -98,38 +91,21 @@ export function PdfCard({
 
       <div className="flex items-start gap-3.5">
         {/* The document's own first page, which for these scans and exports is
-            the printed cover. A folder drawn as ten identical grey icons is a
-            list of filenames — something you read — where the same folder with
-            its covers is a shelf, which is something you scan. The icon stays
-            as the fallback for a file that would not render, and for the
-            twenty-year-old scans that is not a rare case.
+            usually the printed cover — and when it is a wall of body text
+            instead, an operator can upload a real one or clear it, in which
+            case `FileCover` draws a title card. A folder of ten identical grey
+            icons is a list of filenames, something you read; the same folder
+            with its covers is a shelf, something you scan.
 
             Squarer than the reading card's portrait frame on purpose: this one
             is a document, that one is a book, and the silhouette is the part of
             the difference that survives being read at arm's length. */}
-        <span
-          className="relative block h-[3.75rem] w-[3.25rem] shrink-0 overflow-hidden rounded-lg ring-1 ring-black/[.06]"
-          style={{ background: PDF_TINT.bg }}
-        >
-          {file.thumbnail_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={file.thumbnail_url}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden
-              className="flex h-full w-full items-center justify-center"
-              style={{ color: PDF_TINT.ink }}
-            >
-              <DocumentIcon className="h-5 w-5" />
-            </span>
-          )}
-        </span>
+        <FileCover
+          src={file.thumbnail_url}
+          title={file.title}
+          id={file.id}
+          className="h-[3.75rem] w-[3.25rem] rounded-lg"
+        />
 
         <div className="min-w-0 flex-1">
           <Link
