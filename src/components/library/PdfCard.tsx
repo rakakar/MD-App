@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
+import { ReadingCard } from "@/components/library/ReadingCard";
 import { formatBytes } from "@/components/library/format";
 import {
   ChevronRight,
@@ -13,7 +14,7 @@ import {
 } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import { getPdfPlace } from "@/lib/storage";
-import type { LibraryFile, LocatedFile } from "@/lib/types";
+import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
 
 /**
  * A document, as a row in its folder.
@@ -30,6 +31,12 @@ import type { LibraryFile, LocatedFile } from "@/lib/types";
  * So: one object, one tap anywhere on it, the facts stated once. Opening out
  * and downloading survive as what they are — the ways round the reader, not
  * the way in — and are drawn quietly enough to say so.
+ *
+ * **This is one of two species**, and this one is a *file*. A document whose
+ * text is through the pipeline is a work rather than a file, and gets
+ * `ReadingCard` instead — that component's header explains why the difference
+ * is drawn rather than badged. The branch is here, taken on `file.reading`, so
+ * that exactly one place in the app decides which of the two a row is.
  */
 
 /** Matches the tint the folder tiles use for a PDF, so a document looks the same everywhere. */
@@ -38,7 +45,14 @@ const PDF_TINT = { bg: "#E7E4F1", ink: "#4C4878" };
 /** Above this the row warns before the reader spends the data. See `PdfView`. */
 const HEAVY_BYTES = 20 * 1024 * 1024;
 
-export function PdfCard({ file }: { file: LibraryFile | LocatedFile }) {
+export function PdfCard({
+  file,
+  folderProvenance,
+}: {
+  file: LibraryFile | LocatedFile;
+  /** the folder's own, so a row can stay silent when it agrees — see below */
+  folderProvenance?: Provenance;
+}) {
   const [place, setPlace] = useState<{ page: number; pageCount: number } | null>(null);
 
   useEffect(() => {
@@ -50,11 +64,18 @@ export function PdfCard({ file }: { file: LibraryFile | LocatedFile }) {
     }
   }, [file.id, file.page_count]);
 
+  if (file.reading) return <ReadingCard file={file} reading={file.reading} />;
+
   const readHref = `/library/${file.node}/read/${file.id}`;
   const href = place ? `${readHref}?page=${place.page}` : readHref;
   const heavy = (file.file_size ?? 0) >= HEAVY_BYTES;
 
+  // Named as a PDF here, where the other species names chapters and reflow
+  // instead. The two vocabularies are the difference the reader is actually
+  // being asked to see, and stating the format is what makes "Text edition"
+  // over there mean something.
   const facts = [
+    "PDF",
     file.page_count ? `${file.page_count} ${file.page_count === 1 ? "page" : "pages"}` : null,
     formatBytes(file.file_size) || null,
   ]
@@ -75,13 +96,39 @@ export function PdfCard({ file }: { file: LibraryFile | LocatedFile }) {
         <BreadcrumbLine steps={file.breadcrumb} />
       )}
 
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3.5">
+        {/* The document's own first page, which for these scans and exports is
+            the printed cover. A folder drawn as ten identical grey icons is a
+            list of filenames — something you read — where the same folder with
+            its covers is a shelf, which is something you scan. The icon stays
+            as the fallback for a file that would not render, and for the
+            twenty-year-old scans that is not a rare case.
+
+            Squarer than the reading card's portrait frame on purpose: this one
+            is a document, that one is a book, and the silhouette is the part of
+            the difference that survives being read at arm's length. */}
         <span
-          aria-hidden
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-          style={{ background: PDF_TINT.bg, color: PDF_TINT.ink }}
+          className="relative block h-[3.75rem] w-[3.25rem] shrink-0 overflow-hidden rounded-lg ring-1 ring-black/[.06]"
+          style={{ background: PDF_TINT.bg }}
         >
-          <DocumentIcon className="h-5 w-5" />
+          {file.thumbnail_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={file.thumbnail_url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span
+              aria-hidden
+              className="flex h-full w-full items-center justify-center"
+              style={{ color: PDF_TINT.ink }}
+            >
+              <DocumentIcon className="h-5 w-5" />
+            </span>
+          )}
         </span>
 
         <div className="min-w-0 flex-1">
@@ -105,25 +152,16 @@ export function PdfCard({ file }: { file: LibraryFile | LocatedFile }) {
               either of them. */}
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
             {facts && <span className="tabular-nums">{facts}</span>}
-            <ProvenanceBadge provenance={file.provenance} />
-            {/* The whole reason compilations exist, said where the decision is
-                actually made (Compilations.md §1). A reader on a phone has
-                learned that a PDF means pinching at a page that will not
-                reflow, and that lesson is exactly why they skip this card. If
-                the one document that *does* reflow only says so after they
-                open it, it is offered to the people who needed it least.
-
-                A link rather than a badge, because it is the better read for
-                most people here and should cost one tap, not two. `z-10`
-                lifts it clear of the stretched card link above. */}
-            {file.reading_book_code && (
-              <Link
-                href={`${readHref}?text=1`}
-                className="relative z-10 rounded-full px-2 py-0.5 text-xs font-semibold"
-                style={{ background: PDF_TINT.bg, color: PDF_TINT.ink }}
-              >
-                <span lang="hi" className="hi">पाठ में पढ़ें</span>
-              </Link>
+            {/* Only when this file disagrees with its folder, which is what the
+                field means — it is an override, blank meaning "inherit". A
+                folder of ten files all saying the same word ten times is not
+                ten pieces of information, it is one piece of chrome, and it was
+                colliding with the other vocabulary on this screen besides:
+                "Compilation" as a provenance and a text edition are different
+                claims that happened to share an English word. Said once in the
+                folder's own header now, and here only where it differs. */}
+            {file.provenance !== folderProvenance && (
+              <ProvenanceBadge provenance={file.provenance} />
             )}
           </span>
 

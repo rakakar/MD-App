@@ -85,10 +85,10 @@ const one = (raw: string | string[] | undefined): string | undefined =>
  * shared link, and that the way back to the pages is the URL minus a
  * parameter.
  *
- * The toggle appears only where `reading_book_code` says there is text to
- * toggle to, which is the BE's answer and not a guess from the `S-` code
- * convention. A `?text=1` on a file that has none simply reads as pages —
- * there is nothing to fail at, and nothing to 404.
+ * The toggle appears only where `reading` says there is text to toggle to,
+ * which is the BE's answer and not a guess from the `S-` code convention. A
+ * `?text=1` on a file that has none simply reads as pages — there is nothing
+ * to fail at, and nothing to 404.
  */
 export default async function PdfReadPage({
   params,
@@ -102,7 +102,7 @@ export default async function PdfReadPage({
   const found = await load(id, fileId);
   if (!found) notFound();
 
-  const code = found.file.reading_book_code;
+  const code = found.file.reading?.code ?? null;
   if (code && one(rawParams.text) === "1") {
     const chapter = Number(one(rawParams.ch));
     return (
@@ -185,7 +185,9 @@ async function CompilationText({
         // of its own to go back to.
         backHref: `/library/${node}`,
         backLabel: `Back to ${folderName}`,
-        note: "संकलन",
+        // See `ReaderHome.note` — never the word "संकलन", which this very
+        // library already uses for a provenance.
+        note: "Text edition",
       }}
     />
   );

@@ -301,6 +301,15 @@ export interface NodeCard {
   child_count: number;
   /** servable files, direct only */
   item_count: number;
+  /**
+   * How many of those files also read as text — `0` for almost every folder.
+   *
+   * A mixed folder is the normal case and always will be: extraction is per
+   * file and proofreading is the real cost of it, so a folder of ten reaches
+   * ten one file at a time. The header states the mix rather than implying
+   * that every row is alike.
+   */
+  reading_count: number;
   /** which sorts of file are inside, deduplicated and sorted; `[]`, never null */
   kinds: FileKind[];
   sequence: number;
@@ -349,6 +358,13 @@ export interface LibraryFile {
    * The library's photographs are camera originals — one folder of 127 is
    * 106MB against 3.3MB of thumbnails — which is the whole reason this field
    * exists (see `backfill_thumbnails` in the BE).
+   *
+   * **A PDF has one too**, rendered from its own first page. These files are
+   * scans and exports of printed books, so page one is the printed cover —
+   * which is what lets a folder be drawn as a shelf rather than as ten rows of
+   * the same grey icon. Falling back to `url` is not an option for this kind:
+   * a browser cannot draw a 97MB PDF into an `<img>`, so a PDF without a
+   * thumbnail gets the icon instead.
    */
   thumbnail_url: string | null;
   sequence: number;
@@ -365,21 +381,58 @@ export interface LibraryFile {
   duration_seconds: number | null;
   updated_at: string;
   /**
-   * The book code of the **compilation** made from this PDF, or null.
+   * The book code of the text edition made from this PDF, or null.
    *
-   * Null is the ordinary answer — it is every library file today, and it means
-   * this document can only be read as pages. A code means its text has been
-   * through the book pipeline and the reader may be offered पृष्ठ ⇄ पाठ
-   * (Compilations.md §9): the text mode is the ordinary
-   * `books/{code}/chapters/{n}/` calls and the ordinary `Reader`, at this
+   * @deprecated Superseded by `reading`, which carries this code plus what a
+   * card needs to draw. Kept only because the BE and this app deploy
+   * separately, so both fields are served for one release. Read `reading`.
+   */
+  reading_book_code: string | null;
+  /**
+   * What this file also is, when its text has been through the book pipeline
+   * — or null, which is the ordinary answer and is every library file today.
+   *
+   * **This field decides which card the reader sees.** Null draws the document
+   * card: an icon, a page count, a size, and a tap that opens pdf.js. An
+   * object draws the reading card: a cover, a chapter count, and a tap that
+   * opens the text. One field, one decision, so it cannot be made two ways in
+   * two components.
+   *
+   * The text mode itself is unchanged and adds no contract (Compilations.md
+   * §9): `books/{code}/chapters/{n}/` and the ordinary `Reader`, at this
    * file's own library URL.
    *
    * **Not** a claim that the two are the same document. A compilation is
    * somebody's selection from Nagraj ji's works, its page 40 is not the
-   * original's page 40, and the reading mode says so — which is why the FE
-   * labels it rather than quietly swapping one text for another.
+   * original's page 40 — which is why the original pages stay one tap away
+   * everywhere this appears, rather than being quietly replaced.
    */
-  reading_book_code: string | null;
+  reading: ReadingEdition | null;
+}
+
+/**
+ * The text edition of a library document — what the card promises before the
+ * tap, rather than what the reader discovers after it.
+ *
+ * Called an *edition* and never a "compilation" in anything a reader sees. Two
+ * reasons, and both bite: `संकलन` is already taken on these very screens as a
+ * provenance — whose word this is — and the two would collide on one card;
+ * and half of what is coming is संवाद and सत्संग transcripts, which have
+ * editions but are not books. `edition` is true of all of them.
+ */
+export interface ReadingEdition {
+  /** what `books/{code}/…` takes; `S-` prefixed by convention, never parsed */
+  code: string;
+  /**
+   * The curated cover, or null to fall back to the document's own first page
+   * (`thumbnail_url`). Null is common and not a failure — a manager adds a
+   * cover when there is one worth adding.
+   */
+  cover_url: string | null;
+  /** chapters a reader can open; front matter is not counted */
+  chapter_count: number;
+  /** whether any chapter has a recorded rendition */
+  has_audio: boolean;
 }
 
 /**

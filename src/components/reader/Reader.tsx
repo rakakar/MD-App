@@ -98,9 +98,14 @@ export interface ReaderHome {
   backHref: string;
   backLabel: string;
   /**
-   * What this text is, said plainly in the chrome. A compilation is not the
+   * What this text is, said plainly in the chrome. A text edition is not the
    * original work and the reader is entitled to know that before they quote
    * it — §9 lists the label among the things they get, not among the polish.
+   *
+   * "Text edition" rather than "संकलन": that word is already spoken for in the
+   * library as a *provenance* — whose word this is — and two meanings of one
+   * word is worse than either. It is also not true of everything coming: a
+   * संवाद transcript has an edition and is not a book.
    */
   note: string;
 }
@@ -1109,12 +1114,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                   reader is in — not a badge somewhere they have to go looking.
                   A compilation reads exactly like a book, which is precisely
                   why it has to say that it is not one. */}
-              {home && (
-                <>
-                  {" · "}
-                  <span lang="hi" className="hi">{home.note}</span>
-                </>
-              )}
+              {home && <>{" · "}{home.note}</>}
             </p>
           </div>
           {/* Back to the document as it was printed. The pages are the original
@@ -1123,9 +1123,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           {home ? (
             <Link
               href={documentHref(home.at.node, home.at.item)}
+              // Spelled "Pages" and not "Original pages" only because this bar
+              // is 40-odd characters wide on a phone and the title has first
+              // claim on them; the full sentence is in the label a screen
+              // reader and a hover both get.
+              title="Read the original pages"
+              aria-label="Read the original pages"
               className="flex h-11 shrink-0 items-center rounded-full px-3 text-xs font-semibold active:bg-current/10"
             >
-              <span lang="hi" className="hi">पृष्ठ</span>
+              Pages
             </Link>
           ) : (
             <span className="h-11 w-11 shrink-0" aria-hidden />

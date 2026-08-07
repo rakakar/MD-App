@@ -7,7 +7,7 @@ import { VideoView } from "@/components/library/VideoView";
 import { KIND_LABEL, KIND_ORDER, fileFacts } from "@/components/library/format";
 import { DownloadIcon, ExternalLinkIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
-import type { FileKind, LibraryFile, LocatedFile } from "@/lib/types";
+import type { FileKind, LibraryFile, LocatedFile, Provenance } from "@/lib/types";
 
 /**
  * A folder's files, each kind served as the thing it is (contract §13.5):
@@ -25,12 +25,21 @@ export function FileList({
   linked = [],
   albumTitle,
   coverUrl = null,
+  folderProvenance,
 }: {
   files: LibraryFile[];
   linked?: LocatedFile[];
   /** the folder's name — what the lock screen calls the album */
   albumTitle?: string;
   coverUrl?: string | null;
+  /**
+   * The folder's own provenance, so a row can stay silent when it agrees.
+   * Passed down rather than looked up because a cross-posted file inherits
+   * from *its* branch, not from the folder borrowing it — so agreement is the
+   * only thing this can honestly test, and disagreement is exactly what the
+   * badge is for.
+   */
+  folderProvenance?: Provenance;
 }) {
   const all: (LibraryFile | LocatedFile)[] = [...files, ...linked];
   const groups = KIND_ORDER.map((kind) => ({
@@ -59,6 +68,7 @@ export function FileList({
             files={kindFiles}
             albumTitle={albumTitle}
             coverUrl={coverUrl}
+            folderProvenance={folderProvenance}
           />
         </section>
       ))}
@@ -71,11 +81,13 @@ function KindGroup({
   files,
   albumTitle,
   coverUrl,
+  folderProvenance,
 }: {
   kind: FileKind;
   files: (LibraryFile | LocatedFile)[];
   albumTitle?: string;
   coverUrl: string | null;
+  folderProvenance?: Provenance;
 }) {
   if (kind === "audio") {
     return <AlbumAudio items={files} albumTitle={albumTitle} coverUrl={coverUrl} />;
@@ -104,7 +116,7 @@ function KindGroup({
       <ul className="flex flex-col gap-3">
         {files.map((file) => (
           <li key={file.id}>
-            <PdfCard file={file} />
+            <PdfCard file={file} folderProvenance={folderProvenance} />
           </li>
         ))}
       </ul>

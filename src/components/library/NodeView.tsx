@@ -142,6 +142,7 @@ export async function NodeView({
             linked={node.linked_items}
             albumTitle={node.name}
             coverUrl={node.cover_url}
+            folderProvenance={node.provenance}
           />
 
           {children.length === 0 && node.linked_children.length === 0 && files.length === 0 && (
@@ -166,6 +167,16 @@ function AlbumHeader({
   const hue = bookHue(`node-${node.id}`);
   const parent = node.breadcrumb.at(-1);
   const files = [...node.items, ...node.linked_items];
+  // The BE's count is over this folder's own files; a borrowed one is counted
+  // where it lives. Adding the linked rows here is what makes the header match
+  // the cards actually on the screen.
+  //
+  // `?? 0` is not defensive noise: this app deploys to Vercel and the API to a
+  // VPS, so for a while a new build talks to an API that has never heard of
+  // this field. Without it that window is `undefined + 0` — `NaN`, which is
+  // falsy here by luck rather than by decision.
+  const readingCount =
+    (node.reading_count ?? 0) + node.linked_items.filter((f) => f.reading).length;
 
   return (
     <div
@@ -213,6 +224,19 @@ function AlbumHeader({
             <span lang="hi" className="hi text-xs font-semibold text-white/75">
               {filesSummary(files)}
             </span>
+            {/* How much of this folder reads as text, stated rather than left
+                to be discovered a row at a time. A mixed folder is the normal
+                case and always will be — extraction is per file and
+                proofreading is its real cost — so a header that said nothing
+                would imply the rows are alike when the whole point is that
+                they are not. Counted by the BE over the folder, not over
+                `files`, so a cross-posted text edition is included exactly
+                once. */}
+            {readingCount > 0 && (
+              <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-white/90">
+                {readingCount} as text
+              </span>
+            )}
           </div>
         </div>
       </div>
