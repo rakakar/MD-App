@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Reader } from "@/components/reader/Reader";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { ApiError, getBook, getBooks, getChapter } from "@/lib/api";
+import { offShelfHref } from "@/lib/routes";
 import type { BookDetail, ChapterPayload } from "@/lib/types";
 import { contentWorkspace } from "@/lib/workspaceConfig";
 
@@ -70,6 +71,16 @@ export default async function ChapterPage({
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound();
     throw e;
+  }
+
+  // A compilation is read in the library, labelled, with its pages one tap
+  // away — never here as though it were a work in its own right. See
+  // `offShelfHref`; the 404 is the case where its source file is gone, which
+  // leaves it no honest home to be sent to.
+  if (book.role === "compilation") {
+    const away = offShelfHref(book, chapterNumber);
+    if (!away) notFound();
+    redirect(away);
   }
 
   // fail-soft: if the chapter fetch fails (BE hiccup), the client Reader

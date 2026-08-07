@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BookHeroActions } from "@/components/books/BookHeroActions";
 import { PdfView } from "@/components/library/PdfView";
 import { CoverTile } from "@/components/shelf/CoverTile";
@@ -8,6 +8,7 @@ import { BackIcon, ChevronRight } from "@/components/shell/icons";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { ApiError, bookPdfUrl, getBook, getBookGenres, getBooks } from "@/lib/api";
+import { offShelfHref } from "@/lib/routes";
 import { bookHue } from "@/lib/bookHue";
 import { genreLabel } from "@/lib/labels";
 import { contentLang } from "@/lib/script";
@@ -56,6 +57,15 @@ export default async function BookDetailPage({
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound();
     throw e;
+  }
+
+  // A compilation has no shelf page — it is a library file that reads well
+  // (Compilations.md D5), and this hero, with its genre and its "part of the
+  // collection" framing, is the wrong thing to say about somebody's selection.
+  if (book.role === "compilation") {
+    const away = offShelfHref(book);
+    if (!away) notFound();
+    redirect(away);
   }
 
   const ws = contentWorkspace(book.workspace);

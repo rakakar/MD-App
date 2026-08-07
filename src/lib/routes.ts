@@ -50,6 +50,34 @@ export function documentTextHref(
   return chapter === undefined ? base : `${base}&ch=${chapter}`;
 }
 
+/**
+ * Where a book reached under `/books/...` should actually be read, or null to
+ * read it right there.
+ *
+ * Only a **compilation** answers with a URL. It is unlisted rather than secret
+ * (Compilations.md D5), so its `/books/{code}` URLs are reachable and always
+ * will be — by an old link, a shared one, or the front-matter deep link that
+ * `/paras/{ref}` resolves to. Rendering it there would put somebody's
+ * selection from Nagraj ji's works into the ordinary book reader with nothing
+ * saying so, which is the one outcome §3's label rule exists to prevent. So
+ * the shelf routes hand it back to the library, where it is labelled and where
+ * the pages it was made from are one tap away.
+ *
+ * Returns null for a compilation with no `reading_home` — its source file is
+ * gone and there is no library URL to send it to. The caller must not render
+ * it either; `role` is what distinguishes that case from an ordinary book.
+ */
+export function offShelfHref(
+  book: {
+    role?: "original" | "compilation";
+    reading_home?: { node: number; item: number } | null;
+  },
+  chapter?: number
+): string | null {
+  if (book.role !== "compilation" || !book.reading_home) return null;
+  return documentTextHref(book.reading_home.node, book.reading_home.item, chapter);
+}
+
 /** a chapter of a book — the reflowable reader, with its own theme and chrome */
 export function isReaderRoute(pathname: string | null | undefined): boolean {
   return !!pathname && READER_ROUTE.test(pathname);

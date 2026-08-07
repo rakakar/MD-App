@@ -127,6 +127,24 @@ export interface BookDetail extends BookSummary {
    * rendered by three students is three separate rows here.
    */
   translations: TranslationRef[];
+  /**
+   * What this book **is**. `"original"` on everything the shelf lists.
+   *
+   * A `"compilation"` is a library PDF put through the book pipeline: it has
+   * real chapters and paragraphs, but it is not one of Nagraj ji's works and
+   * its page 40 is not the original's page 40 (Compilations.md D4).
+   */
+  role?: "original" | "compilation";
+  /**
+   * Where a compilation is actually read — null on every ordinary book.
+   *
+   * A compilation is reachable by direct link but belongs to the library, so
+   * the `/books/...` routes use this to send the reader to
+   * `/library/{node}/read/{item}` rather than rendering it as a shelf book
+   * with no label on it. Null on a compilation too when its source file has
+   * been deleted; `role` is what still says the text is a compilation.
+   */
+  reading_home?: { node: number; item: number } | null;
 }
 
 export interface FigureExtra {

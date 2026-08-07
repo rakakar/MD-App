@@ -106,6 +106,25 @@ export function PdfCard({ file }: { file: LibraryFile | LocatedFile }) {
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
             {facts && <span className="tabular-nums">{facts}</span>}
             <ProvenanceBadge provenance={file.provenance} />
+            {/* The whole reason compilations exist, said where the decision is
+                actually made (Compilations.md §1). A reader on a phone has
+                learned that a PDF means pinching at a page that will not
+                reflow, and that lesson is exactly why they skip this card. If
+                the one document that *does* reflow only says so after they
+                open it, it is offered to the people who needed it least.
+
+                A link rather than a badge, because it is the better read for
+                most people here and should cost one tap, not two. `z-10`
+                lifts it clear of the stretched card link above. */}
+            {file.reading_book_code && (
+              <Link
+                href={`${readHref}?text=1`}
+                className="relative z-10 rounded-full px-2 py-0.5 text-xs font-semibold"
+                style={{ background: PDF_TINT.bg, color: PDF_TINT.ink }}
+              >
+                <span lang="hi" className="hi">पाठ में पढ़ें</span>
+              </Link>
+            )}
           </span>
 
           {file.description && (
