@@ -218,6 +218,12 @@ export interface Tombstone {
   server_id?: number;
 }
 
+/** the library file a compilation's text came out of — its address (§9) */
+export interface ReadingHome {
+  node: number;
+  item: number;
+}
+
 export interface LocalStore {
   bookmarks: LocalBookmark[];
   notes: LocalNote[];
@@ -225,13 +231,32 @@ export interface LocalStore {
   progress: Record<string, LocalProgress>;
   /** deleted here, possibly still on the server */
   tombstones: Tombstone[];
+  /**
+   * Where a **compilation** is read, keyed by book code.
+   *
+   * Everything else in this store is a position; this is an address, and it is
+   * here because without it three of those positions link nowhere. A
+   * compilation's bookmark, note and resume row are all book-shaped — they are
+   * canonical refs into a real book — but `/books/{code}` is a URL that does
+   * not exist for it (Compilations.md D5), so the ref alone cannot be turned
+   * into a link. One entry per compilation answers all three, which is why it
+   * is a map here rather than a field repeated on every row.
+   *
+   * Written from both directions, because either can come first: the reader
+   * records it on opening the text, and `pull()` fills it in from the server's
+   * progress rows so a second device gets working links before it has opened
+   * anything.
+   */
+  reading_homes: Record<string, ReadingHome>;
 }
 
 const STORE_KEY = "md.local.v1";
 /** v1 of the store, written when this data was guest-only */
 const LEGACY_KEY = "md.guest.v1";
 
-const EMPTY: LocalStore = { bookmarks: [], notes: [], progress: {}, tombstones: [] };
+const EMPTY: LocalStore = {
+  bookmarks: [], notes: [], progress: {}, tombstones: [], reading_homes: {},
+};
 
 export function getLocalStore(): LocalStore {
   const raw = read<Partial<LocalStore> | null>(STORE_KEY, null);
@@ -243,6 +268,9 @@ export function getLocalStore(): LocalStore {
     notes: source.notes ?? [],
     progress: source.progress ?? {},
     tombstones: source.tombstones ?? [],
+    // `?? {}` and not a migration: a store written before compilations existed
+    // simply has no compilations in it.
+    reading_homes: source.reading_homes ?? {},
   };
 }
 
@@ -255,6 +283,27 @@ function mutate(fn: (s: LocalStore) => void): LocalStore {
   fn(store);
   setLocalStore(store);
   return store;
+}
+
+/**
+ * Remember that this book code is read at this library file.
+ *
+ * Idempotent and cheap — called on every open of a compilation, because the
+ * cost of writing what is already there is nothing next to the cost of a
+ * reader whose bookmarks link into a 404.
+ */
+export function rememberReadingHome(bookCode: string, home: ReadingHome): void {
+  if (!bookCode) return;
+  const existing = getLocalStore().reading_homes[bookCode];
+  if (existing?.node === home.node && existing?.item === home.item) return;
+  mutate((store) => {
+    store.reading_homes[bookCode] = home;
+  });
+}
+
+/** Where this book code is read, if it is a compilation this device knows. */
+export function readingHomeFor(bookCode: string): ReadingHome | null {
+  return getLocalStore().reading_homes[bookCode] ?? null;
 }
 
 export function addLocalBookmark(

@@ -28,10 +28,12 @@ import {
   syncPersonal,
 } from "@/lib/personal";
 import { citationText, paraAnchorId } from "@/lib/refs";
+import { documentHref, documentTextHref } from "@/lib/routes";
 import {
   getListeningPosition,
   getPrefs,
   nearestStep,
+  rememberReadingHome,
   setPrefs,
   FONT_SCALES,
   FONT_FACES,
@@ -61,10 +63,54 @@ export interface ReaderBook {
   chapters: ChapterTocEntry[];
 }
 
+/**
+ * Where this reading lives, when it does not live on the books shelf.
+ *
+ * A **compilation** is a library PDF whose text has been through the book
+ * pipeline (Compilations.md D5). It reads like a book because it *is* one
+ * underneath — same chapters, same paragraphs, same everything below this
+ * component — but for the reader it is a file in a folder, and it is reached at
+ * `/library/{node}/read/{item}`, never from the shelf. `/books/{code}` is not a
+ * URL it has.
+ *
+ * So the reader keeps every one of its own behaviours and is told only what is
+ * actually about *where it is*: the file it belongs to, the way back, and what
+ * to call this text. Everything else — the path it stays on, the URL each
+ * chapter pushes, the link back to the pages — is derived from the file, so
+ * those three cannot disagree with each other. Passing data rather than
+ * callbacks is the same instinct: a component that can be handed arbitrary
+ * URL-building is one that can be handed wrong URL-building.
+ *
+ * Chapters move in the query rather than in the path, which is the whole point:
+ * §9 asks that the URL stay the library's, and `/library/12/read/88?ch=3` is
+ * still that file's address in a way `/library/12/read/88/3` is not — it is
+ * also still matched by `PDF_READER_ROUTE`, so the app shell stays gone.
+ */
+export interface ReaderHome {
+  /**
+   * The library file this text came out of. Its address *and* its identity —
+   * the path, the way back to the pages, and the entry this reader records so
+   * that a bookmark made here can still be followed tomorrow all come from
+   * these two numbers.
+   */
+  at: { node: number; item: number };
+  /** where Back goes — the folder, not the book */
+  backHref: string;
+  backLabel: string;
+  /**
+   * What this text is, said plainly in the chrome. A compilation is not the
+   * original work and the reader is entitled to know that before they quote
+   * it — §9 lists the label among the things they get, not among the polish.
+   */
+  note: string;
+}
+
 interface ReaderProps {
   book: ReaderBook;
   initialChapterNumber: number;
   initialChapter: ChapterPayload | null;
+  /** absent on the books shelf, which is every reader but the compilation one */
+  home?: ReaderHome;
 }
 
 interface Toast {
@@ -102,7 +148,7 @@ export function Reader(props: ReaderProps) {
   );
 }
 
-function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps) {
+function ReaderView({ book, initialChapterNumber, initialChapter, home }: ReaderProps) {
   const { user, loading: authLoading } = useAuth();
   const { open: openFeedback } = useFeedback();
   const { matcher } = useGlossary();
@@ -222,6 +268,49 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapterNumber]);
 
+  // ---- where a chapter lives in the URL ----
+  // One pair of functions, because the two have to agree: whatever `chapterHref`
+  // pushes, `chapterAtLocation` has to be able to read back when the reader
+  // presses Back. On the shelf that is the path; in a compilation it is the
+  // query, and the path stays the library file's own (see `ReaderHome`).
+  const chapterHref = useCallback(
+    (n: number) =>
+      home
+        ? documentTextHref(home.at.node, home.at.item, n)
+        : `/books/${encodeURIComponent(book.code)}/${n}`,
+    [home, book.code]
+  );
+
+  const chapterAtLocation = useCallback((): number | null => {
+    if (home) {
+      if (window.location.pathname !== documentHref(home.at.node, home.at.item)) {
+        return null;
+      }
+      const params = new URLSearchParams(window.location.search);
+      // The pages mode is this same path without `text=1`. Popping back to it
+      // is a navigation out of this reader, which the route handles — not a
+      // chapter change within it.
+      if (params.get("text") !== "1") return null;
+      const raw = params.get("ch");
+      // No chapter named is not "no chapter": it is the URL the पाठ toggle
+      // links to, and the route renders the first chapter for it. This has to
+      // resolve it the same way the route does, or pressing Back out of
+      // chapter 2 leaves the URL saying one thing and the page showing another.
+      if (raw === null) return book.chapters[0]?.number ?? null;
+      const n = Number(raw);
+      return Number.isSafeInteger(n) && n > 0 ? n : null;
+    }
+    const m = window.location.pathname.match(/\/books\/[^/]+\/(\d+)$/);
+    return m ? Number(m[1]) : null;
+  }, [home, book.chapters]);
+
+  // Where this book code is read, so that a bookmark, a note or a resume
+  // position made here can be turned back into a URL later — by surfaces that
+  // will only ever see the canonical ref. See `refToHref`.
+  useEffect(() => {
+    if (home) rememberReadingHome(book.code, home.at);
+  }, [home, book.code]);
+
   // ---- chapter switching (client-side; URL kept in sync) ----
   const goToChapter = useCallback(
     async (
@@ -247,26 +336,23 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
       setPageIndex(0);
       setChapterLoading(false);
       if (opts.push !== false) {
-        window.history.pushState(null, "", `/books/${encodeURIComponent(book.code)}/${n}`);
+        window.history.pushState(null, "", chapterHref(n));
       }
       window.scrollTo({ top: 0 });
       return payload;
     },
-    [book.code, loadChapter, showToast]
+    [chapterHref, loadChapter, showToast]
   );
 
   // back/forward between chapters we pushed
   useEffect(() => {
     const onPop = () => {
-      const m = window.location.pathname.match(/\/books\/[^/]+\/(\d+)$/);
-      if (m) {
-        const n = Number(m[1]);
-        if (n !== chapterNumber) void goToChapter(n, { push: false });
-      }
+      const n = chapterAtLocation();
+      if (n !== null && n !== chapterNumber) void goToChapter(n, { push: false });
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [chapterNumber, goToChapter]);
+  }, [chapterAtLocation, chapterNumber, goToChapter]);
 
   // if SSR couldn't fetch (offline shell), load from cache client-side
   useEffect(() => {
@@ -1007,9 +1093,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
       >
         <div className="reader-content flex items-center gap-1 py-1.5">
           <Link
-            href={`/books/${encodeURIComponent(book.code)}`}
+            href={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
             className="-ms-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:bg-current/10"
-            aria-label="Back to book"
+            aria-label={home?.backLabel ?? "Back to book"}
           >
             <BackIcon className="h-5 w-5" />
           </Link>
@@ -1019,9 +1105,31 @@ function ReaderView({ book, initialChapterNumber, initialChapter }: ReaderProps)
             </p>
             <p className="truncate text-xs leading-tight text-(--reader-ink-soft)">
               <span lang="hi" className="hi">{book.title_hi}</span>
+              {/* What this text is, on the line that is already about what the
+                  reader is in — not a badge somewhere they have to go looking.
+                  A compilation reads exactly like a book, which is precisely
+                  why it has to say that it is not one. */}
+              {home && (
+                <>
+                  {" · "}
+                  <span lang="hi" className="hi">{home.note}</span>
+                </>
+              )}
             </p>
           </div>
-          <span className="h-11 w-11 shrink-0" aria-hidden />
+          {/* Back to the document as it was printed. The pages are the original
+              object and this text is derived from them (§12), so the way back
+              is never more than one tap from the way in. */}
+          {home ? (
+            <Link
+              href={documentHref(home.at.node, home.at.item)}
+              className="flex h-11 shrink-0 items-center rounded-full px-3 text-xs font-semibold active:bg-current/10"
+            >
+              <span lang="hi" className="hi">पृष्ठ</span>
+            </Link>
+          ) : (
+            <span className="h-11 w-11 shrink-0" aria-hidden />
+          )}
         </div>
       </div>
 

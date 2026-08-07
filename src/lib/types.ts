@@ -346,6 +346,22 @@ export interface LibraryFile {
   /** audio and video only */
   duration_seconds: number | null;
   updated_at: string;
+  /**
+   * The book code of the **compilation** made from this PDF, or null.
+   *
+   * Null is the ordinary answer — it is every library file today, and it means
+   * this document can only be read as pages. A code means its text has been
+   * through the book pipeline and the reader may be offered पृष्ठ ⇄ पाठ
+   * (Compilations.md §9): the text mode is the ordinary
+   * `books/{code}/chapters/{n}/` calls and the ordinary `Reader`, at this
+   * file's own library URL.
+   *
+   * **Not** a claim that the two are the same document. A compilation is
+   * somebody's selection from Nagraj ji's works, its page 40 is not the
+   * original's page 40, and the reading mode says so — which is why the FE
+   * labels it rather than quietly swapping one text for another.
+   */
+  reading_book_code: string | null;
 }
 
 /**
@@ -668,8 +684,23 @@ export interface Progress {
   thumbnail_url?: string | null;
   /** the whole recording's length, so a card can draw how far in this is */
   duration_seconds?: number | null;
-  /** the folder to open — a single file has no page of its own */
+  /**
+   * The folder to open — a single file has no page of its own.
+   *
+   * Also answered on a **compilation**, which is a book row in every other
+   * respect: it is the folder its source PDF lives in (Compilations.md §9).
+   */
   node?: number | null;
+  /**
+   * The library file a compilation's text came out of — null on every other
+   * row, which is every row that existed before compilations did.
+   *
+   * With `node`, this is the whole of the URL a resume card needs. Its absence
+   * is what §9 called the thing that would break quietly: a compilation is not
+   * on the books shelf, so a card that built `/books/{code}` from `book_code`
+   * alone would link into nothing, with no error anywhere to say so.
+   */
+  source_item?: number | null;
   [key: string]: unknown;
 }
 

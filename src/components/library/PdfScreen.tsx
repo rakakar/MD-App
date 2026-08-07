@@ -29,12 +29,15 @@ export function PdfScreen({
   file,
   backHref,
   openAt = null,
+  textHref,
 }: {
   file: LibraryFile;
   /** the folder it lives in — where Back goes */
   backHref: string;
   /** a page named in the link, from a resume card */
   openAt?: number | null;
+  /** the same document as text, where there is one (Compilations.md §9) */
+  textHref?: string;
 }) {
   const { user } = useAuth();
   const signedIn = Boolean(user);
@@ -92,6 +95,7 @@ export function PdfScreen({
         title={file.title}
         detail={failure}
         backHref={backHref}
+        textHref={textHref}
       />
     );
   }
@@ -105,6 +109,7 @@ export function PdfScreen({
         title={file.title}
         startPage={start}
         backHref={backHref}
+        textHref={textHref}
         fileSize={file.file_size}
         onPage={onPage}
         onSlow={onSlow}

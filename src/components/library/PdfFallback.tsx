@@ -25,12 +25,22 @@ export function PdfFallback({
   title,
   detail = null,
   backHref = null,
+  textHref = null,
 }: {
   url: string;
   title: string;
   detail?: string | null;
   /** shown as a way out when this is the whole screen rather than a card */
   backHref?: string | null;
+  /**
+   * The same document as text, where one exists (Compilations.md §9).
+   *
+   * Offered most pointedly here of all the places it is offered. The note at
+   * the foot of this screen has always had to admit that a document read this
+   * way keeps no place and takes no theme; where there is a पाठ mode, that
+   * sentence stops being an apology and becomes a choice.
+   */
+  textHref?: string | null;
 }) {
   // Resolved in an effect: the server has no `navigator`, and guessing before
   // hydration would flash the wrong one.
@@ -104,6 +114,16 @@ export function PdfFallback({
         <p className="mt-2 text-xs text-ink-soft">
           Read this way, your page isn&apos;t remembered and the app&apos;s theme
           doesn&apos;t apply. Reload to try the in-app reader again.
+          {textHref && (
+            <>
+              {" "}
+              Or{" "}
+              <Link href={textHref} className="font-semibold underline underline-offset-2">
+                read this document as text
+              </Link>
+              , which keeps both.
+            </>
+          )}
         </p>
         {detail && (
           <p className="mt-1 break-words font-mono text-[0.6875rem] leading-relaxed text-ink-soft opacity-70">

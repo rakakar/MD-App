@@ -18,6 +18,38 @@ export const READER_ROUTE = /^\/books\/[^/]+\/\d+$/;
  */
 export const PDF_READER_ROUTE = /^\/library\/\d+\/read\/\d+$/;
 
+/**
+ * One document, opened as the pages it was printed as.
+ *
+ * A file has no URL of its own in the API — it is only ever returned inside its
+ * folder — so the folder is half the address and the file is the row within it.
+ */
+export function documentHref(node: number, item: number): string {
+  return `/library/${node}/read/${item}`;
+}
+
+/**
+ * The same document, read as text — पाठ mode (Compilations.md §9).
+ *
+ * The **path does not change**, and that is the design rather than an
+ * implementation detail. A compilation is a library file that happens to read
+ * well, not a book on the shelf; its identity is the file, so the reading mode
+ * is a query on the file's own URL and not an address of its own. It keeps
+ * `PDF_READER_ROUTE` matching, which is what keeps the app shell away, and it
+ * makes going back to the pages a matter of dropping a parameter.
+ *
+ * The chapter rides in the query for the same reason — see `ReaderHome` in
+ * `components/reader/Reader.tsx`, which pushes these as the reader moves.
+ */
+export function documentTextHref(
+  node: number,
+  item: number,
+  chapter?: number
+): string {
+  const base = `${documentHref(node, item)}?text=1`;
+  return chapter === undefined ? base : `${base}&ch=${chapter}`;
+}
+
 /** a chapter of a book — the reflowable reader, with its own theme and chrome */
 export function isReaderRoute(pathname: string | null | undefined): boolean {
   return !!pathname && READER_ROUTE.test(pathname);

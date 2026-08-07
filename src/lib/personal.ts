@@ -377,6 +377,16 @@ async function pull(): Promise<void> {
   // this laptop remembers from last week.
   for (const s of progress) {
     if (!s.book_code) continue;
+    // Where this one is read, when it is not read on the shelf. A compilation's
+    // row is book-shaped in every other respect (Compilations.md §9), so this
+    // pair is the only thing that distinguishes it — and without it a reader
+    // signing in on a new phone gets their whole history back with every
+    // compilation in it linking to a book page that does not exist. Recorded
+    // before the freshness checks below, because the address is true whether or
+    // not this particular row is the newer one.
+    if (s.source_item != null && s.node != null) {
+      store.reading_homes[s.book_code] = { node: s.node, item: s.source_item };
+    }
     const mine = store.progress[s.book_code];
     const theirs = s.updated_at ?? "";
     if (mine && !mine.synced) continue; // ours is newer and not yet pushed

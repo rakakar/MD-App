@@ -193,6 +193,7 @@ export function PdfReader({
   onSlow,
   onFail,
   backHref,
+  textHref,
   fileSize = null,
 }: {
   url: string;
@@ -220,6 +221,18 @@ export function PdfReader({
   onFail?: (detail: string) => void;
   /** where the back control goes; without it the reader draws none */
   backHref?: string;
+  /**
+   * The same document as reflowable text — पाठ mode (Compilations.md §9).
+   *
+   * Absent on every library PDF today, and absent is the honest default: the
+   * text only exists where somebody has put this file through the book
+   * pipeline. Where it does exist the offer belongs *here*, in the chrome of
+   * the thing being read, because what it fixes is felt here — this canvas
+   * does not reflow, does not take a font size and does not take a theme, and
+   * a reader squinting at it should not have to go back to the folder to find
+   * that out.
+   */
+  textHref?: string;
   /** bytes, when known — decides whether the file is fetched whole or rationed */
   fileSize?: number | null;
 }) {
@@ -810,6 +823,15 @@ export function PdfReader({
             {pageCount > 0 ? `Page ${current} of ${pageCount}` : "Opening…"}
           </span>
         </span>
+        {textHref && (
+          <Link
+            href={textHref}
+            className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            <span lang="hi" className="hi">पाठ</span>
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => jump(current - 1)}
