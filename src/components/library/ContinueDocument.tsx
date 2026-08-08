@@ -252,28 +252,6 @@ export function ContinueDocument({ limit = 4 }: { limit?: number }) {
   );
 }
 
-/**
- * What the card says it is looking at.
- *
- * **The unit follows the mode, not the data.** Both places know a page, and the
- * bar is drawn from it either way — but a reader in the text has never seen a
- * page number and never will: that reader reflows the type, changes its size,
- * and is told where they are in chapters. Quoting them a page would name a
- * position in a document they are deliberately not looking at.
- *
- * Which leaves the one-chapter edition, and `S-A` is one: 52 pages under a
- * single heading, where "Chapter 1" is the title again and names nothing. The
- * percentage is the honest answer there — it is the only thing left that
- * distinguishes page 6 from page 40.
- */
-function positionLabel(row: ResumeRow, percent: number): string {
-  if (row.mode === "pages") return `Page ${row.page} of ${row.pageCount}`;
-  if (row.chapterCount > 1 && row.chapter !== undefined) {
-    return chapterLine(String(row.chapter), row.chapterTitle);
-  }
-  return `${Math.round(percent)}% read`;
-}
-
 function ResumeCard({ row }: { row: ResumeRow }) {
   const percent = Math.min(100, (row.page / row.pageCount) * 100);
   // Straight into the document at the place it was left, in the mode it was
@@ -315,6 +293,19 @@ function ResumeCard({ row }: { row: ResumeRow }) {
         >
           {row.title}
         </span>
+        {/* Where in the text they were, in the unit that reader is actually
+            given — the reflowable reader numbers chapters, not pages. Absent
+            on a one-chapter edition like `S-A`, where "Chapter 1" is the title
+            again and names no position, and absent on the pages, which say
+            where they are on the line below. */}
+        {row.mode === "text" && row.chapterCount > 1 && row.chapter !== undefined && (
+          <span
+            lang="hi"
+            className="hi mt-0.5 block truncate text-xs font-medium text-ink-soft"
+          >
+            {chapterLine(String(row.chapter), row.chapterTitle)}
+          </span>
+        )}
         <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-canvas">
           <span
             role="progressbar"
@@ -329,11 +320,33 @@ function ResumeCard({ row }: { row: ResumeRow }) {
             }}
           />
         </span>
-        <span
-          lang={row.mode === "text" ? "hi" : undefined}
-          className="mt-1.5 block truncate text-xs font-medium tabular-nums text-ink-soft"
-        >
-          {positionLabel(row, percent)}
+        {/* The printed page, on both kinds of card.
+
+            This said a bare percentage on a text edition for exactly one
+            release, on the reasoning that a reader who reflows the type never
+            sees a page number so should not be quoted one. The reasoning was
+            sound and the conclusion was still wrong: Home has always shown
+            "Page 18 of 195" against a book read in that same reflowable
+            reader, so the app had already answered this, and answering it the
+            other way here made two cards in one rail speak two languages about
+            the same fact. The page is honest either way — a text edition is
+            pipelined from the very file beside it and carries its pages.
+
+            The percentage keeps its place on the right, as on Home: the page
+            says where you are in the object, the figure says how far in that
+            is, and neither is the other. */}
+        <span className="mt-1.5 flex items-baseline justify-between gap-2">
+          <span className="truncate text-xs font-medium tabular-nums text-ink-soft">
+            Page {row.page} of {row.pageCount}
+          </span>
+          {row.mode === "text" && (
+            <span
+              className="shrink-0 text-xs font-bold tabular-nums"
+              style={{ color: "var(--ws-ink)" }}
+            >
+              {Math.round(percent)}%
+            </span>
+          )}
         </span>
       </span>
     </Link>
