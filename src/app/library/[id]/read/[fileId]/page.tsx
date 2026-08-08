@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { PdfScreen } from "@/components/library/PdfScreen";
 import { Reader } from "@/components/reader/Reader";
-import { ApiError, getBook, getChapter, getNode } from "@/lib/api";
+import { ApiError, getBook, getChapter, getNode, resolvePage } from "@/lib/api";
 import { documentHref, documentTextHref } from "@/lib/routes";
 import type { LibraryFile } from "@/lib/types";
 
@@ -102,6 +102,13 @@ export default async function PdfReadPage({
   const found = await load(id, fileId);
   if (!found) notFound();
 
+  // `?page=` from a resume card, or from the पाठ toggle in the other mode's
+  // chrome. Read on the server and handed down: this route prerenders, and a
+  // client component calling `useSearchParams` under a prerendered tree builds
+  // in dev and fails in production.
+  const page = Number(one(rawParams.page));
+  const openAt = Number.isSafeInteger(page) && page > 0 ? page : null;
+
   const code = found.file.reading?.code ?? null;
   if (code && one(rawParams.text) === "1") {
     const chapter = Number(one(rawParams.ch));
@@ -109,18 +116,13 @@ export default async function PdfReadPage({
       <CompilationText
         code={code}
         chapter={Number.isSafeInteger(chapter) && chapter > 0 ? chapter : null}
+        atPage={openAt}
         node={found.nodeId}
         item={found.file.id}
         folderName={found.nodeName}
       />
     );
   }
-
-  // `?page=` from a resume card. Read on the server and handed down: this
-  // route prerenders, and a client component calling `useSearchParams` under a
-  // prerendered tree builds in dev and fails in production.
-  const page = Number(one(rawParams.page));
-  const openAt = Number.isSafeInteger(page) && page > 0 ? page : null;
 
   return (
     <PdfScreen
@@ -149,12 +151,21 @@ export default async function PdfReadPage({
 async function CompilationText({
   code,
   chapter,
+  atPage,
   node,
   item,
   folderName,
 }: {
   code: string;
   chapter: number | null;
+  /**
+   * The printed page the reader was on when they asked for the text, when they
+   * came from the pages rather than from a chapter link — see
+   * `textEditionAtPage`. Resolved to a chapter here, on the server, so the
+   * switch costs the reader nothing and lands them where they were rather than
+   * at the top of the document.
+   */
+  atPage: number | null;
   node: number;
   item: number;
   folderName: string;
@@ -164,7 +175,20 @@ async function CompilationText({
     redirect(documentHref(node, item));
   }
 
-  const number = chapter ?? book.chapters[0].number;
+  // A named chapter always wins: it is a link the reader followed, while a page
+  // is an inference from where they happened to be scrolled.
+  let resolved = chapter;
+  if (resolved === null && atPage !== null) {
+    const at = await resolvePage(code, atPage).catch(() => null);
+    // Checked against the TOC rather than trusted: a chapter this reader cannot
+    // open is worse than the first one, and `redirect` inside a catch would
+    // swallow Next's own control-flow throw.
+    if (at && book.chapters.some((c) => c.number === at.chapter_number)) {
+      resolved = at.chapter_number;
+    }
+  }
+
+  const number = resolved ?? book.chapters[0].number;
   const payload = await getChapter(code, number).catch(() => null);
 
   return (

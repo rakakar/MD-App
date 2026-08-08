@@ -11,6 +11,7 @@ import type {
 import { useReaderChrome } from "@/components/reader/useReaderChrome";
 import { BackIcon } from "@/components/shell/icons";
 import { useDisplay } from "@/components/shell/DisplayProvider";
+import { textEditionAtPage } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
 import { DEFAULT_PREFS, getPrefs, type ResolvedTheme } from "@/lib/storage";
 
@@ -825,7 +826,11 @@ export function PdfReader({
         </span>
         {textHref && (
           <Link
-            href={textHref}
+            // With the page on it. The reader is 40 pages into a document and
+            // asking to read it as text; dropping them at chapter one would
+            // make the better reading cost them their place, which is a price
+            // nobody pays twice. The route turns the page into a chapter.
+            href={textEditionAtPage(textHref, current)}
             className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold"
             style={{ color: "var(--ws-ink)" }}
           >

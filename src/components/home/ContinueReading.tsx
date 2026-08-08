@@ -5,8 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CoverTile, ProgressBar } from "@/components/shelf/CoverTile";
 import { getBook, getBooks } from "@/lib/api";
+import { chapterLine } from "@/lib/chapter";
 import { localProgress, syncPersonal } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
+import { readingHomeFor, rememberReadingHome } from "@/lib/storage";
+import type { BookSummary } from "@/lib/types";
 
 interface ResumeCard {
   key: string;
@@ -19,17 +22,6 @@ interface ResumeCard {
   page: number | null;
   pageCount: number | null;
   percent: number | null;
-}
-
-/**
- * "Chapter 5 · <name>" — unless the name is itself a numbered chapter heading,
- * as MVD's TOC entries are ("अध्याय - पाँच निर्भ्रमता ही विश्राम"), where
- * prefixing it numbers the chapter twice. There the printed heading, which is
- * the manager's own words, stands on its own.
- */
-function chapterLine(chapter: string, title: string | null): string {
-  if (!title) return `Chapter ${chapter}`;
-  return /^अध्याय/.test(title.trim()) ? title : `Chapter ${chapter} · ${title}`;
 }
 
 /**
@@ -66,7 +58,20 @@ export function ContinueReading({
   const [cards, setCards] = useState<ResumeCard[]>([]);
 
   const render = useCallback(async () => {
-    const rows = localProgress().slice(0, limit);
+    // Shelf books only. A **text edition** is a book underneath — same
+    // chapters, same paragraphs, one row in this same store — but it is a
+    // library document to the reader, and it resumes on the Library tab where
+    // it lives. Letting it surface here put a card on Home and on Read that
+    // led to a folder, on a shelf that has never listed it, and undid on this
+    // rail the separation `offShelfHref` makes everywhere else.
+    //
+    // A reading home is what marks one, and it is known locally in both the
+    // cases that matter: the reader opened it here, or `pull()` recorded it
+    // from the row's `source_item`. The detail pass below is the backstop for
+    // the third case, and it teaches this device the answer for next time.
+    const rows = localProgress()
+      .filter((p) => readingHomeFor(p.book_code) === null)
+      .slice(0, limit);
     if (rows.length === 0) {
       setCards([]);
       return;
@@ -75,8 +80,7 @@ export function ContinueReading({
     const books = await getBooks().catch(() => []);
     const byCode = new Map(books.map((b) => [b.code, b]));
 
-    const base: ResumeCard[] = rows.map((p) => {
-      const book = byCode.get(p.book_code);
+    const card = (p: (typeof rows)[number], book?: BookSummary): ResumeCard => {
       const ref = parseRef(p.canonical_ref);
       const page = ref ? Number(ref.page) : NaN;
       const pageCount = book?.page_count ?? null;
@@ -93,24 +97,36 @@ export function ContinueReading({
         percent:
           usable && pageCount ? Math.min(100, (usable / pageCount) * 100) : null,
       };
-    });
-    setCards(base);
+    };
+
+    setCards(rows.map((p) => card(p, byCode.get(p.book_code))));
 
     // The chapter's name is what tells a reader where they were — "Chapter 1"
     // alone names a position, not a subject. It lives in the book's TOC, which
     // the list endpoint does not carry, so it arrives a beat after the cards
     // do: the card is on screen and tappable first, and gains the name when it
     // comes. A failed detail call costs nothing but the name.
+    //
+    // The same call settles two other things the list cannot. It says whether
+    // this is a text edition at all — authoritatively, where the local reading
+    // home was only a memory — and it carries a `page_count` and a cover for
+    // any book the list did not describe, which is how a row that could only
+    // offer "Resume →" grows the bar every other card has.
     const named = await Promise.all(
-      base.map(async (c) => {
-        const detail = await getBook(c.key).catch(() => null);
-        const entry = detail?.chapters?.find(
-          (ch) => String(ch.number) === c.chapter
-        );
+      rows.map(async (p) => {
+        const detail = await getBook(p.book_code).catch(() => null);
+        if (detail?.role === "compilation") {
+          // Remembered, so the filter above catches it on the next paint
+          // rather than drawing it and taking it away again.
+          if (detail.reading_home) rememberReadingHome(p.book_code, detail.reading_home);
+          return null;
+        }
+        const c = card(p, byCode.get(p.book_code) ?? detail ?? undefined);
+        const entry = detail?.chapters?.find((ch) => String(ch.number) === c.chapter);
         return entry?.title_hi ? { ...c, chapterTitle: entry.title_hi } : c;
       })
     );
-    setCards(named);
+    setCards(named.filter((c): c is ResumeCard => c !== null));
   }, [limit]);
 
   useEffect(() => {

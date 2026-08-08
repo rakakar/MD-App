@@ -27,7 +27,7 @@ import {
   saveProgress as savePersonalProgress,
   syncPersonal,
 } from "@/lib/personal";
-import { citationText, paraAnchorId } from "@/lib/refs";
+import { citationText, paraAnchorId, parseRef } from "@/lib/refs";
 import { documentHref, documentTextHref } from "@/lib/routes";
 import {
   getListeningPosition,
@@ -1055,6 +1055,23 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 
   // ---- render ----
   const page = pages[pageIndex];
+  /**
+   * The printed page under the reader right now, for the way back to the
+   * document's own pages. Only a compilation has one to go back to.
+   *
+   * Front matter is deliberately excluded rather than mapped: `fm.iii.2` has a
+   * roman numeral where a page number goes, and `Number("iii")` is NaN. The
+   * link simply drops the page and opens the document, which is right — front
+   * matter is the one part of a text whose place in the scan is least
+   * predictable.
+   */
+  const pagesAt = ((): number | undefined => {
+    if (!home) return undefined;
+    const parsed = currentRef ? parseRef(currentRef) : null;
+    const n = parsed ? Number(parsed.page) : NaN;
+    if (Number.isSafeInteger(n) && n > 0) return n;
+    return book.chapters.find((c) => c.number === chapterNumber)?.start_page;
+  })();
   const hasAudio = (chapter?.audio_renditions.length ?? 0) > 0;
   // Without a generated rendition we can still read aloud, but only if this
   // device has a Hindi voice — an English engine on Devanagari is gibberish.
@@ -1122,7 +1139,18 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
               is never more than one tap from the way in. */}
           {home ? (
             <Link
-              href={documentHref(home.at.node, home.at.item)}
+              // At the page being read, not at page one — the same bargain
+              // the पाठ toggle makes coming the other way. The two modes share
+              // a page axis because the text was pipelined from this very
+              // file; see `textEditionAtPage`.
+              //
+              // The *paragraph's* page rather than the chapter's start, and
+              // the difference is the whole point on a one-chapter edition
+              // like `S-A` — 52 pages under a single heading, where a chapter
+              // start is always page 1 and would send a reader forty pages
+              // back. The chapter start is the fallback for the moment before
+              // the first paragraph has been observed.
+              href={documentHref(home.at.node, home.at.item, pagesAt)}
               // Spelled "Pages" and not "Original pages" only because this bar
               // is 40-odd characters wide on a phone and the title has first
               // claim on them; the full sentence is in the label a screen

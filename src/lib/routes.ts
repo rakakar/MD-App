@@ -24,8 +24,9 @@ export const PDF_READER_ROUTE = /^\/library\/\d+\/read\/\d+$/;
  * A file has no URL of its own in the API — it is only ever returned inside its
  * folder — so the folder is half the address and the file is the row within it.
  */
-export function documentHref(node: number, item: number): string {
-  return `/library/${node}/read/${item}`;
+export function documentHref(node: number, item: number, page?: number): string {
+  const base = `/library/${node}/read/${item}`;
+  return page === undefined ? base : `${base}?page=${page}`;
 }
 
 /**
@@ -48,6 +49,34 @@ export function documentTextHref(
 ): string {
   const base = `${documentHref(node, item)}?text=1`;
   return chapter === undefined ? base : `${base}&ch=${chapter}`;
+}
+
+/**
+ * The text edition, entered at whatever chapter holds the page being looked at.
+ *
+ * The two modes of one document share a page axis — a compilation's text is
+ * pipelined from this very PDF, so its paragraphs carry that file's page
+ * numbers (verified against `S-A`: 52 pages, chapter 1 spanning 1–52). That is
+ * a narrower claim than the one D4 warns off: page 40 of a compilation is not
+ * page 40 of the *original work* it selects from, and nothing here says it is.
+ *
+ * Which is why the page rides in the query rather than a chapter: the reader
+ * turning it into a chapter is the route, on the server, with `resolvePage` —
+ * the pdf.js chrome knows the page it is on and nothing whatever about
+ * chapters, and should not have to make a call to offer a link.
+ *
+ * **The anchor is the other half, and both halves are needed.** The query
+ * chooses the chapter on the server; the anchor scrolls to the page once that
+ * chapter has rendered. A chapter alone is not an answer on a one-chapter
+ * edition — `S-A` is 52 pages under a single heading, where resolving the
+ * chapter is a no-op and a reader on page 40 would still be dropped at the
+ * top. `#p-<page>-0` is the reader's existing contract, the same one every
+ * `refToHref` resume link uses: para `0` is no paragraph, which is read as
+ * "the top of this page" rather than a paragraph to centre.
+ */
+export function textEditionAtPage(textHref: string, page: number): string {
+  const sep = textHref.includes("?") ? "&" : "?";
+  return `${textHref}${sep}page=${page}#p-${page}-0`;
 }
 
 /**

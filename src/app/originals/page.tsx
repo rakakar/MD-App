@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ContinuePdf } from "@/components/library/ContinuePdf";
+import { ContinueDocument } from "@/components/library/ContinueDocument";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
@@ -75,8 +75,12 @@ export default async function OriginalsLibraryPage({
       {/* Above the shelf, for the same reason the Audio/Video tab puts its own
           there: it is the shortest path to the thing a returning reader came
           for. Drawn client-side from saved places, so it is simply absent for
-          anyone who has not started a document. */}
-      <ContinuePdf />
+          anyone who has not started a document.
+
+          Documents read *as text* resume here too, and only here. This is the
+          tab their editions live on, and the shelf's own rail is for the
+          shelf's own books — see `ContinueDocument`. */}
+      <ContinueDocument />
 
       <WorkspaceShelf
         root={root}
