@@ -11,8 +11,10 @@ import {
   DownloadIcon,
   HeadphonesIcon,
 } from "@/components/shell/icons";
+import { parseRef } from "@/lib/refs";
+import { documentHref, documentTextHref } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
-import { getLocalProgress } from "@/lib/storage";
+import { getLocalProgress, getPdfPlace } from "@/lib/storage";
 import type { LibraryFile, LocatedFile, ReadingEdition } from "@/lib/types";
 
 /**
@@ -51,6 +53,66 @@ import type { LibraryFile, LocatedFile, ReadingEdition } from "@/lib/types";
 /** Matches the tint a PDF gets everywhere else, so one document looks like itself. */
 const TINT = { bg: "#E7E4F1", ink: "#4C4878" };
 
+/**
+ * Where this document was left, whichever way it was being read.
+ *
+ * **One row, so one place.** A file with a text edition draws only this card —
+ * `PdfCard` hands over to it — so the pages place had nowhere to appear on
+ * this screen at all, and a reader who came in through "Original pages" saw a
+ * row that claimed to remember nothing. Both are read here and the later one
+ * wins, which is the rule `ContinueDocument` settled for the rail above; the
+ * two surfaces describing one file must not disagree about where it is.
+ *
+ * **Stated in pages either way**, as the document row beside it does and as
+ * Home has always done for a book in the reflowable reader. The two modes
+ * share a page axis — the text is pipelined from this very file — so the page
+ * is a fact about the document rather than about one rendering of it.
+ */
+interface Place {
+  mode: "pages" | "text";
+  page: number;
+  pageCount: number;
+  /** text mode only, and only where there is more than one to name */
+  chapter?: number;
+}
+
+function savedPlace(
+  file: LibraryFile | LocatedFile,
+  code: string
+): { winner: Place | null; pages: number | null } {
+  const pages = getPdfPlace(`library-file:${file.id}`);
+  const text = getLocalProgress(code);
+  const found: (Place & { updatedAt: string })[] = [];
+
+  // Page one is where a document opens anyway; "resume" for it is a promise
+  // about nothing. The same floor on both, so neither can win by being noisier.
+  if (pages && pages.page > 1) {
+    found.push({
+      mode: "pages",
+      page: pages.page,
+      pageCount: pages.page_count || file.page_count || 0,
+      updatedAt: pages.updated_at,
+    });
+  }
+  if (text) {
+    const page = Number(parseRef(text.canonical_ref)?.page);
+    // Front matter numbers its pages in roman, which is not a page this
+    // document can be opened at — such a place simply waits.
+    if (Number.isSafeInteger(page) && page > 1) {
+      found.push({
+        mode: "text",
+        page,
+        pageCount: file.page_count || pages?.page_count || 0,
+        chapter: text.chapter_number,
+        updatedAt: text.updated_at,
+      });
+    }
+  }
+
+  found.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return { winner: found[0] ?? null, pages: pages && pages.page > 1 ? pages.page : null };
+}
+
 export function ReadingCard({
   file,
   reading,
@@ -61,23 +123,46 @@ export function ReadingCard({
       text edition */
   reading: ReadingEdition;
 }) {
-  const [resumeChapter, setResumeChapter] = useState<number | null>(null);
+  const [place, setPlace] = useState<Place | null>(null);
+  /** the pages place on its own, which the way *round* the reader keeps */
+  const [pagesAt, setPagesAt] = useState<number | null>(null);
 
   useEffect(() => {
-    const saved = getLocalProgress(reading.code);
-    // Chapter one is where it opens anyway; "resume" for it is a promise about
-    // nothing. The unit is chapters and not pages on purpose — a page number
-    // is a fact about the PDF, and this reader never sees a page.
-    if (saved && saved.chapter_number > 1) setResumeChapter(saved.chapter_number);
-  }, [reading.code]);
+    const { winner, pages } = savedPlace(file, reading.code);
+    setPlace(winner);
+    setPagesAt(pages);
+    // The primitives it actually reads, not the object holding them: `file` is
+    // rebuilt by the folder on every render, and an object dependency in front
+    // of a setState would re-run this for ever.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file.id, file.page_count, reading.code]);
 
-  const base = `/library/${file.node}/read/${file.id}`;
-  const textHref = resumeChapter
-    ? `${base}?text=1&ch=${resumeChapter}`
-    : `${base}?text=1`;
+  const base = documentHref(file.node, file.id);
+  // The text, at the chapter it was left in when it was left in the text at
+  // all. A one-chapter edition names no chapter and needs none — the reader's
+  // own saved ref is what the reader restores from there.
+  const textHref =
+    place?.mode === "text" && place.chapter !== undefined && reading.chapter_count > 1
+      ? documentTextHref(file.node, file.id, place.chapter)
+      : `${base}?text=1`;
+  /**
+   * **The tap opens the text — until the reader has a later place in the
+   * pages.** The rule above is about which reading someone *new* is given, and
+   * it stands: a reader who has never opened this still lands in the text. It
+   * was never a licence to throw away a place. Somebody forty pages into the
+   * scan, tapping the row they were reading yesterday, is asking for page
+   * forty, and answering with chapter one of a different rendering of it is
+   * not offering them the better reading — it is losing their place and
+   * calling it a principle.
+   */
+  const href =
+    place?.mode === "pages" ? documentHref(file.node, file.id, place.page) : textHref;
 
   const cover = reading.cover_url || file.thumbnail_url;
   const chapters = reading.chapter_count;
+  const percent = place
+    ? Math.min(100, Math.round((place.page / place.pageCount) * 100))
+    : 0;
 
   return (
     // `relative` so the primary link can stretch across the card; the quiet
@@ -102,7 +187,7 @@ export function ReadingCard({
 
         <div className="min-w-0 flex-1">
           <Link
-            href={textHref}
+            href={href}
             className="after:absolute after:inset-0 after:content-['']"
           >
             <span
@@ -159,20 +244,41 @@ export function ReadingCard({
               {file.description}
             </span>
           )}
-
-          {resumeChapter !== null && (
-            <span
-              className="mt-1.5 block text-xs font-semibold tabular-nums"
-              style={{ color: "var(--ws-ink)" }}
-            >
-              Resume at chapter {resumeChapter}
-              {chapters > 0 && ` of ${chapters}`}
-            </span>
-          )}
         </div>
 
         <ChevronRight className="mt-0.5 h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5" />
       </div>
+
+      {/* The same bar and the same sentence the document row beside it uses.
+          Two rows in one folder, both saying where the reader is, and neither
+          of them inventing its own vocabulary for it. */}
+      {place && place.pageCount > 0 && (
+        <div className="mt-3">
+          <span className="block h-1.5 overflow-hidden rounded-full bg-canvas">
+            <span
+              role="progressbar"
+              aria-valuenow={percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`${percent}% read`}
+              className="block h-full rounded-full"
+              style={{
+                // A floor, so the bar reads as a bar rather than as a stray
+                // dot — the exact page is spelled out underneath, so nothing
+                // here is doing the lying. Same reasoning as `PdfCard`.
+                width: `${Math.max(percent, 4)}%`,
+                background: "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
+              }}
+            />
+          </span>
+          <span
+            className="mt-1.5 block text-xs font-semibold tabular-nums"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            Resume on page {place.page} of {place.pageCount}
+          </span>
+        </div>
+      )}
 
       {/* Icons without words, unlike the document card's spelled-out row. Both
           of these are ways *round* the reading, and on this card that is a
@@ -181,7 +287,12 @@ export function ReadingCard({
           reach them, particularly since OCR is sometimes wrong. */}
       <div className="relative z-10 mt-3 flex items-center gap-3 border-t border-rule pt-2.5">
         <Link
-          href={base}
+          // At the page they were on there, when there is one. This link is
+          // the *only* way the pages place can be reached from this screen —
+          // a file with a text edition never draws the document card that
+          // would otherwise carry it — so dropping the page here would be
+          // quietly throwing it away.
+          href={pagesAt === null ? base : documentHref(file.node, file.id, pagesAt)}
           title={`Original pages${file.page_count ? ` — ${file.page_count} pages` : ""}`}
           aria-label="Read the original pages"
           className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-ink-soft transition-colors hover:bg-ink/[.04] hover:text-ink"
