@@ -15,10 +15,11 @@
 | कोई payload चाहिए | [API_Contract_v1.md](API_Contract_v1.md) — §13 library |
 | Feedback वाला हिस्सा | [feedback.md](feedback.md) |
 | Notifications वाला हिस्सा | [push-notifications.md](push-notifications.md) |
+| APK या iOS build बनानी है | [mobile-apps.md](mobile-apps.md) |
 | Product का इरादा जानना है | [PRD_v2.md](PRD_v2.md) — banners ज़रूर पढ़ें |
 | Code लिखने जा रहे हैं | `../AGENTS.md` — **पहले** |
 
-## पाँच फ़ाइलें, एक-एक पंक्ति में
+## छह फ़ाइलें, एक-एक पंक्ति में
 
 **[API_Contract_v1.md](API_Contract_v1.md)** — हर payload पर authority.
 यह **BE की copy है** (`MDApp/docs/api/API_Contract_v1.md`). यहाँ कभी edit मत
@@ -41,6 +42,10 @@ switch, sieve की chips का क्रम, और यह search कहा�
 
 **[push-notifications.md](push-notifications.md)** — FCM setup, दो service
 workers दो scopes में क्यों हैं, और iOS की सीमा।
+
+**[mobile-apps.md](mobile-apps.md)** — Android और iOS apps इसी codebase से कैसे
+बनती हैं, native shell app को bundle करने के बजाय deployment से load क्यों करता
+है, दोनों platforms के exact commands, और store पर जाने से पहले क्या-क्या बाक़ी है।
 
 **[PRD_v2.md](PRD_v2.md)** — 27 जुलाई 2026 का product spec. **इसका
 non-book वाला पूरा हिस्सा superseded है** — ऊपर का banner पढ़िए। पाँच-workspace

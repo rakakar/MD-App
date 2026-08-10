@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug builds only. The trial shell loads `next dev` over plain http on the
+  LAN (see `server.url` in capacitor.config.ts), and Android has blocked
+  cleartext by default since targetSdk 28.
+
+  This lives in the `debug` source set rather than `main` on purpose: a release
+  APK or AAB merges only `main`, so a store build cannot inherit the hole even
+  if someone leaves an http URL in the config by mistake.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:usesCleartextTraffic="true"
+        tools:targetApi="28" />
+</manifest>

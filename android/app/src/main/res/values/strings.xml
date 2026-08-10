@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MD Study</string>
+    <string name="title_activity_main">MD Study</string>
+    <string name="package_name">net.welfareinfo.mdstudy</string>
+    <string name="custom_url_scheme">net.welfareinfo.mdstudy</string>
+</resources>
