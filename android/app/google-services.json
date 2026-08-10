@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "978286674767",
+    "project_id": "mdapp-push",
+    "storage_bucket": "mdapp-push.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978286674767:android:0ae24ff24f83568bca3b3a",
+        "android_client_info": {
+          "package_name": "net.welfareinfo.mdstudy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCL567in7IKG5zOe6wn-XS0s8AOtYHchyU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

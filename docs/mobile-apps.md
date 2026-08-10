@@ -225,16 +225,26 @@ Shell web push नहीं कर सकती (WebView में Push API ह�
 `@capacitor/push-notifications` से चलती है। Backend में कुछ नहीं बदलता — token
 उसी `/api/push/register/` पर जाता है, बस `platform: "android"` के साथ।
 
-**एक file हाथ से डालनी पड़ती है।** बाक़ी सब repo में है:
+**अब कुछ हाथ से डालना नहीं है।** `android/app/google-services.json` repo में है
+(Firebase project `mdapp-push`, Android app `net.welfareinfo.mdstudy`, वही
+project जिससे web push जाती है — इसलिए दोनों तरह के tokens एक ही panel से
+address होते हैं)। वह secret नहीं है: वही file हर installed APK के अंदर पड़ी
+होती है, और भेजने का अधिकार सिर्फ़ backend वाले service-account JSON के पास है।
 
-1. Firebase Console → Project settings → *Your apps* → **Add app → Android**
-2. Package name ठीक यही: `net.welfareinfo.mdstudy`
-3. `google-services.json` download करके `android/app/` में रखिए
-4. `npx cap sync android` फिर `cd android && ./gradlew assembleDebug`
+नया clone बस यह चलाए:
 
-`android/app/build.gradle` उस file के होने पर ही google-services plugin लगाता
-है — नहीं होगी तो build पास हो जाएगी और app में Enable दबाने पर 20 सेकंड बाद
-"FCM did not return a device token" दिखेगा। यही सबसे आम ग़लती है।
+```bash
+npx cap sync android && cd android && ./gradlew assembleDebug
+```
+
+अगर कभी वह file हटी, तो `android/app/build.gradle` google-services plugin लगाना
+छोड़ देता है — build तब भी **पास** हो जाती है और ग़लती सिर्फ़ device पर दिखती है:
+Enable दबाने के 20 सेकंड बाद "FCM did not return a device token"। इस feature की
+सबसे आम ख़राबी यही है, और यही वजह है कि उस timeout का message उस file का नाम लेता
+है।
+
+Firebase Console में यह app दोबारा बनानी पड़े तो: Project settings → *Your apps*
+→ **Add app → Android** → package ठीक `net.welfareinfo.mdstudy`.
 
 Web app की पाँच `NEXT_PUBLIC_FIREBASE_*` env vars shell के लिए ज़रूरी **नहीं**
 हैं — app अपनी पहचान `google-services.json` से लेती है। वे सिर्फ़ browser वाले
@@ -252,6 +262,29 @@ App → Settings → Enable notifications → Android 13+ पर permission dial
 App खुली हो तब notification tray में नहीं आती — Android उसे दबा देता है — वह
 in-app toast बनकर आती है (`PushProvider`)। यह bug नहीं है; tray वाली शक़्ल देखने
 के लिए app को background में कीजिए।
+
+**यह पूरा रास्ता emulator पर चलकर देखा गया है** (android-36, `google_apis`
+image — Play Store वाली image ज़रूरी नहीं, FCM को सिर्फ़ Play Services चाहिए):
+permission dialog → FCM token → prod पर register (`platform: "android"`) →
+foreground toast → tray notification → tap से reader खुलना, सब।
+
+पूरी audience को test message भेजने की ज़रूरत नहीं — और भेजना नहीं चाहिए, वह
+असली लोगों की lock screens पर जाता है। एक ही token को भेजिए:
+
+```python
+# uv run python — MDApp (backend) repo से
+import firebase_admin
+from firebase_admin import credentials, messaging
+app = firebase_admin.initialize_app(credentials.Certificate("<service-account.json>"), name="one-off")
+messaging.send(messaging.Message(
+    token="<device token from logcat>",
+    notification=messaging.Notification(title="Test", body="Tap me."),
+    data={"click_url": "/books/ADVD/0#p-i-1", "title": "Test", "body": "Tap me.", "image_url": ""},
+), app=app)
+```
+
+`data` की keys वही रखिए जो `apps/notifications/services.py` भेजता है — app उन्हीं
+को पढ़ती है, `notification` block को नहीं।
 
 ## Play Store के लिए release build
 

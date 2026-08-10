@@ -2,10 +2,14 @@
 <!--
     The accent Android tints the notification icon and the app name with.
 
-    Same value as `--ws-color` in `src/app/globals.css`, which is the app's own
-    accent everywhere else. It is written out rather than derived because
-    nothing links these two files; if the app's accent changes, this changes by
-    hand or the notification quietly stops matching the app it came from.
+    Same value as the ws-color custom property in `src/app/globals.css`, which
+    is the app's own accent everywhere else. It is written out rather than
+    derived because nothing links these two files; if the app's accent changes,
+    this changes by hand or the notification quietly stops matching the app it
+    came from.
+
+    (The property's real name is spelt with two leading dashes, which an XML
+    comment may not contain — hence the wording.)
 -->
 <resources>
     <color name="notification_accent">#A64E12</color>

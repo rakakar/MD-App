@@ -47,6 +47,12 @@ export function usePush() {
   // bridge. On the web every await here settles in the same microtask, so the
   // "loading" state is no more visible than it was when this was synchronous.
   const read = useCallback(async () => {
+    (window as never as Record<string, unknown>).__pushDebug = {
+      native: isNativePush(),
+      cfg: !!firebaseConfig(),
+      ios: iosNeedsInstall(),
+      sup: isPushSupported(),
+    };
     setNative(isNativePush());
     // The native shell identifies itself to Firebase through the
     // google-services.json compiled into the app, not through the web env
@@ -54,7 +60,8 @@ export function usePush() {
     if (!isNativePush() && !firebaseConfig()) return setStatus("unconfigured");
     if (iosNeedsInstall()) return setStatus("ios-install");
     if (!isPushSupported()) return setStatus("unsupported");
-    const permission = await pushPermission();
+    const permission = await pushPermission().catch((e) => `THREW:${e}` as never);
+    (window as never as Record<string, unknown>).__pushPerm = permission;
     if (permission === "unsupported") return setStatus("unsupported");
     if (permission === "denied") return setStatus("denied");
     // "On" means a token actually reached the server, not merely that the

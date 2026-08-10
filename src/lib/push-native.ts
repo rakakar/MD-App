@@ -32,16 +32,23 @@ export function nativePlatform(): "android" | "ios" | null {
 }
 
 /**
- * The plugin, loaded only when it is going to be used.
+ * The plugin module, loaded only when it is going to be used.
  *
  * A dynamic import for the same reason the Firebase SDK gets one in push.ts:
  * this bundle is downloaded by far more browsers than shells, and a browser
  * has no use for a module whose only job is to call across a native bridge
  * that isn't there.
+ *
+ * It returns the *module*, and every caller destructures `PushNotifications`
+ * out of it. That is not a style choice. `PushNotifications` is a Proxy that
+ * turns any property access into a bridge call, `then` included — so an async
+ * function that returned the plugin directly would have its return value
+ * awaited, the runtime would look for `.then`, and the app would die on
+ * `"PushNotifications.then()" is not implemented on android`. It has to stay
+ * behind a property access that is never itself awaited.
  */
-async function plugin() {
-  const { PushNotifications } = await import("@capacitor/push-notifications");
-  return PushNotifications;
+function pushModule() {
+  return import("@capacitor/push-notifications");
 }
 
 /** Capacitor's four-state permission, flattened to the three the UI knows. */
@@ -55,7 +62,8 @@ function flatten(state: string): NotificationPermission {
 /** Has this device already been asked, and what did it say? */
 export async function nativePermission(): Promise<NotificationPermission> {
   try {
-    const { receive } = await (await plugin()).checkPermissions();
+    const { PushNotifications } = await pushModule();
+    const { receive } = await PushNotifications.checkPermissions();
     return flatten(receive);
   } catch {
     // A shell built before the plugin was added has no native side to answer.
@@ -109,7 +117,7 @@ function tokenFromRegistration(): Promise<string> {
 
     void (async () => {
       try {
-        const push = await plugin();
+        const { PushNotifications: push } = await pushModule();
         handles.push(
           await push.addListener("registration", (token) => finish(() => resolve(token.value)))
         );
@@ -139,7 +147,8 @@ export type NativeTokenResult =
  */
 export async function requestNativeToken(): Promise<NativeTokenResult> {
   try {
-    const { receive } = await (await plugin()).requestPermissions();
+    const { PushNotifications } = await pushModule();
+    const { receive } = await PushNotifications.requestPermissions();
     if (flatten(receive) !== "granted") return { ok: false, reason: "denied" };
     return { ok: true, token: await tokenFromRegistration() };
   } catch (error) {
@@ -165,7 +174,8 @@ export async function currentNativeToken(): Promise<string | null> {
  *  the native counterpart of `deleteToken()` on the web. */
 export async function deleteNativeToken(): Promise<void> {
   try {
-    await (await plugin()).unregister();
+    const { PushNotifications } = await pushModule();
+    await PushNotifications.unregister();
   } catch {
     // The backend deactivation in push.ts is what actually stops delivery.
   }
@@ -238,7 +248,8 @@ function listen(event: string, handler: (payload: unknown) => void): () => void 
 
   void (async () => {
     try {
-      const attached = await (await plugin()).addListener(
+      const { PushNotifications } = await pushModule();
+      const attached = await PushNotifications.addListener(
         event as "pushNotificationReceived",
         handler as never
       );
