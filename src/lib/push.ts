@@ -1,14 +1,16 @@
 // Push notifications: acquiring a device token and telling the backend about
 // it. This is the whole platform boundary, on purpose.
 //
-// Everything platform-specific lives behind `registerDevice(platform)`. Today
-// there is one caller and it passes "web". When this app is wrapped with
-// Capacitor, the native build gets its token from the Push Notifications
-// plugin and calls `sendTokenToServer(token, "android" | "ios")` — the API,
-// the retry rules, the storage keys and every component above this file stay
-// exactly as they are. That is the "wrap-ready" requirement (PRD §5), and
-// keeping it true means resisting the urge to reach for `getToken()` anywhere
-// else in the codebase.
+// There are two ways to get a token and they have nothing in common. A browser
+// registers a service worker and asks Firebase's JS SDK; the Android/iOS shell
+// asks a native plugin and waits for an event. Both end at the same place —
+// `sendTokenToServer(token, platform)` — and the three exported verbs below
+// (`enablePush`, `refreshPushRegistration`, `disablePush`) each pick a side and
+// then converge. Nothing above this file knows which one ran.
+//
+// The native half lives in `push-native.ts`, and the branch is a *runtime*
+// one: the shells load this same deployed bundle over the network rather than
+// bundling their own, so there is no build-time platform to switch on.
 //
 // Permission is never requested on load. Safari on iOS *only* grants it inside
 // a user gesture, and a browser that prompts on arrival is a browser people
@@ -16,6 +18,14 @@
 
 import { apiBase } from "./api";
 import { sessionToken } from "./me";
+import {
+  currentNativeToken,
+  deleteNativeToken,
+  isNativePush,
+  nativePermission,
+  nativePlatform,
+  requestNativeToken,
+} from "./push-native";
 
 export type PushPlatform = "web" | "android" | "ios";
 
@@ -92,12 +102,21 @@ export function isStandalone(): boolean {
  * for a permission the OS will never act on.
  */
 export function iosNeedsInstall(): boolean {
+  // The native iOS shell is an installed app already, whatever its user agent
+  // says — and its user agent says iPhone-in-Safari, so this check has to run
+  // before the sniffing does or the app would offer to install itself.
+  if (isNativePush()) return false;
   return isIos() && !isStandalone();
 }
 
-/** Can this browser do web push at all, given how it is currently running? */
+/** Can this device do push at all, given how the app is currently running? */
 export function isPushSupported(): boolean {
   if (!isBrowser()) return false;
+  // The shells go through the OS, not the browser. This matters more than it
+  // looks: Android's WebView implements neither `PushManager` nor
+  // `Notification`, so the check below is false inside the app and the whole
+  // feature used to disappear there — no button, no prompt, no explanation.
+  if (isNativePush()) return true;
   if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
     return false;
   }
@@ -107,6 +126,18 @@ export function isPushSupported(): boolean {
 export function permissionState(): NotificationPermission | "unsupported" {
   if (!isBrowser() || !("Notification" in window)) return "unsupported";
   return Notification.permission;
+}
+
+/**
+ * The permission, whichever OS or browser owns it.
+ *
+ * Async because the native side has to cross the bridge to answer. Callers
+ * that only ever run on the web can keep using `permissionState()`; anything
+ * that decides what the reader sees has to use this one.
+ */
+export async function pushPermission(): Promise<NotificationPermission | "unsupported"> {
+  if (isNativePush()) return nativePermission();
+  return permissionState();
 }
 
 export function hasOptedOut(): boolean {
@@ -270,6 +301,49 @@ export type EnableResult =
   | { ok: true; token: string }
   | { ok: false; reason: "unsupported" | "denied" | "unconfigured" | "failed"; error?: unknown };
 
+// ---- native token acquisition ----
+
+/**
+ * The Android/iOS shell's Enable button.
+ *
+ * Shorter than its web twin because the plugin does the parts that are hard in
+ * a browser — there is no service worker to register, no VAPID key, and the
+ * OS remembers the permission for us. What is left is the same three steps:
+ * ask, get a token, register it.
+ */
+async function enableNativePush(): Promise<EnableResult> {
+  const platform = nativePlatform();
+  if (!platform) return { ok: false, reason: "unsupported" };
+
+  const result = await requestNativeToken();
+  if (!result.ok) return result;
+  try {
+    await sendTokenToServer(result.token, platform);
+  } catch (error) {
+    return { ok: false, reason: "failed", error };
+  }
+  setOptedOut(false);
+  return { ok: true, token: result.token };
+}
+
+/**
+ * The shell's app-start refresh. Same contract as the web one: silent, asks
+ * for nothing, and exists because FCM rotates tokens — on Android after a
+ * Play Services update or an app-data clear, on iOS after a restore to a new
+ * device — and this is the only moment we would find out.
+ */
+async function refreshNativeRegistration(): Promise<void> {
+  const platform = nativePlatform();
+  if (!platform) return;
+  const token = await currentNativeToken();
+  if (!token) return;
+  try {
+    await sendTokenToServer(token, platform);
+  } catch {
+    // Offline at launch. The next start tries again.
+  }
+}
+
 /**
  * The button's whole job: ask, get a token, register it.
  *
@@ -278,6 +352,12 @@ export type EnableResult =
  * browser where this feature is hardest to get working at all.
  */
 export async function enablePush(): Promise<EnableResult> {
+  // Native first, and before the config check: the shell's Firebase identity
+  // comes from google-services.json inside the APK, not from the web env vars,
+  // so a shell whose backend is configured must not be turned away because the
+  // *web* app's five NEXT_PUBLIC_ values happen to be missing.
+  if (isNativePush()) return enableNativePush();
+
   const config = firebaseConfig();
   if (!config) return { ok: false, reason: "unconfigured" };
   if (!isPushSupported()) return { ok: false, reason: "unsupported" };
@@ -307,7 +387,9 @@ export async function enablePush(): Promise<EnableResult> {
  * Silent by design: no permission is requested, so nothing is shown.
  */
 export async function refreshPushRegistration(): Promise<void> {
-  if (permissionState() !== "granted" || hasOptedOut()) return;
+  if (hasOptedOut()) return;
+  if (isNativePush()) return refreshNativeRegistration();
+  if (permissionState() !== "granted") return;
   const config = firebaseConfig();
   if (!config || !isPushSupported()) return;
   try {
@@ -329,6 +411,12 @@ export async function disablePush(): Promise<void> {
       return null;
     }
   })();
+
+  if (isNativePush()) {
+    await deleteNativeToken();
+    if (stored) await removeTokenFromServer(stored);
+    return;
+  }
 
   const config = firebaseConfig();
   if (config) {

@@ -15,7 +15,7 @@ import { usePush } from "./usePush";
  * this feature is most fragile.
  */
 export function NotificationSetting() {
-  const { status, busy, error, enable, disable } = usePush();
+  const { status, native, busy, error, enable, disable } = usePush();
 
   // Nothing to offer, and nothing worth explaining: no Firebase project
   // configured, or a browser with no push at all.
@@ -32,7 +32,9 @@ export function NotificationSetting() {
             {status === "granted"
               ? "You'll hear about new chapters, shivirs and announcements."
               : status === "denied"
-                ? "Blocked in your browser settings."
+                ? native
+                  ? "Turned off in your phone's settings."
+                  : "Blocked in your browser settings."
                 : status === "ios-install"
                   ? "Available once the app is on your home screen."
                   : "New chapters, shivirs and announcements."}
@@ -68,13 +70,20 @@ export function NotificationSetting() {
           Study from that icon.
         </p>
       )}
-      {status === "denied" && (
-        <p className="mt-3 rounded-xl bg-canvas p-3 text-xs text-ink-soft">
-          Your browser is blocking notifications for this site. Only you can undo that — look for
-          the lock or ⓘ icon beside the address, or this site&apos;s entry in your browser&apos;s
-          notification settings.
-        </p>
-      )}
+      {status === "denied" &&
+        (native ? (
+          <p className="mt-3 rounded-xl bg-canvas p-3 text-xs text-ink-soft">
+            Notifications are switched off for MD Study. Only you can turn them back on — open your
+            phone&apos;s <strong>Settings</strong>, then <strong>Apps</strong> → <strong>MD
+            Study</strong> → <strong>Notifications</strong>.
+          </p>
+        ) : (
+          <p className="mt-3 rounded-xl bg-canvas p-3 text-xs text-ink-soft">
+            Your browser is blocking notifications for this site. Only you can undo that — look for
+            the lock or ⓘ icon beside the address, or this site&apos;s entry in your browser&apos;s
+            notification settings.
+          </p>
+        ))}
       {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
       </div>
     </>

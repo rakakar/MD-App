@@ -9,9 +9,10 @@ import {
   hasOptedOut,
   iosNeedsInstall,
   isPushSupported,
-  permissionState,
+  pushPermission,
   storedToken,
 } from "@/lib/push";
+import { isNativePush } from "@/lib/push-native";
 
 /**
  * What the notification controls need to know, in one place — because there
@@ -37,12 +38,24 @@ export function usePush() {
   const [status, setStatus] = useState<PushStatus>("loading");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kept in state rather than read during render: it is a client-only fact,
+  // and the controls' wording depends on it ("browser settings" is wrong
+  // advice to give someone holding the installed app).
+  const [native, setNative] = useState(false);
 
-  const read = useCallback(() => {
-    if (!firebaseConfig()) return setStatus("unconfigured");
+  // Async because the shells answer the permission question across the native
+  // bridge. On the web every await here settles in the same microtask, so the
+  // "loading" state is no more visible than it was when this was synchronous.
+  const read = useCallback(async () => {
+    setNative(isNativePush());
+    // The native shell identifies itself to Firebase through the
+    // google-services.json compiled into the app, not through the web env
+    // vars — so it must skip the config check rather than fail it.
+    if (!isNativePush() && !firebaseConfig()) return setStatus("unconfigured");
     if (iosNeedsInstall()) return setStatus("ios-install");
     if (!isPushSupported()) return setStatus("unsupported");
-    const permission = permissionState();
+    const permission = await pushPermission();
+    if (permission === "unsupported") return setStatus("unsupported");
     if (permission === "denied") return setStatus("denied");
     // "On" means a token actually reached the server, not merely that the
     // browser said yes. Reading the permission alone was a lie the first
@@ -53,7 +66,9 @@ export function usePush() {
     setStatus(on ? "granted" : "default");
   }, []);
 
-  useEffect(read, [read]);
+  useEffect(() => {
+    void read();
+  }, [read]);
 
   /** MUST be wired straight to onClick — see the note in lib/push.ts. */
   const enable = useCallback(async () => {
@@ -71,7 +86,11 @@ export function usePush() {
       return;
     }
     if (result.reason === "unsupported") {
-      setError("This browser can't show notifications.");
+      setError(
+        native
+          ? "This version of the app can't show notifications — please update it."
+          : "This browser can't show notifications."
+      );
     } else {
       // The raw reason, not a shrug. "Please try again" on a failure that will
       // fail again every time is the least useful sentence in software, and
@@ -79,8 +98,8 @@ export function usePush() {
       const detail = result.error instanceof Error ? result.error.message : String(result.error);
       setError(`Couldn't turn notifications on — ${detail}`);
     }
-    read();
-  }, [read]);
+    void read();
+  }, [read, native]);
 
   const disable = useCallback(async () => {
     setBusy(true);
@@ -92,5 +111,5 @@ export function usePush() {
     track("push_disable");
   }, []);
 
-  return { status, busy, error, enable, disable };
+  return { status, native, busy, error, enable, disable };
 }

@@ -8,6 +8,7 @@ import {
   refreshPushRegistration,
   type ForegroundMessage,
 } from "@/lib/push";
+import { onNativePushReceived, onNativePushTapped } from "@/lib/push-native";
 
 const TOAST_MS = 8000;
 
@@ -45,16 +46,61 @@ export function PushProvider() {
     return () => clearTimeout(timer);
   }, [message]);
 
+  /**
+   * Follow a notification's link.
+   *
+   * An absolute URL pointing at this very app is treated as the app path it
+   * is. That case is not hypothetical — it is what the panel produces when
+   * someone pastes the address out of their browser, and handing it to
+   * `location.href` would reload the whole app to reach a page the router
+   * could have shown. Inside the shell it is worse than slow: a full document
+   * load throws away the WebView's history and the back gesture with it.
+   */
+  const go = useCallback(
+    (raw: string) => {
+      const url = raw || "/";
+      track("push_notification_click");
+      let path = url.startsWith("/") ? url : "";
+      if (!path) {
+        try {
+          const parsed = new URL(url);
+          if (parsed.origin === window.location.origin) {
+            path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+          }
+        } catch {
+          // Not a URL at all. Fall through and let the browser refuse it
+          // visibly rather than swallowing a bad link silently.
+        }
+      }
+      // Genuinely elsewhere: leave, which is the only correct thing to do.
+      if (path) router.push(path);
+      else window.location.href = url;
+    },
+    [router]
+  );
+
   const open = useCallback(() => {
     if (!message) return;
     const url = message.clickUrl || "/";
     setMessage(null);
-    track("push_notification_click");
-    // Same-origin app paths stay in the SPA; anything absolute and external
-    // leaves, which is the only correct thing to do with a link to elsewhere.
-    if (url.startsWith("/")) router.push(url);
-    else window.location.href = url;
-  }, [message, router]);
+    go(url);
+  }, [message, go]);
+
+  // The same two things again, for the shells. A separate effect because they
+  // come from a native plugin rather than a service worker, and because the
+  // second of them has no web counterpart at all: on the web a tray tap is
+  // handled inside `sw.js`, which owns the notification, while in the app the
+  // tap surfaces here as an event and this is the only code that can act on
+  // it. Declared below `go` because it needs it — the other effects sit above
+  // because they do not.
+  useEffect(() => {
+    const stopReceived = onNativePushReceived(setMessage);
+    const stopTapped = onNativePushTapped((push) => go(push.clickUrl));
+    return () => {
+      stopReceived();
+      stopTapped();
+    };
+  }, [go]);
 
   if (!message) return null;
 

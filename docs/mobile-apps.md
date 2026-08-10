@@ -219,6 +219,40 @@ adb logcat -d | grep -E "Capacitor: Loading|Capacitor/Console|ERR_"
 `Capacitor: Loading app at …` वाली line बताती है कि build किस URL से बँधी है —
 सबसे पहले यही देखिए। बंद करने के लिए `adb emu kill`.
 
+## Push notifications
+
+Shell web push नहीं कर सकती (WebView में Push API होती ही नहीं), इसलिए वह
+`@capacitor/push-notifications` से चलती है। Backend में कुछ नहीं बदलता — token
+उसी `/api/push/register/` पर जाता है, बस `platform: "android"` के साथ।
+
+**एक file हाथ से डालनी पड़ती है।** बाक़ी सब repo में है:
+
+1. Firebase Console → Project settings → *Your apps* → **Add app → Android**
+2. Package name ठीक यही: `net.welfareinfo.mdstudy`
+3. `google-services.json` download करके `android/app/` में रखिए
+4. `npx cap sync android` फिर `cd android && ./gradlew assembleDebug`
+
+`android/app/build.gradle` उस file के होने पर ही google-services plugin लगाता
+है — नहीं होगी तो build पास हो जाएगी और app में Enable दबाने पर 20 सेकंड बाद
+"FCM did not return a device token" दिखेगा। यही सबसे आम ग़लती है।
+
+Web app की पाँच `NEXT_PUBLIC_FIREBASE_*` env vars shell के लिए ज़रूरी **नहीं**
+हैं — app अपनी पहचान `google-services.json` से लेती है। वे सिर्फ़ browser वाले
+readers के लिए हैं।
+
+### जाँचना
+
+```bash
+adb logcat -c && adb logcat | grep -iE "PushNotifications|FirebaseApp|Capacitor/Console"
+```
+
+App → Settings → Enable notifications → Android 13+ पर permission dialog आना
+चाहिए → फिर panel (`/panel/notifications/`) की Audience count एक बढ़ जाएगी।
+
+App खुली हो तब notification tray में नहीं आती — Android उसे दबा देता है — वह
+in-app toast बनकर आती है (`PushProvider`)। यह bug नहीं है; tray वाली शक़्ल देखने
+के लिए app को background में कीजिए।
+
 ## Play Store के लिए release build
 
 यह अभी तक **किसी ने चलाया नहीं है** — नीचे का हिस्सा standard Android है, इस
@@ -256,10 +290,12 @@ block जान-बूझकर नहीं है — पहले वहा�
 Capacitor 8 में मौजूद ही नहीं (runtime चुपचाप ignore करता है, TypeScript पकड़ता
 है)।
 
-**Web push शायद काम न करे.** Android WebView में Push API नहीं होती, यानी
-`src/components/push` वाला हिस्सा shell में चुप रह सकता है। **यह जाँचा नहीं गया
-है।** Store के लिए वैसे भी `@capacitor/push-notifications` + `google-services.json`
-चाहिए होगा।
+**Web push shell में काम नहीं करती — native push जुड़ चुकी है.** Android WebView
+में `PushManager` और `Notification` दोनों नहीं होतीं, इसलिए `isPushSupported()`
+वहाँ false थी और notifications वाली पूरी row चुपचाप ग़ायब रहती थी — न button, न
+prompt, न कोई वजह। अब shell `@capacitor/push-notifications` से चलती है
+(`src/lib/push-native.ts`), और वही token उसी `/api/push/register/` पर
+`platform: "android"` के साथ जाता है। पूरी बात नीचे "Push notifications" में।
 
 ---
 
@@ -302,7 +338,7 @@ Xcode → Product → Archive → Distribute App. यही `.ipa` बनात�
 Apple reject करता है। बचाव यह है कि app में असली native value हो — और इस project
 में वे तीन चीज़ें स्वाभाविक रूप से मौजूद हैं:
 
-1. **Native push** — FCM पहले से wired है, बस native plugin चाहिए
+1. **Native push** — जुड़ चुकी है; iOS पर सिर्फ़ APNs key बाक़ी है
 2. **Offline downloaded books** — `public/sw.js` पहले से करता है
 3. **Background audio** — device TTS screen lock के बाद नहीं टिकता; native
    audio session टिकेगा
@@ -362,7 +398,7 @@ npx @capacitor/assets generate --iconBackgroundColor '#fdfbf8' --iconBackgroundC
 
 - **iOS पर कुछ भी चलाया नहीं गया** — Xcode ही नहीं था
 - **Release signing / `.aab`** — keystore नहीं बना, `bundleRelease` नहीं चला
-- **Native push** — `@capacitor/push-notifications` नहीं जुड़ा; web push shell
-  में चलती है या नहीं, यह जाँचा नहीं गया
+- **iOS push** — code साझा है और चलेगा, पर उसके लिए Firebase में APNs key
+  चढ़ानी होगी और iOS पर अभी कुछ भी build नहीं हुआ
 - **Background audio** — native audio session नहीं है, और Apple के सामने यही
   सबसे मज़बूत दलील होती

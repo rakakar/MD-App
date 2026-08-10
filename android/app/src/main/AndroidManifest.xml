@@ -20,6 +20,20 @@
             </intent-filter>
         </activity>
 
+        <!--
+            Without these two, a notification arrives as a white square: the
+            launcher icon is a full-colour adaptive icon, and Android flattens
+            whatever it is given in the status bar to a silhouette. The
+            drawable named here is drawn for that — one colour, transparent
+            everywhere else.
+        -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -32,4 +46,13 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        Android 13+ will not show a notification until the app has asked for
+        this at runtime, and it cannot ask for what is not declared here. The
+        push plugin makes the request (`requestPermissions()` behind the Enable
+        button); this line is what lets the request happen at all. On Android
+        12 and below it is ignored and permission comes with the install.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

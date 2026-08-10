@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The status-bar icon: a bell.
+
+    One colour and nothing else, because Android does not draw this the way it
+    is written — it takes the alpha channel and fills it with the notification
+    accent, discarding every colour in the file. A drawable with detail in it
+    arrives as a blob; the launcher icon, which is what gets used when this is
+    missing, arrives as a white square.
+
+    Also why it is a vector rather than a set of PNGs: one file scales to every
+    density, and the status bar is the one place where a slightly soft icon is
+    obvious.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,22c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.9,2 2,2zM18,16v-5c0,-3.07 -1.63,-5.64 -4.5,-6.32L13.5,4c0,-0.83 -0.67,-1.5 -1.5,-1.5s-1.5,0.67 -1.5,1.5v0.68C7.64,5.36 6,7.92 6,11v5l-2,2v1h16v-1l-2,-2z" />
+</vector>
