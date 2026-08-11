@@ -1,23 +1,55 @@
 "use client";
 
+import { useDisplay } from "@/components/shell/DisplayProvider";
 import {
   FONT_SCALES,
   LINE_HEIGHTS,
+  READER_SURFACES,
   type ReaderFace,
+  type ReaderSurface,
   type ReadingMode,
 } from "@/lib/storage";
-import { ThemeSwatches } from "@/components/shell/DisplaySheet";
 import { Sheet } from "./Sheet";
+
+/**
+ * **Theme & Settings** — the reader's own panel, as the comps draw it.
+ *
+ * Everything here is device-local and works signed out. The order is the
+ * comps': size first, because it is what a reader reaches for; then the paper;
+ * then the three things about how the type is set; then the one switch.
+ */
+
+/**
+ * The six reading surfaces, each swatch painted in the surface it selects.
+ *
+ * A paint chip rather than a colour block: without the letters, the chip for
+ * the surface you are already on disappears into the sheet behind it, and the
+ * ink is the half of a surface a colour block cannot show you anyway.
+ *
+ * `original` has no colours of its own — it defers to the app theme — so its
+ * chip is painted from the live reader tokens and follows whatever the app is
+ * currently set to. That is exactly what choosing it does.
+ */
+const SURFACES: Record<ReaderSurface, { label: string; bg: string; ink: string; bold?: boolean }> =
+  {
+    original: { label: "Original", bg: "var(--color-surface)", ink: "var(--color-ink)" },
+    quiet: { label: "Quiet", bg: "var(--color-surface-quiet)", ink: "var(--color-surface-quiet-ink)" },
+    paper: { label: "Paper", bg: "var(--color-surface-paper)", ink: "var(--color-surface-paper-ink)" },
+    bold: { label: "Bold", bg: "var(--color-surface)", ink: "var(--color-ink)", bold: true },
+    calm: { label: "Calm", bg: "var(--color-surface-calm)", ink: "var(--color-surface-calm-ink)" },
+    focus: { label: "Focus", bg: "var(--color-surface-focus)", ink: "var(--color-surface-focus-ink)" },
+  };
 
 const FACES: { id: ReaderFace; label: string; stack: string }[] = [
   { id: "serif", label: "Serif", stack: "var(--font-devanagari)" },
   { id: "sans", label: "Sans", stack: "var(--font-devanagari-sans)" },
 ];
 
+/** The comps name these Compact · Relaxed · Airy; the values are unchanged. */
 const SPACING = [
-  { label: "Normal", value: LINE_HEIGHTS[0] },
+  { label: "Compact", value: LINE_HEIGHTS[0] },
   { label: "Relaxed", value: LINE_HEIGHTS[1] },
-  { label: "Loose", value: LINE_HEIGHTS[2] },
+  { label: "Airy", value: LINE_HEIGHTS[2] },
 ];
 
 const MARGINS = [
@@ -45,12 +77,12 @@ interface SettingsSheetProps {
   glossaryUnderline: boolean;
   onGlossaryUnderline: (v: boolean) => void;
   onGoToPage: () => void;
-  /** out to the app-wide Display sheet — theme, app text size, bold */
+  /** out to the app-wide Display sheet — app theme, app text size, bold */
   onAppDisplay: () => void;
 }
 
-/** Reading settings. Everything here is device-local and works signed out. */
 export function SettingsSheet(p: SettingsSheetProps) {
+  const { readerTheme, setReaderTheme } = useDisplay();
   const fontIndex = Math.max(0, FONT_SCALES.indexOf(p.fontScale));
   const stepFont = (delta: number) => {
     const next = FONT_SCALES[Math.min(FONT_SCALES.length - 1, Math.max(0, fontIndex + delta))];
@@ -58,33 +90,71 @@ export function SettingsSheet(p: SettingsSheetProps) {
   };
 
   return (
-    <Sheet open={p.open} onClose={p.onClose} title="Reading settings">
-      <div className="space-y-5 px-5 pt-1">
-        <Row label="Text size">
-          <div className="flex items-center gap-2">
-            <StepBtn onClick={() => stepFont(-1)} disabled={fontIndex === 0} ariaLabel="Smaller text">
-              <span className="text-sm">A</span>
-            </StepBtn>
+    <Sheet open={p.open} onClose={p.onClose} title="Theme & Settings">
+      <div className="space-y-6 px-5 pt-4">
+        {/* Size, with a small A and a large A at the ends — the comps' shape,
+            and the one control on this sheet that needs no label because the
+            two letters are the label. */}
+        <div className="flex items-center gap-3">
+          <StepBtn onClick={() => stepFont(-1)} disabled={fontIndex === 0} ariaLabel="Smaller text">
+            <span className="text-sm">A</span>
+          </StepBtn>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-current/15" role="presentation">
             <div
-              className="h-1.5 flex-1 overflow-hidden rounded-full bg-current/15"
-              role="presentation"
-            >
-              <div
-                className="h-full rounded-full transition-[width] duration-150"
-                style={{
-                  width: `${((fontIndex + 1) / FONT_SCALES.length) * 100}%`,
-                  background: "var(--ws-color)",
-                }}
-              />
-            </div>
-            <StepBtn
-              onClick={() => stepFont(1)}
-              disabled={fontIndex === FONT_SCALES.length - 1}
-              ariaLabel="Larger text"
-            >
-              <span className="text-xl">A</span>
-            </StepBtn>
+              className="h-full rounded-full transition-[width] duration-150"
+              style={{
+                width: `${((fontIndex + 1) / FONT_SCALES.length) * 100}%`,
+                background: "var(--ws-color)",
+              }}
+            />
           </div>
+          <StepBtn
+            onClick={() => stepFont(1)}
+            disabled={fontIndex === FONT_SCALES.length - 1}
+            ariaLabel="Larger text"
+          >
+            <span className="text-xl">A</span>
+          </StepBtn>
+        </div>
+
+        <Row label="Theme">
+          <div role="radiogroup" aria-label="Reading surface" className="grid grid-cols-3 gap-2.5">
+            {READER_SURFACES.map((id) => {
+              const s = SURFACES[id];
+              const active = readerTheme === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={`${s.label} reading surface`}
+                  onClick={() => setReaderTheme(id)}
+                  className="flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-tile border-2 transition-colors"
+                  style={{
+                    background: s.bg,
+                    color: s.ink,
+                    // Selection is never colour alone — the ring is the signal,
+                    // and on a swatch already painted in six different colours
+                    // it is the only one that could be.
+                    borderColor: active ? "var(--ws-color)" : "var(--reader-rule)",
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className={`text-xl leading-none ${s.bold ? "font-bold" : ""}`}
+                  >
+                    Aa
+                  </span>
+                  <span className={`text-xs ${active ? "font-semibold" : ""}`}>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-(--reader-ink-soft)">
+            The book&apos;s own paper. Original follows the app&apos;s theme, so it goes dark
+            at night with everything else.
+          </p>
         </Row>
 
         <Row label="Typeface">
@@ -93,9 +163,9 @@ export function SettingsSheet(p: SettingsSheetProps) {
           <div
             role="radiogroup"
             aria-label="Typeface"
-            className="flex overflow-hidden rounded-xl border border-(--reader-rule)"
+            className="flex gap-1 rounded-tile bg-current/[0.06] p-1"
           >
-            {FACES.map((f, i) => {
+            {FACES.map((f) => {
               const active = p.face === f.id;
               return (
                 <button
@@ -105,50 +175,18 @@ export function SettingsSheet(p: SettingsSheetProps) {
                   aria-checked={active}
                   aria-label={f.label}
                   onClick={() => p.onFace(f.id)}
-                  className={`min-h-11 flex-1 py-1.5 transition-colors ${
-                    active ? "text-white" : "text-(--reader-ink-soft)"
-                  } ${i > 0 ? "border-s border-(--reader-rule)" : ""}`}
-                  style={active ? { background: "var(--ws-color)" } : undefined}
+                  className={`min-h-11 flex-1 rounded-chip py-1 transition-colors ${
+                    active ? "bg-(--reader-bg) font-semibold shadow-card" : "text-(--reader-ink-soft)"
+                  }`}
                 >
-                  <span
-                    lang="hi"
-                    className="block text-lg leading-tight"
-                    style={{ fontFamily: f.stack }}
-                  >
+                  <span lang="hi" className="block text-lg leading-tight" style={{ fontFamily: f.stack }}>
                     सत्य
                   </span>
-                  <span className={`block text-xs ${active ? "font-semibold" : ""}`}>
-                    {f.label}
-                  </span>
+                  <span className="block text-xs">{f.label}</span>
                 </button>
               );
             })}
           </div>
-        </Row>
-
-        <Row label="Line spacing">
-          <Segmented
-            ariaLabel="Line spacing"
-            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
-            value={p.lineHeight}
-            onChange={p.onLineHeight}
-          />
-        </Row>
-
-        <Row label="Margins">
-          <Segmented
-            ariaLabel="Margins"
-            options={MARGINS}
-            value={p.margin}
-            onChange={p.onMargin}
-          />
-        </Row>
-
-        {/* The app's control, not a reader-local one — the theme has painted
-            the whole app since the shell learned to follow it, and a reader
-            changing it here is changing the same thing the "Aa" button does. */}
-        <Row label="Theme">
-          <ThemeSwatches rule="--reader-rule" />
         </Row>
 
         <Row label="Layout">
@@ -161,6 +199,19 @@ export function SettingsSheet(p: SettingsSheetProps) {
             value={p.mode}
             onChange={p.onMode}
           />
+        </Row>
+
+        <Row label="Line height">
+          <Segmented
+            ariaLabel="Line height"
+            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
+            value={p.lineHeight}
+            onChange={p.onLineHeight}
+          />
+        </Row>
+
+        <Row label="Margins">
+          <Segmented ariaLabel="Margins" options={MARGINS} value={p.margin} onChange={p.onMargin} />
         </Row>
 
         {p.showTapZones && (
@@ -177,8 +228,8 @@ export function SettingsSheet(p: SettingsSheetProps) {
             still there, just not advertised — so nobody has to accept a
             marked-up page to get them. */}
         <Toggle
-          label="Show Paribhasha underlines"
-          hint="Even with this off: press and hold any word for its definition."
+          label="Paribhasha overlay"
+          hint="Show word meanings on tap. Even with this off: press and hold any word."
           checked={p.glossaryUnderline}
           onChange={p.onGlossaryUnderline}
         />
@@ -187,22 +238,24 @@ export function SettingsSheet(p: SettingsSheetProps) {
           <button
             type="button"
             onClick={p.onGoToPage}
-            className="w-full rounded-xl border border-(--reader-rule) py-2.5 text-sm font-medium"
+            className="w-full rounded-tile border border-(--reader-rule) py-2.5 text-sm font-medium"
           >
             Go to printed page…
           </button>
         )}
 
         {/* Everything above sets this book. This sets the app the book is
-            sitting in — and it is the same Theme control, so a reader who
-            finds it here has not been sent somewhere else to change it. */}
+            sitting in — and since the two themes became separate axes, that is
+            a different question rather than the same one twice. */}
         <button
           type="button"
           onClick={p.onAppDisplay}
           className="flex min-h-11 w-full items-center justify-between border-t border-(--reader-rule) pt-4 text-sm"
         >
           <span>App display settings</span>
-          <span aria-hidden className="text-(--reader-ink-soft)">→</span>
+          <span aria-hidden className="text-(--reader-ink-soft)">
+            →
+          </span>
         </button>
       </div>
     </Sheet>
@@ -223,12 +276,8 @@ function Toggle({
   return (
     <label className="flex items-center justify-between gap-4">
       <span className="min-w-0">
-        <span lang="hi" className="hi block text-sm font-medium">
-          {label}
-        </span>
-        <span lang="hi" className="hi block text-xs text-(--reader-ink-soft)">
-          {hint}
-        </span>
+        <span className="block text-sm font-medium">{label}</span>
+        <span className="block text-xs text-(--reader-ink-soft)">{hint}</span>
       </span>
       <button
         type="button"
@@ -236,13 +285,13 @@ function Toggle({
         aria-checked={checked}
         aria-label={label}
         onClick={() => onChange(!checked)}
-        className={`h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors ${
+        className={`h-7 w-12 shrink-0 rounded-full p-0.5 transition-colors ${
           checked ? "" : "bg-current/20"
         }`}
         style={checked ? { background: "var(--ws-color)" } : undefined}
       >
         <span
-          className={`block h-5 w-5 rounded-full bg-card shadow transition-transform ${
+          className={`block h-6 w-6 rounded-full bg-card shadow transition-transform ${
             checked ? "translate-x-5" : ""
           }`}
         />
@@ -254,7 +303,9 @@ function Toggle({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2 text-sm font-medium">{label}</p>
+      <p className="mb-2 text-xs font-bold uppercase tracking-[0.09em] text-(--reader-ink-soft)">
+        {label}
+      </p>
       {children}
     </div>
   );
@@ -277,13 +328,19 @@ function StepBtn({
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-(--reader-rule) disabled:opacity-35"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tile border border-(--reader-rule) disabled:opacity-35"
     >
       {children}
     </button>
   );
 }
 
+/**
+ * A pill sliding along a sunk track — the comps' shape for Pages/Scroll and
+ * Compact/Relaxed/Airy, and the same shape as `CountedSegmented` in the app.
+ * Its own copy rather than that component, because it paints in the *book's*
+ * tokens and that one paints in the app's.
+ */
 function Segmented<T extends string | number>({
   options,
   value,
@@ -299,9 +356,9 @@ function Segmented<T extends string | number>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className="flex overflow-hidden rounded-xl border border-(--reader-rule)"
+      className="flex gap-1 rounded-tile bg-current/[0.06] p-1"
     >
-      {options.map((o, i) => {
+      {options.map((o) => {
         const active = o.value === value;
         return (
           <button
@@ -310,10 +367,11 @@ function Segmented<T extends string | number>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={`min-h-11 flex-1 text-sm transition-colors ${
-              active ? "font-semibold text-white" : "text-(--reader-ink-soft)"
-            } ${i > 0 ? "border-s border-(--reader-rule)" : ""}`}
-            style={active ? { background: "var(--ws-color)" } : undefined}
+            className={`min-h-11 flex-1 rounded-chip text-sm transition-colors ${
+              active
+                ? "bg-(--reader-bg) font-semibold shadow-card"
+                : "text-(--reader-ink-soft)"
+            }`}
           >
             {o.label}
           </button>

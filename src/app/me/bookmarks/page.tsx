@@ -6,8 +6,33 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState, PageContainer } from "@/components/ui";
 import { localBookmarks, syncPersonal, unsaveBookmark } from "@/lib/personal";
 import { refToHref } from "@/lib/refs";
-import type { LocalBookmark } from "@/lib/storage";
+import type { HighlightColour, LocalBookmark } from "@/lib/storage";
 
+/** Tailwind cannot build a class name at runtime; the three are written out. */
+const FILL: Record<HighlightColour, string> = {
+  amber: "bg-hl-amber",
+  sage: "bg-hl-sage",
+  sky: "bg-hl-sky",
+};
+
+/**
+ * **Highlights — every book, in one place.**
+ *
+ * This was "Bookmarks", and the rename is the whole change. The designer took
+ * the bookmark button off the reader's bottom bar: a position saved with no
+ * words attached turned out to be the thing nobody came back for, and
+ * selecting a passage now offers the two things they do — paint it, or write
+ * against it.
+ *
+ * Nothing anyone saved is lost, and nothing had to be migrated, because a
+ * highlight *is* a bookmark with a colour in the store. Rows saved before the
+ * colours existed simply have none and show unpainted, which is exactly what
+ * they are: a passage somebody kept.
+ *
+ * Per-book highlights, with their notes and grouped by chapter, live on the
+ * book's own Highlights & Notes tab. This is the cross-book list — the one
+ * the Journey and Resources workspaces link to as "Saved".
+ */
 export default function BookmarksPage() {
   const { user, loading } = useAuth();
   const [rows, setRows] = useState<LocalBookmark[] | null>(null);
@@ -30,7 +55,7 @@ export default function BookmarksPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-medium">Bookmarks</h1>
+      <h1 className="font-display text-2xl font-medium">Highlights</h1>
       {!loading && !user && rows !== null && rows.length > 0 && (
         <p className="mt-1 text-xs text-ink-soft">
           Saved on this device ·{" "}
@@ -43,8 +68,8 @@ export default function BookmarksPage() {
       <div className="mt-5">
         {rows === null ? null : rows.length === 0 ? (
           <EmptyState
-            title="No bookmarks yet"
-            hint="Select any passage in the reader and choose Bookmark."
+            title="Nothing highlighted yet"
+            hint="Press and hold any line while reading, then pick a colour."
           />
         ) : (
           <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
@@ -54,7 +79,16 @@ export default function BookmarksPage() {
                   {/* the saved words, not the reference they were filed under */}
                   {b.text_hi ? (
                     <p lang="hi" className="hi line-clamp-2 text-sm leading-relaxed">
-                      {b.text_hi}
+                      {/* Painted in the colour it was saved in, so this list
+                          reads the way the page did. A row from before the
+                          colours existed gets none and reads as a quotation. */}
+                      <span
+                        className={
+                          b.colour ? `box-decoration-clone rounded-md px-1 ${FILL[b.colour]}` : ""
+                        }
+                      >
+                        {b.text_hi}
+                      </span>
                     </p>
                   ) : (
                     <p className="truncate text-sm font-medium">{b.canonical_ref}</p>
@@ -68,7 +102,7 @@ export default function BookmarksPage() {
                 <button
                   type="button"
                   onClick={() => remove(b.canonical_ref)}
-                  aria-label={`Remove bookmark ${b.canonical_ref}`}
+                  aria-label={`Remove highlight ${b.canonical_ref}`}
                   className="rounded-full px-2 py-1 text-xs text-ink-soft hover:bg-ink/5"
                 >
                   Remove

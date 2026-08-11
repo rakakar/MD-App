@@ -11,13 +11,6 @@ import {
   paraAtPosition,
   usePlayer,
 } from "@/components/player/PlayerProvider";
-import {
-  BackIcon,
-  BookmarkIcon,
-  HeadphonesIcon,
-  TocIcon,
-  TypeIcon,
-} from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
 import {
   flushProgress,
@@ -40,10 +33,12 @@ import {
   LINE_HEIGHTS,
   type ReaderFace,
   type ReadingMode,
+  type HighlightColour,
 } from "@/lib/storage";
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import type { Matcher, Segment } from "@/lib/paribhasha";
 import { Block } from "./blocks";
+import { ReaderBottomBar, ReaderTopBar, SelectionBar } from "./ReaderChrome";
 import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
@@ -932,8 +927,22 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     [user, showToast]
   );
 
-  const doBookmark = useCallback(
-    (ref: string) => {
+  /**
+   * Paint a passage.
+   *
+   * This is what the bookmark button used to be. The designer took that button
+   * off the bottom bar — a position saved with no words attached is the thing
+   * nobody came back for — and a highlight is a bookmark with a colour in the
+   * store, so nothing about the plumbing changed: same local-first write, same
+   * sync, same rows in My Journey. Only the reason to press it did.
+   *
+   * Saving always succeeds and always feels instant, because it is a local
+   * write; the account only decides whether it also travels. The old code
+   * could tell a signed-in reader "Couldn't save bookmark" and drop it, which
+   * is the one outcome a reading app must never produce.
+   */
+  const doHighlight = useCallback(
+    (ref: string, colour: HighlightColour) => {
       track("bookmark_add");
       saveBookmark(
         {
@@ -942,12 +951,39 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           book_title: book.title_hi,
           text_hi: paraByRef.get(ref)?.text_hi,
         },
-        !!user
+        !!user,
+        colour
       );
-      confirmSaved("Bookmarked");
+      confirmSaved("Highlighted");
       clearSelection();
     },
     [user, book.code, book.title_hi, paraByRef, confirmSaved, clearSelection]
+  );
+
+  /**
+   * Share a passage — the comps' third selection action.
+   *
+   * The citation, not a bare quotation: a paragraph of this material travelling
+   * without its reference is how a sentence ends up attributed to the wrong
+   * book. Falls back to the clipboard where the Web Share API is not there,
+   * which is every desktop browser and no phone.
+   */
+  const doShare = useCallback(
+    async (s: Selection) => {
+      const text = citationText(s.text || s.para.text_hi, s.para.canonical_ref);
+      try {
+        if (navigator.share) {
+          await navigator.share({ text });
+        } else {
+          await navigator.clipboard.writeText(text);
+          showToast({ text: "Copied with citation." });
+        }
+      } catch {
+        // a cancelled share sheet is not a failure and says nothing
+      }
+      clearSelection();
+    },
+    [showToast, clearSelection]
   );
 
   const doCopy = useCallback(
@@ -1083,12 +1119,36 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         ? (pageIndex + 1) / pages.length
         : 0
       : scrollProgress;
+  /**
+   * "Page 19 : 3 / 19" — the comps' exact string, and its exact meaning:
+   * the **printed** page, then where that page sits in this chapter. The two
+   * are different numbers and both are wanted — the first is what a reader
+   * checks against a paper copy and what every canonical_ref is built on, the
+   * second is how much of the chapter is left.
+   *
+   * A digital-first book has no printed page to quote, so it says only the
+   * second; a scrolled chapter has no page at all, so it says a percentage.
+   */
   const positionLabel =
     mode === "page" && page
       ? book.book_type === "print" && page.label === String(Number(page.label))
-        ? `Page ${page.label} · ${pageIndex + 1}/${pages.length}`
+        ? `Page ${page.label} : ${pageIndex + 1} / ${pages.length}`
         : `${pageIndex + 1} / ${pages.length}`
       : `${Math.round(progress * 100)}%`;
+
+  /** the top bar's second line: which chapter, and the same position again */
+  const topBarMeta = (
+    <>
+      {isFrontMatter ? "Front matter" : `Chapter ${chapterNumber}`}
+      {" · "}
+      {positionLabel}
+      {/* What this text is, on the line that is already about what the reader
+          is in — not a badge somewhere they have to go looking. A compilation
+          reads exactly like a book, which is precisely why it has to say that
+          it is not one. */}
+      {home && <>{" · "}{home.note}</>}
+    </>
+  );
 
   const pageChrome = (p: ReaderPage) =>
     isFrontMatter || p.label !== String(Number(p.label)) ? (
@@ -1107,70 +1167,31 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
     >
-      {/* ---- top chrome ---- */}
-      <div
-        data-reader-chrome
-        data-hidden={!chrome.visible}
-        className="reader-chrome reader-chrome-top fixed inset-x-0 top-0 z-40 border-b border-(--reader-rule) bg-(--reader-bg)/95 pt-[env(safe-area-inset-top)] backdrop-blur"
-      >
-        <div className="reader-content flex items-center gap-1 py-1.5">
-          <Link
-            href={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
-            className="-ms-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:bg-current/10"
-            aria-label={home?.backLabel ?? "Back to book"}
-          >
-            <BackIcon className="h-5 w-5" />
-          </Link>
-          <div className="min-w-0 flex-1 text-center">
-            <p lang="hi" className="hi truncate text-xs font-semibold leading-tight">
-              {chapter?.title_hi ?? book.title_hi}
-            </p>
-            <p className="truncate text-xs leading-tight text-(--reader-ink-soft)">
-              <span lang="hi" className="hi">{book.title_hi}</span>
-              {/* What this text is, on the line that is already about what the
-                  reader is in — not a badge somewhere they have to go looking.
-                  A compilation reads exactly like a book, which is precisely
-                  why it has to say that it is not one. */}
-              {home && <>{" · "}{home.note}</>}
-            </p>
-          </div>
-          {/* Back to the document as it was printed. The pages are the original
-              object and this text is derived from them (§12), so the way back
-              is never more than one tap from the way in. */}
-          {home ? (
-            <Link
-              // At the page being read, not at page one — the same bargain
-              // the पाठ toggle makes coming the other way. The two modes share
-              // a page axis because the text was pipelined from this very
-              // file; see `textEditionAtPage`.
-              //
-              // The *paragraph's* page rather than the chapter's start, and
-              // the difference is the whole point on a one-chapter edition
-              // like `S-A` — 52 pages under a single heading, where a chapter
-              // start is always page 1 and would send a reader forty pages
-              // back. The chapter start is the fallback for the moment before
-              // the first paragraph has been observed.
-              href={documentHref(home.at.node, home.at.item, pagesAt)}
-              // Spelled "Pages" and not "Original pages" only because this bar
-              // is 40-odd characters wide on a phone and the title has first
-              // claim on them; the full sentence is in the label a screen
-              // reader and a hover both get.
-              title="Read the original pages"
-              aria-label="Read the original pages"
-              className="flex h-11 shrink-0 items-center rounded-full px-3 text-xs font-semibold active:bg-current/10"
-            >
-              Pages
-            </Link>
-          ) : (
-            <span className="h-11 w-11 shrink-0" aria-hidden />
-          )}
-        </div>
-      </div>
+      <ReaderTopBar
+        hidden={!chrome.visible}
+        backHref={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
+        backLabel={home?.backLabel ?? "Back to book"}
+        title={chapter?.title_hi ?? book.title_hi}
+        meta={topBarMeta}
+        progress={progress}
+        // At the page being read, not at page one — the same bargain the पाठ
+        // toggle makes coming the other way. The *paragraph's* page rather than
+        // the chapter's start, which is the whole point on a one-chapter
+        // edition like `S-A`: 52 pages under a single heading, where a chapter
+        // start is always page 1 and would send a reader forty pages back.
+        pagesHref={home ? documentHref(home.at.node, home.at.item, pagesAt) : undefined}
+        onType={() => setSettingsOpen(true)}
+        // Search is the assistant until there is an assistant. The designer put
+        // this button here so the habit forms before the chat arrives; scoped
+        // to this book, because a global search from page 19 of a chapter is
+        // almost never the question being asked.
+        assistantHref={`/search?book=${encodeURIComponent(book.code)}`}
+      />
 
       {/* ---- content ---- */}
       {/* padding matches the top bar exactly, so revealing chrome never
           covers the line you are reading */}
-      <div className="pt-[calc(3.5rem+env(safe-area-inset-top))]">
+      <div className="pt-[calc(4rem+env(safe-area-inset-top))]">
         {resumeHint && (
           <div className="reader-content flex items-center gap-2 pt-2">
             <button
@@ -1285,65 +1306,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         </div>
       </div>
 
-      {/* ---- progress hairline: the one thing that never hides ---- */}
-      <div
-        className="pointer-events-none fixed inset-x-0 z-30 h-0.5"
-        style={{ bottom: bottomOffset }}
-        aria-hidden
-      >
-        <div
-          className="h-full transition-[width] duration-200"
-          style={{ width: `${progress * 100}%`, background: "var(--ws-ink)", opacity: 0.75 }}
-        />
-      </div>
-
-      {/* ---- bottom chrome ---- */}
-      <div
-        data-reader-chrome
-        data-hidden={!chrome.visible}
-        className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg)/95 backdrop-blur"
-        style={{ bottom: bottomOffset }}
-      >
-        <div className="reader-content flex items-center gap-1 py-1">
-          <ChromeBtn onClick={() => setTocOpen(true)} label="Contents">
-            <TocIcon className="h-5 w-5" />
-          </ChromeBtn>
-          <ChromeBtn
-            onClick={() => currentRef && doBookmark(currentRef)}
-            label="Bookmark this position"
-            disabled={!currentRef}
-          >
-            <BookmarkIcon className="h-5 w-5" />
-          </ChromeBtn>
-          <span className="flex-1 truncate text-center text-xs tabular-nums text-(--reader-ink-soft)">
-            {positionLabel}
-          </span>
-          {canListen && (
-            <ChromeBtn
-              onClick={openListening}
-              label={
-                deviceFallback
-                  ? "Listen with this device's voice (no recorded audio yet)"
-                  : "Listen to this chapter"
-              }
-              active={listening}
-            >
-              <span className="relative">
-                <HeadphonesIcon className="h-5 w-5" />
-                {deviceFallback && (
-                  <span
-                    aria-hidden
-                    className="absolute -end-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-(--reader-ink-soft)"
-                  />
-                )}
-              </span>
-            </ChromeBtn>
-          )}
-          <ChromeBtn onClick={() => setSettingsOpen(true)} label="Reading settings">
-            <TypeIcon className="h-5 w-5" />
-          </ChromeBtn>
-        </div>
-      </div>
+      <ReaderBottomBar
+        hidden={!chrome.visible}
+        bottom={bottomOffset}
+        position={positionLabel}
+        onContents={() => setTocOpen(true)}
+        onListen={openListening}
+        canListen={canListen}
+        listening={listening}
+        deviceFallback={deviceFallback}
+      />
 
       {/* one-time coach mark */}
       {hint && !chrome.visible && (
@@ -1354,51 +1326,32 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         </div>
       )}
 
-      {/* ---- selection action bar ---- */}
       {selection && !noteOpen && (
-        <div
-          data-reader-chrome
-          role="toolbar"
-          aria-label="Selection actions"
-          className="fixed inset-x-0 z-50 mx-auto flex w-fit max-w-[95vw] items-center gap-0.5 rounded-full border border-(--reader-rule) bg-(--reader-bg) px-1.5 py-1 shadow-xl"
-          style={{ bottom: `calc(${bottomOffset} + 3.5rem)` }}
-        >
-          {/* The way a definition is reached with underlining off: press and
-              hold selects the word, and this appears only when the glossary
-              actually has it — so it never offers a meaning it cannot give. */}
-          {selectedHeadword && (
-            <ActionBtn
-              onClick={() => {
-                track("paribhasha_lookup", { source: "selection" });
-                setDefineWord(selectedHeadword);
-                clearSelection();
-              }}
-            >
-              <span>Paribhasha</span>
-            </ActionBtn>
-          )}
-          <ActionBtn onClick={() => doBookmark(selection.para.canonical_ref)}>Bookmark</ActionBtn>
-          <ActionBtn
-            onClick={() => {
-              setNoteTarget(selection);
-              setNoteOpen(true);
-            }}
-          >
-            Note
-          </ActionBtn>
-          <ActionBtn onClick={() => void doCopy(selection)}>Copy</ActionBtn>
-          {/* The reason the whole feedback module earns its place: the corpus
-              came out of OCR, and the person who spots a broken matra is the
-              one reading the line. This hands us the exact paragraph, so the
-              editor opens proofreading on it instead of hunting for it. */}
-          <ActionBtn onClick={() => doReport(selection)} ariaLabel="Report a problem with this passage">
-            Report
-          </ActionBtn>
-          {canListen && (
-            <ActionBtn onClick={() => playFromPara(selection.para)}>▶ Here</ActionBtn>
-          )}
-          <ActionBtn onClick={clearSelection} ariaLabel="Dismiss">✕</ActionBtn>
-        </div>
+        <SelectionBar
+          bottom={bottomOffset}
+          onHighlight={(colour) => doHighlight(selection.para.canonical_ref, colour)}
+          onNote={() => {
+            setNoteTarget(selection);
+            setNoteOpen(true);
+          }}
+          onShare={() => void doShare(selection)}
+          onCopy={() => void doCopy(selection)}
+          onReport={() => doReport(selection)}
+          onDismiss={clearSelection}
+          // The way a definition is reached with underlining off: press and
+          // hold selects the word, and this appears only when the glossary
+          // actually has it — so it never offers a meaning it cannot give.
+          onParibhasha={
+            selectedHeadword
+              ? () => {
+                  track("paribhasha_lookup", { source: "selection" });
+                  setDefineWord(selectedHeadword);
+                  clearSelection();
+                }
+              : undefined
+          }
+          onPlayHere={canListen ? () => playFromPara(selection.para) : undefined}
+        />
       )}
 
       {/* ---- Audio Mode ----
@@ -1574,54 +1527,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         </div>
       )}
     </div>
-  );
-}
-
-function ChromeBtn({
-  children,
-  onClick,
-  label,
-  active,
-  disabled,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  label: string;
-  active?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      disabled={disabled}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:bg-current/10 disabled:opacity-35"
-      style={active ? { color: "var(--ws-ink)" } : undefined}
-    >
-      {children}
-    </button>
-  );
-}
-
-function ActionBtn({
-  children,
-  onClick,
-  ariaLabel,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  ariaLabel?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel}
-      className="min-h-10 rounded-full px-3 text-sm font-medium active:bg-current/10"
-    >
-      {children}
-    </button>
   );
 }
 

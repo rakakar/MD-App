@@ -252,8 +252,27 @@ rather than accidental:
 |---|---|
 | Library | `FilterCards`' two closed rows instead of the comps' Filters button + sheet; folder and file screens not yet on `CollectionHero` + `RowCard` |
 | Audio/Video, albums | the whole screen — no `CountedSegmented`, no filter sheet, no `CollectionHero` |
-| Reader | top bar has no Assistant button, bottom bar still has five controls, selection bar has no colours, settings sheet is not yet "Theme & Settings" with the six surfaces |
 | Audio Mode | not restyled |
+
+### The reader
+
+Built, and worth reading about because of *how*. `Reader.tsx` is ~1600 lines and the comps
+touch about 150 of them — a top bar, a bottom bar, a selection bar. The other 1450 are page
+model, TTS follow-along, gestures, resume, deep links and offline caching, none of which the
+designer draws. So the chrome was **extracted first** into `reader/ReaderChrome.tsx` as a
+behaviour no-op, and the comps were applied to that. A future revision opens a 350-line file
+of dumb presentational components, not the one that also holds the gesture handler.
+
+Answers the designer gave, and what they became:
+
+| | |
+|---|---|
+| The accent-filled ✦ in the top bar | The **Assistant**. It searches Paribhasha and the books today and becomes chat later; it is in the reader now so the habit forms first. Scoped to the current book — a global search from page 19 is not the question being asked. |
+| `Page 19 : 3 / 19` | Printed page, then where that page sits in this chapter. Two different numbers, both wanted: the first is what a reader checks against paper and what every `canonical_ref` is built on. |
+| The bookmark button | **Gone.** A position saved with no words is what nobody came back for. Selecting a passage offers the two things they do. `/me/bookmarks` is **Highlights** now — no migration, because a highlight is a bookmark with a colour, and rows saved before the colours simply show unpainted. |
+| The three highlight colours | No meaning — free choice. So they are announced by the only thing true about them ("Highlight in amber"). |
+| `Bold` | A heavy weight over Original's paper, confirmed. |
+| `Quiet` deepened to 12.4:1 | Accepted. |
 
 Not drawn by the designer at all, and therefore deliberately untouched: **Translations,
 Connect, Resources, My Journey**, search/assistant, auth and settings. They keep today's

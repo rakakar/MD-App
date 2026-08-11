@@ -78,6 +78,30 @@
      white rather than four. */
   --color-inset: #f7f3ec;
 
+  /* The one surface that floats *over* content rather than beside it — the
+     reader's selection bar, the audio pill. Deliberately the same near-black
+     in every theme and on every reading surface, as the comps draw it: a bar
+     in the page's own colours reads as part of the page, which is how a reader
+     ends up unsure what its buttons apply to. White on it is 15.9:1. */
+  --color-overlay: #1c1917;
+
+  /* ---- the painted reading surfaces ----
+
+     `original` and `bold` are absent: neither paints its own paper, so both
+     defer to the app theme. The other four live here rather than only inside
+     their `[data-reader-theme]` blocks below because the reader's Theme &
+     Settings sheet paints each swatch in the surface it selects — and a swatch
+     holding its own copy of the colour is a swatch that starts lying the day
+     the surface changes. Ratios are on the blocks below. */
+  --color-surface-quiet: #1f1f21;
+  --color-surface-quiet-ink: #dfdfe3;
+  --color-surface-paper: #ededed;
+  --color-surface-paper-ink: #211c1c;
+  --color-surface-calm: #f4e1c5;
+  --color-surface-calm-ink: #1a1613;
+  --color-surface-focus: #fefcf2;
+  --color-surface-focus-ink: #211c1c;
+
   /* ---- kind accents ----
 
      The comps are rigidly consistent about this and the app had nothing for
@@ -409,29 +433,29 @@
      hold the reader at 400. Bold therefore does what that rule does in
      reverse: it moves the book's Devanagari to Mukta, which has a real 500. */
 html[data-reader-theme="paper"] {
-  --reader-bg: #ededed;
-  --reader-ink: #211c1c;
+  --reader-bg: var(--color-surface-paper);
+  --reader-ink: var(--color-surface-paper-ink);
   --reader-ink-soft: #4a4744; /* 7.88:1 */
   --reader-rule: #d5d5d5;
 }
 
 html[data-reader-theme="calm"] {
-  --reader-bg: #f4e1c5;
-  --reader-ink: #1a1613;
+  --reader-bg: var(--color-surface-calm);
+  --reader-ink: var(--color-surface-calm-ink);
   --reader-ink-soft: #6b5535; /* 5.52:1 */
   --reader-rule: #ddc7a4;
 }
 
 html[data-reader-theme="focus"] {
-  --reader-bg: #fefcf2;
-  --reader-ink: #211c1c;
+  --reader-bg: var(--color-surface-focus);
+  --reader-ink: var(--color-surface-focus-ink);
   --reader-ink-soft: #4c463a; /* 9.10:1 */
   --reader-rule: #e6e1cf;
 }
 
 html[data-reader-theme="quiet"] {
-  --reader-bg: #1f1f21;
-  --reader-ink: #dfdfe3; /* 12.38:1 */
+  --reader-bg: var(--color-surface-quiet);
+  --reader-ink: var(--color-surface-quiet-ink); /* 12.38:1 */
   --reader-ink-soft: #a7a7ae; /* 6.88:1 */
   --reader-rule: #37373b;
 

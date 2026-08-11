@@ -95,7 +95,7 @@ export function DownloadButton({
         title={label}
         onClick={status === "done" ? remove : download}
         disabled={status === "downloading"}
-        className="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] border border-white/25 bg-white/12 text-white transition-colors hover:bg-white/20 disabled:opacity-70"
+        className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-tile border border-white/25 bg-white/12 text-white transition-colors hover:bg-white/20 disabled:opacity-70"
       >
         {status === "downloading" ? (
           <span className="text-xs font-bold tabular-nums">{progress}%</span>
