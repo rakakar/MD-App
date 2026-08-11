@@ -61,7 +61,7 @@ export function CollectionCard({
       <span
         {...scripted(
           title,
-          `${eyebrow ? "mt-1" : "mt-3"} block line-clamp-2 text-[1.0625rem] font-semibold leading-snug group-hover:underline`
+          `${eyebrow ? "mt-1" : "mt-3"} block line-clamp-2 text-title font-semibold leading-snug group-hover:underline`
         )}
       >
         {title}
@@ -164,7 +164,7 @@ export function PromoBand({
         <PlayIcon className="h-5 w-5" />
       </span>
       <span className="relative min-w-0 flex-1">
-        <span className="block text-[1.0625rem] font-semibold leading-tight">{title}</span>
+        <span className="block text-title font-semibold leading-tight">{title}</span>
         <span className="mt-0.5 block text-sm leading-snug text-white/70">{subtitle}</span>
       </span>
       <span aria-hidden className="relative shrink-0 text-white/50">

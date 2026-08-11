@@ -66,7 +66,7 @@ function Swatch({ name, css, note }: { name: string; css: string; note?: string 
 function Block({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <section className="mt-10">
-      <h2 className="text-[1.0625rem] font-semibold tracking-[-0.01em]">{title}</h2>
+      <h2 className="text-title font-semibold tracking-[-0.01em]">{title}</h2>
       {hint && <p className="mt-1 text-sm text-ink-soft">{hint}</p>}
       <div className="mt-4">{children}</div>
     </section>
@@ -227,7 +227,7 @@ export function Kitchen() {
             Display 26 — page titles
           </p>
           <p className="text-[1.3125rem] font-semibold leading-tight">Title 21 — hero</p>
-          <p className="text-[1.0625rem] font-semibold">Subtitle 17 — card and row titles</p>
+          <p className="text-title font-semibold">Subtitle 17 — card and row titles</p>
           <p className="text-sm">Body 15 — the default UI and body size</p>
           <p className="text-xs text-ink-soft">Meta 13 — the floor</p>
           <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">

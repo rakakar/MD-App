@@ -168,7 +168,7 @@ export function RadioList<T extends string>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={`flex min-h-14 items-center gap-3 text-start text-[1.0625rem] ${
+            className={`flex min-h-14 items-center gap-3 text-start text-title ${
               i > 0 ? "border-t border-rule" : ""
             } ${active ? "font-semibold" : ""}`}
           >
@@ -230,7 +230,7 @@ export function CheckRow({
     >
       <span
         aria-hidden
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] border-2 text-white"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border-2 text-white"
         style={
           checked
             ? { background: "var(--ws-color)", borderColor: "var(--ws-color)" }
@@ -240,7 +240,7 @@ export function CheckRow({
         {checked && <CheckIcon className="h-4 w-4" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span {...l} className={`${l.className} block text-[1.0625rem] font-semibold leading-snug`}>
+        <span {...l} className={`${l.className} block text-title font-semibold leading-snug`}>
           {label}
         </span>
         {meta && (

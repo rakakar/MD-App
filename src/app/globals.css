@@ -147,6 +147,16 @@
   --text-sm: 0.9375rem; /* 15px — default UI and body size */
   --text-sm--line-height: calc(1.375 / 0.9375);
 
+  /* 17px — the size every card title, row title and sheet heading in the
+     comps is set at, and the step between body and a section heading.
+     It was written as an arbitrary `text-[1.0625rem]` in nineteen places
+     before the
+     design-system lint rule pointed out that a step used nineteen times is a
+     step, not an exception. Named for its job rather than its size, so it
+     cannot be confused with Tailwind's own sm/base/lg ladder. */
+  --text-title: 1.0625rem;
+  --text-title--line-height: calc(1.4 / 1.0625);
+
   /* ---- radius & elevation ----
 
      Four radii, because the comps use four and the app was using eleven: the
@@ -164,6 +174,10 @@
      no shadow, which is why a white card on the old near-white page had
      nothing holding it up. `raised` is for what floats over content — the
      selection bar, the audio pill; `sheet` is the lift under a bottom sheet. */
+  /* 10px — the small square: a 36px kind tile, a checkbox. Below `tile` there
+     was nothing, so these were written as rounded-[9px] and rounded-[10px],
+     which is the same radius twice under two names. */
+  --radius-chip: 0.625rem;
   --radius-tile: 0.875rem; /* 14px */
   --radius-card: 1.25rem; /* 20px */
   --radius-hero: 1.5rem; /* 24px */

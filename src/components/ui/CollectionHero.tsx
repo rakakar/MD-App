@@ -75,7 +75,7 @@ export function CollectionHero({
           <span className={variant === "compact" ? "sr-only" : ""}>{back.label}</span>
         </Link>
         {variant === "compact" && (
-          <h1 {...t} className={`${t.className} min-w-0 flex-1 truncate text-[1.0625rem] font-semibold`}>
+          <h1 {...t} className={`${t.className} min-w-0 flex-1 truncate text-title font-semibold`}>
             {title}
           </h1>
         )}
@@ -159,7 +159,7 @@ export function HeroAction({
   return (
     <Link
       href={href}
-      className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-tile bg-card px-4 text-[1.0625rem] font-semibold transition-opacity hover:opacity-90"
+      className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-tile bg-card px-4 text-title font-semibold transition-opacity hover:opacity-90"
       style={{ color: tone }}
     >
       {children}

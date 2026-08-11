@@ -1,9 +1,23 @@
 # The design system
 
-The designer's finished Originals screens (25 PNGs, 3x, exported August 2026) are the
-source of truth for how this app looks. This file is the source of truth for how that gets
-built — what the tokens are, what the shared components are, and which of the comps' own
-decisions we deliberately did not follow.
+The designer's finished Originals screens are the source of truth for how this app looks.
+This file is the source of truth for how that gets built — what the tokens are, what the
+shared components are, and which of the comps' own decisions we deliberately did not
+follow.
+
+**Where the screens are.** The live file is the designer's Figma, *MD App Phase 2*:
+
+> https://www.figma.com/design/rn7h9yZtwmVZY3X9Fqt28f/MD-App-Phase-2?node-id=0-1
+
+That is canonical — it is where he changes things. The exported PNGs in
+`design_docs/screens/originals-2026-08-11/` are the offline copy: they are what you
+diff against, what survives without a network, and what pins the version this code was
+built from. When he revises a screen, a fresh export lands in a **new dated folder**
+rather than overwriting that one — otherwise "which comp did we build?" has no answer.
+
+**Mobile only, for now.** Every comp is a 390pt phone frame (1410px at 3x). The designer
+will draw desktop separately; until then the app's own responsive rules from `lg:` up are
+unchanged and untouched, and no comp-driven change may break them.
 
 Everything described here is on **`/design`** in development. That page is the artefact to
 open when sitting with the designer: every token and every component, in every state, with

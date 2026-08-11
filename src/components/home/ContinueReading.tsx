@@ -182,7 +182,7 @@ export function ContinueReading({
                 size="resume"
               />
               <span className="min-w-0 flex-1">
-                <span lang="hi" className="hi block truncate text-[1.0625rem] font-semibold">
+                <span lang="hi" className="hi block truncate text-title font-semibold">
                   {c.title}
                 </span>
                 <span

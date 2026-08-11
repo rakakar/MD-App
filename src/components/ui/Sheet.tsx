@@ -96,7 +96,7 @@ export function Sheet({
         <div className="shrink-0 pt-2.5">
           <div className="mx-auto h-1 w-9 rounded-full bg-current opacity-20" aria-hidden />
           <div className={`flex items-center gap-2 border-b px-5 pb-3 pt-3.5 ${rule}`}>
-            <h2 className="min-w-0 flex-1 text-[1.0625rem] font-semibold tracking-[-0.01em]">
+            <h2 className="min-w-0 flex-1 text-title font-semibold tracking-[-0.01em]">
               {title}
             </h2>
             {actions}
@@ -142,7 +142,7 @@ export function SheetAction({
     <button
       type="button"
       {...rest}
-      className="flex min-h-12 w-full items-center justify-center rounded-tile px-4 text-[1.0625rem] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+      className="flex min-h-12 w-full items-center justify-center rounded-tile px-4 text-title font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       style={{ background: "var(--ws-color)" }}
     >
       {children}

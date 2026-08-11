@@ -111,7 +111,7 @@ export function ShelfCard({ book }: { book: BookSummary }) {
       <CoverTile book={book} size="grid" />
       <span
         lang="hi"
-        className="hi mt-0.5 line-clamp-2 text-[1.0625rem] font-semibold leading-snug group-hover:underline"
+        className="hi mt-0.5 line-clamp-2 text-title font-semibold leading-snug group-hover:underline"
       >
         {book.title_hi}
       </span>

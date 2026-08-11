@@ -42,7 +42,7 @@ export function ExploreWorkspaces({ current }: { current: WorkspaceId }) {
                 <WorkspaceIcon id={id} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em]">
+                <span className="block text-title font-semibold leading-tight tracking-[-0.01em]">
                   {ws.name}
                 </span>
                 <span className="mt-0.5 block text-sm leading-snug text-ink-soft">

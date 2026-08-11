@@ -67,7 +67,7 @@ const TINT: Record<Family, string> = {
 
 const SIZE = {
   /** stat tiles and dense rows */
-  sm: "h-9 w-9 rounded-[10px] [&>svg]:h-4 [&>svg]:w-4",
+  sm: "h-9 w-9 rounded-chip [&>svg]:h-4 [&>svg]:w-4",
   /** the grid cards */
   md: "h-11 w-11 rounded-tile [&>svg]:h-5 [&>svg]:w-5",
   /** file rows, where the tile is the row's anchor */

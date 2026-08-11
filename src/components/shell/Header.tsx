@@ -110,7 +110,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
         >
           <span
             aria-hidden
-            className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-[11px] text-white"
+            className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-chip text-white"
             style={{
               background: `linear-gradient(150deg, color-mix(in srgb, ${ws.color} 78%, #fff), ${ws.color})`,
             }}
@@ -147,7 +147,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           aria-selected={active}
           aria-label={`${ws.name} — ${ws.tagline}`}
           onClick={() => choose(id)}
-          className={`flex items-center gap-2.5 rounded-[10px] px-2.5 py-2.5 text-xs transition-colors ${
+          className={`flex items-center gap-2.5 rounded-chip px-2.5 py-2.5 text-xs transition-colors ${
             active ? "font-semibold" : "font-medium text-ink-soft hover:bg-canvas/60"
           }`}
           style={
@@ -193,7 +193,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
         <div className="mx-auto h-1 w-10 rounded-full bg-rule" aria-hidden />
         <div className="mt-4 flex items-start justify-between gap-3">
           <div>
-            <p id="ws-sheet-title" className="text-[1.0625rem] font-semibold tracking-[-0.01em]">
+            <p id="ws-sheet-title" className="text-title font-semibold tracking-[-0.01em]">
               Choose a workspace
             </p>
             <p className="mt-1 text-xs leading-snug text-ink-soft">
@@ -470,7 +470,7 @@ export function Header() {
         <Link
           href={workspace.home}
           aria-label={`${workspace.name} home`}
-          className="shrink-0 rounded-[10px] transition-opacity active:opacity-80"
+          className="shrink-0 rounded-chip transition-opacity active:opacity-80"
         >
           <BrandMark className="h-8 w-8" />
         </Link>

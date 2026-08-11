@@ -32,7 +32,7 @@ export function ListRow({
     <>
       {leading}
       <span className="min-w-0 flex-1">
-        <span {...t} className={`${t.className} block text-[1.0625rem] font-semibold leading-snug`}>
+        <span {...t} className={`${t.className} block text-title font-semibold leading-snug`}>
           {title}
         </span>
         {meta && <span className="mt-1 block text-sm text-ink-soft">{meta}</span>}
