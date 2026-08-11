@@ -26,6 +26,34 @@
 > search's two lanes, personal features, PWA, analytics, and every design
 > decision about type and colour. Read §3's route table and the audio/video
 > milestones as history.
+
+> ### ⚠️ And the look is superseded by the finished comps
+>
+> **On 2026-08-11 the designer delivered finished screens for Originals** — 25
+> PNGs at 3x. Where they and this PRD disagree, they win, and the whole token
+> and component layer built from them is written up in
+> **[design-system.md](design-system.md)** with a live `/design` route.
+>
+> Three things in this PRD are now **wrong rather than merely dated**:
+>
+> - **§2's upcoming-event chip is gone from the phone's app bar.** It was the
+>   agreed mitigation for Connect being two taps away, and it cost the four
+>   items beside it: at Larger and Largest the bar wrapped to two rows and the
+>   workspace name squeezed to a tinted square. The shivirs are on Home now,
+>   under a heading, with a place and a name. The chip itself still exists in
+>   the **desktop sidebar**, which the comps do not cover and which has the room
+>   — so §10's `header_event_chip_tap` is still a live event, just a rarer one.
+> - **§5's "light/dark/sepia themes" is one axis where there are now two.** The
+>   app keeps Auto/Light/Sepia/Dark; the *book* separately gets six reading
+>   surfaces. §10's `reader_theme_change` was already renamed `theme_change`
+>   for the app axis, and the book's axis is `reader_surface_change`.
+> - **§10's "WCAG AA in all three themes"** now means all three app themes *and*
+>   all six reading surfaces.
+>
+> §10's colour reasoning — the deepened workspace hues, `--ws-color` vs
+> `--ws-ink` — still stands, and design-system.md extends rather than replaces
+> it: since the two axes can disagree, the accent is reconciled inside the book
+> against the *book's* ink rather than the app's.
 >
 > Current: `API_Contract_v1.md` §13 · backend repo का
 > `docs/product/Content_Model_v3.md` और `docs/manuals/library_manager_manual.md`.

@@ -11,6 +11,7 @@
 | आपको यह करना है | यह पढ़िए |
 |---|---|
 | पढ़ने वाले हिस्से को छूना है | **[reader.md](reader.md)** — दो readers, display system, offline. यही product है |
+| कोई भी रंग, radius, shadow या साझा component छूना है | **[design-system.md](design-system.md)** — **पहले**, और `/design` खोलकर |
 | Shelf, folder या find-bar पर काम है | [library.md](library.md) |
 | कोई payload चाहिए | [API_Contract_v1.md](API_Contract_v1.md) — §13 library |
 | Feedback वाला हिस्सा | [feedback.md](feedback.md) |
@@ -19,7 +20,7 @@
 | Product का इरादा जानना है | [PRD_v2.md](PRD_v2.md) — banners ज़रूर पढ़ें |
 | Code लिखने जा रहे हैं | `../AGENTS.md` — **पहले** |
 
-## छह फ़ाइलें, एक-एक पंक्ति में
+## सात फ़ाइलें, एक-एक पंक्ति में
 
 **[API_Contract_v1.md](API_Contract_v1.md)** — हर payload पर authority.
 यह **BE की copy है** (`MDApp/docs/api/API_Contract_v1.md`). यहाँ कभी edit मत
@@ -29,9 +30,14 @@
 diff "MDApp/docs/api/API_Contract_v1.md" "MD-App-FE/docs/API_Contract_v1.md"
 ```
 
+**[design-system.md](design-system.md)** — designer की 11 अगस्त 2026 वाली finished
+Originals screens से बना token layer और साझा components, comps से किए गए हर
+deviation की वजह, और "दोबारा न बहकने" के सात नियम। दिखने वाला रूप
+**`/design`** पर है (सिर्फ़ development में; production में 404)।
+
 **[reader.md](reader.md)** — book reader और PDF reader, दोनों पूरी viewport क्यों
-लेते हैं, chrome ख़ुद क्यों हटता है, display system (theme · text size · face ·
-line height) के पीछे के फ़ैसले, और offline text बनाम offline audio.
+लेते हैं, chrome ख़ुद क्यों हटता है, display system के दो axes (app की theme और
+किताब का काग़ज़ — दोनों अलग), और offline text बनाम offline audio.
 
 **[library.md](library.md)** — `/library/[id]` हर गहराई पर एक ही component क्यों
 है, URLs workspace-neutral क्यों हैं, browse और find के बीच का एक-test वाला

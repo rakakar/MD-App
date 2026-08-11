@@ -145,6 +145,39 @@ search.
 | `Chip`, `ChipRow` | genre row, filter chips, active filters |
 | `FilterButton`, `FindRow`, `ActiveFilters`, `FilterSection`, `RadioList`, `CheckRow` | Library, Audio/Video, Highlights |
 | `Sheet` (+ `SheetAction`, `SheetTextAction`) | every bottom sheet in the app |
+| `ShareButton` | every hero that can be shared |
+
+`CollectionHero`'s `actions` is a **block** slot, not a flex row. The book's actions arrive
+as one client component that owns its own progress bar as well as its buttons — it reads
+the saved position once so the two cannot disagree for a frame — and a hero that forced its
+actions onto one line had nowhere to put the bar. Callers that want a row write a row.
+
+`CollectionCard` takes an optional `badge` beside its meta line; that is where a borrowed
+folder's provenance goes. `NodeCardView`'s `tile` variant is this component now — the
+five-hue `KIND_TINT` table it used to hold is deleted, because that table and the
+designer's export had already drifted by a shade in three places and only the stylesheet
+can restate a hue per theme.
+
+### Two heading tiers, and which is which
+
+`SectionHeading` has `eyebrow` (13px / 700 / uppercase) and `title` (20px, sentence case,
+full ink). `title` heads a section that is its own subject — Books, Shorts, Audio & Video,
+Explore workspaces. `eyebrow` labels a rail sitting *above* the thing a page is actually
+about, which in practice is only the Library's CONTINUE READING. `ContinueReading` takes a
+`tier` prop for exactly that reason.
+
+The title tier was 17px until the comps arrived, where Home's section headings are plainly
+a step above the 17px card titles under them. At 17px a heading and the cards it introduced
+were the same size, which is the specific way a long scrolling page stops having a shape.
+
+### Covers are not carded
+
+`BookShelf`'s grid card lost its border and padding. A cover is already a rectangle with a
+border and a printed title on it; framing it in a second bordered rectangle boxed a box and
+cost the cover the width — which on a two-up phone grid is the only thing being scanned.
+`StatTile`'s label clamps to two lines rather than truncating to one: the comps label these
+"PDFs" and "Shivir", and the folders they stand for are called
+"परिचयात्मक संकलन (प्रवेश सप्तम)".
 
 ### Three controls that look similar and are not
 
@@ -169,12 +202,72 @@ chosen, because "which world is this sheet in" is a fact about the component tha
 
 ---
 
-## Scope
+## Two things outside the stylesheet that the comps decided
 
-Built against the finished comps: Home, Read, Book preview, Highlights & Notes, Library
-(+ folder and file lists), Audio/Video (+ albums), the reader and its sheets, Audio Mode.
+**A highlight is a bookmark with a colour.** The Highlights & Notes screen wanted a new
+entity; the store did not need one. `LocalBookmark` gained a `colour`, and a note on the
+same `canonical_ref` is already the note attached to it — `localHighlights()` in
+`lib/personal.ts` is that join. A fourth array would have bought a second sync path, a
+second tombstone kind and a second thing for the reader's selection bar to decide between,
+in exchange for a field. The BE carries no colour yet, so a second device sees the passage
+without its paint; that is the right way round, because the passage is the part a reader
+would miss.
 
-Not drawn yet, and therefore untouched: **Translations, Connect, Resources, My Journey**,
-search/assistant, auth and settings. They keep today's chrome and inherit these primitives
-for free when the designer draws them — which is the whole reason the primitives came
-first.
+**The app bar is four items.** Logo · workspace pill · palette · account. The palette
+replaced "Aa" because this button stopped being a type control when the theme left the
+reader, and "Aa" was quietly promising one of the three things behind it — the reader's own
+type button, inside a book, keeps its "Aa". The next-shivir date chip is gone: it was
+mitigation for Connect being two taps away, and what it cost was the four things beside it
+wrapping to two rows at the text sizes this audience actually uses. Its job moved onto
+Home, where a shivir can say where it is.
+
+---
+
+## Scope — what is built, and what is not
+
+The comps cover Home, Read, Book preview, Highlights & Notes, Library (+ folder and file
+lists), Audio/Video (+ albums), the reader and its sheets, and Audio Mode.
+
+**Built:** the tokens, the primitives, and Home · Read · Book preview · Highlights & Notes ·
+the Library shelf.
+
+**Not built yet** — these screens still wear the pre-comp chrome, and the gap is known
+rather than accidental:
+
+| Screen | What is still old |
+|---|---|
+| Library | `FilterCards`' two closed rows instead of the comps' Filters button + sheet; folder and file screens not yet on `CollectionHero` + `RowCard` |
+| Audio/Video, albums | the whole screen — no `CountedSegmented`, no filter sheet, no `CollectionHero` |
+| Reader | top bar has no Assistant button, bottom bar still has five controls, selection bar has no colours, settings sheet is not yet "Theme & Settings" with the six surfaces |
+| Audio Mode | not restyled |
+
+Not drawn by the designer at all, and therefore deliberately untouched: **Translations,
+Connect, Resources, My Journey**, search/assistant, auth and settings. They keep today's
+chrome and inherit these primitives for free when their comps arrive — which is the whole
+reason the primitives came first.
+
+---
+
+## How not to drift again
+
+This section is the point of the file. The drift it exists to prevent has already happened
+once: five hard-coded kind hues in `NodeCard.tsx`, a shade off the designer's, unable to
+restate themselves per theme.
+
+1. **Open `/design` before changing any shared styling**, next to the PNG. It is the
+   regression surface, and flipping the two switches at the top is the check.
+2. **No new colour, radius or shadow literal in a component.** If it is not in
+   `globals.css`, it does not exist. A one-off `rounded-[18px]` is how eleven radii
+   happened.
+3. **A token is added to `@theme static`**, never plain `@theme` — Tailwind drops a
+   variable whose name it cannot find in the source, and this app composes
+   `var(--color-hl-${colour})` at runtime.
+4. **Measure, don't eyeball.** Every ink here carries its ratio in a comment against the
+   surface it actually sits on. A new one earns the same.
+5. **Two consumers or it is not a primitive.** A component in `ui/` with one caller is a
+   screen's own furniture in the wrong folder.
+6. **A deviation from the comps is written where it happens**, in the code, and added to
+   the deviations table above. "We decided this looked better" is not a deviation, it is
+   drift.
+7. **Update this file in the same commit.** It was stale within a day of being written the
+   first time.

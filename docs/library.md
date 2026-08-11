@@ -112,6 +112,13 @@ bookmark हो सकता है, और back button पाठक को ए�
 जो कुछ भी है, चाहे कहीं भी हो"* अब भी असली सवाल है — बस वह नहीं जो पाठक shelf पर
 खड़े होकर पूछ रहा होता है।
 
+**यह panel बदलने वाला है।** 11 अगस्त 2026 की finished comps इन दो बंद rows की
+जगह search box के बगल में एक **Filters** button रखती हैं, जो गिनती के साथ जलता है
+और एक sheet खोलता है (`FilterButton` · `FilterSection` · `RadioList` ·
+`ActiveFilters` — तीनों बन चुके हैं, अभी जुड़े नहीं)। ऊपर वाला तर्क — कि चिप्स
+पाँच सौ pixel में shelf को नीचे धकेल देती थीं — उसी नतीजे पर पहुँचता है; sheet
+उसे और आगे ले जाती है। देखिए **[design-system.md](design-system.md)**।
+
 ## 6. यह search किस हद तक जाती है
 
 Library की find सिर्फ़ **metadata** पढ़ती है — नाम, description, विषय, वर्ष,

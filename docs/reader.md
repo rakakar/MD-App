@@ -97,12 +97,30 @@ tap जान-बूझकर से ज़्यादा ग़लती स�
 | Setting | मान |
 |---|---|
 | `face` | `serif` (default) · `sans` |
+| `readerTheme` | `original` (default) · `quiet` · `paper` · `bold` · `calm` · `focus` |
 | `fontScale` | 8 steps, `0.85` से `1.7` |
 | `lineHeight` | `1.85 · 2.05 · 2.3` |
 | `margin` | 0 (सँकरा) · 1 · 2 (चौड़ा) |
 | `readingMode` | `page` · `scroll` · `null` = अपने आप (print → page, digital → scroll) |
 | `tapZones` | Pages mode में किनारे पर tap से page पलटना |
 | `glossaryUnderline` | default **off** |
+
+**दो axes, एक नहीं (11 अगस्त 2026)।** `theme` app का है, `readerTheme` सिर्फ़
+किताब का काग़ज़। Designer की Theme & Settings sheet छह surfaces देती है — Original ·
+Quiet · Paper · Bold · Calm · Focus — पर app अपने चार (Auto/Light/Sepia/Dark) रखता
+है: **Auto** ही वह चीज़ है जो सूरज ढलते ही फ़ोन के साथ app को भी बदल देती है, और
+जिस किताब को क्रीम काग़ज़ पर चुना गया वह शाम होने से धूसर नहीं होनी चाहिए।
+
+`original` कुछ भी declare नहीं करता — वह app theme के aliases हैं, यानी जिसने
+sheet कभी खोली ही नहीं उसे बिल्कुल वही मिलता है जो पहले मिलता था। `bold` surface
+है ही नहीं, **weight** है (Tiro में एक weight है, इसलिए किताब की देवनागरी Mukta
+500 पर जाती है)।
+
+दोनों axes आपस में असहमत हो सकते हैं — हल्के app में Quiet काग़ज़, या गहरे app में
+Calm — इसलिए किताब के अंदर `--ws-ink`, status bar (`theme-color`) और `colorScheme`
+तीनों **किताब** की ink के हिसाब से तय होते हैं, app की नहीं। यही वजह है कि `Sheet`
+को `surface` prop मिली: header से खुलने वाली Display sheet क्रीम screen पर लगभग
+काली आने वाली थी। पूरा हिसाब **[design-system.md](design-system.md)** में है।
 
 **Serif क्यों default है:** ये किताबें इसी में छपी हैं। **Sans क्यों मौजूद है:**
 कम-DPI Android पर छोटे size में serif की पतली लकीरें और चढ़ी-उतरी मात्राएँ गड्ड
