@@ -11,9 +11,16 @@ import type {
 import { useReaderChrome } from "@/components/reader/useReaderChrome";
 import { BackIcon } from "@/components/shell/icons";
 import { useDisplay } from "@/components/shell/DisplayProvider";
+import { FULL_PAGE, measureCrop, type CropBox } from "@/lib/pdfCrop";
 import { textEditionAtPage } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
-import { DEFAULT_PREFS, getPrefs, type ResolvedTheme } from "@/lib/storage";
+import {
+  DEFAULT_PREFS,
+  getPdfView,
+  getPrefs,
+  setPdfView,
+  type ResolvedTheme,
+} from "@/lib/storage";
 
 /**
  * An error, in the few words a fix can be built from.
@@ -69,8 +76,18 @@ function describe(e: unknown): string {
  */
 const SLOW_MS = 10_000;
 
-/** Pages kept drawn either side of the one being read. */
-const WINDOW = 2;
+/**
+ * Pages kept drawn either side of the one being read — fewer as the page grows.
+ *
+ * Two either side is five pages held, which at fit-width is a few megabytes and
+ * makes turning back instant. Magnified it is not: a page at 3× carries nine
+ * times the pixels, and five of those is a number iOS Safari answers by
+ * discarding the tab. Above 1.6× the window closes to one either side, which
+ * keeps the worst case near 50 MB instead of past 150.
+ */
+function windowFor(zoom: number): number {
+  return zoom > 1.6 ? 1 : 2;
+}
 
 /**
  * How many decoded page proxies to hold before letting the oldest go.
@@ -101,15 +118,6 @@ const READING_LINE = 80;
 /** A flick fires hundreds of scroll events; only the rest at the end counts. */
 const SETTLE_MS = 120;
 
-/** How far two fingers must spread or close before the scale steps. */
-const PINCH_IN = 0.77;
-const PINCH_OUT = 1.3;
-
-/** distance between two touches */
-function spread(t: React.TouchList): number {
-  return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-}
-
 /**
  * Cap on canvas backing-store density. A phone reporting DPR 3 on a 390-page
  * scan buys sharpness nobody asked for at nine times the pixels per page, and
@@ -117,8 +125,68 @@ function spread(t: React.TouchList): number {
  */
 const MAX_DPR = 2;
 
-/** Fit-width, then two steps up. Down is what the browser's own pinch is for. */
-const ZOOMS = [1, 1.5, 2.25];
+/**
+ * The hard ceiling on one page's backing store, in pixels.
+ *
+ * pdf.js's own viewer carries this number (`maxCanvasPixels`, 5.24M on mobile)
+ * and it is not a performance tuning knob — it is what stops the tab dying. A
+ * cropped A4 page at 3× on a DPR-2 phone asks for 7.2M pixels, 29 MB of backing
+ * store, and several pages are held at once. Past the cap the density is
+ * lowered rather than the zoom refused: the page stays the size the reader
+ * asked for and gives up retina crispness, which is the trade every viewer that
+ * survives magnification makes.
+ */
+const MAX_CANVAS_PX = 4_500_000;
+
+/** No single dimension past this, whatever the area says — older iOS caps at 4096. */
+const MAX_CANVAS_SIDE = 8192;
+
+/** Fitted to the column, up to four times it. */
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 4;
+
+/**
+ * Where a double tap lands.
+ *
+ * With the margins trimmed, twice the fitted width puts a line of these scans
+ * at 19–24 CSS pixels, which is the size a book is set at. It is one gesture to
+ * the size people actually read at, and one more to come back.
+ */
+const DOUBLE_TAP_ZOOM = 2;
+
+/** Two taps closer together than this, and nearer than {@link TAP_SLOP}, are one gesture. */
+const DOUBLE_TAP_MS = 260;
+const TAP_SLOP = 32;
+
+/** Rest after a pinch before the pages are drawn again, sharp. */
+const ZOOM_SETTLE_MS = 220;
+
+/** Beyond this, a phone held upright is the wrong shape for the page. */
+const HINT_ZOOM = 1.6;
+
+/**
+ * That the reader has already been told to turn the phone, for this visit only.
+ *
+ * Session rather than permanent storage on purpose: this is a hint about the
+ * device's shape, and the answer changes when somebody picks up a tablet or
+ * comes back on a desk. Once a session is the right frequency for something
+ * that is genuinely useful the first time and noise the fifth.
+ */
+const HINT_KEY = "md.pdf.rotatehint";
+
+/** distance between two touches */
+function spread(t: TouchList): number {
+  return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+}
+
+/** midpoint of two touches — what a pinch is centred on */
+function centre(t: TouchList): { x: number; y: number } {
+  return { x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 };
+}
+
+function clampZoom(z: number): number {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+}
 
 /**
  * Paper is white and the app may not be.
@@ -182,8 +250,56 @@ interface PageBox {
   el: HTMLDivElement;
   canvas: HTMLCanvasElement | null;
   task: RenderTask | null;
-  /** the scale it was drawn at, so a zoom knows what is stale */
+  /**
+   * The CSS width it was drawn at, so a zoom or a rotation knows what is stale.
+   *
+   * The width rather than the zoom level, because the width is what the render
+   * actually used: a phone turned sideways changes it without the zoom moving,
+   * and a zoom that ends where it began changes nothing and should not redraw
+   * three hundred pages to prove it.
+   */
   drawnAt: number;
+}
+
+/**
+ * The crop control: a page with its margins folded in.
+ *
+ * Drawn rather than borrowed from the icon set because none of the app's icons
+ * mean this, and the meaning has to survive being 20px wide on a phone.
+ */
+function CropIcon({ on }: { on: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect
+        x="3.5"
+        y="2.5"
+        width="17"
+        height="19"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        opacity={on ? 0.35 : 1}
+      />
+      {on && (
+        <rect
+          x="7.5"
+          y="6.5"
+          width="9"
+          height="11"
+          rx="1"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
+      )}
+      {!on && (
+        <>
+          <path d="M7.5 8.5h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <path d="M7.5 12h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <path d="M7.5 15.5h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </>
+      )}
+    </svg>
+  );
 }
 
 export function PdfReader({
@@ -196,6 +312,7 @@ export function PdfReader({
   backHref,
   textHref,
   fileSize = null,
+  stateKey,
 }: {
   url: string;
   title: string;
@@ -236,9 +353,21 @@ export function PdfReader({
   textHref?: string;
   /** bytes, when known — decides whether the file is fetched whole or rationed */
   fileSize?: number | null;
+  /**
+   * Where this document's *view* is remembered — the same key its place is
+   * saved under, so the two are found together.
+   *
+   * How a reader was looking at a document is part of picking it up where they
+   * left off. A 220-page scan is unreadable at fit-width, so every reader
+   * magnifies it; opening it back at 1× the next evening means doing that work
+   * again every time, which is the sort of small tax that makes an app feel
+   * like a document viewer rather than a place to read.
+   */
+  stateKey?: string;
 }) {
   const { resolved } = useDisplay();
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   // Never locked: this reader has no sheet or dialog to pin the chrome open for.
   const chrome = useReaderChrome("scroll", false, scrollerRef);
@@ -254,7 +383,34 @@ export function PdfReader({
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [current, setCurrent] = useState(startPage);
-  const [zoom, setZoom] = useState(0);
+  /**
+   * Magnification, and a **continuous** number rather than a rung on a ladder.
+   *
+   * It used to be an index into `[1, 1.5, 2.25]`, and a pinch stepped it. Two
+   * fingers moving smoothly produced a page that jumped, stopped, jumped — the
+   * document lurching between three sizes while the hand asked for everything
+   * in between. Worse, all three rungs redrew: the layout width is the zoom, so
+   * each step reflowed 390 boxes and re-rendered five pages, at the exact
+   * moment the reader was moving.
+   *
+   * Now a gesture writes a CSS variable straight onto the list (see
+   * `applyZoom`) — no React render, no re-raster, just the page growing under
+   * the fingers — and this state is only told about it once the hand rests, at
+   * which point the pages are drawn again properly. It is what pdf.js's own
+   * viewer does with `--scale-factor` and `drawingDelay`.
+   */
+  const [zoom, setZoom] = useState(MIN_ZOOM);
+  /**
+   * The margins of a scan, and whether they are folded away.
+   *
+   * `null` while it is still being measured, which is a third state and not a
+   * missing one: it means "no crop yet, and one may be coming", and the page is
+   * laid out full-bleed until it arrives.
+   */
+  const [cropBox, setCropBox] = useState<CropBox | null>(null);
+  const [cropOn, setCropOn] = useState(true);
+  /** Shown once, when a reader magnifies past the point where the phone is the wrong shape. */
+  const [hint, setHint] = useState(false);
   const [ready, setReady] = useState(false);
   /** how much of the document has arrived, 0–100; only meaningful before it opens */
   const [loadedPct, setLoaded] = useState(0);
@@ -276,6 +432,38 @@ export function PdfReader({
   const failed = useRef(false);
   const jumped = useRef(false);
   const appliedZoom = useRef(zoom);
+  /**
+   * The zoom **as the document is currently drawn on screen**, which during a
+   * pinch is ahead of the state above and is what every measurement must use.
+   */
+  const liveZoom = useRef(zoom);
+
+  /**
+   * The crop actually in force, as the render loop needs it — `null` for none.
+   *
+   * A ref beside the state because `drawOne` must not be rebuilt mid-render by
+   * a crop arriving; the redraw that follows is explicit.
+   */
+  const cropRef = useRef<CropBox | null>(null);
+  useEffect(() => {
+    cropRef.current = cropOn ? cropBox : null;
+  }, [cropOn, cropBox]);
+
+  /** The crop the pages on screen were drawn under — `null` before the first one. */
+  const appliedCrop = useRef<string | null>(null);
+  /** Set once the margins have been measured (or found already known). */
+  const measured = useRef(false);
+  /** Whether the rotate hint has had its turn this session. */
+  const hinted = useRef(false);
+
+  /** the pinch in progress: how far apart the fingers began, and at what zoom */
+  const pinch = useRef<{ dist: number; zoom: number } | null>(null);
+  /** when two fingers were last on the glass — taps just after are not taps */
+  const pinchedAt = useRef(0);
+  const zoomTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** the last single tap, waiting to find out whether it is half of a double one */
+  const lastTap = useRef<{ x: number; y: number; t: number } | null>(null);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /**
    * "A page has painted", readable from `draw` without being a dependency of
    * it. As state alone it rebuilt `draw` the instant the first page landed,
@@ -420,8 +608,9 @@ export function PdfReader({
 
       const width = box.el.clientWidth;
       if (width === 0) return;
-      const scale = ZOOMS[zoom];
-      if (box.canvas && box.drawnAt === scale) return; // already good at this zoom
+      // Half a pixel of slack: a percentage width lands on fractions, and a
+      // page redrawn because 718.0004 is not 718 would redraw forever.
+      if (box.canvas && Math.abs(box.drawnAt - width) < 0.5) return;
 
       try {
         const page = pageCache.current.get(n) ?? (await doc.getPage(n));
@@ -429,17 +618,35 @@ export function PdfReader({
         trimPages(pageCache.current, PAGE_CACHE);
         if (boxes.current.get(n) !== box) return; // torn down while awaiting
 
-        const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+        const crop = cropRef.current ?? FULL_PAGE;
         const base = page.getViewport({ scale: 1 });
+        // What the box is: the *cropped* region stretched to the column, so its
+        // height follows the crop's own proportions and not the paper's.
+        const cssHeight = (width * (base.height * crop.h)) / (base.width * crop.w);
+
+        // **The density is a budget, not a constant.** `MAX_DPR` alone was safe
+        // at fit-width and nowhere else: magnified, the same rule asks for a
+        // backing store that grows with the square of the zoom, and the phone
+        // answers by killing the tab rather than by drawing a smaller page.
+        const dpr = Math.max(
+          0.5,
+          Math.min(
+            window.devicePixelRatio || 1,
+            MAX_DPR,
+            Math.sqrt(MAX_CANVAS_PX / (width * cssHeight)),
+            MAX_CANVAS_SIDE / Math.max(width, cssHeight)
+          )
+        );
+
         // `width` is the element's own width, which already carries the zoom —
-        // the page box is laid out at `scale * 100%`. Only the device ratio is
-        // applied on top, which is what keeps Devanagari matras legible instead
-        // of smeared.
-        const viewport = page.getViewport({ scale: (width / base.width) * dpr });
+        // the page box is laid out at `--pdf-zoom * 100%`. The scale is chosen
+        // so the *cropped* region lands exactly on the canvas; the device ratio
+        // on top is what keeps Devanagari matras legible instead of smeared.
+        const viewport = page.getViewport({ scale: (width / (base.width * crop.w)) * dpr });
 
         const canvas = document.createElement("canvas");
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        canvas.width = Math.max(1, Math.round(viewport.width * crop.w));
+        canvas.height = Math.max(1, Math.round(viewport.height * crop.h));
         // **Taken out of layout entirely.** As a normal child with `height:
         // auto` the canvas decided its own box, so a page was one height while
         // drawn and another while blank — and since pages are drawn and
@@ -453,7 +660,23 @@ export function PdfReader({
         canvas.style.height = "100%";
         canvas.className = "rounded-md";
 
-        const task = page.render({ canvas, viewport });
+        const task = page.render({
+          canvas,
+          viewport,
+          // The crop, and the whole of it. The extra transform is applied in
+          // canvas space *outside* the viewport's own (pdf.js does
+          // `ctx.transform(transform)` then `ctx.transform(viewport)`), so
+          // sliding the page up and left by the margin puts the ink at the
+          // canvas origin. Nothing else in the render loop knows a crop exists.
+          transform:
+            crop === FULL_PAGE
+              ? undefined
+              : [1, 0, 0, 1, -crop.x * viewport.width, -crop.y * viewport.height],
+          // A PDF page is transparent where nothing was painted, and a
+          // transparent canvas over a dark theme would show the app through
+          // the paper.
+          background: "#fff",
+        });
         box.task = task;
         await task.promise;
         // `release` nulls the task when it lets a page go; finding it changed
@@ -463,7 +686,7 @@ export function PdfReader({
 
         box.el.replaceChildren(canvas);
         box.canvas = canvas;
-        box.drawnAt = scale;
+        box.drawnAt = width;
 
         if (!readyRef.current) {
           readyRef.current = true;
@@ -477,8 +700,10 @@ export function PdfReader({
     },
     // `ready` is deliberately absent — see `readyRef`. Listing it rebuilt this
     // callback the moment the first page painted, and that cascade re-entered
-    // the render loop.
-    [doc, zoom, fail]
+    // the render loop. `zoom` and the crop are absent for the same reason and
+    // do not need to be here: both reach this through the box's own width and
+    // `cropRef`, and both are followed by an explicit redraw.
+    [doc, fail]
   );
 
   /**
@@ -523,6 +748,35 @@ export function PdfReader({
    * this runs on every settled scroll. Pages are laid out in order, so the last
    * one whose top has passed the line is the one being read.
    */
+  /**
+   * The page whose box contains a point on screen — the same bisection, asked
+   * about an arbitrary height rather than the reading line.
+   *
+   * What a pinch is anchored to. Pages are laid out in order, so the last one
+   * whose top has passed the point is the one under it.
+   */
+  const pageAtY = useCallback(
+    (y: number): number => {
+      if (pageCount === 0) return 1;
+      let lo = 1;
+      let hi = pageCount;
+      let found = 1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        const el = boxes.current.get(mid)?.el;
+        if (!el) break;
+        if (el.getBoundingClientRect().top <= y) {
+          found = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      return found;
+    },
+    [pageCount]
+  );
+
   const pageAtTop = useCallback((): number => {
     const scroller = scrollerRef.current;
     if (!scroller || pageCount === 0) return 1;
@@ -557,11 +811,12 @@ export function PdfReader({
    */
   const focus = useCallback(
     (n: number) => {
-      const from = Math.max(1, n - WINDOW);
-      const to = Math.min(pageCount, n + WINDOW);
+      const held = windowFor(liveZoom.current);
+      const from = Math.max(1, n - held);
+      const to = Math.min(pageCount, n + held);
 
       const wanted: number[] = [n];
-      for (let d = 1; d <= WINDOW; d++) {
+      for (let d = 1; d <= held; d++) {
         if (n + d <= to) wanted.push(n + d);
         if (n - d >= from) wanted.push(n - d);
       }
@@ -631,6 +886,67 @@ export function PdfReader({
     setTapZones(getPrefs().tapZones);
   }, []);
 
+  // ---- how this document was last being looked at ----
+  //
+  // Before the document is even open, so the first page is drawn at the
+  // remembered magnification instead of at 1× and then again a moment later.
+  useEffect(() => {
+    try {
+      hinted.current = window.sessionStorage.getItem(HINT_KEY) === "1";
+    } catch {
+      // private mode
+    }
+    if (!stateKey) return;
+    const saved = getPdfView(stateKey);
+    if (!saved) return;
+    if (saved.crop === false) setCropOn(false);
+    if (saved.box) {
+      const [x, y, w, h] = saved.box;
+      setCropBox({ x, y, w, h });
+      measured.current = true; // known already; four renders saved
+    }
+    if (saved.zoom) {
+      const z = clampZoom(saved.zoom);
+      liveZoom.current = z;
+      setZoom(z);
+    }
+  }, [stateKey]);
+
+  // ---- measure the margins, once per document ----
+  //
+  // After the first page is on screen, and after a beat: this is four more
+  // renders competing for the one worker a reader is already waiting on, and
+  // they are worth nothing until there is something to compare them against.
+  // The answer is kept, so a document pays for this on its first opening only.
+  useEffect(() => {
+    if (!doc || !ready || pageCount === 0 || measured.current) return;
+    measured.current = true;
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (async () => {
+        const box = await measureCrop(doc, pageCount);
+        if (cancelled || !box) return;
+        setCropBox(box);
+        if (stateKey) setPdfView(stateKey, { box: [box.x, box.y, box.w, box.h] });
+      })();
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [doc, ready, pageCount, stateKey]);
+
+  // ---- nothing left pending on the way out ----
+  useEffect(
+    () => () => {
+      if (zoomTimer.current) clearTimeout(zoomTimer.current);
+      if (tapTimer.current) clearTimeout(tapTimer.current);
+    },
+    []
+  );
+
   // ---- how much room the bar takes ----
   useEffect(() => {
     const bar = barRef.current;
@@ -689,11 +1005,120 @@ export function PdfReader({
     gesture.current = { x: e.clientX, y: e.clientY, t: Date.now() };
   }, []);
 
+  /**
+   * Magnify, and keep one point of the document exactly where it is.
+   *
+   * **The zoom is a CSS variable, written straight onto the list.** Not state,
+   * because a pinch would then be one React render of 390 list items per frame;
+   * not a `transform` on the list either, because a transform magnifies the
+   * pixels already drawn and the reader would watch the page turn to mush and
+   * then snap sharp. Writing the variable relays out the boxes — cheap, since
+   * they hold nothing but an absolutely-positioned canvas — and the canvases
+   * inside them are stretched by the browser at their existing resolution until
+   * the hand rests and {@link commitZoom} redraws them properly. That is
+   * exactly what pdf.js's viewer does with `--scale-factor` and `drawingDelay`.
+   *
+   * **The anchoring is measured, not calculated.** The obvious arithmetic —
+   * scale the scroll offset about the focal point — is wrong here by a growing
+   * amount: the list has padding the zoom does not touch and a gap between every
+   * pair of pages, so two hundred pages down, the error is hundreds of pixels
+   * and the page runs away from the fingers. Instead the page under the focal
+   * point is asked where it is before and after, and the difference is the
+   * correction. It cannot drift, whatever the layout does.
+   */
+  const applyZoom = useCallback(
+    (next: number, focalX: number, focalY: number) => {
+      const scroller = scrollerRef.current;
+      const list = listRef.current;
+      if (!scroller || !list) return;
+
+      const z = clampZoom(next);
+      if (Math.abs(z - liveZoom.current) < 0.001) return;
+
+      const el = boxes.current.get(pageAtY(focalY))?.el ?? null;
+      const before = el?.getBoundingClientRect();
+      // Where the fingers are *within that page*, as a fraction of it — the one
+      // thing that must not change.
+      const fx = before && before.width ? (focalX - before.left) / before.width : 0;
+      const fy = before && before.height ? (focalY - before.top) / before.height : 0;
+
+      liveZoom.current = z;
+      list.style.setProperty("--pdf-zoom", String(z));
+
+      if (el && before) {
+        // Reading this forces the layout the line above asked for, deliberately:
+        // the correction has to be applied in the same frame as the resize, or
+        // the reader sees the document lurch and then be pulled back.
+        const after = el.getBoundingClientRect();
+        scroller.scrollLeft += after.left + fx * after.width - focalX;
+        scroller.scrollTop += after.top + fy * after.height - focalY;
+      }
+
+      // A phone held upright cannot show an A4 page at a readable size without
+      // sideways dragging — turning it can, and most people never think to.
+      if (z > HINT_ZOOM && !hinted.current && window.innerWidth < window.innerHeight) {
+        hinted.current = true;
+        try {
+          window.sessionStorage.setItem(HINT_KEY, "1");
+        } catch {
+          // private mode; the hint simply shows again next time
+        }
+        setHint(true);
+      }
+    },
+    [pageAtY]
+  );
+
+  /** Throw away what is drawn and draw the window again, wherever it is now. */
+  const redrawWindow = useCallback(() => {
+    for (const box of boxes.current.values()) box.drawnAt = 0;
+    focus(currentRef.current);
+  }, [focus]);
+
+  /**
+   * The hand has stopped; catch the drawing up.
+   *
+   * Deferred rather than immediate because a pinch ends in fits — a finger
+   * lifts, lands again, adjusts — and re-rendering five magnified pages into
+   * each pause is how a smooth gesture turns into a stuttering one. A rest of
+   * {@link ZOOM_SETTLE_MS} is below what reads as a wait and above the gaps
+   * inside a single gesture.
+   */
+  const commitZoom = useCallback(() => {
+    if (zoomTimer.current) clearTimeout(zoomTimer.current);
+    zoomTimer.current = setTimeout(() => {
+      zoomTimer.current = null;
+      const z = liveZoom.current;
+      setZoom(z);
+      if (stateKey) setPdfView(stateKey, { zoom: z });
+    }, ZOOM_SETTLE_MS);
+  }, [stateKey]);
+
+  /**
+   * Double tap: to the size a book is set at, and back.
+   *
+   * The one zoom gesture most readers ever use, and the reason the old `1.5×`
+   * badge is gone — a control that cycles through magnifications is a worse
+   * answer to "make this bigger" than tapping the thing you want bigger.
+   */
+  const smartZoom = useCallback(
+    (x: number, y: number) => {
+      applyZoom(liveZoom.current > MIN_ZOOM + 0.05 ? MIN_ZOOM : DOUBLE_TAP_ZOOM, x, y);
+      commitZoom();
+    },
+    [applyZoom, commitZoom]
+  );
+
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
       const g = gesture.current;
       gesture.current = null;
       if (!g) return;
+
+      // A pinch also produces a pointer press, and a quick one looks exactly
+      // like a tap: without this, letting go of a two-finger zoom threw the
+      // chrome up over the page it had just magnified.
+      if (pinch.current || Date.now() - pinchedAt.current < 400) return;
 
       const dx = e.clientX - g.x;
       const dy = e.clientY - g.y;
@@ -702,59 +1127,138 @@ export function PdfReader({
       if (Math.abs(dx) >= 12 || Math.abs(dy) >= 12 || Date.now() - g.t >= 400) return;
 
       const zone = g.x / window.innerWidth;
+      // **Edge taps answer instantly, and only the middle waits.** A double tap
+      // can only be recognised by waiting to see whether a second one arrives,
+      // and a page turn that hesitates feels broken in a way a chrome toggle
+      // never does — so the edges keep their old immediacy and the cost of the
+      // gesture is paid where it is not felt.
       if (tapZones && !chrome.visible) {
         if (zone < 0.28) return jump(targetRef.current - 1);
         if (zone > 0.72) return jump(targetRef.current + 1);
       }
-      chrome.toggle();
+
+      const now = Date.now();
+      const prev = lastTap.current;
+      lastTap.current = { x: e.clientX, y: e.clientY, t: now };
+      if (
+        prev &&
+        now - prev.t < DOUBLE_TAP_MS &&
+        Math.abs(e.clientX - prev.x) < TAP_SLOP &&
+        Math.abs(e.clientY - prev.y) < TAP_SLOP
+      ) {
+        lastTap.current = null;
+        if (tapTimer.current) {
+          clearTimeout(tapTimer.current);
+          tapTimer.current = null;
+        }
+        smartZoom(e.clientX, e.clientY);
+        return;
+      }
+
+      if (tapTimer.current) clearTimeout(tapTimer.current);
+      tapTimer.current = setTimeout(() => {
+        tapTimer.current = null;
+        chrome.toggle();
+      }, DOUBLE_TAP_MS);
     },
-    [tapZones, chrome, jump]
+    [tapZones, chrome, jump, smartZoom]
   );
 
   /**
-   * Pinch, mapped onto our own scale ladder.
+   * Two fingers, tracked continuously — and listened for **natively**.
    *
-   * The browser's pinch is switched off (see `touch-action` below), so this is
-   * what a reader's two fingers now do. Stepping rather than tracking the
-   * gesture continuously is on purpose: each step is a real re-render at the
-   * new scale, which is sharp, and a continuous pinch would ask for hundreds
-   * of them. The thresholds are wide enough that a small wobble does nothing.
+   * React attaches `touchmove` as a passive listener at the root, which means
+   * `preventDefault` from an `onTouchMove` prop is ignored and the browser goes
+   * on panning the document underneath a pinch. There is no way to opt out of
+   * that per-prop, so the listener is added by hand.
    */
-  const pinch = useRef<number | null>(null);
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    pinch.current = e.touches.length === 2 ? spread(e.touches) : null;
-  }, []);
+    const start = (e: TouchEvent) => {
+      pinch.current =
+        e.touches.length === 2 ? { dist: spread(e.touches), zoom: liveZoom.current } : null;
+    };
+    const move = (e: TouchEvent) => {
+      const p = pinch.current;
+      if (!p || e.touches.length !== 2) return;
+      e.preventDefault(); // the whole reason for the manual listener
+      const dist = spread(e.touches);
+      if (dist <= 0) return;
+      const at = centre(e.touches);
+      pinchedAt.current = Date.now();
+      applyZoom(p.zoom * (dist / p.dist), at.x, at.y);
+    };
+    const end = (e: TouchEvent) => {
+      if (!pinch.current || e.touches.length >= 2) return;
+      pinch.current = null;
+      pinchedAt.current = Date.now();
+      commitZoom();
+    };
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length !== 2 || pinch.current === null) return;
-    const now = spread(e.touches);
-    const ratio = now / pinch.current;
-    if (ratio > PINCH_OUT) {
-      setZoom((z) => Math.min(z + 1, ZOOMS.length - 1));
-      pinch.current = now;
-    } else if (ratio < PINCH_IN) {
-      setZoom((z) => Math.max(z - 1, 0));
-      pinch.current = now;
-    }
-  }, []);
+    scroller.addEventListener("touchstart", start, { passive: true });
+    scroller.addEventListener("touchmove", move, { passive: false });
+    scroller.addEventListener("touchend", end);
+    scroller.addEventListener("touchcancel", end);
+    return () => {
+      scroller.removeEventListener("touchstart", start);
+      scroller.removeEventListener("touchmove", move);
+      scroller.removeEventListener("touchend", end);
+      scroller.removeEventListener("touchcancel", end);
+    };
+  }, [applyZoom, commitZoom]);
 
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length < 2) pinch.current = null;
-  }, []);
+  /**
+   * A trackpad pinch and `Ctrl`/`⌘` with the wheel — the same gesture, on the
+   * desk. Passive by default here too, so this listener is also manual.
+   */
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const wheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      applyZoom(liveZoom.current * Math.exp(-e.deltaY / 220), e.clientX, e.clientY);
+      commitZoom();
+    };
+    scroller.addEventListener("wheel", wheel, { passive: false });
+    return () => scroller.removeEventListener("wheel", wheel);
+  }, [applyZoom, commitZoom]);
 
-  /** Throw away what is drawn and draw the window again, wherever it is now. */
-  const redrawWindow = useCallback(() => {
-    for (const box of boxes.current.values()) box.drawnAt = 0;
-    focus(currentRef.current);
-  }, [focus]);
+  // ---- keep the list's own variable in step with the committed zoom ----
+  //
+  // The ref callback below sets it as the list is created, which is what makes
+  // the first page draw at the remembered magnification rather than at 1× and
+  // then again. This covers every change after that.
+  useEffect(() => {
+    listRef.current?.style.setProperty("--pdf-zoom", String(zoom));
+  }, [zoom, pageCount]);
 
   // ---- redraw on zoom ----
   useEffect(() => {
     if (!doc || appliedZoom.current === zoom) return;
     appliedZoom.current = zoom;
+    liveZoom.current = zoom;
     redrawWindow();
   }, [zoom, doc, redrawWindow]);
+
+  // ---- a crop changes the shape of every page ----
+  //
+  // Not just what is drawn: the placeholder's aspect ratio comes from the crop,
+  // so the whole column changes height and the scroll offset that meant page 40
+  // a moment ago means page 52 now. The reader is put back on their own page
+  // before anything is redrawn.
+  useEffect(() => {
+    if (!doc) return;
+    const key = cropOn && cropBox ? `${cropBox.x},${cropBox.y},${cropBox.w},${cropBox.h}` : "none";
+    const first = appliedCrop.current === null;
+    if (appliedCrop.current === key) return;
+    appliedCrop.current = key;
+    if (first) return; // nothing has been drawn any other way yet
+    boxes.current.get(currentRef.current)?.el.scrollIntoView({ block: "start", behavior: "auto" });
+    redrawWindow();
+  }, [cropOn, cropBox, doc, redrawWindow]);
 
   // ---- redraw when the column changes width ----
   useEffect(() => {
@@ -785,6 +1289,13 @@ export function PdfReader({
       boxes.current.set(n, { el, canvas: null, task: null, drawnAt: 0 });
     }
   }, []);
+
+  // The shape of a page box, which is the *cropped* page's shape and not the
+  // paper's — trimming a wide margin off an A4 scan leaves something markedly
+  // taller than A4, and a placeholder still shaped like the sheet would make
+  // the column jump by that difference on every page as it is drawn.
+  const crop = cropOn ? cropBox : null;
+  const boxAspect = crop ? (aspect * crop.h) / crop.w : aspect;
 
   return (
     // The whole screen. `h-dvh` rather than `h-screen` so the layout does not
@@ -855,24 +1366,71 @@ export function PdfReader({
         >
           Next
         </button>
+        {/* Back to the fitted page, and only when there is something to come
+            back from. Every reader magnifies these scans, and finding the way
+            out by pinching a page smaller with two fingers on a phone is the
+            fiddliest gesture there is. */}
+        {zoom > MIN_ZOOM + 0.05 && (
+          <button
+            type="button"
+            onClick={() => {
+              const scroller = scrollerRef.current;
+              const rect = scroller?.getBoundingClientRect();
+              // About the middle of what is on screen, so the line being read
+              // stays the line being read.
+              applyZoom(
+                MIN_ZOOM,
+                rect ? rect.left + rect.width / 2 : 0,
+                rect ? rect.top + barHeight + READING_LINE : 0
+              );
+              commitZoom();
+            }}
+            className="shrink-0 rounded-lg border border-rule px-2 py-1 text-xs font-semibold"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            Fit
+          </button>
+        )}
+        {/* Only where there is a margin worth folding away. On a document that
+            is drawn edge to edge the control would do nothing, and a control
+            that does nothing is worse than one that is not there. */}
+        {cropBox && (
+          <button
+            type="button"
+            onClick={() => {
+              const next = !cropOn;
+              setCropOn(next);
+              if (stateKey) setPdfView(stateKey, { crop: next });
+            }}
+            aria-pressed={cropOn}
+            aria-label={cropOn ? "Show the full page" : "Trim the margins"}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rule"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            <CropIcon on={cropOn} />
+          </button>
+        )}
+      </div>
+
+      {/* The one thing a phone cannot be told by making the page bigger: it is
+          the wrong way up. Turned sideways these A4 scans reach 20–27px a line
+          with no sideways dragging at all, which is the difference between
+          looking something up and reading it. */}
+      {hint && (
         <button
           type="button"
-          onClick={() => setZoom((z) => (z + 1) % ZOOMS.length)}
-          className="rounded-lg border border-rule px-2 py-1 text-xs font-semibold tabular-nums"
-          style={{ color: "var(--ws-ink)" }}
-          aria-label={`Zoom, currently ${ZOOMS[zoom]}x`}
+          onClick={() => setHint(false)}
+          className="absolute inset-x-0 bottom-0 z-30 mx-auto mb-6 flex w-max max-w-[92%] items-center gap-2 rounded-full border border-rule bg-card/95 px-4 py-2 text-xs font-medium shadow-lg backdrop-blur"
+          style={{ color: "var(--ws-ink)", marginBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
         >
-          {ZOOMS[zoom]}×
+          Turn the phone sideways to read this page full width
         </button>
-      </div>
+      )}
 
       <div
         ref={scrollerRef}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
         /*
          * `pan-x pan-y`, and the omission of `pinch-zoom` is the point.
          *
@@ -930,8 +1488,22 @@ export function PdfReader({
           // hides, which is what keeps a vanishing bar from reflowing and
           // redrawing the whole document.
           <ul
-            className="mx-auto flex max-w-3xl flex-col gap-2 p-2"
-            style={{ paddingTop: barHeight || undefined }}
+            ref={(el) => {
+              listRef.current = el;
+              // Set as the list is created, before any effect has run and
+              // before a single page has been measured — which is what lets a
+              // remembered zoom be drawn once instead of drawn and redrawn.
+              el?.style.setProperty("--pdf-zoom", String(liveZoom.current));
+            }}
+            // The gap scales with the zoom, and it matters more than it looks:
+            // a fixed gap between magnified pages is a fixed error repeated
+            // three hundred times, and the anchoring above would be fighting it
+            // the whole way down the document.
+            className="mx-auto flex max-w-3xl flex-col p-2"
+            style={{
+              paddingTop: barHeight || undefined,
+              gap: "calc(var(--pdf-zoom, 1) * 0.5rem)",
+            }}
           >
             {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
               <li key={n}>
@@ -951,9 +1523,13 @@ export function PdfReader({
                   // pressing a zoom control is simply a button that does
                   // nothing. Widen the box and the text grows; `draw` reads
                   // this width back and renders to fit it.
+                  //
+                  // It reads a CSS variable rather than a React value so that a
+                  // pinch can move it sixty times a second without rendering
+                  // anything — see `applyZoom`.
                   style={{
-                    width: `${ZOOMS[zoom] * 100}%`,
-                    aspectRatio: `1 / ${aspect}`,
+                    width: "calc(var(--pdf-zoom, 1) * 100%)",
+                    aspectRatio: `1 / ${boxAspect}`,
                     filter: THEME_FILTER[resolved],
                   }}
                   className="relative max-w-none bg-white"

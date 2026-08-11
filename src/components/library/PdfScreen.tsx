@@ -111,6 +111,9 @@ export function PdfScreen({
         backHref={backHref}
         textHref={textHref}
         fileSize={file.file_size}
+        // The same key the place is saved under — how a document was being
+        // looked at is part of picking it up where it was left.
+        stateKey={key}
         onPage={onPage}
         onSlow={onSlow}
         onFail={onFail}

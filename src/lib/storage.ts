@@ -586,6 +586,47 @@ export function clearPdfPlace(key: string): void {
   write(PDF_PAGE_KEY, store);
 }
 
+// ---------------------------------------------------------------------------
+// How a document is being *looked at* — separate from where the reader is in it
+// ---------------------------------------------------------------------------
+//
+// A place is worth carrying to the account and to another device; a zoom level
+// is not, and the account has nowhere to put it. It is also worth keeping apart
+// for a plainer reason: this store is a cache as much as a preference. The crop
+// box is measured by rendering four pages, which is cheap once and pointless
+// twice, so it is written here the first time a document is opened and read
+// back instantly on every open after that.
+
+const PDF_VIEW_KEY = "md.pdfview.v1";
+
+export interface PdfView {
+  /** committed magnification, 1 = the page fitted to the column */
+  zoom: number;
+  /** whether the scanned margins are trimmed away */
+  crop: boolean;
+  /** the measured ink box as fractions of the page: `[x, y, w, h]` */
+  box?: [number, number, number, number];
+}
+
+type PdfViewStore = Record<string, PdfView>;
+
+export function getPdfView(key: string): PdfView | null {
+  return read<PdfViewStore>(PDF_VIEW_KEY, {})[key] ?? null;
+}
+
+/** Merge, never replace — the crop box and the zoom are written at different moments. */
+export function setPdfView(key: string, patch: Partial<PdfView>): void {
+  if (!isBrowser) return;
+  const store = read<PdfViewStore>(PDF_VIEW_KEY, {});
+  const prev = store[key];
+  store[key] = {
+    zoom: patch.zoom ?? prev?.zoom ?? 1,
+    crop: patch.crop ?? prev?.crop ?? true,
+    box: patch.box ?? prev?.box,
+  };
+  write(PDF_VIEW_KEY, store);
+}
+
 /** recently-read list, newest first */
 export function getRecentlyRead(): LocalProgress[] {
   return Object.values(getLocalStore().progress).sort((a, b) =>
@@ -601,4 +642,5 @@ export function clearLocalStore(): void {
   window.localStorage.removeItem(LISTENING_KEY);
   window.localStorage.removeItem(PLAYHEAD_KEY);
   window.localStorage.removeItem(PDF_PAGE_KEY);
+  window.localStorage.removeItem(PDF_VIEW_KEY);
 }
