@@ -1,6 +1,7 @@
-import { NodeCardView } from "@/components/library/NodeCard";
 import { hidesDoor } from "@/components/library/WorkspaceShelf";
-import { SectionHeading, SeeAll } from "@/components/ui";
+import { SectionHeading, SeeAll, StatTile } from "@/components/ui";
+import type { TileKind } from "@/components/ui/KindTile";
+import { nodeHref } from "@/lib/library";
 import { findLibrary, getNode, getWorkspaces, nodeChildren } from "@/lib/api";
 import { EMPTY_FIND } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
@@ -61,24 +62,55 @@ export async function LibraryBand() {
 
   return (
     <>
-      <SectionHeading
-        tier="title"
-        action={
-          doors.length > SHOWN ? <SeeAll href="/originals">All {doors.length}</SeeAll> : undefined
-        }
-      >
+      <SectionHeading tier="title" action={<SeeAll href="/originals">Open</SeeAll>}>
         Library
       </SectionHeading>
-      <ul className="flex flex-col gap-2">
+      {/*
+        Three tiles across, as the finished comps draw them — a number and what
+        it counts, rather than the full folder cards this band used to show.
+        On Home the Library is a signpost: the reader is deciding whether to go
+        in, not choosing which folder, and three cards' worth of descriptions
+        was answering the second question at the cost of the first.
+
+        The comps' first tile counts a *kind* ("PDFs 64") and the other two
+        count folders. We count folders only. A kind tile would have to promise
+        a filtered view of the whole shelf that nothing on this shelf opens, and
+        mixing the two units in one row of three is how a reader learns that
+        numbers here cannot be compared. The rule this band has always kept
+        holds: it draws folders that exist, so it can never promise an empty
+        shelf.
+      */}
+      <ul className="grid grid-cols-3 gap-2.5">
         {doors.slice(0, SHOWN).map((door) => (
           <li key={door.id}>
-            {/* `row`, not `door`: on home this sits under a book rail in a
-                narrow column, where the large door card is a different page's
-                furniture. */}
-            <NodeCardView card={door} shelves={shelves} />
+            <StatTile
+              href={nodeHref(door.id, shelves)}
+              kind={tileKind(door.kinds)}
+              label={door.name}
+              // Deep, not shallow: the shallow count on a folder of folders is
+              // the number of folders, which is the one number nobody wants
+              // here. Falls back to what the card itself carries when the
+              // rollup did not arrive.
+              count={countLine(
+                rollup[String(door.id)]?.items ?? door.item_count,
+                door.child_count
+              )}
+            />
           </li>
         ))}
       </ul>
     </>
   );
+}
+
+/** A tile takes the kind of what is inside it, when that is one thing. A mixed
+ *  folder is a folder — there is no one true glyph for it. */
+function tileKind(kinds: FileKind[]): TileKind {
+  return kinds.length === 1 ? kinds[0] : "folder";
+}
+
+/** "64" where a folder holds files, "2 folders" where it holds only folders. */
+function countLine(items: number, folders: number): string {
+  if (items > 0) return String(items);
+  return `${folders} ${folders === 1 ? "folder" : "folders"}`;
 }

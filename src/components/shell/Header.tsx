@@ -18,6 +18,7 @@ import {
   CheckIcon,
   ChevronDown,
   CloseIcon,
+  PaletteIcon,
   SwitcherIcon,
   UserIcon,
   WorkspaceIcon,
@@ -430,8 +431,11 @@ function AvatarMenu() {
  * Buried behind My Journey → Settings → Appearance it would be three taps
  * deep, which is where accessibility settings go to die.
  *
- * "Aa" rather than a glyph: it is what Apple Books, Kindle and Safari all use
- * for this, so it is the one piece of chrome here nobody has to learn.
+ * A palette rather than "Aa", as the designer draws it. "Aa" is the convention
+ * every reading app uses and needed no learning, which is why it was here — but
+ * this button stopped being a type control when the theme moved out of the
+ * reader, and "Aa" was quietly promising one of the three things behind it. The
+ * reader's own type button, inside a book, keeps its "Aa".
  */
 export function DisplayButton() {
   const [open, setOpen] = useState(false);
@@ -444,10 +448,7 @@ export function DisplayButton() {
         aria-haspopup="dialog"
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
-        <span aria-hidden className="font-semibold leading-none">
-          <span className="text-xs">A</span>
-          <span className="text-[0.6875rem]">a</span>
-        </span>
+        <PaletteIcon />
       </button>
       <DisplaySheet open={open} onClose={() => setOpen(false)} />
     </>
@@ -461,9 +462,8 @@ export function Header() {
     // pt-safe: installed as a PWA the viewport is viewport-fit=cover, so
     // without it the bar sits under the status bar / notch.
     <header className="sticky top-0 z-40 border-b border-rule bg-surface/85 pt-[env(safe-area-inset-top)] backdrop-blur-lg lg:hidden">
-      {/* Wraps. At Larger and Largest the brand, the switcher and three actions
-          genuinely do not fit one phone-wide row, and the choice is between a
-          second row and squeezing something to nothing. */}
+      {/* Four items, and they fit one row at every text size — which is why the
+          wrap this used to need is gone with the fifth. */}
       <div className="flex flex-wrap items-center gap-2.5 px-4 py-2">
         {/* the mark is a way home as well as identity — from four levels deep
             in a book list, the tab bar's Home is the only other route back */}
@@ -475,8 +475,19 @@ export function Header() {
           <BrandMark className="h-8 w-8" />
         </Link>
         <WorkspaceSwitcher />
+        {/*
+          The next-shivir date chip used to sit here and no longer does, as the
+          designer draws it.
+
+          Its job was mitigation — Connect is two taps away, so the bar carried
+          a date. But a bare date is the least it could have said, and paying
+          for it were the four things beside it: at Larger and Largest the row
+          wrapped to two, and the workspace name squeezed to a tinted square and
+          a chevron. The shivirs are on Home instead, under a heading, with a
+          place and a name — which is what a reader needed to decide whether to
+          go, and what a chip could never fit.
+        */}
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <EventChip />
           <DisplayButton />
           <AvatarMenu />
         </div>

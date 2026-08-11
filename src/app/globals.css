@@ -1,6 +1,21 @@
 @import "tailwindcss";
 
-@theme {
+/* `static`, not plain `@theme`.
+ *
+ * Tailwind only emits a theme variable it can see being used, and it decides
+ * that by scanning the source for the name. Most of this file is read through
+ * generated utilities (`bg-card`, `text-ink-soft`) so that works — but this app
+ * also writes `var(--color-…)` and `var(--ws-color)` straight into inline
+ * styles in about sixty places, and a token composed at runtime
+ * (`var(--color-hl-${colour})`) is a name no scanner can find. Those tokens
+ * were being dropped and resolving to nothing: two of the three highlight
+ * colours shipped as no colour at all, silently, and in the one place where an
+ * invisible highlight looks exactly like a working one.
+ *
+ * `static` emits the block whole. The cost is a few hundred bytes of custom
+ * properties; the thing it buys is that a token cannot vanish because nobody
+ * happened to type its name. */
+@theme static {
   /* Workspace identity colours, from the design spec's five matched hues
      (design_docs/screens 10A: Originals #C8621A · Translations #4F7A67 ·
      Resources #5E5A8C · Journey #B9862B · Connect #2F6E86). Each is used two
@@ -38,7 +53,13 @@
      block and nothing else. `card` is new — it replaces 97 hard-coded
      `bg-white`s, which are the reason a reader who chose Dark used to get a
      dark book inside a blinding white app. */
-  --color-surface: #fdfbf8;
+  /* #FDFBF8 until the finished comps arrived; the designer's page is #FAF7F3,
+     three steps warmer and darker. The difference is not decoration — it is
+     what makes a #FFFFFF card read as raised off the page, which is the whole
+     card language of the new screens. Measured on the new ground: ink-soft
+     9.33:1, ink 16.6:1. Muted drops 2.98 → 2.89, which changes nothing: it is
+     decoration-only by the rule above and never carries a word. */
+  --color-surface: #faf7f3;
   --color-canvas: #efeae3;
   /* raised above the page: lighter than the surface in light and sepia,
      lighter *again* in dark, because raised means "closer to the light"
@@ -48,6 +69,65 @@
   --color-ink-soft: #4a413a;
   --color-muted: #9c9187;
   --color-rule: #e4dbd1;
+
+  /* A sunk panel *inside* a card — the note block under a highlight, the track
+     a segmented control's pill slides along, the counter strip on a filter
+     sheet. `canvas` cannot do this job: canvas is the ground a card sits on,
+     and reusing it inside one made the inner block read as a hole punched
+     through to the page. This is the designer's #F7F3EC, one step down from
+     white rather than four. */
+  --color-inset: #f7f3ec;
+
+  /* ---- kind accents ----
+
+     The comps are rigidly consistent about this and the app had nothing for
+     it: every document/PDF wears violet, every video slate-blue, every audio
+     and every folder the workspace terracotta. It is how a reader tells a
+     shelf of mixed things apart at a glance, before reading a single label,
+     and it is the same four pairs on the Library grid, the file rows, the
+     recording rows and the home stat tiles — so it is one token family and not
+     four component-local decisions.
+
+     Tile fills are the designer's own, sampled from the exports. The glyphs
+     are his hue taken one or two steps deeper: as drawn they measure 4.30 /
+     4.95 / 3.68 / 1.97 against their own tiles, and the last of those is a
+     mark you cannot see. A glyph here always sits beside a text label, so 3:1
+     would satisfy WCAG — these clear 4.5:1 instead, because it costs one hex
+     digit and this audience is over forty.
+
+     Audio and folder deliberately share an ink. They are the same terracotta
+     family in the comps; what separates them is the depth of the tile under
+     it, not the hue on top.
+
+     Photographs keep the pink the designer gave them in an earlier note and
+     the shelf has drawn ever since. The finished comps never show an image
+     tile — the Library folders they draw hold documents — so this is the one
+     member of the family the comps do not settle, and dropping it to make the
+     set tidier would have taken a colour off a shelf where it is already
+     doing work. */
+  --color-kind-doc: #e6e1f5;
+  --color-kind-doc-ink: #5b4f9c; /* 5.41:1 on its tile */
+  --color-kind-video: #eaf0f4;
+  --color-kind-video-ink: #39647c; /* 5.56:1 */
+  --color-kind-audio: #fdf3ea;
+  --color-kind-audio-ink: #9e4a11; /* 5.57:1 */
+  --color-kind-image: #f6e2e9;
+  --color-kind-image-ink: #833653; /* 6.48:1 */
+  --color-kind-folder: #f6e2ce;
+  --color-kind-folder-ink: #9e4a11; /* 4.85:1 */
+
+  /* ---- highlight colours ----
+
+     The three dots in the reader's selection bar, and the fills they paint.
+     Sampled from the comps; the reader's own ink lands 13.9–14.5:1 on all
+     three, which is the number that matters — a highlight that costs
+     legibility is a highlight nobody uses twice.
+
+     Restated for the dark reading surfaces below, where these pale fills would
+     be three lit strips on a near-black page. */
+  --color-hl-amber: #f8dfbe;
+  --color-hl-sage: #dcebd9;
+  --color-hl-sky: #dce8f7;
 
   /* Type scale, set for this audience rather than for the comp.
 
@@ -66,6 +146,32 @@
   --text-xs--line-height: calc(1.125 / 0.8125);
   --text-sm: 0.9375rem; /* 15px — default UI and body size */
   --text-sm--line-height: calc(1.375 / 0.9375);
+
+  /* ---- radius & elevation ----
+
+     Four radii, because the comps use four and the app was using eleven: the
+     literals in the tree ran rounded-[11px], -[14px], -[18px], -[20px],
+     -[26px], rounded-xl, -2xl, -3xl and full, with no rule saying which meant
+     what. These do:
+
+       tile  — a glyph or cover container inside something else
+       card  — a thing you can tap that sits on the page
+       hero  — the coloured panel at the top of a detail screen
+       sheet — a bottom sheet's top corners
+
+     Elevation is the other half of the same change. The comps float their
+     cards on a soft shadow with a hairline border; the app drew a border and
+     no shadow, which is why a white card on the old near-white page had
+     nothing holding it up. `raised` is for what floats over content — the
+     selection bar, the audio pill; `sheet` is the lift under a bottom sheet. */
+  --radius-tile: 0.875rem; /* 14px */
+  --radius-card: 1.25rem; /* 20px */
+  --radius-hero: 1.5rem; /* 24px */
+  --radius-sheet: 1.625rem; /* 26px */
+
+  --shadow-card: 0 1px 2px rgb(26 22 19 / 0.04), 0 6px 16px -8px rgb(26 22 19 / 0.1);
+  --shadow-raised: 0 8px 28px -10px rgb(26 22 19 / 0.35);
+  --shadow-sheet: 0 -20px 44px -20px rgb(26 22 19 / 0.4);
 
   --font-devanagari: var(--font-tiro-devanagari), "Tiro Devanagari Hindi",
     serif;
@@ -183,6 +289,25 @@
   --color-ink-soft: #756449;
   --color-muted: #a1937c;
   --color-rule: #ddcdb0;
+
+  --color-inset: #f2eadb;
+
+  /* The same four pairs, warmed onto sepia paper. Glyphs measure 5.35 / 5.22 /
+     5.55 / 4.97 on their own tiles. */
+  --color-kind-doc: #e7e0ee;
+  --color-kind-doc-ink: #5b4f9c;
+  --color-kind-video: #e3e9ee;
+  --color-kind-video-ink: #39647c;
+  --color-kind-audio: #f8e9d8;
+  --color-kind-audio-ink: #96460f;
+  --color-kind-image: #f2dfe4;
+  --color-kind-image-ink: #833653;
+  --color-kind-folder: #f2dcc2;
+  --color-kind-folder-ink: #96460f;
+
+  --color-hl-amber: #f2d9b1;
+  --color-hl-sage: #d6e5d1;
+  --color-hl-sky: #d7e2f0;
 }
 
 [data-theme="dark"] {
@@ -193,6 +318,27 @@
   --color-ink-soft: #a39a8c;
   --color-muted: #6e655a;
   --color-rule: #2e2921;
+
+  --color-inset: #262220;
+
+  /* Inverted rather than dimmed: on a near-black card the pale tiles would be
+     four lamps, and the deep hues the glyphs are drawn in would vanish into
+     them. So the tile takes the hue and the glyph takes the light — 5.96 /
+     7.07 / 6.27 / 6.27 on their own tiles. */
+  --color-kind-doc: #2b2740;
+  --color-kind-doc-ink: #a9a0dc;
+  --color-kind-video: #1e2a33;
+  --color-kind-video-ink: #8fbad4;
+  --color-kind-audio: #33221a;
+  --color-kind-audio-ink: #e9924e;
+  --color-kind-image: #33212a;
+  --color-kind-image-ink: #de96ae;
+  --color-kind-folder: #332318;
+  --color-kind-folder-ink: #e0975a;
+
+  --color-hl-amber: #4a3a1e;
+  --color-hl-sage: #26382b;
+  --color-hl-sky: #22344a;
 }
 
 /* Readers who have asked their OS for more contrast get it, in whichever
@@ -222,6 +368,84 @@
   }
 }
 
+/* ---- the six reading surfaces ----
+
+   The designer's Theme & Settings sheet offers Original · Quiet · Paper ·
+   Bold · Calm · Focus. These are the *book's* paper, not the app's: the shell
+   keeps its own Auto / Light / Sepia / Dark, because Auto is what lets a phone
+   that goes dark at sunset take the app with it, and a book you chose to read
+   on cream should not turn grey because the sun went down.
+
+   So this is a second, narrower axis, set on <html> beside data-theme and read
+   by nothing except `.reader-surface` and the reader's own chrome. Original
+   declares nothing at all — it is the aliases above, which means a reader who
+   never opens the sheet gets exactly what they got before this existed.
+
+   Two of the six are not what their swatch says, and both deviations are the
+   same one this file has made before:
+
+   - **Quiet** is drawn as #4A4A4D paper under #AAAAB3 ink. That measures
+     3.83:1 — a dark theme you cannot read is not a dark theme. Deepened to
+     #1F1F21 / #DFDFE3, which is 12.4:1 and still the neutral grey the swatch
+     is reaching for, rather than the app's warm near-black.
+   - **Bold** is drawn as Original's paper with heavier ink, so it is not a
+     surface at all: it is a weight. Tiro ships a single 400, so asking it for
+     bold gets a synthesized smear — worst exactly where the book type is
+     largest — which is why `[data-bold="1"] .reader-content` exists above to
+     hold the reader at 400. Bold therefore does what that rule does in
+     reverse: it moves the book's Devanagari to Mukta, which has a real 500. */
+html[data-reader-theme="paper"] {
+  --reader-bg: #ededed;
+  --reader-ink: #211c1c;
+  --reader-ink-soft: #4a4744; /* 7.88:1 */
+  --reader-rule: #d5d5d5;
+}
+
+html[data-reader-theme="calm"] {
+  --reader-bg: #f4e1c5;
+  --reader-ink: #1a1613;
+  --reader-ink-soft: #6b5535; /* 5.52:1 */
+  --reader-rule: #ddc7a4;
+}
+
+html[data-reader-theme="focus"] {
+  --reader-bg: #fefcf2;
+  --reader-ink: #211c1c;
+  --reader-ink-soft: #4c463a; /* 9.10:1 */
+  --reader-rule: #e6e1cf;
+}
+
+html[data-reader-theme="quiet"] {
+  --reader-bg: #1f1f21;
+  --reader-ink: #dfdfe3; /* 12.38:1 */
+  --reader-ink-soft: #a7a7ae; /* 6.88:1 */
+  --reader-rule: #37373b;
+
+  /* The pale fills would be three lit strips on this page. Deepened, with the
+     reader's own ink landing 8.3–9.5:1 on each. */
+  --color-hl-amber: #4a3a1e;
+  --color-hl-sage: #26382b;
+  --color-hl-sky: #22344a;
+}
+
+/* Not a surface — a weight. See above. */
+html[data-reader-theme="bold"] .reader-surface .hi,
+html[data-reader-theme="bold"] .reader-content .hi {
+  font-family: var(--font-devanagari-sans);
+  font-weight: 500;
+}
+html[data-reader-theme="bold"] .reader-content {
+  font-weight: 500;
+}
+
+/* A dark book on a light app still needs its own page not to rubber-band to
+   the app's paper on iOS — the same reason html[data-reading] exists below,
+   now that the two axes can disagree. */
+html[data-reader-theme="quiet"][data-reading="1"],
+html[data-reader-theme="quiet"][data-reading="1"] body {
+  background: var(--reader-bg);
+}
+
 /* The workspace scope declares --ws-ink so the mix below can see the
    workspace's own --ws-color; declaring it on :root would freeze it at the
    default saffron for every workspace. */
@@ -244,6 +468,36 @@
 html[data-theme="dark"],
 html[data-theme="dark"] [data-ws] {
   --ws-ink: color-mix(in srgb, var(--ws-color) 55%, var(--color-ink));
+}
+
+/* ---- and the same fix again, one axis over ----
+
+   The rule above assumes the book is as dark as the app. Since the reading
+   surface became its own choice that is no longer true in either direction: a
+   reader can have Quiet paper inside a light app, or Calm paper inside a dark
+   one. Both were wrong, in opposite ways — the accent left un-lifted on a
+   near-black page, or lifted to a pale wash on cream.
+
+   So inside the book the accent follows the *book's* ink. These come after the
+   app-theme rule on purpose: the selectors tie on specificity and the later
+   one has to win. Fills are untouched here for the same reason as above —
+   white on the accent passes wherever the accent is the background. */
+html[data-reader-theme="paper"] .reader-surface,
+html[data-reader-theme="paper"] [data-reader-chrome],
+html[data-reader-theme="calm"] .reader-surface,
+html[data-reader-theme="calm"] [data-reader-chrome],
+html[data-reader-theme="focus"] .reader-surface,
+html[data-reader-theme="focus"] [data-reader-chrome],
+html[data-reader-theme="paper"] .reader-surface [data-ws],
+html[data-reader-theme="calm"] .reader-surface [data-ws],
+html[data-reader-theme="focus"] .reader-surface [data-ws] {
+  --ws-ink: var(--ws-color);
+}
+
+html[data-reader-theme="quiet"] .reader-surface,
+html[data-reader-theme="quiet"] [data-reader-chrome],
+html[data-reader-theme="quiet"] .reader-surface [data-ws] {
+  --ws-ink: color-mix(in srgb, var(--ws-color) 55%, var(--reader-ink));
 }
 
 /* The one lever the app-wide text size pulls. Every size in the app is in

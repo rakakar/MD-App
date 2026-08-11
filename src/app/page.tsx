@@ -3,13 +3,21 @@ import { BookRail } from "@/components/home/BookRail";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
 import { LibraryBand } from "@/components/home/LibraryBand";
+import { ShortsRail } from "@/components/home/ShortsRail";
 import { SutraCard } from "@/components/home/SutraCard";
 import { NotificationBanner } from "@/components/push/NotificationBanner";
 import { ChevronRight, PinIcon } from "@/components/shell/icons";
-import { EmptyState, PageContainer, SectionHeading, SeeAll } from "@/components/ui";
+import {
+  EmptyState,
+  PageContainer,
+  PromoBand,
+  SectionHeading,
+  SeeAll,
+} from "@/components/ui";
 import { getBooks, getEvents } from "@/lib/api";
 import { eventLocation, eventStart, eventTitle, shortDate, upcomingEvents } from "@/lib/events";
 import { SHIVIRS } from "@/lib/labels";
+import { getShorts, type Short } from "@/lib/shorts";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { BookSummary, EventItem, SutraOfTheDay } from "@/lib/types";
 
@@ -19,13 +27,15 @@ async function loadHome(): Promise<{
   books: BookSummary[];
   sutra: SutraOfTheDay | null;
   events: EventItem[];
+  shorts: Short[];
 }> {
-  const [books, sutra, events] = await Promise.all([
+  const [books, sutra, events, shorts] = await Promise.all([
     getBooks({ workspace: "originals" }).catch(() => [] as BookSummary[]),
     ACTIVE_SUTRA_SOURCE.getToday().catch(() => null),
     getEvents().catch(() => [] as EventItem[]),
+    getShorts().catch(() => [] as Short[]),
   ]);
-  return { books, sutra, events };
+  return { books, sutra, events, shorts };
 }
 
 /**
@@ -38,8 +48,12 @@ async function loadHome(): Promise<{
  * be one would be worse than its absence.
  */
 export default async function OriginalsHome() {
-  const { books, sutra, events } = await loadHome();
-  const shivirs = upcomingEvents(events).slice(0, 2);
+  const { books, sutra, events, shorts } = await loadHome();
+  // Three, not two. The next-shivir chip left the app bar with the designer's
+  // finished header, and this is where its job landed — a date in the corner
+  // could only ever say *when*, and the reason a reader looks is to find out
+  // where and whether they can get to it.
+  const shivirs = upcomingEvents(events).slice(0, 3);
 
   return (
     <PageContainer size="shelf">
@@ -75,9 +89,8 @@ export default async function OriginalsHome() {
 
         <section>
           <SectionHeading
-            action={
-              books.length > 0 ? <SeeAll href="/books">All {books.length}</SeeAll> : undefined
-            }
+            tier="title"
+            action={books.length > 0 ? <SeeAll href="/books">All Books</SeeAll> : undefined}
           >
             Books
           </SectionHeading>
@@ -87,18 +100,40 @@ export default async function OriginalsHome() {
             <EmptyState title="No books available yet" hint="Published books will appear here." />
           )}
 
+          {/* Draws nothing until there is something; see lib/shorts, which is
+              where the fact that there is not yet is kept. */}
+          {shorts.length > 0 && (
+            <>
+              <SectionHeading tier="title">Shorts</SectionHeading>
+              <ShortsRail shorts={shorts} />
+            </>
+          )}
+
           {/*
             The spec's pair of media cards sat here, pointing at the audio and
-            video shelves that Content Model v3 dissolved. What replaces them
-            is the library itself: the folders Originals actually holds, drawn
-            only when there are some. Named-kind cards are what could promise
-            an empty shelf; a folder that exists cannot.
+            video shelves that Content Model v3 dissolved, and were pulled
+            rather than left pointing at nothing. One of them is back, because
+            the shelf it points at is now real: /av is a tab with forty hours
+            of his voice behind it. The other — a "Photographs" card — is not,
+            for exactly the old reason.
           */}
-          <LibraryBand />
+          <SectionHeading tier="title">Audio &amp; Video</SectionHeading>
+          <PromoBand
+            href="/av"
+            title="Audio & Video"
+            subtitle="Samvaad, talks & shivir — listen or watch"
+          />
         </section>
 
         <section>
-          <SectionHeading>Explore workspaces</SectionHeading>
+          {/*
+            The folders Originals actually holds, as three counted tiles. Drawn
+            only when there are some — named-kind cards are what could promise
+            an empty shelf; a folder that exists cannot.
+          */}
+          <LibraryBand />
+
+          <SectionHeading tier="title">Explore workspaces</SectionHeading>
           <ExploreWorkspaces current="originals" />
 
           {shivirs.length > 0 && (

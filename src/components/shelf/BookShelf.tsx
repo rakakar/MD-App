@@ -100,14 +100,18 @@ export async function BookShelf({
  */
 export function ShelfCard({ book }: { book: BookSummary }) {
   return (
+    // No card around the cover, as the finished comps draw it. A cover is
+    // already a rectangle with a border and a printed title on it; framing it
+    // in a second bordered rectangle boxed a box, and cost the cover itself the
+    // width — which on a two-up phone grid is the only thing being scanned.
     <Link
       href={`/books/${encodeURIComponent(book.code)}`}
-      className="group flex h-full flex-col gap-2.5 rounded-[18px] border border-rule bg-card p-3 transition-shadow hover:shadow-md"
+      className="group flex h-full flex-col gap-2 rounded-card"
     >
       <CoverTile book={book} size="grid" />
       <span
         lang="hi"
-        className="hi line-clamp-2 text-sm font-semibold leading-snug group-hover:underline"
+        className="hi mt-0.5 line-clamp-2 text-[1.0625rem] font-semibold leading-snug group-hover:underline"
       >
         {book.title_hi}
       </span>

@@ -18,6 +18,11 @@ export type GaEvent =
   /** renamed from reader_theme_change: the theme is app-wide, and can now
       be changed from the header and Settings as well as inside a book */
   | "theme_change"
+  /** The book's own paper — a separate axis from the app theme above, and
+      deliberately not called reader_theme_change: that name already meant the
+      app theme in the historic data, and reusing it would silently merge two
+      different decisions into one funnel. */
+  | "reader_surface_change"
   | "font_size_change"
   // which Devanagari face readers actually choose — the answer decides
   // whether the serif stays the default

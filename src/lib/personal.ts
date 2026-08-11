@@ -43,6 +43,7 @@ import {
   removeLocalNote,
   setLocalProgress,
   setLocalStore,
+  type HighlightColour,
   type LocalBookmark,
   type LocalNote,
   type LocalProgress,
@@ -57,8 +58,13 @@ export interface SaveTarget {
   text_hi?: string;
 }
 
-export function saveBookmark(t: SaveTarget, signedIn: boolean): void {
-  addLocalBookmark(t.canonical_ref, t.book_code, t.text_hi);
+export function saveBookmark(
+  t: SaveTarget,
+  signedIn: boolean,
+  /** paints it — a bookmark with a colour is a highlight. See LocalBookmark. */
+  colour?: HighlightColour
+): void {
+  addLocalBookmark(t.canonical_ref, t.book_code, t.text_hi, colour);
   if (signedIn) void syncPersonal();
 }
 
@@ -206,6 +212,59 @@ export function localProgress(): LocalProgress[] {
 
 export function localProgressFor(bookCode: string): LocalProgress | null {
   return getLocalStore().progress[bookCode] ?? null;
+}
+
+/**
+ * One book's highlights, newest first, each with whatever note is attached.
+ *
+ * The join is the whole function: a highlight and its note are two rows on the
+ * same canonical ref, which is what lets the reader's selection bar go on
+ * treating "save this" and "write about this" as two independent actions while
+ * the Highlights screen shows them as one card.
+ *
+ * A note written on a passage that was never highlighted still appears here,
+ * with no colour. Leaving it out would hide a reader's own words from the only
+ * screen that lists them, on the technicality that they did not press a
+ * colour first.
+ */
+export interface Highlight {
+  canonical_ref: string;
+  book_code: string;
+  text_hi?: string;
+  colour?: HighlightColour;
+  note?: string;
+  created_at: string;
+}
+
+export function localHighlights(bookCode: string): Highlight[] {
+  const store = getLocalStore();
+  const notes = new Map(
+    store.notes.filter((n) => n.book_code === bookCode).map((n) => [n.canonical_ref, n])
+  );
+  const rows: Highlight[] = store.bookmarks
+    .filter((b) => b.book_code === bookCode)
+    .map((b) => ({
+      canonical_ref: b.canonical_ref,
+      book_code: b.book_code,
+      text_hi: b.text_hi,
+      colour: b.colour,
+      note: notes.get(b.canonical_ref)?.text,
+      created_at: b.created_at,
+    }));
+
+  const seen = new Set(rows.map((r) => r.canonical_ref));
+  for (const n of notes.values()) {
+    if (seen.has(n.canonical_ref)) continue;
+    rows.push({
+      canonical_ref: n.canonical_ref,
+      book_code: n.book_code,
+      text_hi: n.text_hi,
+      note: n.text,
+      created_at: n.created_at,
+    });
+  }
+
+  return rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
 // ---- sync ----

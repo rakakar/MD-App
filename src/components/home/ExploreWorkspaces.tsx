@@ -19,26 +19,35 @@ export function ExploreWorkspaces({ current }: { current: WorkspaceId }) {
   const others = WORKSPACE_ORDER.filter((id) => id !== current);
 
   return (
-    <ul className="grid grid-cols-2 gap-3">
+    // Rows rather than a two-up grid, as the finished comps draw them. The
+    // grid fitted four names and nothing else; a row has space for the line
+    // that says what is actually behind the name — which is the difference
+    // between a reader guessing what "Resources" holds and knowing.
+    <ul className="flex flex-col gap-2.5">
       {others.map((id) => {
         const ws = WORKSPACES[id];
         return (
           <li key={id}>
             <Link
               href={ws.home}
-              className="flex h-full flex-col gap-3 rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
+              className="flex items-center gap-3.5 rounded-card border border-rule bg-card p-3.5 shadow-card transition-shadow hover:shadow-raised"
             >
               <span
                 aria-hidden
-                className="flex h-9 w-9 items-center justify-center rounded-[10px] text-white"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tile text-white"
                 style={{
                   background: `linear-gradient(150deg, color-mix(in srgb, ${ws.color} 82%, #fff), ${ws.color})`,
                 }}
               >
                 <WorkspaceIcon id={id} />
               </span>
-              <span className="text-sm font-semibold tracking-[-0.01em]">
-                {ws.name}
+              <span className="min-w-0 flex-1">
+                <span className="block text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em]">
+                  {ws.name}
+                </span>
+                <span className="mt-0.5 block text-sm leading-snug text-ink-soft">
+                  {ws.tagline}
+                </span>
               </span>
             </Link>
           </li>

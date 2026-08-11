@@ -2,63 +2,27 @@ import Link from "next/link";
 import { cardSummary, nodeFacts, tileSummary } from "@/components/library/format";
 import { contentLang } from "@/lib/script";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
-import {
-  ChevronRight,
-  DocumentIcon,
-  FolderIcon,
-  HeadphonesIcon,
-  ImageIcon,
-  VideoIcon,
-} from "@/components/shell/icons";
+import { ChevronRight, FolderIcon } from "@/components/shell/icons";
+import { CollectionCard } from "@/components/ui";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import type {
   BreadcrumbStep,
-  FileKind,
   LocatedNodeCard,
   NodeCard,
   NodeRollup,
 } from "@/lib/types";
 
 /**
- * The face of a collection, from what is actually inside it.
+ * The kind tint and the kind glyph that used to live here are gone, into
+ * `ui/KindTile` and the `kind` token family in globals.css.
  *
- * A folder icon on every tile is a folder icon on no tile — it repeats what
- * the grid already says. These earn their place only where a collection is
- * **of one kind**, which on this shelf is the ordinary case rather than the
- * lucky one: Originals' five collections are videos, recordings, photographs
- * and documents, and each is pure. A mixed collection gets the folder back,
- * because there is no one true thing to draw.
+ * They were right and they were also the drift the finished comps exposed:
+ * this file held one set of five hues, the designer's export held another, and
+ * the two had already diverged by a shade in three places. There is one set
+ * now and it is in the stylesheet, where a theme can restate it — which is
+ * what these hard-coded pairs could never do, and why photographs looked
+ * lit-up on the dark shelf.
  */
-/**
- * The tint behind a tile's glyph — **one per kind, not one per workspace**
- * (designer, "ui 1": peach audio, blue video, lavender PDF, pink photographs).
- *
- * Every tile used to carry `--color-accent-tint`, the workspace's own hue, so a
- * six-tile grid was six identical swatches and the icon was doing all the work
- * of telling them apart at arm's length. Colour is the fastest thing on a phone
- * screen and it was saying only "you are in Originals", which the whole rest of
- * the chrome already says.
- *
- * Only the *tint* changes. The ink stays deep enough to carry AA on its own
- * swatch, and nothing here is load-bearing: a mixed collection falls back to
- * the workspace tint, and the glyph beside it still names the kind. Colour is
- * never the only signal — see the same rule on the workspace switcher.
- */
-const KIND_TINT: Partial<Record<FileKind, { bg: string; ink: string }>> = {
-  audio: { bg: "#F8E7D6", ink: "#8A4110" },
-  video: { bg: "#DFE9F0", ink: "#255A6E" },
-  pdf: { bg: "#E7E4F1", ink: "#4C4878" },
-  image: { bg: "#F6E2E9", ink: "#8A3B58" },
-};
-
-function KindIcon({ kinds, className }: { kinds: FileKind[]; className?: string }) {
-  const only: FileKind | null = kinds.length === 1 ? kinds[0] : null;
-  if (only === "audio") return <HeadphonesIcon className={className} />;
-  if (only === "video") return <VideoIcon className={className} />;
-  if (only === "image") return <ImageIcon className={className} />;
-  if (only === "pdf") return <DocumentIcon className={className} />;
-  return <FolderIcon className={className} />;
-}
 
 /**
  * One folder, as a card.
@@ -104,60 +68,19 @@ export function NodeCardView({
     // nothing to say — an unpublished branch or a collection still empty. A
     // tile never falls silent, because a tile with no third line reads broken.
     const weight = tileSummary(rollup) || summary;
-    const only = rollup?.kinds.length === 1 ? rollup.kinds[0] : null;
-    const tint = only ? KIND_TINT[only] : undefined;
+    const kinds = rollup?.kinds ?? card.kinds;
     return (
-      <Link
+      <CollectionCard
         href={nodeHref(card.id, shelves)}
-        className="group flex h-full flex-col rounded-[18px] border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
-      >
-        <span
-          aria-hidden
-          className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl"
-          style={{
-            background: tint?.bg ?? "var(--color-accent-tint)",
-            color: tint?.ink ?? "var(--ws-ink)",
-          }}
-        >
-          <KindIcon kinds={rollup?.kinds ?? []} className="h-[18px] w-[18px]" />
-        </span>
-        {/* Clamped, because a tile is half a phone wide and one long name
-            otherwise sets the height of every tile beside it — the folder
-            named "Samvaad, Talk, & Shivir - संवाद, वार्ता एवं शिविर" ran to
-            three lines and left its neighbour two-thirds empty. */}
-        <span
-          {...contentLang(card.name)}
-          className={`${contentLang(card.name).className} line-clamp-2 text-sm font-semibold leading-snug group-hover:underline`}
-        >
-          {card.name}
-        </span>
-        {card.description && (
-          // Three lines, not one. This line is doing more work than it looks:
-          // a folder is named in the language its material is in, so on a
-          // Hindi shelf the description is where an English reader is met —
-          // "प्रवचन" over "Audio — Nagraj ji's recorded discourses". Clipped to
-          // one line it became "Audio — Nagraj ji's record…", which is the
-          // half of the sentence that says nothing.
-          //
-          // The one description in the app that keeps the 13px floor rather
-          // than going up to body size with its siblings: a tile is half a
-          // phone wide, and at 15px two lines came back to "Audio — Nagraj
-          // ji's recorded…" — the very clipping the lines above exist to
-          // prevent. Legibility here is bought with the third line instead.
-          <span className="mt-0.5 line-clamp-3 text-xs leading-snug text-ink-soft">
-            {card.description}
-          </span>
-        )}
-        <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2.5">
-          <span
-            className="text-xs font-semibold"
-            style={{ color: weight ? "var(--ws-ink)" : undefined }}
-          >
-            {weight || <span className="text-ink-soft">Nothing yet</span>}
-          </span>
-          <ProvenanceBadge provenance={card.provenance} />
-        </span>
-      </Link>
+        // A tile takes the kind of what is inside it, when that is one thing.
+        // A mixed collection is a folder — there is no one true glyph for it,
+        // and the folder icon on every tile is the folder icon on no tile.
+        kind={kinds.length === 1 ? kinds[0] : "folder"}
+        title={card.name}
+        description={card.description || null}
+        meta={weight || <span className="text-ink-soft">Nothing yet</span>}
+        badge={<ProvenanceBadge provenance={card.provenance} />}
+      />
     );
   }
 

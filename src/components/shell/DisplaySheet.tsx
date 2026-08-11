@@ -1,6 +1,9 @@
 "use client";
 
-import { Sheet } from "@/components/reader/Sheet";
+// The shell's sheet, not the book's: Display can be opened from the header on
+// any screen, and a reader who has chosen Quiet paper for their books should
+// not get a near-black panel over a cream app.
+import { Sheet } from "@/components/ui/Sheet";
 import { APP_TEXT_LABELS, APP_TEXT_SCALES, type Theme } from "@/lib/storage";
 import { useDisplay } from "./DisplayProvider";
 

@@ -214,6 +214,27 @@ export function SunIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * The app bar's display control.
+ *
+ * This was the letters "Aa" — the convention Apple Books, Kindle and Safari all
+ * use, and the argument for it was that nobody has to learn it. The designer
+ * draws a palette instead, and it is the better mark *here*: the button no
+ * longer opens a type panel, it opens theme, size and weight for the whole app,
+ * and "Aa" was quietly promising only the middle one. The reader's own type
+ * control, inside a book, keeps its "Aa".
+ */
+export function PaletteIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4.5 w-4.5"} strokeWidth={1.7}>
+      <path d="M12 3a9 9 0 1 0 0 18c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.5-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4.1-4-7.6-9-7.6Z" />
+      <circle cx="7.7" cy="12.4" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="9.9" cy="8.2" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="14.8" cy="8.1" r="1.15" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
 export function ShareIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-4 w-4"}>

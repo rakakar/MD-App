@@ -12,7 +12,10 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Sheet } from "@/components/reader/Sheet";
+// The shell's sheet. Feedback can be sent from a chapter, but it is the app
+// being written to rather than the book being read — and the reader's own
+// paper on a form nobody is reading is a colour with no argument for it.
+import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
 import { watchClientErrors } from "@/lib/clientErrors";
 import {

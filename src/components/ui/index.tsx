@@ -1,5 +1,30 @@
 import Link from "next/link";
-import { contentLang } from "@/lib/script";
+
+/**
+ * The app's own furniture.
+ *
+ * What was one file is now a folder, because the designer's finished screens
+ * turned out to repeat nine objects — a coloured hero, a collection card, a
+ * kind tile, a row, a counted control, a chip, a filter panel, a stat tile,
+ * a promo band — that nine screens had each been drawing for themselves. They
+ * are all re-exported from here, so `@/components/ui` still means what it
+ * always did to everything that imports it.
+ *
+ * The rule for what belongs here: a thing at least two screens draw, whose
+ * *look* is shared and whose *policy* is not. Policy stays with the caller —
+ * which is why there is a FilterButton and no FilterSheet, and a SearchField
+ * with no opinion about when to search.
+ */
+export * from "./Card";
+export * from "./CollectionHero";
+export * from "./Filters";
+export * from "./KindTile";
+export * from "./ListRow";
+export * from "./Segmented";
+export * from "./ShareButton";
+export * from "./Sheet";
+
+import { Chip, ChipRow } from "./Segmented";
 
 /**
  * Page gutters and measure.
@@ -35,13 +60,19 @@ export function PageContainer({
  * which carry different meaning:
  *
  * - `eyebrow` (13px / 700 / uppercase) labels a shelf of things that belong to
- *   the page — CONTINUE READING, BOOKS, EXPLORE WORKSPACES. It is a
- *   caption; the covers under it are the content.
- * - `title` (17px, sentence case, full ink) heads a section that is its own
- *   subject — News & updates, Upcoming shivirs.
+ *   the page — the CONTINUE READING rail at the top of the Library, above the
+ *   thing the page is actually about. It is a caption; the covers under it are
+ *   the content.
+ * - `title` (20px, sentence case, full ink) heads a section that is its own
+ *   subject — Books, Shorts, Audio & Video, Explore workspaces.
  *
  * A single middle tier for both, which is what this used to be, made the page
  * read as one flat list of equal things.
+ *
+ * The title tier was 17px until the finished comps arrived, where Home's
+ * section headings are plainly a step above the 17px card titles under them.
+ * At 17px the heading and the cards it introduced were the same size, which is
+ * the specific way a long scrolling page stops having a shape.
  */
 export function SectionHeading({
   children,
@@ -57,7 +88,7 @@ export function SectionHeading({
       <h2
         className={
           tier === "title"
-            ? "text-[1.0625rem] font-semibold tracking-[-0.01em] text-ink"
+            ? "text-xl font-bold tracking-[-0.015em] text-ink"
             : "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
         }
       >
@@ -103,31 +134,24 @@ export function FilterChips({
   active?: string;
 }) {
   if (options.length === 0) return null;
-  const chip = (selected: boolean) =>
-    `min-h-11 inline-flex items-center rounded-full border px-3 text-xs font-medium transition-colors ${
-      selected ? "border-transparent text-white" : "border-rule bg-card text-ink"
-    }`;
+  // `tint`, not `solid`. Something is always selected on this row — "All" is a
+  // position in the set rather than a filter you switched on — and a row where
+  // the selected chip is a solid accent fill reads as one active filter among
+  // four available ones, which is the opposite of what it means.
   return (
-    <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={label}>
-      <Link
-        href={allHref}
-        aria-current={active ? undefined : "true"}
-        className={chip(!active)}
-        style={!active ? { background: "var(--ws-color)" } : undefined}
-      >
-        All
-      </Link>
-      {options.map((o) => (
-        <Link
-          key={o.value}
-          href={o.href}
-          aria-current={active === o.value ? "true" : undefined}
-          className={chip(active === o.value)}
-          style={active === o.value ? { background: "var(--ws-color)" } : undefined}
-        >
-          <span {...contentLang(o.label)}>{o.label}</span>
-        </Link>
-      ))}
+    <div className="mt-3">
+      <ChipRow label={label}>
+        <Chip label="All" href={allHref} selected={!active} variant="tint" />
+        {options.map((o) => (
+          <Chip
+            key={o.value}
+            label={o.label}
+            href={o.href}
+            selected={active === o.value}
+            variant="tint"
+          />
+        ))}
+      </ChipRow>
     </div>
   );
 }

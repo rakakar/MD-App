@@ -39,19 +39,14 @@ export function BookRail({ books }: { books: BookSummary[] }) {
             >
               {b.title_hi}
             </span>
-            {/* The author under the title, as the shelf caption is drawn. On
-                Originals it is the same name on every card, which is the point:
-                it is what these covers have in common, and on a translation the
-                line is the one place the two names differ. */}
-            {b.author ? (
-              <span lang="hi" className="hi mt-1 block truncate text-xs text-ink-soft">
-                {b.author}
-              </span>
-            ) : null}
+            {/* The author line came off this rail with the finished comps, and
+                it should have gone sooner. On Originals it is A. Nagraj on
+                every card — three identical lines under three different covers,
+                on the most crowded surface in the app. The shelf still carries
+                it, and the shelf is where a reader is comparing books rather
+                than glancing across them. */}
             {b.page_count ? (
-              <span className="mt-0.5 block text-xs text-ink-soft">
-                {b.page_count} pages
-              </span>
+              <span className="mt-1 block text-xs text-ink-soft">{b.page_count} pages</span>
             ) : null}
           </Link>
         </li>

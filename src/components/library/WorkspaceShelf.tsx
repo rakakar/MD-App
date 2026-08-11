@@ -306,15 +306,22 @@ function ShelfHeading({
 }) {
   const total = shelfTotals(doors.map((d) => rollup[String(d.id)]));
   const hours = Math.round(total.duration / 3600);
+  // One line — "COLLECTIONS · 199 items" — as the finished comps draw it, not a
+  // label pushed left and a count pushed right. Split across the shelf's width
+  // the two read as two separate facts, and on a phone the count landed under
+  // the reader's thumb at the far edge where nothing else on the page sits.
   return (
-    <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-      <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">Collections</p>
+    <p className="mt-6 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+      Collections
       {total.items > 0 && (
-        <p className="text-xs tabular-nums text-ink-soft">
-          {total.items} {total.items === 1 ? "item" : "items"}
+        <>
+          {" · "}
+          <span className="tabular-nums">
+            {total.items} {total.items === 1 ? "item" : "items"}
+          </span>
           {hours > 0 && ` · ${hours} ${hours === 1 ? "hour" : "hours"}`}
-        </p>
+        </>
       )}
-    </div>
+    </p>
   );
 }

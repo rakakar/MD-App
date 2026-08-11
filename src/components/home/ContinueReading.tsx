@@ -41,11 +41,19 @@ interface ResumeCard {
  */
 export function ContinueReading({
   limit = 3,
-  heading = "Continue reading",
+  heading = "Continue Reading",
+  tier = "title",
   layout = "rail",
 }: {
   limit?: number;
   heading?: string;
+  /**
+   * Which heading tier the rail wears. `title` on Home and Read, where
+   * resuming is the reason the page exists; `eyebrow` on the Library, where
+   * the rail sits above the shelf the page is actually about and a second
+   * 20px heading there would compete with the page's own title.
+   */
+  tier?: "title" | "eyebrow";
   /**
    * A rail on every screen (`rail`, the shelf — 1B desktop keeps the row of
    * 340px cards), or a rail on a phone that stacks from lg (`stack`, Home —
@@ -139,7 +147,13 @@ export function ContinueReading({
 
   return (
     <section aria-label={heading}>
-      <h2 className="mb-3 mt-7 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+      <h2
+        className={`mb-3 mt-7 first:mt-0 ${
+          tier === "title"
+            ? "text-xl font-bold tracking-[-0.015em] text-ink"
+            : "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
+        }`}
+      >
         {heading}
       </h2>
       {/* A snapping rail rather than a stack (design 1A/1B): the card a reader

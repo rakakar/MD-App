@@ -55,6 +55,39 @@ export type ReadingMode = "page" | "scroll";
 export type ReaderFace = "serif" | "sans";
 export const FONT_FACES: ReaderFace[] = ["serif", "sans"];
 
+/**
+ * The paper the *book* is printed on — a second, narrower axis than {@link Theme}.
+ *
+ * The designer's Theme & Settings sheet offers six of these. They are not app
+ * themes: the shell keeps Auto / Light / Sepia / Dark, because Auto is what
+ * lets a phone that goes dark at sunset take the app with it, and a book you
+ * chose to read on cream should not turn grey because the sun went down.
+ *
+ * `original` is the one that declares nothing — it defers to whatever the app
+ * theme is, which is exactly what the reader did before this setting existed.
+ * That is also why it is the default: nobody's book changes until they ask.
+ *
+ * `bold` is a weight rather than a surface; see globals.css for why it cannot
+ * simply be `font-weight: bold`.
+ */
+export type ReaderSurface =
+  | "original"
+  | "quiet"
+  | "paper"
+  | "bold"
+  | "calm"
+  | "focus";
+
+/** In the order the sheet draws them (two rows of three). */
+export const READER_SURFACES: ReaderSurface[] = [
+  "original",
+  "quiet",
+  "paper",
+  "bold",
+  "calm",
+  "focus",
+];
+
 /** Typography steps. Exported so the reader UI, the settings page and the
  *  pre-hydration inline script all agree on the same ladder. */
 export const FONT_SCALES = [0.85, 0.95, 1, 1.1, 1.2, 1.35, 1.5, 1.7];
@@ -92,6 +125,8 @@ export interface Prefs {
   /** 0 = narrow gutters, 1 = normal, 2 = wide */
   margin: number;
   theme: Theme;
+  /** the book's own paper — one of {@link READER_SURFACES}; app chrome ignores it */
+  readerTheme: ReaderSurface;
   /** app-wide text size multiplier — one of {@link APP_TEXT_SCALES} */
   appTextScale: number;
   /**
@@ -135,6 +170,9 @@ export const DEFAULT_PREFS: Prefs = {
   // a reader that opens bright at night is the single most common complaint
   // about reading apps — follow the OS unless the user says otherwise
   theme: "system",
+  // Defers to the app theme, so a reader who never opens the sheet reads on
+  // exactly the paper they always did.
+  readerTheme: "original",
   // 1 is not "small". The baseline was already raised for this audience, so
   // the default step is the one most readers should never need to leave.
   appTextScale: 1,
@@ -181,11 +219,38 @@ export function setPrefs(patch: Partial<Prefs>): Prefs {
 // A sync pass is then a stateless sweep over the rows — it can run twice, or
 // be interrupted halfway, without replaying anything out of order.
 
+/**
+ * The three colours the reader's selection bar offers. See globals.css for the
+ * fills and the contrast they were measured at.
+ */
+export type HighlightColour = "amber" | "sage" | "sky";
+export const HIGHLIGHT_COLOURS: HighlightColour[] = ["amber", "sage", "sky"];
+
 export interface LocalBookmark {
   canonical_ref: string;
   book_code: string;
   /** the saved line, so a list can show the words rather than the ref */
   text_hi?: string;
+  /**
+   * **A highlight is a bookmark with a colour.**
+   *
+   * The designer's Highlights & Notes screen wanted a new thing; the store did
+   * not need one. A bookmark already is a passage, a book and the words that
+   * were saved — the only fact a highlight adds is which of three colours it
+   * was painted in, and a note attached to it is the note that already exists
+   * on the same canonical ref.
+   *
+   * Making it a fourth array would have bought a second sync path, a second
+   * tombstone kind and a second thing for the reader's selection bar to decide
+   * between, in exchange for a field. Undefined means what it has always
+   * meant: saved, but not painted.
+   *
+   * The BE does not carry it yet, so it survives `push()` only on this device
+   * and a second device sees the highlight as a plain bookmark. That is the
+   * right way for it to degrade — the passage is what a reader would miss, and
+   * the passage syncs.
+   */
+  colour?: HighlightColour;
   created_at: string;
   server_id?: number;
 }
@@ -309,14 +374,24 @@ export function readingHomeFor(bookCode: string): ReadingHome | null {
 export function addLocalBookmark(
   canonicalRef: string,
   bookCode: string,
-  textHi?: string
+  textHi?: string,
+  colour?: HighlightColour
 ): void {
   mutate((store) => {
-    if (store.bookmarks.some((b) => b.canonical_ref === canonicalRef)) return;
+    const existing = store.bookmarks.find((b) => b.canonical_ref === canonicalRef);
+    if (existing) {
+      // Re-saving a passage in a different colour repaints it rather than
+      // doing nothing. Tapping green on a line already highlighted amber is
+      // unambiguous, and "nothing happened" is the one response to it that
+      // cannot be right.
+      if (colour && existing.colour !== colour) existing.colour = colour;
+      return;
+    }
     store.bookmarks.unshift({
       canonical_ref: canonicalRef,
       book_code: bookCode,
       text_hi: textHi,
+      colour,
       created_at: new Date().toISOString(),
     });
     // re-bookmarking something just deleted cancels the pending delete

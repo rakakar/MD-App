@@ -133,7 +133,14 @@ export const viewport: Viewport = {
  * It also writes `theme-color`, which the `viewport` export above deliberately
  * does not. Written here it is a tag nobody else owns, so a client-side
  * navigation cannot reset it; written there it was reset on every one.
- * THEME_BG in DisplayProvider must hold the same three values.
+ * THEME_BG and READER_BG in DisplayProvider must hold the same values.
+ *
+ * Since the book's paper became its own setting, the status bar has two things
+ * it could follow and they can disagree — a reader can choose Quiet paper
+ * inside a light app. While a book is open the book wins, because the bar is
+ * touching the page rather than the shell; everywhere else the shell does.
+ * `colorScheme` follows the same rule, since inside a reader the document *is*
+ * the book.
  *
  * The route test must match READER_ROUTE **and** PDF_READER_ROUTE in
  * lib/routes.ts — `ownsViewport` is the union, and `data-reading` is what
@@ -145,17 +152,22 @@ var t=p.theme||"system";
 if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
 var d=document.documentElement;
 d.setAttribute("data-theme",t);
-d.style.colorScheme=t==="dark"?"dark":"light";
+var rt=p.readerTheme||"original";
+d.setAttribute("data-reader-theme",rt);
+var reading=/^\\/books\\/[^/]+\\/\\d+$|^\\/library\\/\\d+\\/read\\/\\d+$/.test(location.pathname);
+if(reading)d.setAttribute("data-reading","1");
+var rbg={paper:"#ededed",calm:"#f4e1c5",focus:"#fefcf2",quiet:"#1f1f21"}[rt];
+var dark=reading&&rbg?rt==="quiet":t==="dark";
+d.style.colorScheme=dark?"dark":"light";
 var m=document.querySelector('meta[name="theme-color"]');
 if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m)}
-m.setAttribute("content",t==="dark"?"#14110f":t==="sepia"?"#f5ebdc":"#fdfbf8");
+m.setAttribute("content",reading&&rbg?rbg:t==="dark"?"#14110f":t==="sepia"?"#f5ebdc":"#faf7f3");
 d.setAttribute("data-reader-margin",String(p.margin==null?1:p.margin));
 d.setAttribute("data-reader-face",p.face||"serif");
 if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale));
 if(p.boldText)d.setAttribute("data-bold","1");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
-if(/^\\/books\\/[^/]+\\/\\d+$|^\\/library\\/\\d+\\/read\\/\\d+$/.test(location.pathname))d.setAttribute("data-reading","1");
 }catch(e){}})()`;
 
 export default function RootLayout({
@@ -169,6 +181,7 @@ export default function RootLayout({
       data-theme="light"
       data-reader-margin="1"
       data-reader-face="serif"
+      data-reader-theme="original"
       suppressHydrationWarning
       className={`${instrumentSans.variable} ${newsreader.variable} ${tiroDevanagariHindi.variable} ${mukta.variable} h-full antialiased`}
     >
