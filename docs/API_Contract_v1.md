@@ -293,6 +293,31 @@ the reader (highlight a para, bookmark a `canonical_ref`, resume where you left
 off). Anchor all of them to `canonical_ref`, not to positions. `GET /me/`
 returns `id`, `email`, `name`, `user_type`; `PATCH /me/` sets `name`.
 
+### 6.0 A bookmark's `colour` — a highlight is a painted bookmark
+
+A bookmark row carries **`colour`**: `""`, `amber`, `sage` or `sky`. That is the
+whole model behind the reader's selection bar — one saved passage, optionally
+painted — and it is why there is no separate highlight endpoint.
+
+- **`""` means saved but not painted**, and it is the default. Every bookmark
+  made before this field existed reads as `""`; the FE renders those unpainted,
+  which is correct and must stay that way. It is not a missing colour to be
+  backfilled.
+- **The three names are fixed.** They map to the FE's `--color-hl-<name>`
+  tokens, where an unrecognised value resolves to no colour at all — and an
+  invisible highlight looks exactly like a working one. Anything else is a 400
+  rather than a row that renders blank.
+- **`POST /me/bookmarks/` upserts the colour.** Posting a `canonical_ref` that
+  is already bookmarked, with a different `colour`, repaints it and answers
+  `200`. That is the reader reopening the bar on a passage they already saved
+  and tapping another swatch.
+- **Omitting `colour` leaves it alone** rather than clearing it, so the plain
+  "save this" action cannot strip the paint off an existing highlight.
+
+The colours carry no meaning — the design offers three because a reader likes
+sorting their own passages, not because one of them means *important*. Do not
+build a filter that reads them as categories.
+
 ### 6.1 Signing in
 
 Readers authenticate through **django-allauth headless, `app` client**, at
@@ -404,6 +429,27 @@ read-only (except event register), published-only, cached.
 
 Both will be documented here (or in a v2 contract) when they land; nothing in
 §§0–8 will change shape because of them.
+
+**Deliberately absent: a link from a book to its discourse audio.** There is no
+FK, no M2M and no `audio_node` joining `Book` to the library's audio, and this
+is a decision rather than a gap — recorded here because it has been asked for
+twice.
+
+The listening the app actually offers a reader is **per chapter**: the reader's
+bottom bar carries the headphones, and it opens the chapter's own audio
+(`audio_renditions`, §2.3) with the text following along. The book hero has no
+audio control at all — it holds Resume and download and nothing else. Both are
+what the 2026-08-11 comps draw, and both work today.
+
+Nothing in the design navigates between a book and a प्रवचन in either
+direction. An audio album may well be *named* after a book — "जीवन विद्या: एक
+परिचय 10 Oct 1997" is one — and it still offers no way through to the book, nor
+the book to it. Until a screen asks for that crossing, a join table would be a
+model, a migration, a panel form and a payload field serving nobody.
+
+If it is ever wanted, note that the shape is genuinely many-to-many: one book
+can have several series and one series can touch several books. Do not model it
+as a single `audio_node`.
 
 ### 9.1 `GET /api/v1/search` — reader search
 
@@ -1054,6 +1100,7 @@ and original pCloud path. **Never file contents.**
 | `topic` · `provenance` · `year` · `place` · `person` · `language` · `kind` | The sieve axes. Repeatable within an axis (OR); across axes they AND. |
 | `type` | `folder` or `file`. Omit for both. |
 | `raw=1` | Search exactly as typed; skip the Devanagari rewrite. |
+| `ordering` | `-added` · `added` · `-duration` · `duration`. Omit for the ranking below. See *Ordering*. |
 | `limit` · `offset` | Default 25, max 100. |
 
 Neither `workspace` nor `under` is required — with neither, the scope is the
@@ -1098,6 +1145,7 @@ facet count is a count of *rows*, not of shivirs.
   "q": "amarkantak",
   "searched_as": "अमरकंटक",          // "" when the query needed no rewrite
   "scope": { "workspace": "resources", "under": null },
+  "ordering": "-added",               // "" when the rows came back ranked
   "count": 137,                       // total in scope, before limit/offset
   "results": [
     { "type": "folder", "id": 17, "name": "2019",
@@ -1159,6 +1207,73 @@ answers "what is this?" better than a lone file does. That reasoning survives as
 the tiebreak, but it cannot survive as the sort: once results are ranked and
 paginated, an unconditional rule puts a page of weak folder-name matches ahead
 of the file whose title is exactly what was typed.
+
+#### Ordering — the filter sheet's "Sort by"
+
+`ordering` takes one of four values and **replaces the ranking above**:
+
+| Value | The sheet's label | Sorts on |
+|---|---|---|
+| `-added` | Newest first | when the row entered the library |
+| `added` | Oldest first | the same, ascending |
+| `-duration` | Longest first | seconds |
+| `duration` | — | seconds, ascending |
+
+Omit it and nothing changes — the rows come back ranked exactly as they always
+have. This is an addition; the default is untouched.
+
+**It replaces the score rather than breaking ties beneath it.** The Sort by
+radios sit in the same sheet as the chips, beside a box that may have words in
+it, and a radio the reader can see selected has to move the list. Ranked-then-
+recent would leave "Newest first" doing nothing on any query that scores
+unevenly — which is every query. Everything tying on the chosen axis still
+falls back to the old order (folder first, then `sequence`, then name), so the
+list stays stable when only the axis changes.
+
+Unrecognised values **degrade to the ranking rather than 400** — a sort is a
+preference, and a stale bookmarked URL should show the shelf, not an error.
+`ordering` in the response echoes what was actually honoured, so a radio group
+can never disagree with the list under it.
+
+**An `ordering` counts as asking.** Everywhere else, results are empty until
+there is a query or a chip (see below); a sort on its own is a whole question,
+and it is exactly what the Sort by section means when nothing else is set.
+
+##### `added` is `created_at`, not a publication date
+
+This is a deliberate choice and the FE should read "added" as *when this was
+made*, not *when it went live*.
+
+There is no `published_at` on either model to mean the other thing with, and
+introducing one is a migration whose backfill has nothing true to write: every
+row already in the library would be stamped null or today, and a whole library
+that arrived this morning is a worse lie than one dated when it was made.
+
+The deciding half is that **`Item` has no workflow at all** — a file has no
+publish moment, only its folder does. These results mix folders and files by
+contract, so they can only sort on a fact both of them carry. Folders by
+publication and files by creation is one list read off two clocks.
+
+The cost, stated plainly: a folder drafted in January and published in July
+sorts as January. `updated_at` would fix that case and break a commoner one — a
+typo corrected in an old folder would resurface it as the newest thing on the
+shelf.
+
+##### A folder's `duration` is its whole subtree
+
+For `-duration`, a folder is priced at the sum of every matching file beneath
+it — descendants, not children, so a shivir season is not zero because its
+hours sit one level down in its days. This is the same number `rollup` already
+reports per card ("4 Audios · 3:15:04"), and it is what makes "Longest first"
+mean anything on a shelf that draws collections rather than loose tracks.
+
+Like `rollup`, it is summed over the **matched** set: with a query or a chip
+active, a collection is priced by the files it is actually offering.
+
+**Rows are still flat, and grouping stays the FE's.** A shelf that buckets rows
+by folder gets, in effect, groups ordered by their best-placed member — with
+`-added`, the collection holding the newest recording leads. That is the right
+reading of "Newest first" on a grouped shelf, and it needs nothing from here.
 
 #### Facet counts narrow
 
