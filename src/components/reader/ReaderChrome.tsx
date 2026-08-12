@@ -293,7 +293,11 @@ export function SelectionBar({
       // the honest answer to a bar that can hold four actions or eight: the
       // comps' four are always first.
       className="fixed inset-x-2 z-50 mx-auto flex w-fit max-w-[calc(100vw-1rem)] items-center gap-1 overflow-x-auto rounded-full bg-overlay px-2 py-1.5 text-white shadow-raised"
-      style={{ bottom: `calc(${bottom} + 3.75rem)` }}
+      // Above the reader's own bar, and above the audio pill when one is
+      // floating there too — `--player-float-h` is that pill's height, and 0
+      // whenever nothing is playing. Two things that both float in this corner
+      // have to know about each other; nothing else does.
+      style={{ bottom: `calc(${bottom} + 3.75rem + var(--player-float-h, 0px))` }}
     >
       {HIGHLIGHT_COLOURS.map((c) => (
         <button

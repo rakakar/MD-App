@@ -246,14 +246,10 @@ The comps cover Home, Read, Book preview, Highlights & Notes, Library (+ folder 
 lists), Audio/Video (+ albums), the reader and its sheets, and Audio Mode.
 
 **Built:** the tokens, the primitives, Home · Read · Book preview · Highlights & Notes ·
-the Library shelf · **filtering on both shelves** · **every folder, album and file list**.
+the Library shelf · **filtering on both shelves** · **every folder, album and file list** ·
+**Audio Mode and the reader's audio pill**.
 
-**Not built yet** — this screen still wears the pre-comp chrome, and the gap is known
-rather than accidental:
-
-| Screen | What is still old |
-|---|---|
-| Audio Mode | not restyled |
+Every screen the comps cover is built.
 
 ### Folders, albums and file lists — one hero and one row
 
@@ -329,6 +325,39 @@ Three things it settles that the comps do not draw:
 `FindResults`' bespoke dashed "Nothing matched" box is the shared `EmptyState` now, whose
 `hint` takes a node so that the way back out of a filter can live inside it. A filtered
 shelf that found nothing is the one screen a reader can be stuck on.
+
+### Listening — one palette, two shapes
+
+**Audio Mode has a palette of its own**, and it is now the `audio` token family rather
+than some forty hex literals across three player files. It deliberately does *not* restate
+itself per theme: the screen is a cover, two lines and a play button, it is often the last
+thing looked at before sleep, and a sepia page behind a play button reads as a page that
+has gone wrong. The comp's gradient is sampled at both ends — `audio-top` `#4E2B13` to
+`audio-bg` `#17120F` — and held to the top 38% rather than run the whole height, because a
+gradient still moving behind the follow-along lines reads as the page scrolling.
+
+`src/components/player/**` is in the ESLint **error** tier now, on the same logic as
+`ui/`: with the palette in the stylesheet, a literal in there is a new one.
+
+**Inside a book the player is a floating pill**, not a bar (comp "Read mode - Audio widget
+overlay"). The reader is the one screen with no room for a bar — its own chrome owns the
+foot of the window and the page owns the rest — and a full-width strip between them turned
+the bottom fifth of a reading screen into three stacked bands of controls. The pill sits on
+`--color-overlay`, the app's one surface that floats *over* content, and carries only what
+a listener reaches for without looking: stop, ±15 seconds, pause. The scrub, the speed, the
+sleep timer and the voice picker are all one tap away in Audio Mode, which the title opens.
+
+Two things follow, and both are in the code:
+
+- The pill **takes no layout**: `--player-h` is 0 inside a book, so the reader's bar keeps
+  the floor and the pill floats above it over the text, as drawn.
+- `--player-float-h` is new, and is what the **selection bar** clears. Both float in the
+  same corner; before this they cleared the same bar and landed on top of each other.
+
+| Comp | Shipped | Reason |
+|---|---|---|
+| Audio Mode's unspoken lines at ~3.4:1 | `audio-ink` at 55%, 5.4:1 | The karaoke contrast is the point of the screen and survives the change: the spoken line is still 16:1 against lines that recede. A line you cannot read is not a line you are being invited to tap, and tapping one is what this screen is for. |
+| Nothing below Audio Mode's transport | Chapters · Voice · Sleep · offline save · Read | The comp draws the listening controls; these are the ones that make it a listening *app*, and the reader-side bar they used to live on is a pill now. |
 
 ### The reader
 

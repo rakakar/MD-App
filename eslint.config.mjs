@@ -71,6 +71,9 @@ const eslintConfig = defineConfig([
       // Drawn from the comps, so a literal here is a new one rather than an
       // inherited one.
       "src/components/library/FindFilters.tsx",
+      // The listening surfaces, now that their fixed dark palette is the
+      // `audio` token family rather than forty hexes across three files.
+      "src/components/player/**/*.{ts,tsx}",
     ],
     rules: { "no-restricted-syntax": ["error", ...designSystemRules] },
   },

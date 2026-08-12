@@ -49,16 +49,29 @@ function PlayerBarInner() {
   useEffect(() => {
     const el = barRef.current;
     if (!el) return;
-    const publish = () =>
-      document.documentElement.style.setProperty("--player-h", `${el.offsetHeight}px`);
+    // Inside a book the pill *floats over* the page rather than stacking under
+    // the reader's own bar, so it takes no layout: the reader keeps its chrome
+    // at the foot of the screen, as the comp draws, and the pill sits above it
+    // over the text. Everywhere else the bar is real furniture and publishes
+    // its height so the page can clear it.
+    const publish = () => {
+      const root = document.documentElement.style;
+      root.setProperty("--player-h", reader ? "0px" : `${el.offsetHeight}px`);
+      // What a *floating* control has to clear to sit above the pill. The
+      // reader's selection bar is the one other thing that floats in this
+      // corner, and without this it lands on top of the pill — both were
+      // clearing the same bar and neither knew about the other.
+      root.setProperty("--player-float-h", reader ? `${el.offsetHeight + 10}px` : "0px");
+    };
     publish();
     const ro = new ResizeObserver(publish);
     ro.observe(el);
     return () => {
       ro.disconnect();
       document.documentElement.style.setProperty("--player-h", "0px");
+      document.documentElement.style.setProperty("--player-float-h", "0px");
     };
-  }, []);
+  }, [reader]);
 
   const { source } = player;
   if (!source) return null;
@@ -100,6 +113,89 @@ function PlayerBarInner() {
         player.openAudioMode();
       }
     : () => player.openAudioMode();
+
+  /**
+   * Inside a book: **the overlay pill** (comp "Read mode - Audio widget
+   * overlay").
+   *
+   * The reader is the one screen with no room for a bar. Its own chrome already
+   * owns the foot of the window, the page owns everything above it, and a
+   * full-width strip between them turned the bottom fifth of a reading screen
+   * into three stacked bands of controls. So here the player is a floating pill
+   * on the same near-black `overlay` the selection bar uses — the app's one
+   * surface that sits *over* the page — carrying only what a reader listening
+   * to a chapter reaches for without looking: stop, ±15 seconds, pause.
+   *
+   * Everything else it drops is a tap away and better placed: the scrub bar,
+   * the speed, the sleep timer and the voice picker are all in Audio Mode,
+   * which is what the title opens.
+   */
+  if (reader) {
+    return (
+      <div
+        ref={barRef}
+        role="region"
+        aria-label="Audio player"
+        className="fixed inset-x-3 z-40 flex items-center gap-2 rounded-hero bg-overlay px-3 py-2.5 text-white shadow-raised"
+        // Above the reader's bottom bar by the same 3.75rem the selection bar
+        // clears it with. One number for "what a floating control clears",
+        // rather than two that drift apart.
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 3.75rem)" }}
+      >
+        <button
+          type="button"
+          onClick={player.close}
+          aria-label="Stop listening"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/70 active:bg-white/15"
+        >
+          <CloseIcon className="h-4.5 w-4.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={expand}
+          aria-label="Open audio mode"
+          className="flex min-w-0 flex-1 flex-col text-left"
+        >
+          <span className="hi w-full truncate text-sm font-semibold leading-tight">
+            {title}
+          </span>
+          <span className="hi w-full truncate text-xs text-white/70">{subtitle}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => player.skipSeconds(-SKIP_SECONDS)}
+          aria-label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
+        >
+          <SkipBackIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
+        </button>
+        <button
+          type="button"
+          onClick={player.toggle}
+          aria-label={player.playing ? "Pause" : "Play"}
+          // Cream on near-black, the one filled control here: the same pairing
+          // Audio Mode gives its play button, so the two read as one player.
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-audio-ink text-overlay active:scale-95"
+        >
+          {player.playing ? (
+            <PauseIcon className="h-5 w-5" />
+          ) : (
+            <PlayIcon className="ms-0.5 h-5 w-5" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => player.skipSeconds(SKIP_SECONDS)}
+          aria-label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
+        >
+          <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div

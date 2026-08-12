@@ -85,6 +85,27 @@
      ends up unsure what its buttons apply to. White on it is 15.9:1. */
   --color-overlay: #1c1917;
 
+  /* ---- Audio Mode ----
+
+     The one surface in the app with a palette of its own, and it is stated
+     once here rather than as forty literals across three player files. It does
+     not restate itself per theme on purpose: the screen is a cover, two lines
+     and a play button, it is often the last thing looked at before sleep, and
+     a sepia page behind a play button reads as a page that has gone wrong.
+
+     The two ends are sampled from the comp's gradient, top and bottom. Ratios
+     are against `audio-bg`, which is what all but the top strip sits on; the
+     accent still clears AA on `audio-top` (4.73:1), which is the only place
+     the label above the title lands. */
+  --color-audio-top: #4e2b13;
+  --color-audio-bg: #17120f;
+  --color-audio-ink: #f2ece2; /* 16.0:1 — 5.4:1 at the 55% the unspoken
+                                 follow-along lines are set in, which is the
+                                 floor those had to be raised to */
+  --color-audio-accent: #e08b3e; /* 7.09:1 on bg · 4.73:1 on top */
+  --color-audio-raised: #241e19; /* menus and the surface under a control;
+                                    ink/55 lands 5.15:1 on it */
+
   /* ---- the painted reading surfaces ----
 
      `original` and `bold` are absent: neither paints its own paper, so both
@@ -258,6 +279,13 @@
   /* height of the audio player when one is mounted; lets the reader's own
      bottom chrome stack above it without magic numbers */
   --player-h: 0px;
+
+  /* …and the same height when the player is *floating* rather than stacking,
+     which is what it does inside a book: the page keeps its full height and
+     the reader's bar keeps the floor, so this is only what the one other
+     floating control — the selection bar — has to clear. Exactly one of these
+     two is ever non-zero. */
+  --player-float-h: 0px;
 }
 
 /* Margin presets. On a phone this is mostly gutter width; on a wide screen it

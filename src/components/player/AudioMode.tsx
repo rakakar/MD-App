@@ -146,10 +146,17 @@ export function AudioMode({
       role="dialog"
       aria-modal="true"
       aria-label="Audio mode"
-      className="fixed inset-0 z-50 flex flex-col bg-[#100d0b] text-[#f2ece2]"
+      className="fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink"
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
+        // The comp's gradient, sampled at both ends: a warm ember at the top
+        // behind the cover, falling to near-black by the time it reaches the
+        // text. Held to the top third rather than run over the whole screen —
+        // a gradient still moving behind the follow-along lines is a gradient
+        // the eye keeps re-reading as the page scrolling.
+        backgroundImage:
+          "linear-gradient(180deg, var(--color-audio-top), var(--color-audio-bg) 38%)",
       }}
     >
       {/* ---- header ---- */}
@@ -158,15 +165,19 @@ export function AudioMode({
           type="button"
           onClick={closeAudioMode}
           aria-label="Close audio mode and return to the page"
-          className="-ms-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#f2ece2]/80 active:bg-white/10"
+          /* A rounded square, not a circle, as the comp draws both corners of
+             this header: round is the play button's shape here, and giving it
+             to a control that does the opposite thing was the one place this
+             screen contradicted itself. */
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tile bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/20"
         >
           <CloseIcon className="h-5.5 w-5.5" />
         </button>
         <div className="min-w-0 flex-1 pt-1.5 text-center">
-          <p className="text-xs font-semibold tracking-[0.18em] text-[#e08b3e]">
+          <p className="text-xs font-semibold tracking-[0.18em] text-audio-accent">
             AUDIO MODE
           </p>
-          <p lang="hi" className="hi truncate text-xs text-[#f2ece2]/70">
+          <p lang="hi" className="hi truncate text-xs text-audio-ink/70">
             {source.bookTitle} · {source.chapterTitle}
           </p>
         </div>
@@ -177,14 +188,14 @@ export function AudioMode({
             aria-haspopup="menu"
             aria-expanded={menu === "rate"}
             aria-label={`Playback speed ${player.rate}x`}
-            className="flex h-11 min-w-11 items-center justify-center rounded-full bg-white/10 px-3 text-sm font-semibold tabular-nums"
+            className="flex h-11 min-w-11 items-center justify-center rounded-tile bg-audio-ink/10 px-3 text-sm font-semibold tabular-nums"
           >
             {player.rate}×
           </button>
           {menu === "rate" && (
             <div
               role="menu"
-              className="absolute end-0 top-full z-10 mt-1 w-24 overflow-hidden rounded-xl bg-[#241e19] py-1 shadow-2xl ring-1 ring-white/10"
+              className="absolute end-0 top-full z-10 mt-1 w-24 overflow-hidden rounded-tile bg-audio-raised py-1 shadow-2xl ring-1 ring-audio-ink/10"
             >
               {RATES.map((r) => (
                 <button
@@ -196,7 +207,7 @@ export function AudioMode({
                     setMenu(null);
                   }}
                   className={`block w-full px-4 py-2 text-start text-sm tabular-nums ${
-                    r === player.rate ? "font-bold text-[#e08b3e]" : "text-[#f2ece2]/85"
+                    r === player.rate ? "font-bold text-audio-accent" : "text-audio-ink/85"
                   }`}
                 >
                   {r}×
@@ -213,7 +224,7 @@ export function AudioMode({
         <p lang="hi" className="hi mt-4 line-clamp-2 text-center text-base font-semibold">
           {source.chapterTitle}
         </p>
-        <p className="mt-1 text-xs tabular-nums text-[#f2ece2]/55">
+        <p className="mt-1 text-xs tabular-nums text-audio-ink/55">
           {device
             ? `Para ${paraProgress}`
             : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
@@ -223,12 +234,12 @@ export function AudioMode({
             voice is not background audio, and finding that out with the phone
             already in a pocket is how an app loses trust. */}
         {device && (
-          <p className="mt-2 text-center text-xs leading-snug text-[#e08b3e]/85">
+          <p className="mt-2 text-center text-xs leading-snug text-audio-accent/85">
             Device voice — stops when the screen locks
           </p>
         )}
         {rendition?.is_stale && (
-          <p className="mt-2 text-center text-xs text-[#f2ece2]/45">
+          <p className="mt-2 text-center text-xs text-audio-ink/60">
             This audio is of an earlier version of the text
           </p>
         )}
@@ -252,8 +263,8 @@ export function AudioMode({
                 lang="hi"
                 className={`hi rounded-lg px-1 py-0.5 text-center leading-[1.85] transition-colors ${
                   on
-                    ? "text-lg font-semibold text-[#f7f2e8]"
-                    : "text-base text-[#f2ece2]/38"
+                    ? "text-lg font-semibold text-audio-ink"
+                    : "text-base text-audio-ink/55"
                 }`}
               >
                 {p.text_hi}
@@ -261,7 +272,7 @@ export function AudioMode({
             );
           })}
           {lines.length === 0 && (
-            <p className="py-10 text-center text-sm text-[#f2ece2]/45">
+            <p className="py-10 text-center text-sm text-audio-ink/60">
               The text of this chapter isn&apos;t here.
             </p>
           )}
@@ -269,10 +280,10 @@ export function AudioMode({
       </div>
 
       {/* ---- transport ---- */}
-      <div className="shrink-0 border-t border-white/10 bg-[#100d0b] px-5 pb-2 pt-3">
+      <div className="shrink-0 border-t border-audio-ink/10 bg-audio-bg px-5 pb-2 pt-3">
         {device ? (
           <div
-            className="h-1 w-full overflow-hidden rounded-full bg-white/12"
+            className="h-1 w-full overflow-hidden rounded-full bg-audio-ink/12"
             role="progressbar"
             aria-label="Listening progress"
             aria-valuemin={0}
@@ -280,7 +291,7 @@ export function AudioMode({
             aria-valuenow={player.deviceParaIndex + 1}
           >
             <div
-              className="h-full rounded-full bg-[#e08b3e]"
+              className="h-full rounded-full bg-audio-accent"
               style={{
                 width: `${
                   source.paras.length
@@ -317,7 +328,7 @@ export function AudioMode({
             type="button"
             onClick={player.toggle}
             aria-label={player.playing ? "Pause" : "Play"}
-            className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full bg-[#f7f2e8] text-[#100d0b] shadow-lg active:scale-95"
+            className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full bg-audio-ink text-audio-bg shadow-lg active:scale-95"
           >
             {player.playing ? (
               <PauseIcon className="h-7 w-7" />
@@ -364,7 +375,7 @@ export function AudioMode({
               {menu === "voice" && (
                 <div
                   role="menu"
-                  className="absolute bottom-full left-1/2 z-10 mb-1 w-44 -translate-x-1/2 overflow-hidden rounded-xl bg-[#241e19] py-1 shadow-2xl ring-1 ring-white/10"
+                  className="absolute bottom-full left-1/2 z-10 mb-1 w-44 -translate-x-1/2 overflow-hidden rounded-tile bg-audio-raised py-1 shadow-2xl ring-1 ring-audio-ink/10"
                 >
                   {source.renditions.map((r) => (
                     <button
@@ -378,8 +389,8 @@ export function AudioMode({
                       }}
                       className={`hi block w-full px-4 py-2 text-start text-sm ${
                         r.voice_key === source.voiceKey
-                          ? "font-bold text-[#e08b3e]"
-                          : "text-[#f2ece2]/85"
+                          ? "font-bold text-audio-accent"
+                          : "text-audio-ink/85"
                       }`}
                     >
                       {r.voice_label}
@@ -399,7 +410,7 @@ export function AudioMode({
             {menu === "sleep" && (
               <div
                 role="menu"
-                className="absolute bottom-full left-1/2 z-10 mb-1 w-32 -translate-x-1/2 overflow-hidden rounded-xl bg-[#241e19] py-1 shadow-2xl ring-1 ring-white/10"
+                className="absolute bottom-full left-1/2 z-10 mb-1 w-32 -translate-x-1/2 overflow-hidden rounded-tile bg-audio-raised py-1 shadow-2xl ring-1 ring-audio-ink/10"
               >
                 {SLEEP_OPTIONS.map((m) => (
                   <button
@@ -410,7 +421,7 @@ export function AudioMode({
                       player.setSleepTimer(m);
                       setMenu(null);
                     }}
-                    className="block w-full px-4 py-2 text-start text-sm text-[#f2ece2]/85"
+                    className="block w-full px-4 py-2 text-start text-sm text-audio-ink/85"
                   >
                     {m} min
                   </button>
@@ -422,7 +433,7 @@ export function AudioMode({
                     player.setSleepTimer(null);
                     setMenu(null);
                   }}
-                  className="block w-full px-4 py-2 text-start text-sm text-[#f2ece2]/55"
+                  className="block w-full px-4 py-2 text-start text-sm text-audio-ink/55"
                 >
                   Off
                 </button>

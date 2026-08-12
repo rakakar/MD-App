@@ -79,10 +79,15 @@ export function TrackAudioMode() {
       role="dialog"
       aria-modal="true"
       aria-label="Audio mode"
-      className="fixed inset-0 z-50 flex flex-col bg-[#100d0b] text-[#f2ece2]"
+      className="fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink"
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
+        // The same ember the chapter's Audio Mode wears. A listener who learns
+        // this screen on a book must not arrive at a different one on a shivir
+        // recording — the two differ in the middle and nowhere else.
+        backgroundImage:
+          "linear-gradient(180deg, var(--color-audio-top), var(--color-audio-bg) 38%)",
       }}
     >
       {/* ---- header ---- */}
@@ -91,14 +96,14 @@ export function TrackAudioMode() {
           type="button"
           onClick={closeAudioMode}
           aria-label="Close audio mode"
-          className="-ms-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#f2ece2]/80 active:bg-white/10"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tile bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/10"
         >
           <CloseIcon className="h-5.5 w-5.5" />
         </button>
         <div className="min-w-0 flex-1 pt-1.5 text-center">
-          <p className="text-xs font-semibold tracking-[0.18em] text-[#e08b3e]">AUDIO MODE</p>
+          <p className="text-xs font-semibold tracking-[0.18em] text-audio-accent">AUDIO MODE</p>
           {source.subtitle && (
-            <p {...subtitle} className={`${subtitle.className} truncate text-xs text-[#f2ece2]/70`}>
+            <p {...subtitle} className={`${subtitle.className} truncate text-xs text-audio-ink/70`}>
               {source.subtitle}
             </p>
           )}
@@ -110,7 +115,7 @@ export function TrackAudioMode() {
             aria-haspopup="menu"
             aria-expanded={menu === "rate"}
             aria-label={`Playback speed ${player.rate}x`}
-            className="flex h-11 min-w-11 items-center justify-center rounded-full bg-white/10 px-3 text-sm font-semibold tabular-nums"
+            className="flex h-11 min-w-11 items-center justify-center rounded-tile bg-audio-ink/10 px-3 text-sm font-semibold tabular-nums"
           >
             {player.rate}×
           </button>
@@ -148,13 +153,13 @@ export function TrackAudioMode() {
         >
           {source.title}
         </p>
-        <p className="mt-1 text-xs tabular-nums text-[#f2ece2]/55">
+        <p className="mt-1 text-xs tabular-nums text-audio-ink/55">
           {fmt(player.positionMs)} / {fmt(player.durationMs)}
         </p>
       </div>
 
       {/* ---- transport ---- */}
-      <div className="shrink-0 border-t border-white/10 bg-[#100d0b] px-5 pb-2 pt-3">
+      <div className="shrink-0 border-t border-audio-ink/10 bg-audio-bg px-5 pb-2 pt-3">
         <ScrubBar
           positionMs={player.positionMs}
           durationMs={player.durationMs}
@@ -180,7 +185,7 @@ export function TrackAudioMode() {
             type="button"
             onClick={player.toggle}
             aria-label={player.playing ? "Pause" : "Play"}
-            className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full bg-[#f7f2e8] text-[#100d0b] shadow-lg active:scale-95"
+            className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full bg-audio-ink text-audio-bg shadow-lg active:scale-95"
           >
             {player.playing ? <PauseIcon className="h-7 w-7" /> : <PlayIcon className="ms-0.5 h-7 w-7" />}
           </button>

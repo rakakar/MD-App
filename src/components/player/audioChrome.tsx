@@ -48,8 +48,8 @@ export function TransportBtn({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className={`flex shrink-0 items-center justify-center rounded-full text-[#f2ece2] active:bg-white/10 disabled:opacity-25 ${
-        big ? "h-14 w-14 bg-white/8" : "h-12 w-12"
+      className={`flex shrink-0 items-center justify-center rounded-full text-audio-ink active:bg-audio-ink/10 disabled:opacity-25 ${
+        big ? "h-14 w-14 bg-audio-ink/8" : "h-12 w-12"
       }`}
     >
       {children}
@@ -72,7 +72,7 @@ export function FootBtn({
       onClick={onClick}
       lang="hi"
       className={`hi min-h-11 rounded-full px-3 text-xs tabular-nums ${
-        active ? "text-[#e08b3e]" : "text-[#f2ece2]/60"
+        active ? "text-audio-accent" : "text-audio-ink/60"
       }`}
     >
       {children}
@@ -116,7 +116,7 @@ export function CoverArt({
 }) {
   return (
     <div
-      className="relative h-[38vw] max-h-44 w-[38vw] max-w-44 shrink-0 overflow-hidden rounded-2xl shadow-[0_18px_40px_-16px_rgba(0,0,0,.8)] ring-1 ring-white/10"
+      className="relative h-[38vw] max-h-44 w-[38vw] max-w-44 shrink-0 overflow-hidden rounded-hero shadow-raised ring-1 ring-audio-ink/10"
       style={{ background: coverGradient(hue) }}
     >
       {src ? (
@@ -156,7 +156,7 @@ export function ScrubBar({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-11 shrink-0 text-xs tabular-nums text-[#f2ece2]/55">
+      <span className="w-11 shrink-0 text-xs tabular-nums text-audio-ink/55">
         {fmt(positionMs)}
       </span>
       <input
@@ -168,12 +168,12 @@ export function ScrubBar({
         onChange={(e) => onSeek(Number(e.target.value))}
         className="audio-scrub h-6 min-w-0 flex-1 cursor-pointer appearance-none bg-transparent"
         style={{
-          background: `linear-gradient(to right, #e08b3e ${
+          background: `linear-gradient(to right, var(--color-audio-accent) ${
             durationMs ? (positionMs / durationMs) * 100 : 0
-          }%, rgba(255,255,255,.14) 0)`,
+          }%, color-mix(in srgb, var(--color-audio-ink) 16%, transparent) 0)`,
         }}
       />
-      <span className="w-11 shrink-0 text-end text-xs tabular-nums text-[#f2ece2]/55">
+      <span className="w-11 shrink-0 text-end text-xs tabular-nums text-audio-ink/55">
         {fmt(durationMs)}
       </span>
     </div>
@@ -191,7 +191,7 @@ export function Menu({
   return (
     <div
       role="menu"
-      className={`absolute z-10 overflow-hidden rounded-xl bg-[#241e19] py-1 shadow-2xl ring-1 ring-white/10 ${className}`}
+      className={`absolute z-10 overflow-hidden rounded-tile bg-audio-raised py-1 shadow-2xl ring-1 ring-audio-ink/10 ${className}`}
     >
       {children}
     </div>
@@ -215,7 +215,7 @@ export function MenuItem({
       type="button"
       onClick={onClick}
       className={`block w-full px-4 py-2 text-start text-sm tabular-nums ${
-        selected ? "font-bold text-[#e08b3e]" : muted ? "text-[#f2ece2]/55" : "text-[#f2ece2]/85"
+        selected ? "font-bold text-audio-accent" : muted ? "text-audio-ink/55" : "text-audio-ink/85"
       }`}
     >
       {children}
