@@ -5,9 +5,9 @@ import { FilterCards } from "./FilterCards";
 import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
 import { filesSummary, formatDuration } from "./format";
-import { HeadphonesIcon, VideoIcon } from "@/components/shell/icons";
 import { RailSlot } from "@/components/shell/Rail";
-import { EmptyState } from "@/components/ui";
+import { CountedSegmented, EmptyState } from "@/components/ui";
+import { HeadphonesIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
@@ -103,9 +103,12 @@ export function AvShelf({
           it is simply absent for anyone who has not started anything. */}
       <ContinueAv sources={groups} />
 
-      <Segments facets={facets} chosen={chosen} state={state} basePath={basePath} />
-
+      {/* The box first, the split under it — the comps' order, and the right
+          one: "which of these" is a question about the results, so it belongs
+          next to them rather than above the control that produces them. */}
       <FindBar basePath={basePath} state={state} scope="Audio and video" dense />
+
+      <Segments facets={facets} chosen={chosen} state={state} basePath={basePath} />
 
       {/* One set of controls, drawn twice and only ever on screen once: the
           rail is `display:none` below `lg` and this copy is `lg:hidden`. Same
@@ -230,49 +233,55 @@ function Segments({
   );
   const total = AV_KINDS.reduce((n, kind) => n + (counts.get(kind) ?? 0), 0);
   const options = [
-    { key: "all", label: "All", count: total, kinds: AV_KINDS },
-    { key: "audio", label: "Audio", count: counts.get("audio") ?? 0, kinds: ["audio"] },
-    { key: "video", label: "Video", count: counts.get("video") ?? 0, kinds: ["video"] },
+    { key: "all", label: "All", count: total, kinds: AV_KINDS, icon: undefined },
+    {
+      key: "audio",
+      label: "Audios",
+      count: counts.get("audio") ?? 0,
+      kinds: ["audio"],
+      icon: <WaveformIcon className="h-4 w-4" />,
+    },
+    {
+      key: "video",
+      label: "Videos",
+      count: counts.get("video") ?? 0,
+      kinds: ["video"],
+      icon: <VideoIcon className="h-4 w-4" />,
+    },
   ];
   // One option is not a choice. A workspace holding only recordings and no
   // video should not be asked which of the two it wants.
   if (options.filter((o) => o.count > 0).length < 2) return null;
 
   return (
-    <div
-      role="group"
-      aria-label="Audio or video"
-      className="mt-3 flex gap-1.5 rounded-full border border-rule bg-card p-1"
-    >
-      {options.map((option) => {
-        const on =
-          chosen.length === option.kinds.length &&
-          option.kinds.every((k) => chosen.includes(k));
-        return (
-          <Link
-            key={option.key}
-            href={findHref(basePath, {
-              ...state,
-              // "All" writes no `kind` at all rather than both values — the page
-              // supplies the lock, and a bare `/av` is the address worth sharing.
-              selection: {
-                ...state.selection,
-                ...(option.key === "all" ? { kind: undefined } : { kind: option.kinds }),
-              },
-            })}
-            aria-current={on ? "true" : undefined}
-            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors"
-            style={
-              on
-                ? { background: "var(--ws-color)", color: "#fff" }
-                : { color: "var(--color-ink-soft)" }
-            }
-          >
-            {option.label}
-            <span className="text-xs tabular-nums opacity-75">{option.count}</span>
-          </Link>
-        );
-      })}
+    <div className="mt-3">
+      <CountedSegmented
+        label="Audio or video"
+        // Links, not state: a filtered shelf that is a real URL can be shared,
+        // bookmarked and prerendered. "All" writes no `kind` at all rather than
+        // both values — the page supplies the lock, and a bare `/av` is the
+        // address worth sharing.
+        value={
+          chosen.length === AV_KINDS.length
+            ? "all"
+            : chosen.includes("audio")
+              ? "audio"
+              : "video"
+        }
+        segments={options.map((o) => ({
+          value: o.key,
+          label: o.label,
+          count: o.count,
+          icon: o.icon,
+          href: findHref(basePath, {
+            ...state,
+            selection: {
+              ...state.selection,
+              ...(o.key === "all" ? { kind: undefined } : { kind: o.kinds }),
+            },
+          }),
+        }))}
+      />
     </div>
   );
 }

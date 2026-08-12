@@ -76,14 +76,37 @@ const SIZE = {
 
 export function KindTile({
   kind,
+  cover,
   size = "md",
   className = "",
 }: {
   kind: TileKind;
+  /**
+   * The collection's own picture, when the BE has one (`NodeCard.cover_url`).
+   *
+   * It wins over the glyph, and that is the right way round: a folder that has
+   * been given a face is one somebody chose a face for, and no generic mark
+   * beats it. The tint underneath still shows through a transparent or
+   * still-loading image, so the tile is never a blank square.
+   */
+  cover?: string | null;
   size?: keyof typeof SIZE;
   className?: string;
 }) {
   const Glyph = GLYPH[kind];
+  if (cover) {
+    return (
+      <span
+        aria-hidden
+        className={`flex shrink-0 items-center justify-center overflow-hidden ${TINT[FAMILY[kind]]} ${SIZE[size]} ${className}`}
+      >
+        {/* covers come from the BE media host; a plain img avoids configuring
+            a remote pattern for every host the migration may still be on */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={cover} alt="" loading="lazy" className="h-full w-full object-cover" />
+      </span>
+    );
+  }
   return (
     // aria-hidden throughout: the tile repeats what the row's own text already
     // says ("PDF · 220 pages", "3 hours · 5 videos"), and a screen reader

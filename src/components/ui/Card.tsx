@@ -30,6 +30,7 @@ export function CollectionCard({
   href,
   kind,
   eyebrow,
+  cover,
   title,
   description,
   meta,
@@ -37,6 +38,8 @@ export function CollectionCard({
 }: {
   href: string;
   kind: TileKind;
+  /** the collection's own picture, when the BE has one */
+  cover?: string | null;
   /** the small line above the title — "मूल ग्रंथ / वीडियो" */
   eyebrow?: string;
   title: string;
@@ -52,7 +55,7 @@ export function CollectionCard({
       // do, and the meta lines below them stay on one baseline.
       className="group flex h-full flex-col rounded-card border border-rule bg-card p-4 shadow-card transition-shadow hover:shadow-raised"
     >
-      <KindTile kind={kind} />
+      <KindTile kind={kind} cover={cover} />
       {eyebrow && (
         <span {...scripted(eyebrow, "mt-3 block truncate text-xs text-ink-soft")}>
           {eyebrow}
@@ -93,11 +96,13 @@ export function CollectionCard({
 export function StatTile({
   href,
   kind,
+  cover,
   label,
   count,
 }: {
   href: string;
   kind: TileKind;
+  cover?: string | null;
   label: string;
   count: React.ReactNode;
 }) {
@@ -106,7 +111,7 @@ export function StatTile({
       href={href}
       className="flex h-full flex-col gap-2 rounded-card border border-rule bg-card p-3 shadow-card transition-shadow hover:shadow-raised"
     >
-      <KindTile kind={kind} size="sm" />
+      <KindTile kind={kind} cover={cover} size="sm" />
       {/* Two lines, not one truncated one. The comps label these "PDFs" and
           "Shivir"; the folders they actually stand for are called
           "परिचयात्मक संकलन (प्रवेश सप्तम)", and three of those across a phone

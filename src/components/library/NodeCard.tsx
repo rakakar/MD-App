@@ -76,6 +76,7 @@ export function NodeCardView({
         // A mixed collection is a folder — there is no one true glyph for it,
         // and the folder icon on every tile is the folder icon on no tile.
         kind={kinds.length === 1 ? kinds[0] : "folder"}
+        cover={card.cover_url}
         title={card.name}
         description={card.description || null}
         meta={weight || <span className="text-ink-soft">Nothing yet</span>}

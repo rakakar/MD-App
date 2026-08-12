@@ -86,6 +86,9 @@ export async function LibraryBand() {
             <StatTile
               href={nodeHref(door.id, shelves)}
               kind={tileKind(door.kinds)}
+              // The comps' three tiles carry pictures, not glyphs — that is
+              // a cover the manager set on the folder, not a hue anyone chose.
+              cover={door.cover_url}
               label={door.name}
               // Deep, not shallow: the shallow count on a folder of folders is
               // the number of folders, which is the one number nobody wants
