@@ -49,6 +49,7 @@ into the code at the point it happens, the way `globals.css` already does.
 | Page `#FAF7F3`, card `#FFFFFF` | Adopted — `--color-surface` moved from `#FDFBF8` | This one went **our** way round: the comp is right and the old value was wrong. The extra step is what makes a white card read as raised. |
 | Samvaad stat tile in green with a speech-bubble glyph | The folder family (terracotta) | A fifth hue for one folder is not a palette. **Open with the designer** — if Samvaad is meant to be its own colour, it needs a rule saying which other folders get one. |
 | The filter sheet's third section, **Sort by** — Newest / Oldest / Longest first | Not built | `catalogue.Row` carries no timestamp and `ranked()` takes no ordering parameter, so two of the three cannot be answered at all; the third would sort one page of a ranked list and present it as the whole shelf. Skipped rather than faked, per the standing rule on the recency ask. **Open with the BE** — an `added` field and an `ordering=` parameter buys this whole section. |
+| The album/folder hero's back pill reads "Collections" | The parent folder's own name, plus the rest of the path above the title | Every comp draws a folder one step under a shelf, where those are the same thing. At depth four they are not, and one pill cannot carry six steps. |
 | Chips inside the filter sheet carry no counts | Adopted — the comp is followed | The panels this replaced printed a count on every chip. The sheet's footer counts the whole find live instead, and it re-counts on every tap, which is the number the reader is actually deciding with. |
 | Six themes in the reader sheet | Six *reading surfaces*; the app keeps Auto/Light/Sepia/Dark | Auto is what lets a phone that darkens at sunset take the app with it. A book chosen on cream should not turn grey because the sun went down. |
 
@@ -245,16 +246,51 @@ The comps cover Home, Read, Book preview, Highlights & Notes, Library (+ folder 
 lists), Audio/Video (+ albums), the reader and its sheets, and Audio Mode.
 
 **Built:** the tokens, the primitives, Home · Read · Book preview · Highlights & Notes ·
-the Library shelf, and **filtering on both shelves**.
+the Library shelf · **filtering on both shelves** · **every folder, album and file list**.
 
-**Not built yet** — these screens still wear the pre-comp chrome, and the gap is known
+**Not built yet** — this screen still wears the pre-comp chrome, and the gap is known
 rather than accidental:
 
 | Screen | What is still old |
 |---|---|
-| Library | folder and file screens not yet on `CollectionHero` + `RowCard` |
-| Albums | Audio and Video albums not yet on `CollectionHero` + `ListRow` |
 | Audio Mode | not restyled |
+
+### Folders, albums and file lists — one hero and one row
+
+The four comps here (Audio Album, Video Album, folder list, folder file list) are one
+screen with different contents, and the code now says so. `NodeView`'s two headers —
+a coloured panel for an album, plain text on the page for a folder of folders — are one
+`CollectionHero`. The only difference left is the **thumb**: an album has a cover and an
+index does not. The index was the odd screen out in the whole library, the one that looked
+like it belonged to a different app.
+
+The hue is the collection's own (`bookHue`), never the workspace accent, because the comps
+put a purple album and an orange one in the same set — the rule the book pages already
+keep.
+
+Two things the comps do not have to solve, because they draw depth 1:
+
+- **The back pill names the parent** rather than saying "Collections". Four levels into a
+  shivir, "Collections" is not where back goes.
+- **The rest of the path rides above the title** in `CollectionHero`'s new `eyebrow` slot.
+  One pill can only offer one step, and the way back to level two would otherwise be the
+  browser's history.
+
+The rows underneath are `RowCard` + `ListRow` + `KindTile` in all three lists — folders,
+documents, tracks — where there used to be three different things: a ruled list with a grey
+folder glyph, a bespoke card with its own stretched link, and a numbered ruled list of
+tracks. What each keeps is only what is true of it: a folder gets a tinted pill saying how
+much is inside, a document gets `RowAction`s under a hairline for the two ways round the
+reader, a track gets its duration on the right and the accent tile while it plays.
+
+`ListRow` gained `onClick`, which renders a real `<button>`: a track starts playing in the
+player already on the page rather than going anywhere, and a div with a click handler is
+not reachable by keyboard. `CollectionHero`'s `back` became optional — a folder can be its
+own top, and a pill pointing at the page you are on is worse than no pill.
+
+The **track number is gone** from an album's rows. It was ordinal information the order
+already carried, and the tile that replaced it is what the rest of the app leads a row
+with. What is playing is still findable without reading a word: that tile takes the accent.
 
 ### Filtering — one control for two shelves
 

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { cardSummary, nodeFacts, tileSummary } from "@/components/library/format";
 import { contentLang } from "@/lib/script";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
-import { ChevronRight, FolderIcon } from "@/components/shell/icons";
-import { CollectionCard } from "@/components/ui";
+import { ChevronRight } from "@/components/shell/icons";
+import { CollectionCard, KindTile, ListRow, RowCard } from "@/components/ui";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import type {
   BreadcrumbStep,
@@ -126,44 +126,59 @@ export function NodeCardView({
     );
   }
 
+  // The comps' folder row: a kind tile, the name, a tinted pill saying how much
+  // is inside, then the description — one card per folder rather than the flat
+  // ruled list this used to be. The tile is what changes it most: a folder list
+  // where every row began with the same grey glyph in the same grey was a list
+  // of filenames, and the shelf two taps above had already been drawing tinted
+  // tiles for the same folders.
   return (
-    <Link
-      href={nodeHref(card.id, shelves)}
-      className="group flex items-start gap-3 rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md"
-    >
-      <span aria-hidden className="mt-0.5 shrink-0 text-muted">
-        <FolderIcon />
-      </span>
-      <span className="min-w-0 flex-1">
-        {home && home.length > 0 && <BreadcrumbLine steps={home} />}
-        <span
-          {...contentLang(card.name)}
-          className={`${contentLang(card.name).className} block text-sm font-medium leading-snug group-hover:underline`}
-        >
-          {card.name}
-        </span>
-        {facts && (
-          <span {...contentLang(facts)} className={`${contentLang(facts).className} mt-0.5 block text-xs text-ink-soft`}>
-            {facts}
-          </span>
-        )}
-        <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-soft">
-          <span>{summary || "Nothing yet"}</span>
-          <ProvenanceBadge provenance={card.provenance} />
-        </span>
-        {card.description && (
-          <span
-            {...contentLang(card.description)}
-            className={`${contentLang(card.description).className} mt-1 block text-sm leading-relaxed text-ink-soft`}
-          >
-            {card.description}
-          </span>
-        )}
-      </span>
-      <span aria-hidden className="mt-1 shrink-0 text-muted">
-        <ChevronRight />
-      </span>
-    </Link>
+    <RowCard>
+      <ListRow
+        href={nodeHref(card.id, shelves)}
+        leading={
+          <KindTile
+            kind={card.kinds.length === 1 ? card.kinds[0] : "folder"}
+            cover={card.cover_url}
+            size="lg"
+          />
+        }
+        title={card.name}
+        meta={
+          <>
+            {home && home.length > 0 && <BreadcrumbLine steps={home} />}
+            <span className="flex flex-wrap items-center gap-2">
+              <span
+                className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                style={{
+                  background: "var(--color-accent-tint)",
+                  color: "var(--ws-ink)",
+                }}
+              >
+                {summary || "Nothing yet"}
+              </span>
+              <ProvenanceBadge provenance={card.provenance} />
+            </span>
+            {facts && (
+              <span
+                {...contentLang(facts)}
+                className={`${contentLang(facts).className} mt-1 block`}
+              >
+                {facts}
+              </span>
+            )}
+            {card.description && (
+              <span
+                {...contentLang(card.description)}
+                className={`${contentLang(card.description).className} mt-1 block leading-relaxed`}
+              >
+                {card.description}
+              </span>
+            )}
+          </>
+        }
+      />
+    </RowCard>
   );
 }
 

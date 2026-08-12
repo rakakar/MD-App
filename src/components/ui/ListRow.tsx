@@ -13,6 +13,8 @@ import { contentLang } from "@/lib/script";
  */
 export function ListRow({
   href,
+  onClick,
+  label,
   leading,
   title,
   meta,
@@ -20,6 +22,15 @@ export function ListRow({
   className = "",
 }: {
   href?: string;
+  /**
+   * A row that *does* something rather than going somewhere — a track, which
+   * starts playing in the player already on the page. It renders a real
+   * `<button>`: a div with a click handler is not reachable by keyboard, and
+   * this row is half the album screen.
+   */
+  onClick?: () => void;
+  /** what the button announces, when the title alone would not say enough */
+  label?: string;
   leading?: React.ReactNode;
   title: string;
   meta?: React.ReactNode;
@@ -46,13 +57,26 @@ export function ListRow({
     </>
   );
   const cls = `flex min-h-14 w-full items-center gap-3.5 text-start ${className}`;
-  return href ? (
-    <Link href={href} className={`${cls} group transition-colors active:bg-ink/[0.03]`}>
-      {inner}
-    </Link>
-  ) : (
-    <div className={cls}>{inner}</div>
-  );
+  if (href) {
+    return (
+      <Link href={href} className={`${cls} group transition-colors active:bg-ink/[0.03]`}>
+        {inner}
+      </Link>
+    );
+  }
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        className={`${cls} group transition-colors active:bg-ink/[0.03]`}
+      >
+        {inner}
+      </button>
+    );
+  }
+  return <div className={cls}>{inner}</div>;
 }
 
 /**

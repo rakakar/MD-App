@@ -3,11 +3,11 @@ import { FileList } from "@/components/library/FileList";
 import { FindBar } from "@/components/library/FindBar";
 import { FindResults } from "@/components/library/FindResults";
 import { NodeCardView } from "@/components/library/NodeCard";
-import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
+import { provenanceLabel } from "@/components/library/ProvenanceBadge";
 import { Sieve } from "@/components/library/Sieve";
 import { filesSummary, nodeFacts } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
-import { BackIcon } from "@/components/shell/icons";
+import { CollectionHero, EmptyState, ShareButton } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
 import { bookHue } from "@/lib/bookHue";
 import {
@@ -84,11 +84,7 @@ export async function NodeView({
 
   return (
     <>
-      {isAlbum ? (
-        <AlbumHeader node={node} shelves={shelves} isShelf={isShelf} />
-      ) : (
-        <IndexHeader node={node} shelves={shelves} isShelf={isShelf} />
-      )}
+      <Header node={node} shelves={shelves} isShelf={isShelf} isAlbum={isAlbum} />
 
       {searchable && find && (
         <>
@@ -154,15 +150,36 @@ export async function NodeView({
   );
 }
 
-/** the hero an album gets — cover, facts, badge, and what is inside */
-function AlbumHeader({
+/**
+ * The coloured panel at the top of a folder — **one hero for both shapes**.
+ *
+ * The comps draw four of these screens (Audio Album, Video Album, folder list,
+ * folder file list) and they are the same object: a back pill, a share button, a
+ * title over its facts, a description, all on a panel in the collection's own
+ * colour. What used to be here was two components with two paddings, two back
+ * buttons and two ideas of how dark the gradient goes — an album got the panel
+ * and an index of folders got plain text on the page, which is the one screen in
+ * the library that looked like it belonged to a different app.
+ *
+ * The difference that survives is the **thumb**: an album has a cover and a
+ * folder of folders does not. Everything else is the same slots, so
+ * `ui/CollectionHero` draws it and this file only decides what goes in them.
+ *
+ * **The colour is the collection's own, never the workspace accent.** The comps
+ * put a purple album and an orange one in the same set, which is `bookHue`'s
+ * whole rule: a hue per thing, so one shivir folder does not feel like the next
+ * when both are rows of Devanagari on one paper.
+ */
+function Header({
   node,
   shelves,
   isShelf,
+  isAlbum,
 }: {
   node: LibraryNode;
   shelves: ShelfMap;
   isShelf: boolean;
+  isAlbum: boolean;
 }) {
   const hue = bookHue(`node-${node.id}`);
   const parent = node.breadcrumb.at(-1);
@@ -178,77 +195,70 @@ function AlbumHeader({
   const readingCount =
     (node.reading_count ?? 0) + node.linked_items.filter((f) => f.reading).length;
 
+  // The path down to here, minus the step the back pill already offers. One
+  // pill is the whole path on the comps' screens, which sit a level under a
+  // shelf; four levels into a shivir it is the last step of six.
+  const trail = node.breadcrumb.slice(0, -1);
+
   return (
-    <div
-      className="-mx-4 -mt-5 px-4 pb-5 pt-4 sm:mx-0 sm:mt-0 sm:rounded-3xl sm:p-6"
-      style={{
-        background: `linear-gradient(165deg, ${hue.from}, ${hue.to} 70%, color-mix(in srgb, ${hue.to} 82%, #000))`,
-      }}
-    >
-      {parent && !isShelf && (
-        <Link
-          href={nodeHref(parent.id, shelves)}
-          aria-label={`Back to ${parent.name}`}
-          className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
-        >
-          <BackIcon />
-        </Link>
-      )}
-
-      <div className="flex items-end gap-4">
-        <div className="w-24 shrink-0">
-          <CoverTile
-            book={{
-              title_hi: node.name,
-              cover_image: node.cover_url,
-              code: `node-${node.id}`,
-            }}
-            size="grid"
-          />
-        </div>
-        <div className="min-w-0 flex-1 pb-1">
-          <Trail node={node} shelves={shelves} tone="dark" />
-          <h1 lang="hi" className="hi mt-0.5 text-[1.3125rem] font-semibold leading-tight text-white">
-            {node.name}
-          </h1>
-          {nodeFacts(node) && (
-            <p lang="hi" className="hi mt-2 text-xs font-medium text-white/75">
-              {nodeFacts(node)}
-            </p>
-          )}
-          <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            {/* The badge rides on the album too, not only on the card: this is
-                the screen where someone actually reads or listens, and it is
-                the last place to say whose word this is. */}
-            <ProvenanceBadge provenance={node.provenance} tone="dark" />
-            <span lang="hi" className="hi text-xs font-semibold text-white/75">
-              {filesSummary(files)}
-            </span>
-            {/* How much of this folder reads as text, stated rather than left
-                to be discovered a row at a time. A mixed folder is the normal
-                case and always will be — extraction is per file and
-                proofreading is its real cost — so a header that said nothing
-                would imply the rows are alike when the whole point is that
-                they are not. Counted by the BE over the folder, not over
-                `files`, so a cross-posted text edition is included exactly
-                once. */}
-            {readingCount > 0 && (
-              <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-white/90">
-                {readingCount} as text
-              </span>
-            )}
+    <CollectionHero
+      tone={hue.to}
+      back={
+        parent && !isShelf
+          ? { href: nodeHref(parent.id, shelves), label: parent.name }
+          : undefined
+      }
+      topRight={<ShareButton title={node.name} />}
+      thumb={
+        isAlbum ? (
+          <div className="w-24 shrink-0">
+            <CoverTile
+              book={{
+                title_hi: node.name,
+                cover_image: node.cover_url,
+                code: `node-${node.id}`,
+              }}
+              size="grid"
+            />
           </div>
-        </div>
-      </div>
-
-      {node.description && (
-        <p lang="hi" className="hi mt-4 text-sm leading-relaxed text-white/85">
-          {node.description}
-        </p>
-      )}
-
-      <WholeSetLink url={node.external_url} tone="dark" />
-    </div>
+        ) : undefined
+      }
+      eyebrow={
+        trail.length > 0 ? (
+          <nav aria-label="Breadcrumb" lang="hi" className="hi flex flex-wrap gap-x-1">
+            {trail.map((step, i) => (
+              <span key={step.id} className="flex items-center gap-x-1">
+                {i > 0 && <span aria-hidden>/</span>}
+                <Link href={nodeHref(step.id, shelves)} className="hover:underline">
+                  {step.name}
+                </Link>
+              </span>
+            ))}
+          </nav>
+        ) : undefined
+      }
+      title={node.name}
+      meta={
+        // Year · place · people · language, then what is actually inside, then
+        // how much of it reads as text. That last one is stated rather than
+        // left to be discovered a row at a time: a mixed folder is the normal
+        // case and always will be — extraction is per file and proofreading is
+        // its real cost — so a header that said nothing would imply the rows
+        // are alike when the whole point is that they are not. Counted by the
+        // BE over the folder, so a cross-posted text edition counts once.
+        [nodeFacts(node), filesSummary(files), readingCount > 0 ? `${readingCount} as text` : ""]
+          .filter(Boolean)
+          .join(" · ") || undefined
+      }
+      /* The provenance rides on the folder too, not only on its card: this is
+         the screen where someone actually reads or listens, and it is the last
+         place to say whose word this is. */
+      chips={[provenanceLabel(node.provenance)?.label ?? ""].filter(Boolean)}
+      description={node.description}
+      /* Conditional at the call site, not inside: an `actions` node that
+         renders nothing still buys the slot's top margin. */
+      actions={node.external_url ? <WholeSetLink url={node.external_url} /> : undefined}
+    />
   );
 }
 
@@ -261,108 +271,17 @@ function AlbumHeader({
  * a reader away from the thing they already have. It is for the reader who
  * wants the set in one piece, or wants it on the platform they keep it on.
  */
-function WholeSetLink({ url, tone = "light" }: { url: string; tone?: "light" | "dark" }) {
-  if (!url) return null;
-  const dark = tone === "dark";
+function WholeSetLink({ url }: { url: string }) {
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
-        dark
-          ? "border-white/30 text-white/90 hover:bg-white/10"
-          : "border-rule bg-card text-ink hover:bg-ink/[.03]"
-      }`}
+      className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/30 px-3 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
     >
       <span>See the full series</span>
       <span aria-hidden>↗</span>
     </a>
-  );
-}
-
-/** the quieter head an index gets — a path, a name, a line about it */
-function IndexHeader({
-  node,
-  shelves,
-  isShelf,
-}: {
-  node: LibraryNode;
-  shelves: ShelfMap;
-  isShelf: boolean;
-}) {
-  const parent = node.breadcrumb.at(-1);
-  return (
-    <div>
-      {parent && !isShelf && (
-        <Link
-          href={nodeHref(parent.id, shelves)}
-          aria-label={`Back to ${parent.name}`}
-          className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rule bg-card text-ink-soft transition-colors hover:bg-ink/[.03]"
-        >
-          <BackIcon />
-        </Link>
-      )}
-      <Trail node={node} shelves={shelves} />
-      <h1
-        lang="hi"
-        className="hi text-[1.375rem] font-semibold leading-tight lg:text-3xl"
-      >
-        {node.name}
-      </h1>
-      {node.description && (
-        <p lang="hi" className="hi mt-1 text-sm text-ink-soft">
-          {node.description}
-        </p>
-      )}
-      {nodeFacts(node) && (
-        <p lang="hi" className="hi mt-1.5 text-xs text-ink-soft">
-          {nodeFacts(node)}
-        </p>
-      )}
-      <div className="mt-2">
-        <ProvenanceBadge provenance={node.provenance} />
-      </div>
-      <WholeSetLink url={node.external_url} />
-    </div>
-  );
-}
-
-/**
- * Where this folder sits, root first — every step a link, because six levels
- * deep the only way back to level two is through here.
- *
- * A folder's own breadcrumb stops at its parent (§13.6), so the folder's name
- * is the heading below rather than the last crumb. A root's is `[]` and
- * nothing is drawn.
- */
-function Trail({
-  node,
-  shelves,
-  tone = "paper",
-}: {
-  node: LibraryNode;
-  shelves: ShelfMap;
-  tone?: "paper" | "dark";
-}) {
-  if (node.breadcrumb.length === 0) return null;
-  return (
-    <nav
-      aria-label="Breadcrumb"
-      lang="hi"
-      className={`hi mb-0.5 flex flex-wrap items-center gap-x-1 text-xs font-semibold ${
-        tone === "dark" ? "text-white/70" : "text-ink-soft"
-      }`}
-    >
-      {node.breadcrumb.map((step, i) => (
-        <span key={step.id} className="flex items-center gap-x-1">
-          {i > 0 && <span aria-hidden>/</span>}
-          <Link href={nodeHref(step.id, shelves)} className="hover:underline">
-            {step.name}
-          </Link>
-        </span>
-      ))}
-    </nav>
   );
 }
 
@@ -377,11 +296,11 @@ function Trail({
  */
 function EmptyFolder() {
   return (
-    <div className="mt-6 rounded-2xl border border-dashed border-rule px-4 py-8 text-center">
-      <p className="text-sm font-medium">Nothing published yet</p>
-      <p className="mt-1 text-xs text-ink-soft">
-        Material appears here as it is published into this folder.
-      </p>
+    <div className="mt-6">
+      <EmptyState
+        title="Nothing published yet"
+        hint="Material appears here as it is published into this folder."
+      />
     </div>
   );
 }

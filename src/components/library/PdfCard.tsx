@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
-import { FileCover } from "@/components/library/FileCover";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { ReadingCard } from "@/components/library/ReadingCard";
 import { formatBytes } from "@/components/library/format";
 import { ChevronRight, DownloadIcon, ExternalLinkIcon } from "@/components/shell/icons";
+import { KindTile, ListRow, RowAction, RowCard } from "@/components/ui";
 import { contentLang } from "@/lib/script";
 import { getPdfPlace } from "@/lib/storage";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
@@ -84,79 +83,76 @@ export function PdfCard({
     // `relative` so the primary link can be stretched across the whole card.
     // The alternative — wrapping everything in one anchor — cannot hold the
     // download link, because an anchor inside an anchor is not a thing.
-    <div className="group relative rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md">
-      {"breadcrumb" in file && file.breadcrumb.length > 0 && (
-        <BreadcrumbLine steps={file.breadcrumb} />
-      )}
+    <div className="group relative">
+      <RowCard
+        footer={
+          /* The ways *round* the reader, drawn as such: under a hairline,
+             quiet, and last. `relative z-10` lifts them clear of the stretched
+             link so they stay tappable. */
+          <span className="relative z-10 flex flex-wrap items-center gap-x-6">
+            <RowAction href={file.url} icon={<ExternalLinkIcon className="h-4 w-4" />}>
+              Open in a new tab
+            </RowAction>
+            <RowAction href={file.url} download icon={<DownloadIcon className="h-4 w-4" />}>
+              Download
+            </RowAction>
+          </span>
+        }
+      >
+        {"breadcrumb" in file && file.breadcrumb.length > 0 && (
+          <BreadcrumbLine steps={file.breadcrumb} />
+        )}
 
-      <div className="flex items-start gap-3.5">
-        {/* The document's own first page, which for these scans and exports is
-            usually the printed cover — and when it is a wall of body text
-            instead, an operator can upload a real one or clear it, in which
-            case `FileCover` draws a title card. A folder of ten identical grey
-            icons is a list of filenames, something you read; the same folder
-            with its covers is a shelf, something you scan.
-
-            Squarer than the reading card's portrait frame on purpose: this one
-            is a document, that one is a book, and the silhouette is the part of
-            the difference that survives being read at arm's length. */}
-        <FileCover
-          src={file.thumbnail_url}
+        <ListRow
+          href={href}
+          // The stretch is the card: `after` covers every pixel of the
+          // positioned parent, so a tap anywhere that is not one of the quiet
+          // links in the footer opens the document.
+          className="items-start after:absolute after:inset-0 after:content-['']"
+          /* The document's own first page, which for these scans and exports is
+             usually the printed cover. A folder of ten identical glyphs is a
+             list of filenames, something you read; the same folder with its
+             covers is a shelf, something you scan — so the cover wins where
+             there is one, and the comps' violet document tile is what stands in
+             where there is not. */
+          leading={<KindTile kind="pdf" cover={file.thumbnail_url} size="lg" />}
           title={file.title}
-          id={file.id}
-          className="h-[3.75rem] w-[3.25rem] rounded-lg"
+          meta={
+            <>
+              {/* Said once. The old card printed this here and again inside the
+                  button under it, which is how a reader learns to stop reading
+                  either of them. */}
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                {facts && <span className="tabular-nums">{facts}</span>}
+                {/* Only when this file disagrees with its folder, which is what
+                    the field means — it is an override, blank meaning
+                    "inherit". A folder of ten files saying the same word ten
+                    times is one piece of chrome, not ten pieces of information,
+                    and it collided with the other vocabulary on this screen
+                    besides: "Compilation" as a provenance and a text edition
+                    are different claims that share an English word. Said once
+                    in the folder's own header now, and here only where it
+                    differs. */}
+                {file.provenance !== folderProvenance && (
+                  <ProvenanceBadge provenance={file.provenance} />
+                )}
+              </span>
+              {file.description && (
+                <span
+                  {...contentLang(file.description)}
+                  className={`${contentLang(file.description).className} mt-1 block`}
+                >
+                  {file.description}
+                </span>
+              )}
+            </>
+          }
+          trailing={
+            <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+          }
         />
 
-        <div className="min-w-0 flex-1">
-          <Link
-            href={href}
-            // The stretch is the card: `after` covers every pixel of the
-            // parent, so a tap anywhere that is not one of the quiet links
-            // below opens the document.
-            className="after:absolute after:inset-0 after:content-['']"
-          >
-            <span
-              {...contentLang(file.title)}
-              className={`${contentLang(file.title).className} block text-[0.9375rem] font-semibold leading-snug group-hover:underline`}
-            >
-              {file.title}
-            </span>
-          </Link>
-
-          {/* Said once. The old card printed this here and again inside the
-              button under it, which is how a reader learns to stop reading
-              either of them. */}
-          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
-            {facts && <span className="tabular-nums">{facts}</span>}
-            {/* Only when this file disagrees with its folder, which is what the
-                field means — it is an override, blank meaning "inherit". A
-                folder of ten files all saying the same word ten times is not
-                ten pieces of information, it is one piece of chrome, and it was
-                colliding with the other vocabulary on this screen besides:
-                "Compilation" as a provenance and a text edition are different
-                claims that happened to share an English word. Said once in the
-                folder's own header now, and here only where it differs. */}
-            {file.provenance !== folderProvenance && (
-              <ProvenanceBadge provenance={file.provenance} />
-            )}
-          </span>
-
-          {file.description && (
-            <span
-              {...contentLang(file.description)}
-              className={`${contentLang(file.description).className} mt-1 block text-xs text-ink-soft`}
-            >
-              {file.description}
-            </span>
-          )}
-        </div>
-
-        {/* The affordance, and the only thing on the card that needs to say
-            "this opens": an arrow where a thumb already expects one. */}
-        <ChevronRight className="mt-0.5 h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5" />
-      </div>
-
-      {percent !== null && place && (
+        {percent !== null && place && (
         <div className="mt-3">
           <span className="block h-1.5 overflow-hidden rounded-full bg-canvas">
             <span
@@ -184,39 +180,17 @@ export function PdfCard({
             {place.pageCount > 0 && ` of ${place.pageCount}`}
           </span>
         </div>
-      )}
+        )}
 
-      {heavy && (
-        // Before a byte moves, and worth its own line rather than a clause on
-        // the end of the facts: on mobile data this is the difference between
-        // a tap and a decision.
-        <p className="mt-2 text-xs text-ink-soft">
-          Large file — slow to open on mobile data.
-        </p>
-      )}
-
-      {/* The ways *round* the reader, drawn as such: a hairline below the
-          document, muted, and last. `relative z-10` lifts them clear of the
-          stretched link so they stay tappable. */}
-      <div className="relative z-10 mt-3 flex items-center gap-4 border-t border-rule pt-2.5">
-        <a
-          href={file.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-ink-soft hover:text-ink"
-        >
-          <ExternalLinkIcon className="h-3.5 w-3.5" />
-          <span>Open in a new tab</span>
-        </a>
-        <a
-          href={file.url}
-          download
-          className="inline-flex items-center gap-1.5 text-xs text-ink-soft hover:text-ink"
-        >
-          <DownloadIcon className="h-3.5 w-3.5" />
-          <span>Download</span>
-        </a>
-      </div>
+        {heavy && (
+          // Before a byte moves, and worth its own line rather than a clause on
+          // the end of the facts: on mobile data this is the difference between
+          // a tap and a decision.
+          <p className="mt-2 text-sm text-ink-soft">
+            Large file — slow to open on mobile data.
+          </p>
+        )}
+      </RowCard>
     </div>
   );
 }

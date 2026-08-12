@@ -28,6 +28,7 @@ export function CollectionHero({
   back,
   topRight,
   thumb,
+  eyebrow,
   title,
   meta,
   chips,
@@ -38,10 +39,24 @@ export function CollectionHero({
 }: {
   /** the panel's base colour — the workspace accent, or the item's own hue */
   tone: string;
-  back: { href: string; label: string };
+  /**
+   * Optional, because a folder can be its own top: a workspace root reached
+   * directly has nothing above it, and a pill pointing at the page you are on
+   * is worse than no pill.
+   */
+  back?: { href: string; label: string };
   /** share, or whatever else the screen puts opposite the back pill */
   topRight?: React.ReactNode;
   thumb?: React.ReactNode;
+  /**
+   * A line above the title — in practice the path down to a deep folder.
+   *
+   * The comps draw every hero one step below a shelf, where the back pill is
+   * the whole path and this is empty. Four levels into a shivir it is not: one
+   * pill can only offer the parent, and the way back to level two would be the
+   * browser's history or nothing.
+   */
+  eyebrow?: React.ReactNode;
   title: string;
   meta?: React.ReactNode;
   chips?: string[];
@@ -65,15 +80,17 @@ export function CollectionHero({
       }}
     >
       <div className="flex items-center gap-3">
-        <Link
-          href={back.href}
-          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-tile border border-white/20 bg-white/10 pe-3.5 ps-2.5 text-sm font-semibold transition-colors hover:bg-white/20"
-        >
-          <BackIcon className="h-4 w-4" />
-          {/* On the compact variant the pill is just the arrow: the title is on
-              the same row and two pieces of text there is one too many. */}
-          <span className={variant === "compact" ? "sr-only" : ""}>{back.label}</span>
-        </Link>
+        {back && (
+          <Link
+            href={back.href}
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-tile border border-white/20 bg-white/10 pe-3.5 ps-2.5 text-sm font-semibold transition-colors hover:bg-white/20"
+          >
+            <BackIcon className="h-4 w-4" />
+            {/* On the compact variant the pill is just the arrow: the title is on
+                the same row and two pieces of text there is one too many. */}
+            <span className={variant === "compact" ? "sr-only" : ""}>{back.label}</span>
+          </Link>
+        )}
         {variant === "compact" && (
           <h1 {...t} className={`${t.className} min-w-0 flex-1 truncate text-title font-semibold`}>
             {title}
@@ -87,6 +104,9 @@ export function CollectionHero({
           <div className="mt-4 flex items-end gap-4">
             {thumb}
             <div className="min-w-0 flex-1 pb-1">
+              {eyebrow && (
+                <div className="mb-1 text-xs font-semibold text-white/70">{eyebrow}</div>
+              )}
               <h1 {...t} className={`${t.className} text-[1.3125rem] font-semibold leading-tight`}>
                 {title}
               </h1>

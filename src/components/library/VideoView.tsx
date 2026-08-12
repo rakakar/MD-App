@@ -222,7 +222,10 @@ export function VideoView({ file }: { file: LibraryFile }) {
   }, [activated, src?.host, src?.id, keep]);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-rule bg-card">
+    // The Video Album comp's card: the same radius and lift every other row on
+    // these screens has, so a player reads as one of them rather than as an
+    // embed that landed on the page.
+    <div className="overflow-hidden rounded-card border border-rule bg-card shadow-card">
       <div className="relative aspect-video w-full bg-black">
         {!activated ? (
           <button
@@ -288,7 +291,7 @@ export function VideoView({ file }: { file: LibraryFile }) {
       </div>
       <p
         {...contentLang(file.title)}
-        className={`${contentLang(file.title).className} px-4 py-3 text-sm font-medium`}
+        className={`${contentLang(file.title).className} px-4 py-3.5 text-title font-semibold`}
       >
         {file.title}
       </p>

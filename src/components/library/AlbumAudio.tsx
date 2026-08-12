@@ -5,6 +5,7 @@ import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueu
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { formatDuration } from "@/components/library/format";
 import { PlayIcon } from "@/components/shell/icons";
+import { KindTile, ListRow, RowCard } from "@/components/ui";
 import { contentLang } from "@/lib/script";
 import type { LibraryFile } from "@/lib/types";
 
@@ -54,59 +55,72 @@ export function AlbumAudio({
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
 
   return (
-    <ol className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
-      {items.map((item, i) => {
+    // One card per track, as the Audio Album comp draws them, rather than the
+    // ruled list this was. The change that matters is not the gap: it is that
+    // the row now leads with the kind tile every other list in the app leads
+    // with, and ends with the duration, which is the one fact a reader picking
+    // a 90-minute part out of fourteen is actually choosing on. The track
+    // number it replaces was ordinal information the order already carried.
+    <ol className="flex flex-col gap-3">
+      {items.map((item) => {
         const key = trackId(item);
         const active = activeId === key;
         const resume = resumes[key];
         return (
           <li key={item.id}>
-            <button
-              type="button"
-              onClick={() => {
-                const entry = byId.get(key);
-                if (entry) play(entry);
-              }}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-ink/[.03]"
-            >
-              <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums ${
-                  active ? "text-white" : "border border-rule text-ink-soft"
-                }`}
-                style={active ? { background: "var(--ws-color)" } : undefined}
-              >
-                {active ? <PlayIcon className="h-3.5 w-3.5" /> : i + 1}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span
-                  {...contentLang(item.title)}
-                  className={`${contentLang(item.title).className} block truncate text-sm leading-snug`}
-                >
-                  {item.title}
-                </span>
-                <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
-                  {formatDuration(item.duration_seconds) && (
-                    <span className="tabular-nums">
+            <RowCard>
+              <ListRow
+                onClick={() => {
+                  const entry = byId.get(key);
+                  if (entry) play(entry);
+                }}
+                label={`Play ${item.title}`}
+                leading={
+                  active ? (
+                    // The playing track keeps the tile's shape and takes the
+                    // accent: what is playing has to be findable in a list of
+                    // fourteen without reading any of it.
+                    <span
+                      aria-hidden
+                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-tile text-white"
+                      style={{ background: "var(--ws-color)" }}
+                    >
+                      <PlayIcon className="h-6 w-6" />
+                    </span>
+                  ) : (
+                    <KindTile kind="audio" size="lg" />
+                  )
+                }
+                title={item.title}
+                meta={
+                  <>
+                    {item.description && (
+                      <span
+                        {...contentLang(item.description)}
+                        className={`${contentLang(item.description).className} block`}
+                      >
+                        {item.description}
+                      </span>
+                    )}
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      {resume && (
+                        <span className="font-medium" style={{ color: "var(--ws-ink)" }}>
+                          Resume · {formatDuration(Math.round(resume / 1000))}
+                        </span>
+                      )}
+                      <ProvenanceBadge provenance={item.provenance} />
+                    </span>
+                  </>
+                }
+                trailing={
+                  formatDuration(item.duration_seconds) ? (
+                    <span className="text-sm font-semibold tabular-nums text-ink">
                       {formatDuration(item.duration_seconds)}
                     </span>
-                  )}
-                  {resume && (
-                    <span className="font-medium" style={{ color: "var(--ws-ink)" }}>
-                      Resume · {formatDuration(Math.round(resume / 1000))}
-                    </span>
-                  )}
-                  <ProvenanceBadge provenance={item.provenance} />
-                </span>
-                {item.description && (
-                  <span
-                    {...contentLang(item.description)}
-                    className={`${contentLang(item.description).className} mt-1 block text-xs text-ink-soft`}
-                  >
-                    {item.description}
-                  </span>
-                )}
-              </span>
-            </button>
+                  ) : null
+                }
+              />
+            </RowCard>
           </li>
         );
       })}
