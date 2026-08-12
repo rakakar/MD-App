@@ -14,6 +14,7 @@ import {
 import { track } from "@/lib/analytics";
 import {
   flushProgress,
+  localBookmarks,
   localProgressFor,
   saveBookmark,
   saveNote,
@@ -209,6 +210,35 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     () => book.chapters.find((c) => c.number === chapterNumber)?.is_front_matter ?? false,
     [book.chapters, chapterNumber]
   );
+
+  /**
+   * The colours already on this book's passages, `canonical_ref → colour`.
+   *
+   * Without this a highlight was invisible in the one place it was made: the
+   * store had it, the Highlights tab listed it, and the page the reader was
+   * looking at showed nothing once the selection cleared. The reader could only
+   * find out by leaving.
+   *
+   * **Whole paragraph, not the words that were selected.** A highlight is
+   * anchored to a `canonical_ref` and nothing else — no offsets, in the store or
+   * in the contract — so the paragraph is the only span it can honestly paint.
+   * The comps draw a part-line tint, which is the selection, and reproducing it
+   * for a saved highlight would mean storing character ranges against text that
+   * gets re-extracted and re-published. Anchoring survives that; offsets do not.
+   *
+   * Client-only, and deliberately after first paint: this lives in
+   * localStorage, and reading it during render would make the server's HTML and
+   * the browser's disagree.
+   */
+  const [painted, setPainted] = useState<Map<string, HighlightColour>>(new Map());
+  const refreshPainted = useCallback(() => {
+    const m = new Map<string, HighlightColour>();
+    for (const b of localBookmarks()) {
+      if (b.book_code === book.code && b.colour) m.set(b.canonical_ref, b.colour);
+    }
+    setPainted(m);
+  }, [book.code]);
+  useEffect(refreshPainted, [refreshPainted, chapterNumber]);
 
   const showToast = useCallback((t: Toast) => {
     setToast(t);
@@ -954,10 +984,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         !!user,
         colour
       );
+      // The store is written synchronously, so re-reading it here paints the
+      // passage in the same frame the bar closes — which is the whole point of
+      // a local-first write, and the difference between "Highlighted" being a
+      // claim and being something the reader can see.
+      refreshPainted();
       confirmSaved("Highlighted");
       clearSelection();
     },
-    [user, book.code, book.title_hi, paraByRef, confirmSaved, clearSelection]
+    [user, book.code, book.title_hi, paraByRef, confirmSaved, clearSelection, refreshPainted]
   );
 
   /**
@@ -1236,6 +1271,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 matcher={glossaryUnderline ? matcher : null}
                 activeSeq={activeSeq}
                 selectedRef={selection?.para.canonical_ref}
+                painted={painted}
               />
               <nav aria-label="Page navigation" className="mt-10 flex items-center justify-between text-sm">
                 <button
@@ -1275,6 +1311,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     matcher={glossaryUnderline ? matcher : null}
                     activeSeq={activeSeq}
                     selectedRef={selection?.para.canonical_ref}
+                    painted={painted}
                   />
                 </section>
               ))}
@@ -1552,12 +1589,14 @@ function PageParas({
   matcher,
   activeSeq,
   selectedRef,
+  painted,
 }: {
   page: ReaderPage;
   /** null when the reader has underlining off, or the index has not arrived */
   matcher: Matcher | null;
   activeSeq: number | null;
   selectedRef?: string;
+  painted: Map<string, HighlightColour>;
 }) {
   const segments = useMemo(
     () =>
@@ -1577,11 +1616,26 @@ function PageParas({
           activeSeq={activeSeq}
           selectedRef={selectedRef}
           segments={segments?.[i] ?? null}
+          colour={painted.get(p.canonical_ref)}
         />
       ))}
     </>
   );
 }
+
+/**
+ * The three highlight fills, written out rather than built from the colour.
+ *
+ * `bg-hl-${colour}` is a name Tailwind's scanner cannot find, and a class it
+ * cannot find is a class it does not emit — which is an invisible highlight,
+ * indistinguishable from a working one. The same trap `globals.css` documents
+ * for the tokens themselves.
+ */
+const PARA_FILL: Record<HighlightColour, string> = {
+  amber: "bg-hl-amber",
+  sage: "bg-hl-sage",
+  sky: "bg-hl-sky",
+};
 
 function ParaWrap({
   para,
@@ -1589,12 +1643,15 @@ function ParaWrap({
   activeSeq,
   selectedRef,
   segments,
+  colour,
 }: {
   para: Paragraph;
   pageKey: string;
   activeSeq: number | null;
   selectedRef?: string;
   segments?: Segment[] | null;
+  /** painted, i.e. this passage is a highlight */
+  colour?: HighlightColour;
 }) {
   const isActive = activeSeq === para.sequence;
   const isSelected = selectedRef === para.canonical_ref;
@@ -1603,8 +1660,11 @@ function ParaWrap({
       id={`p-${pageKey}-${para.para_number}`}
       data-ref={para.canonical_ref}
       data-seq={para.sequence}
+      /* Selection sits above the highlight while the bar is open: the reader is
+         acting on this passage now, and the fill underneath is what it already
+         was. */
       className={`-mx-1 rounded-md px-1 ${isActive ? "para-active" : ""} ${
-        isSelected ? "bg-(--ws-color)/8" : ""
+        isSelected ? "bg-(--ws-color)/8" : colour ? PARA_FILL[colour] : ""
       }`}
     >
       <Block para={para} segments={segments} />
