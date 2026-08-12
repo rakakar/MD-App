@@ -48,6 +48,8 @@ into the code at the point it happens, the way `globals.css` already does.
 | Kind glyphs at 4.30 / 4.95 / 3.68 / **1.97**:1 | Deepened to 5.41 / 5.56 / 5.57 / 4.85 | The folder glyph as drawn is a mark you cannot see. A glyph beside a label only needs 3:1; clearing 4.5 costs one hex digit. |
 | Page `#FAF7F3`, card `#FFFFFF` | Adopted — `--color-surface` moved from `#FDFBF8` | This one went **our** way round: the comp is right and the old value was wrong. The extra step is what makes a white card read as raised. |
 | Samvaad stat tile in green with a speech-bubble glyph | The folder family (terracotta) | A fifth hue for one folder is not a palette. **Open with the designer** — if Samvaad is meant to be its own colour, it needs a rule saying which other folders get one. |
+| The filter sheet's third section, **Sort by** — Newest / Oldest / Longest first | Not built | `catalogue.Row` carries no timestamp and `ranked()` takes no ordering parameter, so two of the three cannot be answered at all; the third would sort one page of a ranked list and present it as the whole shelf. Skipped rather than faked, per the standing rule on the recency ask. **Open with the BE** — an `added` field and an `ordering=` parameter buys this whole section. |
+| Chips inside the filter sheet carry no counts | Adopted — the comp is followed | The panels this replaced printed a count on every chip. The sheet's footer counts the whole find live instead, and it re-counts on every tap, which is the number the reader is actually deciding with. |
 | Six themes in the reader sheet | Six *reading surfaces*; the app keeps Auto/Light/Sepia/Dark | Auto is what lets a phone that darkens at sunset take the app with it. A book chosen on cream should not turn grey because the sun went down. |
 
 ---
@@ -242,17 +244,55 @@ Home, where a shivir can say where it is.
 The comps cover Home, Read, Book preview, Highlights & Notes, Library (+ folder and file
 lists), Audio/Video (+ albums), the reader and its sheets, and Audio Mode.
 
-**Built:** the tokens, the primitives, and Home · Read · Book preview · Highlights & Notes ·
-the Library shelf.
+**Built:** the tokens, the primitives, Home · Read · Book preview · Highlights & Notes ·
+the Library shelf, and **filtering on both shelves**.
 
 **Not built yet** — these screens still wear the pre-comp chrome, and the gap is known
 rather than accidental:
 
 | Screen | What is still old |
 |---|---|
-| Library | `FilterCards`' two closed rows instead of the comps' Filters button + sheet; folder and file screens not yet on `CollectionHero` + `RowCard` |
-| Audio/Video, albums | the whole screen — no `CountedSegmented`, no filter sheet, no `CollectionHero` |
+| Library | folder and file screens not yet on `CollectionHero` + `RowCard` |
+| Albums | Audio and Video albums not yet on `CollectionHero` + `ListRow` |
 | Audio Mode | not restyled |
+
+### Filtering — one control for two shelves
+
+`library/FindFilters.tsx` is the comps' Filters button and its sheet, and it replaced
+`FilterCards`' two closed `<details>` rows on the Library **and** on Audio/Video at once.
+That is why it came first: it was the one change that put both screens on the comp
+together.
+
+The height problem it solves is old. Counted over a whole shelf rather than one level, six
+axes of chips run to some five hundred pixels; open above the grid they pushed the second
+collection off a phone, and moving the block below the grid took the search box with it to
+the one place nobody looks for one. The panels answered that by staying shut, which meant
+choosing an axis before seeing what was in it. The sheet answers it by not being on the
+page: the chrome above the grid is now one row — box, button — and every axis inside the
+sheet is open, in full.
+
+**The URL is still the whole state, and `lib/find.ts` is untouched.** Every chip in the
+sheet is a `Link` onto the same page with one value toggled, so a narrowed shelf is still
+a real address and the back button still walks out one chip at a time. The sheet holds
+exactly one piece of client state — whether it is open — and taps inside it navigate
+underneath it, which is what makes "Show 31 recordings" a live count rather than a promise.
+
+Three things it settles that the comps do not draw:
+
+- **A hidden axis is not counted.** `/av` promotes Type to its segments, so the sheet
+  neither offers Type nor counts it; a hidden axis that still counted would leave the
+  button reading "1" for a chip the reader never set and cannot reach.
+- **An axis in use with nothing left to offer** — `?kind=video` on a Library shelf that
+  suppresses recording kinds — drops out of the sheet and stays in the chip row, so the
+  section is never a heading over a hole and the filter is still removable.
+- **"Clear" moved to the chips it clears.** The results line's `Clear n` is now desktop
+  only: on a phone it was a second clear at the far edge of the same eyeful, saying a
+  different number because it counts the query too. The query's own way out is the × in
+  the box.
+
+`FindResults`' bespoke dashed "Nothing matched" box is the shared `EmptyState` now, whose
+`hint` takes a node so that the way back out of a filter can live inside it. A filtered
+shelf that found nothing is the one screen a reader can be stuck on.
 
 ### The reader
 

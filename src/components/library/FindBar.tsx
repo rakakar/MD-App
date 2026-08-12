@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { SearchField } from "@/components/SearchField";
+import { FindRow } from "@/components/ui";
 import { findHref, MIN_QUERY_CHARS, type FindState } from "@/lib/find";
 
 /**
@@ -47,6 +48,7 @@ export function FindBar({
   /** the shelf or folder this box looks inside — named, so the scope is visible */
   scope,
   dense = false,
+  filters,
 }: {
   basePath: string;
   state: FindState;
@@ -59,6 +61,17 @@ export function FindBar({
    * the library *records* about a thing rather than what is inside the file.
    */
   dense?: boolean;
+  /**
+   * The Filters button, which the comps draw on this same row rather than in a
+   * block of its own beneath it — one row of chrome above the grid instead of
+   * three, which is what puts the first collection on the first screen.
+   *
+   * A slot rather than a prop, because *whether* a page filters and *what it
+   * filters by* are the caller's business; the box's business is that the two
+   * controls share a line and that the button keeps its width when the largest
+   * text size makes the box give.
+   */
+  filters?: React.ReactNode;
 }) {
   const router = useRouter();
   /**
@@ -103,22 +116,29 @@ export function FindBar({
 
   return (
     <div className={`mt-4 ${dense ? "lg:mt-0" : ""}`}>
-      <SearchField
-        inputRef={inputRef}
-        value={q}
-        onChange={setQ}
-        onSubmit={() => commit(q.trim())}
-        onClear={() => {
-          setQ("");
-          // Emptying the box has to empty the search too, or the rows stay
-          // narrowed by a word that is no longer written anywhere.
-          commit("");
-          inputRef.current?.focus();
-        }}
-        placeholder={`Search ${scope}…`}
-        label={`Search ${scope}`}
-        unasked={q.trim() !== state.q}
-        pending={pending}
+      <FindRow
+        search={
+          <SearchField
+            inputRef={inputRef}
+            value={q}
+            onChange={setQ}
+            onSubmit={() => commit(q.trim())}
+            onClear={() => {
+              setQ("");
+              // Emptying the box has to empty the search too, or the rows stay
+              // narrowed by a word that is no longer written anywhere.
+              commit("");
+              inputRef.current?.focus();
+            }}
+            placeholder={`Search ${scope}…`}
+            label={`Search ${scope}`}
+            unasked={q.trim() !== state.q}
+            pending={pending}
+          />
+        }
+        /* The desktop keeps its filters as standing chrome in the left rail, so
+           the button is a phone control and would be a second copy there. */
+        filters={filters && <div className="lg:hidden">{filters}</div>}
       />
       <p className={`mt-1.5 px-1 text-xs text-ink-soft ${dense ? "lg:hidden" : ""}`}>
         By name, topic, year or place — not inside the files.

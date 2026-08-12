@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FindRow } from "@/components/library/FindRow";
 import { MoreResults } from "@/components/library/MoreResults";
 import { ClearFind } from "@/components/library/Sieve";
+import { EmptyState } from "@/components/ui";
 import { findHref, type FindState } from "@/lib/find";
 import type { ShelfMap } from "@/lib/library";
 import type { LibraryFindResponse } from "@/lib/types";
@@ -42,7 +43,14 @@ export function FindResults({
         <span>
           {count > 0 ? `${count} ${count === 1 ? "result" : "results"}` : "No results"}
         </span>
-        <ClearFind basePath={basePath} state={state} />
+        {/* Desktop only. The phone's way out is the "Clear" beside the chips it
+            clears, where the comps put it; this line would be a second one at
+            the far edge of the same eyeful, saying a different number because
+            it counts the query too. The rail's copy of the filters has no such
+            row, so on a desktop this is still the only one. */}
+        <span className="hidden lg:inline">
+          <ClearFind basePath={basePath} state={state} />
+        </span>
       </div>
 
       {/*
@@ -102,30 +110,36 @@ export function FindResults({
  */
 function NothingHere({ state, basePath }: { state: FindState; basePath: string }) {
   return (
-    <div className="mt-4 rounded-2xl border border-dashed border-rule px-4 py-8 text-center">
-      <p className="text-sm font-medium">Nothing matched this search</p>
-      {state.q ? (
-        <p className="mt-2 text-xs text-ink-soft">
-          <Link
-            href={`/search?q=${encodeURIComponent(state.q)}`}
-            className="font-semibold underline underline-offset-2"
-            style={{ color: "var(--ws-ink)" }}
-          >
-            Search the whole library
-          </Link>
-          {" — including inside the books"}
-        </p>
-      ) : (
-        <p className="mt-2 text-xs text-ink-soft">
-          <Link
-            href={basePath}
-            className="font-semibold underline underline-offset-2"
-            style={{ color: "var(--ws-ink)" }}
-          >
-            Try removing a filter
-          </Link>
-        </p>
-      )}
+    // The app's own empty state, not a fourth drawing of one. It was a hand-made
+    // dashed box here, a different hand-made one on Audio/Video and the shared
+    // component everywhere else — three answers to a screen that has to say one
+    // thing well.
+    <div className="mt-4">
+      <EmptyState
+        title="Nothing matched this search"
+        hint={
+          state.q ? (
+            <>
+              <Link
+                href={`/search?q=${encodeURIComponent(state.q)}`}
+                className="font-semibold underline underline-offset-2"
+                style={{ color: "var(--ws-ink)" }}
+              >
+                Search the whole library
+              </Link>
+              {" — including inside the books"}
+            </>
+          ) : (
+            <Link
+              href={basePath}
+              className="font-semibold underline underline-offset-2"
+              style={{ color: "var(--ws-ink)" }}
+            >
+              Try removing a filter
+            </Link>
+          )
+        }
+      />
     </div>
   );
 }

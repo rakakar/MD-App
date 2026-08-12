@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ContinueAv } from "./ContinueAv";
 import { FileList } from "./FileList";
-import { FilterCards } from "./FilterCards";
+import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
 import { filesSummary, formatDuration } from "./format";
@@ -103,23 +103,39 @@ export function AvShelf({
           it is simply absent for anyone who has not started anything. */}
       <ContinueAv sources={groups} />
 
-      {/* The box first, the split under it — the comps' order, and the right
-          one: "which of these" is a question about the results, so it belongs
-          next to them rather than above the control that produces them. */}
-      <FindBar basePath={basePath} state={state} scope="Audio and video" dense />
+      {/* The box and the Filters button first, the split under it — the comps'
+          order, and the right one: "which of these" is a question about the
+          results, so it belongs next to them rather than above the control that
+          produces them. */}
+      <FindBar
+        basePath={basePath}
+        state={state}
+        scope="Audio and video"
+        dense
+        filters={
+          <FindFilters
+            topics={topics}
+            facets={facets}
+            state={state}
+            basePath={basePath}
+            itemCount={find.count}
+            noun="recording"
+            hideAxes={hideAxes}
+          />
+        }
+      />
 
       <Segments facets={facets} chosen={chosen} state={state} basePath={basePath} />
 
-      {/* One set of controls, drawn twice and only ever on screen once: the
-          rail is `display:none` below `lg` and this copy is `lg:hidden`. Same
-          arrangement as the shelves, for the same reason. */}
+      {/* What is on, between the controls and the count they produced — the
+          comps' "filters active". Phone only: the rail below carries the
+          desktop's copy of the same chips as standing chrome. */}
       <div className="lg:hidden">
-        <FilterCards
+        <ActiveFindFilters
           topics={topics}
           facets={facets}
           state={state}
           basePath={basePath}
-          itemCount={find.count}
           hideAxes={hideAxes}
         />
       </div>
@@ -142,20 +158,11 @@ export function AvShelf({
             `${find.count} ${find.count === 1 ? "recording" : "recordings"}`}
           {groups.length > 1 && ` · ${groups.length} collections`}
         </span>
-        {/* Clears the query and every chip **except the lock** — "clear" on this
-            page means "show me all of it again", never "leave the page". */}
-        {asked && (
-          <Link
-            href={findHref(basePath, {
-              q: "",
-              raw: false,
-              selection: { kind: state.selection.kind ?? AV_KINDS },
-            })}
-            className="underline underline-offset-2"
-          >
-            Clear
-          </Link>
-        )}
+        {/* No "Clear" here any more. It has moved beside the chips it clears,
+            where the comps put it and where a reader is already looking to
+            remove one — and the query's own way out is the × in the box, so the
+            two things a page can be narrowed by are each cleared where they are
+            shown rather than both by one control at the far edge of a line. */}
       </div>
 
       {find.searched_as && (

@@ -65,7 +65,13 @@ const eslintConfig = defineConfig([
   },
   {
     // Migrated, and held to it.
-    files: ["src/components/ui/**/*.{ts,tsx}", "src/components/books/**/*.{ts,tsx}"],
+    files: [
+      "src/components/ui/**/*.{ts,tsx}",
+      "src/components/books/**/*.{ts,tsx}",
+      // Drawn from the comps, so a literal here is a new one rather than an
+      // inherited one.
+      "src/components/library/FindFilters.tsx",
+    ],
     rules: { "no-restricted-syntax": ["error", ...designSystemRules] },
   },
   // Override default ignores of eslint-config-next.

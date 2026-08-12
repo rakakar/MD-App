@@ -195,7 +195,12 @@ export function EmptyState({
   hint,
 }: {
   title: string;
-  hint?: string;
+  /**
+   * A node rather than a string, because the empty state a filter produces has
+   * to carry the way back out of the filter. "Nothing matches" with no control
+   * on it is the one screen in the app a reader can arrive at and be stuck on.
+   */
+  hint?: React.ReactNode;
 }) {
   return (
     <div className="rounded-2xl border border-dashed border-rule bg-card/50 p-8 text-center">

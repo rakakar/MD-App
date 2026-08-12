@@ -1,5 +1,5 @@
 import { FileList } from "./FileList";
-import { FilterCards } from "./FilterCards";
+import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
 import { shelfTotals } from "./format";
@@ -137,14 +137,27 @@ export async function WorkspaceShelf({
             hook, no measuring, nothing to be wrong about between the server's
             HTML and the client's first paint — and it keeps every facet link in
             the document even before hydration moves the desktop copy. */}
-        <FindBar basePath={basePath} state={state} scope={root.name} dense />
+        <FindBar
+          basePath={basePath}
+          state={state}
+          scope={root.name}
+          dense
+          filters={
+            <FindFilters
+              topics={topics}
+              facets={facets}
+              state={state}
+              basePath={basePath}
+              itemCount={itemCount}
+            />
+          }
+        />
         <div className="lg:hidden">
-          <FilterCards
+          <ActiveFindFilters
             topics={topics}
             facets={facets}
             state={state}
             basePath={basePath}
-            itemCount={itemCount}
           />
         </div>
         <RailSlot>
@@ -167,7 +180,7 @@ export async function WorkspaceShelf({
   }
 
   return (
-    // **The controls head the shelf on every screen, and the filters are shut.**
+    // **The controls head the shelf on every screen, and they are one row.**
     //
     // They were below the grid on a phone, and the reason was real: counted
     // over a whole shelf, six axes of chips ran to some five hundred pixels,
@@ -176,11 +189,12 @@ export async function WorkspaceShelf({
     // search box with it — to the one place nobody looks for a search box, past
     // six collections, where a reader has no reason to believe one exists.
     //
-    // The designer's shape keeps both: the box sits under the title where a
-    // hand expects it, and the filters are two closed rows that say what is
-    // behind them rather than five hundred pixels that show it. See
-    // `FilterCards`. The desktop's copy of the filters is standing chrome in
-    // the left rail, so this block is only ever the box there.
+    // The finished comps keep both and cost less than either: the box sits
+    // under the title where a hand expects it, the Filters button sits beside
+    // it, and everything the filters have to say is in a sheet that is not on
+    // the page until it is asked for. See `FindFilters`. The desktop's copy of
+    // the filters is standing chrome in the left rail, so this block is only
+    // ever the box there.
     <div className="flex flex-col">
       {/* On a desktop the box joins the page's own header line, right-aligned
           against the shelf's weight, as the design draws it — a full-width
@@ -194,18 +208,36 @@ export async function WorkspaceShelf({
           )}
         </p>
         <div className="lg:w-80 lg:shrink-0">
-          <FindBar basePath={basePath} state={state} scope={root.name} dense />
+          <FindBar
+            basePath={basePath}
+            state={state}
+            scope={root.name}
+            dense
+            /* No facets, no filters: a failed find leaves the shelf standing and
+               the browse needs nothing from it, but a button that opened onto an
+               empty sheet would be worse than no button. */
+            filters={
+              find && (
+                <FindFilters
+                  topics={topics}
+                  facets={facets}
+                  state={state}
+                  basePath={basePath}
+                  itemCount={itemCount}
+                />
+              )
+            }
+          />
         </div>
       </div>
 
       <div className="lg:hidden">
         {find && (
-          <FilterCards
+          <ActiveFindFilters
             topics={topics}
             facets={facets}
             state={state}
             basePath={basePath}
-            itemCount={itemCount}
           />
         )}
       </div>
