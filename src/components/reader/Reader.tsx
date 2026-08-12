@@ -13,6 +13,7 @@ import {
 } from "@/components/player/PlayerProvider";
 import { track } from "@/lib/analytics";
 import {
+  PERSONAL_SYNCED,
   flushProgress,
   localBookmarks,
   localProgressFor,
@@ -21,6 +22,7 @@ import {
   saveProgress as savePersonalProgress,
   syncPersonal,
 } from "@/lib/personal";
+import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
 import { citationText, paraAnchorId, parseRef } from "@/lib/refs";
 import { documentHref, documentTextHref } from "@/lib/routes";
 import {
@@ -35,9 +37,10 @@ import {
   type ReaderFace,
   type ReadingMode,
   type HighlightColour,
+  type HighlightRange,
 } from "@/lib/storage";
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
-import type { Matcher, Segment } from "@/lib/paribhasha";
+import type { Matcher } from "@/lib/paribhasha";
 import { Block } from "./blocks";
 import { ReaderBottomBar, ReaderTopBar, SelectionBar } from "./ReaderChrome";
 import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
@@ -126,6 +129,16 @@ interface Toast {
 interface Selection {
   para: Paragraph;
   text: string;
+  /**
+   * Where those words sit in `para.text_hi`.
+   *
+   * Computed here, while the browser's Range is still live, rather than when a
+   * swatch is tapped — by then the selection may have been cleared or moved,
+   * and a highlight that lands on the wrong words is worse than one that lands
+   * on the whole paragraph. `undefined` when the DOM and the text cannot be
+   * reconciled, which is the signal to fall back to the whole paragraph.
+   */
+  span?: { start: number; end: number };
 }
 
 /** an offer to jump to a saved position in another chapter */
@@ -212,33 +225,40 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   );
 
   /**
-   * The colours already on this book's passages, `canonical_ref → colour`.
+   * What is painted on this book's passages, `canonical_ref → spans`.
    *
    * Without this a highlight was invisible in the one place it was made: the
    * store had it, the Highlights tab listed it, and the page the reader was
-   * looking at showed nothing once the selection cleared. The reader could only
-   * find out by leaving.
+   * looking at showed nothing once the selection cleared.
    *
-   * **Whole paragraph, not the words that were selected.** A highlight is
-   * anchored to a `canonical_ref` and nothing else — no offsets, in the store or
-   * in the contract — so the paragraph is the only span it can honestly paint.
-   * The comps draw a part-line tint, which is the selection, and reproducing it
-   * for a saved highlight would mean storing character ranges against text that
-   * gets re-extracted and re-published. Anchoring survives that; offsets do not.
+   * A **list** per paragraph, because these paragraphs run seven lines and a
+   * reader painting a second sentence must keep the first (contract §6.0).
+   * A whole-paragraph `colour` with no spans — every highlight made before
+   * spans existed — becomes one span covering the paragraph, so the renderer
+   * below has exactly one shape to draw and the old rows keep working.
    *
    * Client-only, and deliberately after first paint: this lives in
    * localStorage, and reading it during render would make the server's HTML and
    * the browser's disagree.
    */
-  const [painted, setPainted] = useState<Map<string, HighlightColour>>(new Map());
+  const [painted, setPainted] = useState<Map<string, HighlightRange[]>>(new Map());
   const refreshPainted = useCallback(() => {
-    const m = new Map<string, HighlightColour>();
+    const m = new Map<string, HighlightRange[]>();
     for (const b of localBookmarks()) {
-      if (b.book_code === book.code && b.colour) m.set(b.canonical_ref, b.colour);
+      if (b.book_code !== book.code) continue;
+      if (b.ranges?.length) m.set(b.canonical_ref, b.ranges);
+      else if (b.colour) m.set(b.canonical_ref, wholeParagraph(b.colour));
     }
     setPainted(m);
   }, [book.code]);
   useEffect(refreshPainted, [refreshPainted, chapterNumber]);
+  // And again whenever a sync brings the account's rows in, which lands well
+  // after this page mounted. Without it, a highlight made on another device
+  // sits in the store unpainted until the reader happens to reload.
+  useEffect(() => {
+    window.addEventListener(PERSONAL_SYNCED, refreshPainted);
+    return () => window.removeEventListener(PERSONAL_SYNCED, refreshPainted);
+  }, [refreshPainted]);
 
   const showToast = useCallback((t: Toast) => {
     setToast(t);
@@ -921,7 +941,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         setSelection(null);
         return;
       }
-      setSelection({ para, text: sel.toString().trim() });
+      const range = sel.getRangeAt(0);
+      setSelection({
+        para,
+        text: sel.toString().trim(),
+        span: selectionSpan(host as HTMLElement, range, para.text_hi) ?? undefined,
+      });
     };
     const onChange = () => {
       // settle until the drag stops, so the bar doesn't flicker mid-swipe
@@ -972,17 +997,23 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    * is the one outcome a reading app must never produce.
    */
   const doHighlight = useCallback(
-    (ref: string, colour: HighlightColour) => {
+    (ref: string, colour: HighlightColour, span?: { start: number; end: number }) => {
       track("bookmark_add");
+      const para = paraByRef.get(ref);
       saveBookmark(
         {
           canonical_ref: ref,
           book_code: book.code,
           book_title: book.title_hi,
-          text_hi: paraByRef.get(ref)?.text_hi,
+          text_hi: para?.text_hi,
         },
         !!user,
-        colour
+        colour,
+        // No span means the words could not be located in the paragraph's own
+        // text — a table cell, or text the block renders its own way. The
+        // paragraph is then painted whole, which is what a highlight was
+        // before spans existed and is never wrong, only coarse.
+        span && para ? { ...span, text: para.text_hi.slice(span.start, span.end), colour } : undefined
       );
       // The store is written synchronously, so re-reading it here paints the
       // passage in the same frame the bar closes — which is the whole point of
@@ -1366,7 +1397,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {selection && !noteOpen && (
         <SelectionBar
           bottom={bottomOffset}
-          onHighlight={(colour) => doHighlight(selection.para.canonical_ref, colour)}
+          onHighlight={(colour) =>
+            doHighlight(selection.para.canonical_ref, colour, selection.span)
+          }
           onNote={() => {
             setNoteTarget(selection);
             setNoteOpen(true);
@@ -1596,7 +1629,7 @@ function PageParas({
   matcher: Matcher | null;
   activeSeq: number | null;
   selectedRef?: string;
-  painted: Map<string, HighlightColour>;
+  painted: Map<string, HighlightRange[]>;
 }) {
   const segments = useMemo(
     () =>
@@ -1604,6 +1637,24 @@ function PageParas({
         page.paragraphs.map((p) => (UNMARKED_BLOCKS.has(p.block_type) ? null : p.text_hi))
       ) ?? null,
     [matcher, page]
+  );
+
+  /**
+   * Glossary marks and the reader's own highlights, cut into one set of runs.
+   *
+   * They are independent markings over the same characters and neither respects
+   * the other's boundaries, so this cannot be two passes — `paintSegments` cuts
+   * where either changes. Recomputed when the highlights do, which is once per
+   * tap on a swatch.
+   */
+  const painting = useMemo(
+    () =>
+      page.paragraphs.map((p, i) => {
+        const spans = painted.get(p.canonical_ref);
+        const base = segments?.[i] ?? null;
+        return spans?.length ? paintSegments(p.text_hi, base, spans) : base;
+      }),
+    [page, segments, painted]
   );
 
   return (
@@ -1615,8 +1666,8 @@ function PageParas({
           pageKey={page.key}
           activeSeq={activeSeq}
           selectedRef={selectedRef}
-          segments={segments?.[i] ?? null}
-          colour={painted.get(p.canonical_ref)}
+          segments={painting[i] ?? null}
+          highlighted={(painted.get(p.canonical_ref)?.length ?? 0) > 0}
         />
       ))}
     </>
@@ -1624,18 +1675,19 @@ function PageParas({
 }
 
 /**
- * The three highlight fills, written out rather than built from the colour.
+ * A whole-paragraph highlight, expressed as a span.
  *
- * `bg-hl-${colour}` is a name Tailwind's scanner cannot find, and a class it
- * cannot find is a class it does not emit — which is an invisible highlight,
- * indistinguishable from a working one. The same trap `globals.css` documents
- * for the tokens themselves.
+ * Every highlight made before spans existed is one of these — `colour` on the
+ * bookmark and nothing finer. Turning it into a span here rather than carrying
+ * a second shape all the way down means the renderer has one case, and an old
+ * highlight and a new one are drawn by the same code.
  */
-const PARA_FILL: Record<HighlightColour, string> = {
-  amber: "bg-hl-amber",
-  sage: "bg-hl-sage",
-  sky: "bg-hl-sky",
-};
+export function wholeParagraph(colour: HighlightColour): HighlightRange[] {
+  // The end is deliberately larger than any paragraph: the span is clipped to
+  // the text when it is painted, and a real length would have to be threaded
+  // here from a paragraph this function has never seen.
+  return [{ start: 0, end: Number.MAX_SAFE_INTEGER, text: "", colour }];
+}
 
 function ParaWrap({
   para,
@@ -1643,15 +1695,15 @@ function ParaWrap({
   activeSeq,
   selectedRef,
   segments,
-  colour,
+  highlighted,
 }: {
   para: Paragraph;
   pageKey: string;
   activeSeq: number | null;
   selectedRef?: string;
-  segments?: Segment[] | null;
-  /** painted, i.e. this passage is a highlight */
-  colour?: HighlightColour;
+  segments?: PaintedSegment[] | null;
+  /** whether anything in this paragraph is painted — for the selection rule */
+  highlighted?: boolean;
 }) {
   const isActive = activeSeq === para.sequence;
   const isSelected = selectedRef === para.canonical_ref;
@@ -1660,11 +1712,12 @@ function ParaWrap({
       id={`p-${pageKey}-${para.para_number}`}
       data-ref={para.canonical_ref}
       data-seq={para.sequence}
-      /* Selection sits above the highlight while the bar is open: the reader is
-         acting on this passage now, and the fill underneath is what it already
-         was. */
+      data-highlighted={highlighted ? "" : undefined}
+      /* The fill is on the words now, not on the block. What is left here is
+         the selection wash, which stays a block tint because it is about the
+         passage the reader is acting on rather than about any words. */
       className={`-mx-1 rounded-md px-1 ${isActive ? "para-active" : ""} ${
-        isSelected ? "bg-(--ws-color)/8" : colour ? PARA_FILL[colour] : ""
+        isSelected ? "bg-(--ws-color)/8" : ""
       }`}
     >
       <Block para={para} segments={segments} />

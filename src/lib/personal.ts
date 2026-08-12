@@ -40,10 +40,12 @@ import {
   setPdfPlace,
   setPlayhead,
   removeLocalBookmark,
+  removeLocalSpan,
   removeLocalNote,
   setLocalProgress,
   setLocalStore,
   type HighlightColour,
+  type HighlightRange,
   type LocalBookmark,
   type LocalNote,
   type LocalProgress,
@@ -62,9 +64,27 @@ export function saveBookmark(
   t: SaveTarget,
   signedIn: boolean,
   /** paints it — a bookmark with a colour is a highlight. See LocalBookmark. */
-  colour?: HighlightColour
+  colour?: HighlightColour,
+  /** the words themselves; without it the whole paragraph is painted (§6.0) */
+  span?: HighlightRange
 ): void {
-  addLocalBookmark(t.canonical_ref, t.book_code, t.text_hi, colour);
+  addLocalBookmark(t.canonical_ref, t.book_code, t.text_hi, colour, span);
+  if (signedIn) void syncPersonal();
+}
+
+/**
+ * Take one highlight off a passage, leaving the rest of them alone.
+ *
+ * Not `unsaveBookmark`: that removes the paragraph from the reader's saved list
+ * entirely, which is right for a plain bookmark and wrong for one of three
+ * highlights in a long paragraph.
+ */
+export function unpaintSpan(
+  canonicalRef: string,
+  span: { start: number; end: number },
+  signedIn: boolean
+): void {
+  removeLocalSpan(canonicalRef, span.start, span.end);
   if (signedIn) void syncPersonal();
 }
 
@@ -226,12 +246,24 @@ export function localProgressFor(bookCode: string): LocalProgress | null {
  * with no colour. Leaving it out would hide a reader's own words from the only
  * screen that lists them, on the technicality that they did not press a
  * colour first.
+ *
+ * **One row per span, not per paragraph.** A paragraph can hold several
+ * highlights (§6.0) and each is a thing the reader made separately, so each
+ * gets its own card. `text_hi` is then the words they painted rather than the
+ * paragraph around them, which is what the comps show and what makes the list
+ * readable — seven-line paragraphs repeated three times are not a list of
+ * highlights, they are the chapter again.
+ *
+ * The note stays attached to the paragraph, so it rides along on every span in
+ * it. A note is written about a passage, not about one phrase inside it.
  */
 export interface Highlight {
   canonical_ref: string;
   book_code: string;
   text_hi?: string;
   colour?: HighlightColour;
+  /** which words, when this row is one span of its paragraph */
+  span?: { start: number; end: number };
   note?: string;
   created_at: string;
 }
@@ -241,16 +273,29 @@ export function localHighlights(bookCode: string): Highlight[] {
   const notes = new Map(
     store.notes.filter((n) => n.book_code === bookCode).map((n) => [n.canonical_ref, n])
   );
-  const rows: Highlight[] = store.bookmarks
-    .filter((b) => b.book_code === bookCode)
-    .map((b) => ({
+  const rows: Highlight[] = [];
+  for (const b of store.bookmarks) {
+    if (b.book_code !== bookCode) continue;
+    const shared = {
       canonical_ref: b.canonical_ref,
       book_code: b.book_code,
-      text_hi: b.text_hi,
-      colour: b.colour,
       note: notes.get(b.canonical_ref)?.text,
       created_at: b.created_at,
-    }));
+    };
+    if (b.ranges?.length) {
+      for (const span of b.ranges) {
+        rows.push({
+          ...shared,
+          text_hi: span.text,
+          colour: span.colour,
+          span: { start: span.start, end: span.end },
+        });
+      }
+    } else {
+      // Whole-paragraph: the passage itself, which is what it was painted with.
+      rows.push({ ...shared, text_hi: b.text_hi, colour: b.colour });
+    }
+  }
 
   const seen = new Set(rows.map((r) => r.canonical_ref));
   for (const n of notes.values()) {
@@ -299,7 +344,7 @@ async function push(): Promise<void> {
   // are in flight; writing a stale snapshot back would swallow them.
   const snapshot = getLocalStore();
   const bookmarkIds = new Map<string, number>();
-  const coloursPushed = new Map<string, string>(); // ref → the colour the server took
+  const paintPushed = new Map<string, string>(); // ref → the paint the server took
   const noteIds = new Map<string, number>();
   const notesPushed = new Map<string, string>(); // ref → the text the server took
   const progressPushed = new Map<string, string>(); // book_code → the ref it took
@@ -314,9 +359,9 @@ async function push(): Promise<void> {
       // The same POST does both — it upserts (§6.0), so a repaint is one
       // request and never a delete-and-re-save, which would lose the note and
       // the created_at hanging off the same ref.
-      const created = await createBookmark(b.canonical_ref, b.colour);
+      const created = await createBookmark(b.canonical_ref, b.colour, b.ranges);
       if (created?.id !== undefined) bookmarkIds.set(b.canonical_ref, created.id);
-      coloursPushed.set(b.canonical_ref, b.colour ?? "");
+      paintPushed.set(b.canonical_ref, paintKey(b));
     } catch (e) {
       // 400 = not a published paragraph; retrying will never help
       if (!isPermanent(e)) throw e;
@@ -369,10 +414,11 @@ async function push(): Promise<void> {
   for (const b of store.bookmarks) {
     const id = bookmarkIds.get(b.canonical_ref);
     if (id !== undefined) b.server_id ??= id;
-    // Only settle a repaint if the colour the server took is still the one on
-    // screen — the reader may have tapped a third swatch while this was in
-    // flight, and that tap has its own push waiting.
-    if (b.dirty && coloursPushed.get(b.canonical_ref) === (b.colour ?? "")) b.dirty = false;
+    // Only settle a repaint if the paint the server took is still the one on
+    // screen — the reader may have tapped a third swatch, or painted another
+    // sentence, while this was in flight, and that tap has its own push
+    // waiting.
+    if (b.dirty && paintPushed.get(b.canonical_ref) === paintKey(b)) b.dirty = false;
   }
   for (const n of store.notes) {
     const id = noteIds.get(n.canonical_ref);
@@ -388,8 +434,41 @@ async function push(): Promise<void> {
   setLocalStore(store);
 }
 
+/**
+ * Everything about a bookmark that "painted" means, as one comparable string.
+ *
+ * `dirty` is cleared only when what the server took still matches what is on
+ * screen, and after spans that is no longer one field. Serialising both is
+ * shorter and harder to get wrong than a field-by-field compare that quietly
+ * stops covering a field somebody adds later.
+ */
+function paintKey(b: LocalBookmark): string {
+  return JSON.stringify([b.colour ?? "", b.ranges ?? []]);
+}
+
 const tombstoneKey = (t: { kind: string; canonical_ref: string }) =>
   `${t.kind}:${t.canonical_ref}`;
+
+/**
+ * Fired when a **sync** has changed the local store, so anything already on
+ * screen can re-read it.
+ *
+ * A local write does not need this — it is synchronous, and the code that made
+ * it re-reads on the next line. A pull is the case nothing else covers: it
+ * lands seconds after a page mounted, and without a signal the reader shows an
+ * empty store it read before the account's rows arrived. That is exactly how a
+ * highlight made on another device stayed invisible until a reload.
+ *
+ * Deliberately not fired from every store write. `setLocalStore` also runs on
+ * every resume position, which a reading page produces every couple of
+ * seconds — a signal that noisy would rebuild the page for a fact it does not
+ * draw.
+ */
+export const PERSONAL_SYNCED = "md:personal-synced";
+
+function announceSync(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(PERSONAL_SYNCED));
+}
 
 async function pull(): Promise<void> {
   const [bookmarks, notes, progress] = await Promise.all([
@@ -422,12 +501,18 @@ async function pull(): Promise<void> {
       // is a genuine un-paint arriving from another device, which nothing in
       // the reader can perform: removing a highlight deletes the bookmark.
       if (!mine.dirty && s.colour !== undefined) mine.colour = s.colour;
+      // Spans travel under exactly the same two guards, and for the same two
+      // reasons. Replace rather than union: a union can only ever add, so a
+      // highlight the reader removed on their phone would come back here on
+      // the next sync.
+      if (!mine.dirty && s.ranges !== undefined) mine.ranges = s.ranges;
     } else {
       store.bookmarks.push({
         canonical_ref: s.canonical_ref,
         book_code: s.canonical_ref.split(" ")[0] ?? "",
         text_hi: s.text_hi,
         colour: s.colour,
+        ranges: s.ranges,
         created_at: s.created_at ?? new Date().toISOString(),
         server_id: s.id,
       });
@@ -487,6 +572,7 @@ async function pull(): Promise<void> {
   }
 
   setLocalStore(store);
+  announceSync();
 
   // Files, into whichever store speaks their unit. The loop above skips them
   // (`book_code` is blank on a file) and must keep skipping them: a position in

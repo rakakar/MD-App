@@ -172,8 +172,10 @@ export function HighlightsPanel({
               )}
             </h3>
             <ul className="flex flex-col gap-3">
+              {/* A paragraph can hold several highlights, so the ref alone no
+                  longer identifies a row — the span does (§6.0). */}
               {items.map((t) => (
-                <li key={t.h.canonical_ref}>
+                <li key={`${t.h.canonical_ref}:${t.h.span?.start ?? "all"}`}>
                   <HighlightCard
                     href={refToHref(t.h.canonical_ref)}
                     highlight={t.h}

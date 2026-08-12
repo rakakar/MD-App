@@ -226,6 +226,20 @@ export function setPrefs(patch: Partial<Prefs>): Prefs {
 export type HighlightColour = "amber" | "sage" | "sky";
 export const HIGHLIGHT_COLOURS: HighlightColour[] = ["amber", "sage", "sky"];
 
+/**
+ * One painted span inside a paragraph (contract §6.0).
+ *
+ * `text` matters more than the offsets do: offsets are measured against a
+ * paragraph that gets re-extracted and republished, and the words are how the
+ * span finds itself again afterwards (`lib/highlights.ts`).
+ */
+export interface HighlightRange {
+  start: number;
+  end: number;
+  text: string;
+  colour: HighlightColour;
+}
+
 export interface LocalBookmark {
   canonical_ref: string;
   book_code: string;
@@ -251,6 +265,13 @@ export interface LocalBookmark {
    * meant rather than a colour that failed to load.
    */
   colour?: HighlightColour;
+  /**
+   * The words actually painted, when the reader chose words rather than a
+   * paragraph. Empty or absent means the older, coarser thing: `colour` alone
+   * paints the whole paragraph, which is what every highlight made before
+   * spans existed is, and they keep working untouched.
+   */
+  ranges?: HighlightRange[];
   created_at: string;
   server_id?: number;
   /**
@@ -381,23 +402,69 @@ export function readingHomeFor(bookCode: string): ReadingHome | null {
   return getLocalStore().reading_homes[bookCode] ?? null;
 }
 
+/**
+ * One more span on a paragraph, overlaps collapsed — the same rule the server
+ * applies (§6.0), applied here first so the page repaints before the request.
+ *
+ * Re-selecting a phrase and taking in more of the sentence extends the
+ * highlight; re-selecting the same words in another colour repaints them.
+ * Reading order, because the renderer walks the paragraph once.
+ */
+function addSpan(spans: HighlightRange[], added: HighlightRange): HighlightRange[] {
+  return [...spans.filter((s) => s.end <= added.start || s.start >= added.end), added].sort(
+    (a, b) => a.start - b.start || a.end - b.end
+  );
+}
+
+/**
+ * Take one highlight off a paragraph.
+ *
+ * The bookmark itself survives as long as anything is left on it — another
+ * span, or a whole-paragraph colour. When nothing is, the row goes the usual
+ * way, tombstone and all, because a bookmark nobody made deliberately is not
+ * something to leave lying in the reader's saved list.
+ */
+export function removeLocalSpan(canonicalRef: string, start: number, end: number): void {
+  mutate((store) => {
+    const row = store.bookmarks.find((b) => b.canonical_ref === canonicalRef);
+    if (!row) return;
+    row.ranges = (row.ranges ?? []).filter((s) => !(s.start === start && s.end === end));
+    row.dirty = true;
+  });
+}
+
+/**
+ * Save a passage, painted or plain.
+ *
+ * `span` is the words the reader actually chose. With it, the paragraph gains
+ * one more highlight and keeps the ones it had — several to a paragraph, which
+ * is the point of the list (contract §6.0). Without it, the older whole-
+ * paragraph colour is set instead, which is still what an audio track or a
+ * plain save gets.
+ */
 export function addLocalBookmark(
   canonicalRef: string,
   bookCode: string,
   textHi?: string,
-  colour?: HighlightColour
+  colour?: HighlightColour,
+  span?: HighlightRange
 ): void {
   mutate((store) => {
     const existing = store.bookmarks.find((b) => b.canonical_ref === canonicalRef);
     if (existing) {
+      if (span) {
+        existing.ranges = addSpan(existing.ranges ?? [], span);
+        // The server already knows this row; the flag is the only thing that
+        // will carry the new span off the device.
+        existing.dirty = true;
+        return;
+      }
       // Re-saving a passage in a different colour repaints it rather than
       // doing nothing. Tapping green on a line already highlighted amber is
       // unambiguous, and "nothing happened" is the one response to it that
       // cannot be right.
       if (colour && existing.colour !== colour) {
         existing.colour = colour;
-        // A row the server already knows about looks settled; the flag is the
-        // only thing that will carry this repaint off the device.
         existing.dirty = true;
       }
       return;
@@ -406,7 +473,8 @@ export function addLocalBookmark(
       canonical_ref: canonicalRef,
       book_code: bookCode,
       text_hi: textHi,
-      colour,
+      colour: span ? undefined : colour,
+      ranges: span ? [span] : undefined,
       created_at: new Date().toISOString(),
     });
     // re-bookmarking something just deleted cancels the pending delete

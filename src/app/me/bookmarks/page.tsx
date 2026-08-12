@@ -33,6 +33,21 @@ const FILL: Record<HighlightColour, string> = {
  * book's own Highlights & Notes tab. This is the cross-book list — the one
  * the Journey and Resources workspaces link to as "Saved".
  */
+/**
+ * What one saved row shows: the words the reader painted, and in which colour.
+ *
+ * A paragraph can hold several highlights (§6.0) while this list draws one row
+ * per saved *passage*, so the spans are joined with an ellipsis rather than
+ * split into rows — this screen answers "what have I saved", and the book's own
+ * Highlights tab is where each one gets its own card. A row with no spans is a
+ * whole-paragraph highlight or a plain save, and shows the passage as before.
+ */
+function saved(b: LocalBookmark): { text?: string; colour?: HighlightColour } {
+  const spans = b.ranges ?? [];
+  if (spans.length === 0) return { text: b.text_hi, colour: b.colour };
+  return { text: spans.map((s) => s.text).join(" … "), colour: spans[0].colour };
+}
+
 export default function BookmarksPage() {
   const { user, loading } = useAuth();
   const [rows, setRows] = useState<LocalBookmark[] | null>(null);
@@ -77,17 +92,19 @@ export default function BookmarksPage() {
               <li key={b.canonical_ref} className="flex items-center gap-3 px-4 py-3">
                 <Link href={refToHref(b.canonical_ref)} className="min-w-0 flex-1">
                   {/* the saved words, not the reference they were filed under */}
-                  {b.text_hi ? (
+                  {saved(b).text ? (
                     <p lang="hi" className="hi line-clamp-2 text-sm leading-relaxed">
                       {/* Painted in the colour it was saved in, so this list
                           reads the way the page did. A row from before the
                           colours existed gets none and reads as a quotation. */}
                       <span
                         className={
-                          b.colour ? `box-decoration-clone rounded-md px-1 ${FILL[b.colour]}` : ""
+                          saved(b).colour
+                            ? `box-decoration-clone rounded-md px-1 ${FILL[saved(b).colour!]}`
+                            : ""
                         }
                       >
-                        {b.text_hi}
+                        {saved(b).text}
                       </span>
                     </p>
                   ) : (

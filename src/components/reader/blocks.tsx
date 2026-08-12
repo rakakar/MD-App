@@ -1,4 +1,5 @@
-import type { Segment } from "@/lib/paribhasha";
+import type { PaintedSegment } from "@/lib/highlights";
+import type { HighlightColour } from "@/lib/storage";
 import type { Paragraph } from "@/lib/types";
 
 // Block rendering exactly per contract §3.1. Respect align + indent_level
@@ -14,10 +15,28 @@ function indentStyle(level: number): React.CSSProperties | undefined {
   return level > 0 ? { paddingInlineStart: `${level * 1.5}rem` } : undefined;
 }
 
+/**
+ * `data-not-text` says this is drawn inside the paragraph but is not part of
+ * its `text_hi` — so the offsets a highlight is stored at must not count it.
+ * See `lib/highlights.ts`; the marker is the reason list items would otherwise
+ * paint a few characters off.
+ */
 function Marker({ marker }: { marker: string }) {
   if (!marker) return null;
-  return <span className="me-2 font-semibold text-(--reader-ink-soft)">{marker}</span>;
+  return (
+    <span data-not-text className="me-2 font-semibold text-(--reader-ink-soft)">
+      {marker}
+    </span>
+  );
 }
+
+/** The three fills, written out — `bg-hl-${c}` is a class Tailwind's scanner
+ *  cannot see, and one it cannot see is one it does not emit. */
+const HL: Record<HighlightColour, string> = {
+  amber: "bg-hl-amber",
+  sage: "bg-hl-sage",
+  sky: "bg-hl-sky",
+};
 
 /**
  * Book text, with Paribhasha headwords marked when the reader has asked for it.
@@ -31,26 +50,43 @@ function Marker({ marker }: { marker: string }) {
  * one delegated handler on the content root, and readers using a keyboard or
  * a screen reader reach the same definitions by selecting the word, which is
  * how the bookmark / note / copy actions already work.
+ *
+ * A run can carry both marks at once — a highlight can start mid-word and a
+ * headword can be half painted — so the fill goes on the outside and the
+ * headword span stays exactly as it was, which is what the delegated tap
+ * handler looks for.
  */
-function Text({ text, segments }: { text: string; segments?: Segment[] | null }) {
+function Text({ text, segments }: { text: string; segments?: PaintedSegment[] | null }) {
   if (!segments) return <>{text}</>;
   return (
     <>
-      {segments.map((s, i) =>
-        s.word ? (
-          <span key={i} data-paribhasha={s.word} className="paribhasha-word">
+      {segments.map((s, i) => {
+        const inner = s.word ? (
+          <span data-paribhasha={s.word} className="paribhasha-word">
             {s.text}
           </span>
         ) : (
           s.text
-        )
-      )}
+        );
+        if (!s.hl) return <span key={i}>{inner}</span>;
+        return (
+          <mark key={i} className={`${HL[s.hl]} text-inherit`}>
+            {inner}
+          </mark>
+        );
+      })}
     </>
   );
 }
 
 /** One paragraph block. Font sizing inherits from the reader root scale. */
-export function Block({ para, segments }: { para: Paragraph; segments?: Segment[] | null }) {
+export function Block({
+  para,
+  segments,
+}: {
+  para: Paragraph;
+  segments?: PaintedSegment[] | null;
+}) {
   const align = ALIGN[para.align] ?? "text-left";
   const indent = indentStyle(para.indent_level);
   const text = <Text text={para.text_hi} segments={segments} />;
@@ -169,7 +205,11 @@ export function Block({ para, segments }: { para: Paragraph; segments?: Segment[
           <Marker marker={para.marker} />
           {text}
           {para.footnote_text && (
-            <span className="ms-1 align-super text-[0.7em] text-(--reader-ink-soft)" title={para.footnote_text}>
+            <span
+              data-not-text
+              className="ms-1 align-super text-[0.7em] text-(--reader-ink-soft)"
+              title={para.footnote_text}
+            >
               *
             </span>
           )}

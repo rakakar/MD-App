@@ -16,7 +16,7 @@
 
 import { apiBase } from "./api";
 import { recordApiFailure } from "./clientErrors";
-import type { HighlightColour } from "./storage";
+import type { HighlightColour, HighlightRange } from "./storage";
 import type { Bookmark, MeUser, Note, Progress } from "./types";
 
 const TOKEN_KEY = "md.session_token";
@@ -127,6 +127,10 @@ export const getBookmarks = async (): Promise<Bookmark[]> =>
       // as undefined rather than as an empty string — the reader's list styles
       // on the field being absent.
       colour: (r.colour as HighlightColour) || undefined,
+      // Same distinction as `colour`: a server too old to carry spans omits
+      // the key, and that is silence rather than "no highlights" — see the
+      // merge in personal.ts.
+      ranges: Array.isArray(r.ranges) ? (r.ranges as HighlightRange[]) : undefined,
     })
   );
 
@@ -140,11 +144,19 @@ export const getBookmarks = async (): Promise<Bookmark[]> =>
  */
 export const createBookmark = (
   canonical_ref: string,
-  colour?: HighlightColour
+  colour?: HighlightColour,
+  ranges?: HighlightRange[]
 ): Promise<{ id: number }> =>
   authedFetch<{ id: number }>(meUrl("bookmarks/"), {
     method: "POST",
-    body: JSON.stringify(colour ? { canonical_ref, colour } : { canonical_ref }),
+    body: JSON.stringify({
+      canonical_ref,
+      ...(colour ? { colour } : {}),
+      // Sent whenever this row has spans at all — including an empty list,
+      // which is how the last highlight comes off a passage that stays saved.
+      // Omitting it would leave the server's spans standing (§6.0).
+      ...(ranges ? { ranges } : {}),
+    }),
   });
 
 export const deleteBookmark = (id: number): Promise<void> =>
