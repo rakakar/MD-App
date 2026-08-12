@@ -12,11 +12,16 @@ import type { BookDetail } from "@/lib/types";
  * same saved position, and reading it once keeps the bar and the button from
  * disagreeing for a frame.
  *
- * The spec also draws a headphones button here. The BE carries no link from a
- * book to its discourse audio — audio series and books are separate lists with
- * nothing joining them — so there is no way to know whether this book has any.
- * The spec's own States note says a book without audio omits the button rather
- * than disabling it, which is what happens here until that link exists.
+ * **No headphones here, and that is the comps rather than a gap.** An earlier
+ * spec drew one, and it was left out because the BE has no link from a book to
+ * its discourse audio. The finished comps ("Book preview", 2026-08-11) settle
+ * it the other way: this hero holds Resume and download and nothing else, and
+ * listening is a *chapter* action — the headphones is on the reader's bottom
+ * bar, where it opens that chapter's own audio with the text following along
+ * ("Read mode", "Audio mode").
+ *
+ * So the missing link is not blocking anything. Contract §9 records the
+ * decision, including the shape it would need if a screen ever asks for it.
  */
 export function BookHeroActions({
   book,
