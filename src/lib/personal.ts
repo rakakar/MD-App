@@ -299,16 +299,24 @@ async function push(): Promise<void> {
   // are in flight; writing a stale snapshot back would swallow them.
   const snapshot = getLocalStore();
   const bookmarkIds = new Map<string, number>();
+  const coloursPushed = new Map<string, string>(); // ref → the colour the server took
   const noteIds = new Map<string, number>();
   const notesPushed = new Map<string, string>(); // ref → the text the server took
   const progressPushed = new Map<string, string>(); // book_code → the ref it took
   const tombstonesSettled = new Set<string>();
 
   for (const b of snapshot.bookmarks) {
-    if (b.server_id !== undefined) continue;
+    // Unsent, or repainted since it was sent. The second case is why `dirty`
+    // exists: a repaint lands on a row that already has a `server_id`, so
+    // "has an id" alone would call it settled and strand the new colour here.
+    if (b.server_id !== undefined && !b.dirty) continue;
     try {
-      const created = await createBookmark(b.canonical_ref);
+      // The same POST does both — it upserts (§6.0), so a repaint is one
+      // request and never a delete-and-re-save, which would lose the note and
+      // the created_at hanging off the same ref.
+      const created = await createBookmark(b.canonical_ref, b.colour);
       if (created?.id !== undefined) bookmarkIds.set(b.canonical_ref, created.id);
+      coloursPushed.set(b.canonical_ref, b.colour ?? "");
     } catch (e) {
       // 400 = not a published paragraph; retrying will never help
       if (!isPermanent(e)) throw e;
@@ -361,6 +369,10 @@ async function push(): Promise<void> {
   for (const b of store.bookmarks) {
     const id = bookmarkIds.get(b.canonical_ref);
     if (id !== undefined) b.server_id ??= id;
+    // Only settle a repaint if the colour the server took is still the one on
+    // screen — the reader may have tapped a third swatch while this was in
+    // flight, and that tap has its own push waiting.
+    if (b.dirty && coloursPushed.get(b.canonical_ref) === (b.colour ?? "")) b.dirty = false;
   }
   for (const n of store.notes) {
     const id = noteIds.get(n.canonical_ref);
@@ -397,11 +409,25 @@ async function pull(): Promise<void> {
     if (mine) {
       mine.server_id = s.id;
       mine.text_hi ??= s.text_hi;
+      // The account wins on colour, with two guards, and both of them exist to
+      // stop a pull from wiping a colour the reader is looking at.
+      //
+      // `dirty` — this device is holding a repaint that has not gone up yet, so
+      // it is the newer answer. Same precedence a locally edited note gets.
+      //
+      // `s.colour !== undefined` — a server that does not carry colours at all
+      // answers without the field, and that is silence rather than "unpainted".
+      // Treating it as unpainted would strip every highlight on the device the
+      // moment it synced against a BE older than §6.0. The case this gives up
+      // is a genuine un-paint arriving from another device, which nothing in
+      // the reader can perform: removing a highlight deletes the bookmark.
+      if (!mine.dirty && s.colour !== undefined) mine.colour = s.colour;
     } else {
       store.bookmarks.push({
         canonical_ref: s.canonical_ref,
         book_code: s.canonical_ref.split(" ")[0] ?? "",
         text_hi: s.text_hi,
+        colour: s.colour,
         created_at: s.created_at ?? new Date().toISOString(),
         server_id: s.id,
       });

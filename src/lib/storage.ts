@@ -245,14 +245,24 @@ export interface LocalBookmark {
    * between, in exchange for a field. Undefined means what it has always
    * meant: saved, but not painted.
    *
-   * The BE does not carry it yet, so it survives `push()` only on this device
-   * and a second device sees the highlight as a plain bookmark. That is the
-   * right way for it to degrade — the passage is what a reader would miss, and
-   * the passage syncs.
+   * The BE carries it as of contract §6.0, so it now reaches the account and
+   * the reader's other devices. A bookmark that predates the field arrives
+   * without one and stays unpainted, which is the same thing it has always
+   * meant rather than a colour that failed to load.
    */
   colour?: HighlightColour;
   created_at: string;
   server_id?: number;
+  /**
+   * A colour changed here that the server has not been told about.
+   *
+   * Only repaints need this. A brand-new bookmark is recognised by having no
+   * `server_id` and is pushed for that reason; a repaint happens on a row that
+   * already has one, so without a flag it would look settled and the new colour
+   * would never leave the device. Cleared once the server confirms the colour
+   * that is still the current one — the same test `dirty` does for a note.
+   */
+  dirty?: boolean;
 }
 
 export interface LocalNote {
@@ -384,7 +394,12 @@ export function addLocalBookmark(
       // doing nothing. Tapping green on a line already highlighted amber is
       // unambiguous, and "nothing happened" is the one response to it that
       // cannot be right.
-      if (colour && existing.colour !== colour) existing.colour = colour;
+      if (colour && existing.colour !== colour) {
+        existing.colour = colour;
+        // A row the server already knows about looks settled; the flag is the
+        // only thing that will carry this repaint off the device.
+        existing.dirty = true;
+      }
       return;
     }
     store.bookmarks.unshift({

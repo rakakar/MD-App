@@ -16,6 +16,7 @@
 
 import { apiBase } from "./api";
 import { recordApiFailure } from "./clientErrors";
+import type { HighlightColour } from "./storage";
 import type { Bookmark, MeUser, Note, Progress } from "./types";
 
 const TOKEN_KEY = "md.session_token";
@@ -122,13 +123,28 @@ export const getBookmarks = async (): Promise<Bookmark[]> =>
       id: r.id as number,
       canonical_ref: r.canonical_ref as string,
       text_hi: (r.text_hi as string) || undefined,
+      // "" is the contract's "saved but not painted", and it has to come back
+      // as undefined rather than as an empty string — the reader's list styles
+      // on the field being absent.
+      colour: (r.colour as HighlightColour) || undefined,
     })
   );
 
-export const createBookmark = (canonical_ref: string): Promise<{ id: number }> =>
+/**
+ * Save a passage, optionally painted (contract §6.0).
+ *
+ * POST upserts: sending a ref that is already bookmarked with a different
+ * colour repaints it and answers with the same id, which is what makes a
+ * repaint a push rather than a delete and a re-save. Omitting `colour` leaves
+ * whatever is there alone, so a plain save never strips an existing highlight.
+ */
+export const createBookmark = (
+  canonical_ref: string,
+  colour?: HighlightColour
+): Promise<{ id: number }> =>
   authedFetch<{ id: number }>(meUrl("bookmarks/"), {
     method: "POST",
-    body: JSON.stringify({ canonical_ref }),
+    body: JSON.stringify(colour ? { canonical_ref, colour } : { canonical_ref }),
   });
 
 export const deleteBookmark = (id: number): Promise<void> =>

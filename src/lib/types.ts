@@ -1,6 +1,12 @@
 // Shapes from API_Contract_v1.md — frozen §§0–8, live-but-evolving §9.
 // When in doubt the contract wins for data shapes (PRD closing note).
 
+// The one union this file borrows rather than restates. The contract's three
+// colours and the store's are the same three by definition — a highlight is a
+// bookmark with a colour — and two copies of that list is how one of them ends
+// up with a fourth value the other cannot render.
+import type { HighlightColour } from "./storage";
+
 export type BookType = "print" | "digital";
 
 export type BlockType =
@@ -711,6 +717,8 @@ export interface Bookmark {
   canonical_ref: string;
   /** the bookmarked line */
   text_hi?: string;
+  /** painted, i.e. a highlight; absent means saved but not painted (§6.0) */
+  colour?: HighlightColour;
   title?: string;
   created_at?: string;
   [key: string]: unknown;
