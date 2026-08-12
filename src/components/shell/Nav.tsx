@@ -33,7 +33,11 @@ export function BottomNav() {
   const item = (nav: NavItem) => {
     const active = isActive(nav, pathname);
     return (
-      <li key={nav.href} className="flex-1">
+      // `min-w-0`, or the `truncate` below never fires: a flex item's floor is
+      // its longest word, so at the largest text size the five labels asked for
+      // more than a 390px phone has and the last of them ran 5px off the
+      // screen. Found by the sweep at 1.4×.
+      <li key={nav.href} className="min-w-0 flex-1">
         <Link
           href={nav.href}
           aria-current={active ? "page" : undefined}

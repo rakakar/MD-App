@@ -166,6 +166,10 @@ export function CollectionHero({
  * The hero's primary button — white on the panel, so it is the one thing on a
  * saturated field that reads as pressable. `tone` comes back in as its ink,
  * which is what stops it looking like a piece of the page that fell off.
+ *
+ * `on-accent`, not `card`. The panel under it is theme-independent, so this
+ * has to be too: in dark, `card` is near-black, and the one white button on a
+ * saturated hero became a dark chip carrying accent text at 3.06:1.
  */
 export function HeroAction({
   href,
@@ -179,7 +183,7 @@ export function HeroAction({
   return (
     <Link
       href={href}
-      className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-tile bg-card px-4 text-title font-semibold transition-opacity hover:opacity-90"
+      className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-tile bg-on-accent px-4 text-title font-semibold transition-opacity hover:opacity-90"
       style={{ color: tone }}
     >
       {children}

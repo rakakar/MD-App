@@ -386,6 +386,46 @@ reason the primitives came first.
 
 ---
 
+## The sweep, and the five things it found
+
+With every comp built, `/design` was measured rather than looked at: **eighteen
+combinations** — three app themes × six reading surfaces — with every text node's computed
+colour taken against the surface it actually sits on, plus a horizontal-overflow pass at
+the largest text size (1.4×). All eighteen are clean, and nothing sits below the 13px
+floor. What it caught is the argument for the page existing:
+
+1. **`HeroAction` was `bg-card`.** In dark that is near-black, so the one white button on a
+   saturated hero became a dark chip carrying accent text at **3.06:1** — the primary
+   action, unreadable, on screens where it is the only thing to do. The panel is
+   theme-independent, so the chip must be: `--color-on-accent`, fixed, 5.25:1 under the
+   workspace accent.
+2. **Highlights did not follow the book.** `--color-hl-*` was restated per *app* theme,
+   which was right while the book deferred to the app and wrong the moment the two axes
+   could disagree. A light Paper book inside a dark app got the deepened fills under the
+   book's dark ink: **1.5:1** — an invisible highlight, which looks exactly like a working
+   one. The three light surfaces restate the pale fills now, the way Quiet already restated
+   the deep ones. `original` and `bold` deliberately do not: neither paints its own paper.
+3. **`prefers-contrast: more` stopped at the app.** It deepened the shell's secondary ink
+   in all three themes and left the book's four alone — so a reader who asked the platform
+   for more contrast got it everywhere except the screen they read on. Now each surface
+   deepens against its own paper (9.9–13.1:1).
+4. **Three flex controls had no `min-w-0`**, so `truncate` never fired and their floor was
+   their longest word: at 1.4× the bottom nav's fifth label ran off a 390px phone, and
+   `CountedSegmented` and `CountTabs` took the whole page's horizontal scroll with them.
+5. **`/design` itself was lying twice** — its highlight swatches drew app ink on a book
+   fill, a pairing the reader cannot reach, and eight of its own captions were set in
+   `muted`, on the page whose job is to enforce that muted is not text.
+
+Two of these are invisible-by-construction bugs: a highlight at 1.5:1 and a filter chip
+that renders nothing look identical to a working one from across the room. That is the
+class of thing screenshots do not catch and measurement does.
+
+**Not measurable in the browser pane**, and therefore not claimed: Audio Mode at the
+largest text size. The pane renders at 0 fps, so audio never starts and the screen cannot
+be opened there; its palette was measured numerically instead (ratios in `globals.css`).
+
+---
+
 ## How not to drift again
 
 This section is the point of the file. The drift it exists to prevent has already happened
@@ -401,7 +441,9 @@ restate themselves per theme.
    variable whose name it cannot find in the source, and this app composes
    `var(--color-hl-${colour})` at runtime.
 4. **Measure, don't eyeball.** Every ink here carries its ratio in a comment against the
-   surface it actually sits on. A new one earns the same.
+   surface it actually sits on. A new one earns the same — and "measure" means all
+   eighteen theme × surface combinations, because four of the five findings above only
+   exist when the two axes disagree.
 5. **Two consumers or it is not a primitive.** A component in `ui/` with one caller is a
    screen's own furniture in the wrong folder.
 6. **A deviation from the comps is written where it happens**, in the code, and added to

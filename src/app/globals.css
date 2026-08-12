@@ -85,6 +85,18 @@
      ends up unsure what its buttons apply to. White on it is 15.9:1. */
   --color-overlay: #1c1917;
 
+  /* The chip a control takes when it is sitting *on* a coloured panel — the
+     hero's primary button. Fixed in every theme, for the same reason the panel
+     itself carries white text in every theme: the accent is the background
+     there, so no theme can change the pairing.
+
+     It was `card` until the sweep measured it. In dark, `card` is near-black,
+     which turned the one white button on a saturated hero into a dark chip
+     carrying accent text at 3.06:1 — a primary action a reader could not read,
+     on the screen where it is the only thing to do. The workspace accent lands
+     5.25:1 on this. */
+  --color-on-accent: #fbf7f2;
+
   /* ---- Audio Mode ----
 
      The one surface in the app with a palette of its own, and it is stated
@@ -460,6 +472,28 @@
      largest — which is why `[data-bold="1"] .reader-content` exists above to
      hold the reader at 400. Bold therefore does what that rule does in
      reverse: it moves the book's Devanagari to Mukta, which has a real 500. */
+/* ---- a highlight belongs to the book, not to the app ----
+
+   `--color-hl-*` is restated per app theme above, which is right while the
+   book defers to the app — and wrong the moment the two axes disagree, which
+   they can since the paper became its own setting. A reader with a light Paper
+   book inside a dark app was getting the app's *deepened* fills under the
+   book's dark ink: 1.5:1, an unreadable highlight that looks exactly like a
+   working one. So a light surface restates the pale fills the way Quiet below
+   restates the deep ones. `original` and `bold` declare nothing here on
+   purpose: neither paints its own paper — bold is a weight — so both follow the
+   app theme, and following it includes these. Giving bold the pale fills put
+   light ink on a pale strip inside a dark app, which is the same bug the other
+   way round. */
+html[data-reader-theme="paper"],
+html[data-reader-theme="calm"],
+html[data-reader-theme="focus"] {
+  /* Book ink lands 13.9–14.5:1 on these, measured on each paper. */
+  --color-hl-amber: #f8dfbe;
+  --color-hl-sage: #dcebd9;
+  --color-hl-sky: #dce8f7;
+}
+
 html[data-reader-theme="paper"] {
   --reader-bg: var(--color-surface-paper);
   --reader-ink: var(--color-surface-paper-ink);
@@ -492,6 +526,30 @@ html[data-reader-theme="quiet"] {
   --color-hl-amber: #4a3a1e;
   --color-hl-sage: #26382b;
   --color-hl-sky: #22344a;
+}
+
+/* The book's own secondary ink under `prefers-contrast: more`, deepened on the
+   same principle as the app's above — otherwise a reader who asked the platform
+   for more contrast got it on every screen except the one they are reading on,
+   which on this app is the product. Each is measured against its own paper, not
+   against the app's.
+
+   It lives *after* the surface blocks rather than beside the app's copy: the
+   selectors are the same specificity, so beside it the plain values further
+   down the file would simply win and the whole block would do nothing. */
+@media (prefers-contrast: more) {
+  html[data-reader-theme="paper"] {
+    --reader-ink-soft: #2f2c2a; /* 12.0:1 */
+  }
+  html[data-reader-theme="calm"] {
+    --reader-ink-soft: #3d3122; /* 9.94:1 */
+  }
+  html[data-reader-theme="focus"] {
+    --reader-ink-soft: #332f26; /* 13.1:1 */
+  }
+  html[data-reader-theme="quiet"] {
+    --reader-ink-soft: #cfcfd6; /* 10.5:1 */
+  }
 }
 
 /* Not a surface — a weight. See above. */

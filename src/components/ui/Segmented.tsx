@@ -54,7 +54,11 @@ export function CountedSegmented<T extends string>({
     >
       {segments.map((s) => {
         const active = s.value === value;
-        const cls = `flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-sm transition-colors ${
+        // `min-w-0`, or the `truncate` on the label never fires: a flex item's
+        // floor is its longest word, so at the largest text size three
+        // segments asked for more than a 390px phone has and the control ran
+        // off the screen taking the page's horizontal scroll with it.
+        const cls = `flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-sm transition-colors ${
           active ? "font-semibold text-white" : "text-ink"
         }`;
         const style = active ? { background: "var(--ws-color)" } : undefined;
@@ -124,7 +128,9 @@ export function CountTabs<T extends string>({
             key={t.value}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[1.125rem] px-2 text-sm transition-colors ${
+            /* `min-w-0` for the same reason as above — "Highlights & Notes"
+               is the longest label in the app and the one that proved it. */
+            className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-[1.125rem] px-2 text-sm transition-colors ${
               active ? "bg-card font-semibold shadow-card" : "text-ink-soft"
             }`}
           >

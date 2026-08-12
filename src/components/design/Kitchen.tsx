@@ -57,7 +57,10 @@ function Swatch({ name, css, note }: { name: string; css: string; note?: string 
       <span className="min-w-0">
         <span className="block truncate text-sm font-medium">{name}</span>
         <span className="block truncate text-xs text-ink-soft">{css}</span>
-        {note && <span className="block truncate text-xs text-muted">{note}</span>}
+        {/* `ink-soft`, not `muted`. This page's own captions are text like any
+            other, and the page that exists to enforce "muted is not text" was
+            the last place that should have been setting eight of them in it. */}
+        {note && <span className="block truncate text-xs text-ink-soft">{note}</span>}
       </span>
     </li>
   );
@@ -174,7 +177,16 @@ export function Kitchen() {
               key={c}
               lang="hi"
               className="hi rounded-md px-3 py-2 text-base"
-              style={{ background: `var(--color-hl-${c})` }}
+              /* The book's ink, not the app's. A highlight only ever happens
+                 inside a book, and this swatch was drawing the pairing that
+                 cannot occur — app ink on a Quiet-deepened fill, which is 1.6:1
+                 and is what made the page report a failure the reader does not
+                 have. The hint above states the real ratios; the swatch has to
+                 be the thing they were measured on. */
+              style={{
+                background: `var(--color-hl-${c})`,
+                color: "var(--reader-ink)",
+              }}
             >
               व्यवस्था में जीना ही मानव का सहज स्वभाव है।
             </span>
