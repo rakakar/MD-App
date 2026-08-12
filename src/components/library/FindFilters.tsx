@@ -6,24 +6,30 @@ import { useState } from "react";
 import { KIND_LABEL, KIND_ORDER } from "./format";
 import { AXIS_LABEL, chipLabel } from "./Sieve";
 import { yearBands, yearSpan } from "./years";
-import { FilterIcon, PinIcon, TagIcon, UserIcon } from "@/components/shell/icons";
+import { FilterIcon, PinIcon, SortIcon, TagIcon, UserIcon } from "@/components/shell/icons";
 import {
   ActiveFilters,
   Chip,
   FilterButton,
   FilterSection,
+  RadioList,
   Sheet,
   SheetAction,
   SheetTextAction,
 } from "@/components/ui";
 import {
   FIND_AXES,
+  FIND_ORDERINGS,
+  ORDERING_LABEL,
   clearAxis,
+  effectiveOrdering,
   findHref,
   isChipOn,
+  setOrdering,
   toggleChip,
   toggleGroup,
   type FindAxis,
+  type FindOrdering,
   type FindState,
 } from "@/lib/find";
 import type { FacetValue, FileKind, LibraryFacets, Topic } from "@/lib/types";
@@ -52,11 +58,13 @@ import type { FacetValue, FileKind, LibraryFacets, Topic } from "@/lib/types";
  * state for exactly one fact — whether it is open — and taps inside it navigate
  * underneath it, which is why the footer's count is live rather than a promise.
  *
- * **Sort is not here.** The comp's third section offers Newest / Oldest /
- * Longest first; `catalogue.Row` carries no timestamp and `library/search/`
- * takes no ordering parameter, so two of the three cannot be answered and the
- * third would sort one page of a ranked list and call it the whole shelf. See
- * the deviations table in `docs/design-system.md`, and the standing BE ask.
+ * **Sort by is the third section**, as drawn. It reads and writes `ordering`
+ * (contract §13.8) through the URL like every other control here, so the sort
+ * is part of a shared address rather than something the reader has to redo.
+ * The one thing it does not do is offer a radio for relevance: the comp draws
+ * three options and relevance is not one of them, so with words in the box the
+ * section shows nothing selected and reads "Best match" instead of claiming an
+ * order the list is not in.
  */
 
 /** the axes the sheet offers, in the order the comp stacks them */
@@ -147,6 +155,19 @@ function clearShown(state: FindState, axes: { axis: FindAxis }[]): FindState {
 }
 
 /**
+ * What the **sheet's** "Clear all" resets — the chips and the sort.
+ *
+ * The sort is not counted on the button (the comp's badge reads 3 for three
+ * chips while Newest first sits selected), but it is one of the sheet's
+ * controls, and a sort still standing after Clear all is something the reader
+ * cleared and did not clear. The chip row's own `Clear` outside the sheet stays
+ * chips-only: it names what it removes, and it cannot name this.
+ */
+function clearSheet(state: FindState, axes: { axis: FindAxis }[]): FindState {
+  return setOrdering(clearShown(state, axes), "");
+}
+
+/**
  * The button beside the search box, and the sheet behind it.
  *
  * Draws nothing at all when there is nothing to filter by — a folder whose
@@ -194,9 +215,9 @@ export function FindFilters({
         onClose={() => setOpen(false)}
         title="Filters"
         actions={
-          count > 0 ? (
+          count > 0 || state.ordering ? (
             <SheetTextAction
-              onClick={() => router.push(findHref(basePath, clearShown(state, live)))}
+              onClick={() => router.push(findHref(basePath, clearSheet(state, live)))}
             >
               Clear all
             </SheetTextAction>
@@ -237,8 +258,42 @@ export function FindFilters({
             )}
           </FilterSection>
         ))}
+        <SortSection state={state} basePath={basePath} />
       </Sheet>
     </>
+  );
+}
+
+/**
+ * The comp's third section — Newest / Oldest / Longest first.
+ *
+ * A ruled radio list rather than chips, because chips say "combine these" and a
+ * sort cannot be combined; `RadioList` was built for this and has been sitting
+ * unused since. Each choice navigates, like every other control in the sheet, so
+ * the sort is part of the address and the footer's count stays live underneath.
+ *
+ * **Nothing is selected while there are words in the box.** The list is then
+ * ranked by relevance, which is not one of the three options the comp draws, and
+ * showing "Newest first" lit above a list that is not in that order is worse
+ * than showing none of them lit. The status says "Best match" so the state has a
+ * name; picking any of the three is how the reader overrides it.
+ */
+function SortSection({ state, basePath }: { state: FindState; basePath: string }) {
+  const router = useRouter();
+  const current = effectiveOrdering(state);
+  return (
+    <FilterSection
+      icon={<SortIcon className="h-4 w-4" />}
+      label="Sort by"
+      status={current === "" ? "Best match" : undefined}
+    >
+      <RadioList<FindOrdering>
+        label="Sort by"
+        options={FIND_ORDERINGS.map((value) => ({ value, label: ORDERING_LABEL[value] }))}
+        value={current}
+        onChange={(value) => router.push(findHref(basePath, setOrdering(state, value)))}
+      />
+    </FilterSection>
   );
 }
 

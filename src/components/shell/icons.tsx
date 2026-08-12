@@ -261,6 +261,20 @@ export function FilterIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * The two opposed arrows the comp heads **SORT BY** with ("Audio Video -
+ * filters modal") — copied rather than borrowed from the axis icons, because
+ * this section is the one control in the sheet that reorders instead of
+ * removing, and the glyph is what says so before the labels are read.
+ */
+export function SortIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4 w-4"}>
+      <path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3" />
+    </Svg>
+  );
+}
+
 /** The tag the topic panel is headed with (designer, "ui 1"). */
 export function TagIcon({ className }: { className?: string }) {
   return (

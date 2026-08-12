@@ -11,6 +11,7 @@ import {
 import { contentLang } from "@/lib/script";
 import {
   FIND_AXES,
+  EMPTY_FIND,
   findHref,
   isChipOn,
   toggleChip,
@@ -183,7 +184,7 @@ export function RailFacets({
           state={withoutAxes(state, hideAxes)}
           href={
             hideAxes.length > 0
-              ? findHref(basePath, { q: "", raw: false, selection: kept })
+              ? findHref(basePath, { ...EMPTY_FIND, selection: kept })
               : undefined
           }
         />

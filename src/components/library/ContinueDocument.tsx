@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { FileCover } from "@/components/library/FileCover";
 import { getBook, findLibrary } from "@/lib/api";
 import { chapterLine } from "@/lib/chapter";
+import { EMPTY_FIND } from "@/lib/find";
 import { itemIdFromResumeKey, localProgress, syncPersonal } from "@/lib/personal";
 import { parseRef } from "@/lib/refs";
 import { documentHref, documentTextHref } from "@/lib/routes";
@@ -166,7 +167,7 @@ export function ContinueDocument({ limit = 4 }: { limit?: number }) {
     // that made it, so unlike a playhead there is never a case this can skip.
     const found = await findLibrary({
       workspace: "originals",
-      state: { q: "", raw: false, selection: { kind: ["pdf"] } },
+      state: { ...EMPTY_FIND, selection: { kind: ["pdf"] } },
       limit: 100,
     }).catch(() => null);
 

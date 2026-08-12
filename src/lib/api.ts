@@ -1,5 +1,5 @@
 import { recordApiFailure } from "./clientErrors";
-import { findQuery, type FindState } from "./find";
+import { EMPTY_FIND, effectiveOrdering, findQuery, type FindState } from "./find";
 import type {
   ApiWorkspace,
   BookDetail,
@@ -326,6 +326,11 @@ export async function findLibrary(opts: {
   signal?: AbortSignal;
 }): Promise<LibraryFindResponse> {
   const params = findQuery(opts.state);
+  // The sort in force rather than the one in the URL: a chipped shelf with an
+  // empty box is newest-first by default, and that default belongs in the
+  // request without being written into every chip's href (see `find.ts`).
+  const ordering = effectiveOrdering(opts.state);
+  if (ordering) params.set("ordering", ordering);
   if (opts.under !== undefined) params.set("under", String(opts.under));
   else if (opts.workspace) params.set("workspace", opts.workspace);
   if (opts.limit !== undefined) params.set("limit", String(opts.limit));
@@ -360,7 +365,7 @@ export async function searchLibrary(
   signal?: AbortSignal
 ): Promise<LibrarySearchRow[]> {
   const { results } = await findLibrary({
-    state: { q, selection: {}, raw: false },
+    state: { ...EMPTY_FIND, q },
     // The lane shows six and filters the rest by source in the browser, so it
     // asks for a set worth filtering rather than for one screenful.
     limit: 50,

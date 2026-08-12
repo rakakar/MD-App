@@ -8,6 +8,7 @@ import { formatDuration } from "@/components/library/format";
 import { usePlayer } from "@/components/player/PlayerProvider";
 import { HeadphonesIcon, PlayIcon, VideoIcon } from "@/components/shell/icons";
 import { findLibrary } from "@/lib/api";
+import { EMPTY_FIND } from "@/lib/find";
 import { getProgress } from "@/lib/me";
 import { itemIdFromResumeKey, syncPersonal } from "@/lib/personal";
 import { contentLang } from "@/lib/script";
@@ -141,7 +142,7 @@ export function ContinueAv({
       if (stillUnnamed.length > 0) {
         const found = await findLibrary({
           workspace: "originals",
-          state: { q: "", raw: false, selection: { kind: [...AV_KINDS] } },
+          state: { ...EMPTY_FIND, selection: { kind: [...AV_KINDS] } },
           limit: AV_PAGE,
         }).catch(() => null);
         for (const row of found?.results ?? []) {

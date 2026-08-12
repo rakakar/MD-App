@@ -145,7 +145,11 @@ export function FilterSection({
 }
 
 /** Exactly one of these — the sort order. A ruled list rather than chips,
- *  because chips say "combine these" and a sort cannot be combined. */
+ *  because chips say "combine these" and a sort cannot be combined.
+ *
+ *  `value` accepts `""` for **none of them**, which is a real state rather than
+ *  a missing one: a list ranked by relevance is in none of the orders this
+ *  offers, and lighting a radio it is not in would be the control lying. */
 export function RadioList<T extends string>({
   label,
   options,
@@ -154,7 +158,7 @@ export function RadioList<T extends string>({
 }: {
   label: string;
   options: { value: T; label: string }[];
-  value: T;
+  value: T | "";
   onChange: (v: T) => void;
 }) {
   return (

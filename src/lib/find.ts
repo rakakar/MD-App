@@ -74,12 +74,42 @@ export type SieveAxis = (typeof FIND_AXES)[number];
  */
 export type FindSelection = Partial<Record<FindAxis, string[]>>;
 
+/**
+ * The three sorts the sheet's **Sort by** section offers, in its order.
+ *
+ * The contract defines a fourth, `duration` (shortest first). The comp does not
+ * draw it and neither does this, so a hand-typed `?ordering=duration` falls back
+ * to the ranking — the same clamp `lockAxis` applies, and the same one the BE
+ * applies to a value it does not know.
+ */
+export const FIND_ORDERINGS = ["-added", "added", "-duration"] as const;
+
+export type FindOrdering = (typeof FIND_ORDERINGS)[number];
+
+/** A chosen sort, or `""` for the endpoint's relevance ranking. */
+export type FindSort = FindOrdering | "";
+
+export const ORDERING_LABEL: Record<FindOrdering, string> = {
+  "-added": "Newest first",
+  added: "Oldest first",
+  "-duration": "Longest first",
+};
+
 export interface FindState {
   /** what was typed; `""` when the box is empty */
   q: string;
   selection: FindSelection;
   /** search exactly as typed, skipping the Devanagari rewrite (§13.8) */
   raw: boolean;
+  /**
+   * The sort the reader **explicitly chose**, `""` when they have not.
+   *
+   * Kept separate from the sort actually in force (`effectiveOrdering`), because
+   * only a real choice belongs in the URL: writing the default into every chip's
+   * href would make an untouched shelf look narrowed, and would flip `isAsked`
+   * on a page nobody has asked anything of.
+   */
+  ordering: FindSort;
 }
 
 /** The BE's floor, mirrored so the FE never sends a query it knows is ignored. */
@@ -88,7 +118,7 @@ export const MIN_QUERY_CHARS = 2;
 /** one page of results — the endpoint's own default, and its step size */
 export const FIND_PAGE = 25;
 
-export const EMPTY_FIND: FindState = { q: "", selection: {}, raw: false };
+export const EMPTY_FIND: FindState = { q: "", selection: {}, raw: false, ordering: "" };
 
 type RawParams = Record<string, string | string[] | undefined>;
 
@@ -109,7 +139,45 @@ export function readFind(params: RawParams): FindState {
     const values = all(params[axis]);
     if (values.length > 0) selection[axis] = values;
   }
-  return { q: first(params.q), selection, raw: first(params.raw) === "1" };
+  const asked = first(params.ordering);
+  return {
+    q: first(params.q),
+    selection,
+    raw: first(params.raw) === "1",
+    ordering: (FIND_ORDERINGS as readonly string[]).includes(asked)
+      ? (asked as FindOrdering)
+      : "",
+  };
+}
+
+/**
+ * The sort actually in force — what the request sends and what the radio shows.
+ *
+ * Three states, and the middle one is the whole reason this is not just
+ * `state.ordering`:
+ *
+ * **Browsing** (nothing asked) → `""`. The rows are coming from `nodes/`, whose
+ * order is the manager's (`sequence`, then name). Claiming a sort over a list
+ * this does not control would be a control that lies.
+ *
+ * **A find with no words** → `-added`, which is what the comp draws selected.
+ * It is not an invented default: with no query every row scores zero, so the
+ * "ranking" is only the folder/sequence/name tiebreak, and newest-first is a
+ * better answer to "show me this topic" than alphabetical is.
+ *
+ * **A find with words** → `""`, relevance. The reader asked something only the
+ * score can answer, and the comp offers no radio for it — so the section shows
+ * nothing selected and says "Best match" instead of pretending.
+ */
+export function effectiveOrdering(state: FindState): FindSort {
+  if (state.ordering) return state.ordering;
+  if (!isAsked(state)) return "";
+  return state.q.length >= MIN_QUERY_CHARS ? "" : "-added";
+}
+
+/** One sort chosen, the rest of the find untouched. */
+export function setOrdering(state: FindState, ordering: FindSort): FindState {
+  return { ...state, ordering };
 }
 
 /** how many chips are on — what "Clear 3" counts */
@@ -122,7 +190,14 @@ export function chipCount(state: FindState): number {
  * typing the first letter still sees the shelf rather than an empty screen.
  */
 export function isAsked(state: FindState): boolean {
-  return state.q.length >= MIN_QUERY_CHARS || chipCount(state) > 0;
+  return (
+    state.q.length >= MIN_QUERY_CHARS ||
+    chipCount(state) > 0 ||
+    // A sort on its own is a whole question — "show me the newest" — and the
+    // endpoint answers it as one (§13.8). Without this the reader could pick an
+    // order and stay on the browse, which cannot honour it.
+    state.ordering !== ""
+  );
 }
 
 /**
@@ -189,6 +264,8 @@ export function findQuery(state: FindState): URLSearchParams {
     for (const value of state.selection[axis] ?? []) params.append(axis, value);
   }
   if (state.raw) params.set("raw", "1");
+  // The chosen sort, never the default one — see `FindState.ordering`.
+  if (state.ordering) params.set("ordering", state.ordering);
   return params;
 }
 
