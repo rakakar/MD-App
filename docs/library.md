@@ -67,7 +67,12 @@ Library folders को गिनाने के **दो अलग calls** ह�
 
 FE इन दोनों के बीच **ठीक एक test** पर स्विच करता है (`isAsked`, `src/lib/find.ts`):
 
-> **न query, न कोई chip → browse. वरना → find.**
+> **न query, न कोई chip, न कोई sort → browse. वरना → find.**
+
+Sort इस test में 12 अगस्त 2026 को जुड़ा। "सबसे नया पहले" अपने आप में एक पूरा
+सवाल है, और browse उसे मान ही नहीं सकता — `nodes/` का क्रम manager का है
+(`sequence`, फिर नाम)। BE भी इसी तरह गिनता है (§13.8, *"An `ordering` counts as
+asking"*), इसलिए दोनों तरफ़ एक ही नियम है।
 
 Find की हर row breadcrumb क्यों रखती है और browse की नहीं: find के नतीजे हर
 गहराई से आते हैं, और *"सत्र 1"* library के हर शिविर में वही तीन शब्द हैं।
@@ -78,6 +83,26 @@ Query कम से कम **2 अक्षर** (`MIN_QUERY_CHARS`), page प�
 **सब कुछ URL में है** — इसलिए छाना हुआ shelf एक असली पता है: साझा हो सकता है,
 bookmark हो सकता है, और back button पाठक को एक-एक chip करके filter से बाहर
 निकालता है (U9).
+
+### Sort by — तीन विकल्प, और चौथी हालत जिसका कोई radio नहीं
+
+Filter sheet का तीसरा section `ordering` लिखता-पढ़ता है (§13.8): `-added`
+(Newest first), `added` (Oldest first), `-duration` (Longest first)। Contract एक
+चौथा `duration` भी देता है — comp उसे नहीं खींचता, इसलिए FE भी नहीं पढ़ता।
+
+जो सचमुच लागू है वह `state.ordering` नहीं, **`effectiveOrdering()`** है, और उसकी
+तीन हालतें हैं:
+
+| हालत | sort | क्यों |
+|---|---|---|
+| Browse (कुछ नहीं पूछा) | कोई नहीं | rows `nodes/` से आ रही हैं; उन पर दावा करना झूठ होगा |
+| Find, box ख़ाली | `-added` | comp यही selected दिखाता है, और बिना query हर row का score शून्य होता है — यानी "ranking" सिर्फ़ नाम का क्रम है |
+| Find, box में शब्द | कोई नहीं | relevance, जो तीनों में से कोई नहीं — section "Best match" कहता है और कोई radio नहीं जलता |
+
+**URL में सिर्फ़ चुना हुआ sort जाता है, default नहीं.** Default को हर chip के
+href में लिखने से अछूता shelf छना हुआ दिखने लगता, और `isAsked` ऐसे पन्ने पर
+पलट जाता जहाँ किसी ने कुछ पूछा ही नहीं। Request में असली वाला जाता है —
+`findLibrary()` उसे वहीं जोड़ता है।
 
 ## 5. Sieve — chips किस क्रम में हैं, और क्यों
 

@@ -37,7 +37,9 @@ deviation की वजह, और "दोबारा न बहकने" क�
 
 **[reader.md](reader.md)** — book reader और PDF reader, दोनों पूरी viewport क्यों
 लेते हैं, chrome ख़ुद क्यों हटता है, display system के दो axes (app की theme और
-किताब का काग़ज़ — दोनों अलग), और offline text बनाम offline audio.
+किताब का काग़ज़ — दोनों अलग), offline text बनाम offline audio, और **highlights**
+— एक highlight असल में क्या है, spans offsets पर क्यों नहीं टिके, और store में
+पड़ा highlight पन्ने पर न दिखने वाला bug दो बार क्यों लौटा (§6).
 
 **[library.md](library.md)** — `/library/[id]` हर गहराई पर एक ही component क्यों
 है, URLs workspace-neutral क्यों हैं, browse और find के बीच का एक-test वाला

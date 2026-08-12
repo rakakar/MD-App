@@ -163,7 +163,74 @@ route नियम बदलें तो दोनों जगह बदले
 पर register करना offline worker को चुपचाप बदल देगा और उसके साथ downloaded
 books ले जाएगा। विस्तार: [push-notifications.md](push-notifications.md).
 
-## 6. आगे के लिए खुला
+## 6. Highlights — एक highlight असल में क्या है
+
+**एक highlight = एक bookmark + उसके अंदर के spans.** कोई अलग model नहीं, न BE
+पर न store में। Bookmark की पहचान अब भी *(पाठक, paragraph)* है; रंगे हुए शब्द
+उसी एक row के अंदर list बनकर बैठते हैं (contract §6.0 `ranges`)।
+
+यह list क्यों है, एक span क्यों नहीं: इस साहित्य के paragraph सात-सात पंक्ति के
+हैं। एक span होता तो पाठक दूसरा वाक्य रंगते ही पहला चुपचाप ग़ायब हो जाता। और
+पहचान को *(पाठक, paragraph, span)* बनाने पर BE का unique constraint और FE के
+sync की हर key बदलनी पड़ती — list उसी row के अंदर रखने से दोनों में से कुछ नहीं
+बदला।
+
+### तीन नियम जो तोड़ने पर चुपचाप ग़लत होता है
+
+**1. भरोसा offsets पर नहीं, शब्दों पर है.** हर span अपने साथ अपना `text` भी
+रखता है। Offsets उस paragraph के हैं जो दोबारा extract और publish हो सकता है;
+शब्द वह चीज़ हैं जिनसे span ख़ुद को दोबारा ढूँढ़ लेता है। `anchorSpan()` पहले
+जाँचता है कि उन offsets पर वही शब्द हैं या नहीं, फिर शब्द ढूँढ़ता है, और न
+मिलें तो **span गिरा देता है** — पुराने offsets पर रंग देना पाठक का highlight
+किसी और वाक्य पर चिपका देता, जो खोने से बुरा है और पकड़ में भी नहीं आता। BE
+बिना `text` वाला span 400 करता है, इसी वजह से।
+
+**2. `data-not-text` गिनती से बाहर रखता है.** List का marker ("3.") और footnote
+का तारा paragraph के अंदर ही render होते हैं पर `text_hi` का हिस्सा नहीं हैं।
+इन्हें गिन लेने से हर list item का highlight दो-चार अक्षर खिसक जाता। `blocks.tsx`
+में जो कुछ text नहीं है, उस पर यह attribute लगाइए।
+
+**3. Span selection के समय नापा जाता है, tap के समय नहीं.** जब तक पाठक swatch
+दबाता है तब तक selection हिल या मिट चुकी हो सकती है। नाप के बाद उसे चुने हुए
+शब्दों से verify किया जाता है; न मिले तो पूरा paragraph रंग जाता है — जो पुराना,
+मोटा व्यवहार है और कभी ग़लत नहीं होता, बस बारीक नहीं।
+
+पुराने whole-paragraph highlights (`colour` है, `ranges` नहीं) आज भी चलते हैं:
+`wholeParagraph()` उन्हें एक span बना देता है ताकि renderer के पास एक ही शक्ल
+रहे।
+
+Paribhasha के निशान और highlight एक-दूसरे की सीमा नहीं मानते — headword आधा रंगा
+हो सकता है, highlight शब्द के बीच से शुरू हो सकता है — इसलिए `paintSegments()`
+दोनों को **एक ही runs** में काटता है, दो passes में नहीं।
+
+### सबसे आसानी से लौट आने वाला bug
+
+Store में highlight है और पन्ने पर नहीं दिखता। दो बार हो चुका है, दोनों बार
+अलग वजह से:
+
+- reader saved highlight को रंगता ही नहीं था (कोड में वह हालत थी ही नहीं);
+- account से आए spans store में लिखे जाते थे पर पन्ना दोबारा नहीं पढ़ता था —
+  reader store को mount पर एक बार पढ़ता है और sync कुछ सेकंड बाद उतरता है।
+
+दूसरे का इलाज **`PERSONAL_SYNCED`** है (`lib/personal.ts`): pull पूरा होने पर एक
+event, जिसे reader सुनकर दोबारा पढ़ लेता है। यह **सिर्फ़ sync से** निकलता है,
+हर store-write से नहीं — `setLocalStore` resume position पर भी चलता है, जो
+पढ़ते हुए हर दो-तीन सेकंड में लिखी जाती है, और उससे event भेजने का मतलब होता
+पूरा पन्ना बार-बार बनाना।
+
+### Sync की तरजीह
+
+| हालत | कौन जीतता है |
+|---|---|
+| local row `dirty` है | local — यहाँ का बदलाव अभी ऊपर जाना बाक़ी है |
+| server ने field भेजी ही नहीं | local — यह चुप्पी है, "कुछ नहीं" नहीं |
+| बाक़ी सब | server |
+
+बीच वाली पंक्ति असली है: §6.0 से पुराने BE के साथ पहला ही sync device के सारे
+highlights मिटा देता। Push पर spans **replace** होते हैं, merge नहीं — merge
+सिर्फ़ जोड़ सकता है, तो पाठक का हटाया हुआ highlight अगले sync में लौट आता।
+
+## 7. आगे के लिए खुला
 
 - **पर्दा बंद होने पर audio:** device TTS screen lock पार नहीं कर सकती। यह
   सिर्फ़ BE की बनाई हुई renditions से हो सकता है — FE का काम नहीं।
