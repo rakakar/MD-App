@@ -318,6 +318,55 @@ The colours carry no meaning — the design offers three because a reader likes
 sorting their own passages, not because one of them means *important*. Do not
 build a filter that reads them as categories.
 
+#### `ranges` — which words, not just which paragraph
+
+A bookmark also carries **`ranges`**: the spans inside the paragraph that are
+actually painted, left to right.
+
+```jsonc
+"ranges": [
+  { "start": 0, "end": 42, "text": "अकेले मानव में…", "colour": "sage" },
+  { "start": 96, "end": 130, "text": "…प्रमाण त्रय…",   "colour": "amber" }
+]
+```
+
+**A list, so one paragraph can hold several highlights.** One span per bookmark
+reads simpler until you meet this material, whose paragraphs run seven lines:
+the reader paints a second sentence and the first disappears, because a
+bookmark is identified by *(user, paragraph)* and there is only one row to put a
+span on. Keeping the list inside that row is what makes this cheap — the
+identity does not change, so nothing that addresses a bookmark by its paragraph
+has to learn a new key.
+
+**`text` is the load-bearing field, not the offsets.** Offsets are measured
+against a paragraph that gets re-extracted and re-published; the words are how a
+span finds itself again when they shift. Render by checking
+`text_hi.slice(start, end) === text` and falling back to a search for `text`;
+a span whose words are gone is dropped rather than painted at stale offsets.
+The API refuses a span with no `text` for exactly this reason.
+
+**Painting order: `ranges` first, then `colour`.**
+
+| Row | Means |
+|---|---|
+| `ranges` non-empty | paint those spans, each in its own colour |
+| `ranges` empty, `colour` set | the whole paragraph is painted — every highlight made before spans existed |
+| neither | saved, not painted |
+
+**Writing.** `POST /me/bookmarks/` takes `ranges` and **replaces** the stored
+list — the client holds the whole set for that paragraph and has just
+recomputed it, so one authority beats two halves. Replacing is also the only way
+a *removed* highlight can travel, since a merge can only ever add. Omitting the
+field leaves the spans alone (so the plain save cannot wipe them); sending `[]`
+clears them, which is how the last highlight comes off a passage that stays
+bookmarked.
+
+Spans are validated hard and come back sorted and de-overlapped: `start`/`end`
+must be integers with `end > start`, `colour` must be one of the three, `text`
+must be non-empty. Where two spans overlap, the one reaching further wins —
+re-selecting a phrase and taking in more of the sentence extends the highlight
+rather than painting the overlap twice.
+
 ### 6.1 Signing in
 
 Readers authenticate through **django-allauth headless, `app` client**, at
