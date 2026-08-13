@@ -81,10 +81,15 @@ export const metadata: Metadata = {
   // a browser-chrome title bar — most of this audience installs from Safari.
   icons: {
     icon: [
+      { url: "/brand/logo.svg", type: "image/svg+xml" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icon-192.png", sizes: "180x180", type: "image/png" }],
+    // Its own file at its own size. This used to hand iOS the 192 and label it
+    // 180, so the mark was resampled on every home screen; and a clear-cornered
+    // PNG comes back from iOS as a mark on a black square, which is why the
+    // Apple icon is the opaque render rather than the tile.
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     title: "MD Study",

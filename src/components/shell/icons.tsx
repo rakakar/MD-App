@@ -166,20 +166,33 @@ export function WorkspaceIcon({
 
 /**
  * The app mark that opens the app bar (design 10A / every mobile screen).
- * Drawn rather than loaded from /icon-192.png: it is the same geometry —
- * measured off that file — and inline it survives offline, needs no request,
- * and stays crisp at the 30px the sidebar uses.
+ * The real one now: the Divya Path Sansthan emblem the designer supplied as
+ * `design_docs/MD Study logo.svg`, served from `/brand/logo.svg` and rendered
+ * into the raster icons by `scripts/build-icons.py`. What stood here until the
+ * logo arrived was a two-stroke placeholder measured off the old icon PNG.
+ *
+ * A file rather than inline SVG, which reverses the earlier call and is worth
+ * saying why: the placeholder was three shapes, and this mark is 44 paths of
+ * leaf and ring-text detail — ~85KB of path data that would otherwise repeat
+ * in the HTML of every page. One cached request instead, precached by the
+ * service worker so it still survives offline.
  *
  * Terracotta, not the workspace hue: the mark is app identity, and 10A keeps
  * terracotta on shared chrome while the hue moves only through the switcher.
  */
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 48 48" className={className ?? "h-8 w-8"} aria-hidden="true">
-      <rect width="48" height="48" rx="15" fill="#c8621a" />
-      <path d="M23.4 17v16.6H9.75V20z" fill="#faf7f2" />
-      <path d="M24.6 17v16.6h13.65V20z" fill="#faf7f2" />
-    </svg>
+    // next/image would add a wrapper and a loader around an SVG its optimizer
+    // passes through untouched, and this one is 32px of always-visible chrome.
+    // eslint-disable-next-line @next/next/no-img-element -- see above
+    <img
+      src="/brand/logo.svg"
+      alt=""
+      aria-hidden="true"
+      width={40}
+      height={40}
+      className={className ?? "h-8 w-8"}
+    />
   );
 }
 

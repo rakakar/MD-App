@@ -33,11 +33,17 @@ export default function manifest(): MetadataRoute.Manifest {
       { name: "Search", short_name: "Search", url: "/search" },
       { name: "My Journey", short_name: "Journey", url: "/me" },
     ],
+    // `any` and `maskable` are two different drawings of the same mark, and
+    // that is the point: the plain icons keep the designer's rounded tile with
+    // its corners clear, while the maskable one bleeds terracotta to all four
+    // edges so Android's circle crop lands on background instead of cutting
+    // the tile's corners off. Pointing both purposes at one file — which this
+    // did — means one of the two is wrong wherever it is shown.
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
       {
-        src: "/icon-512.png",
+        src: "/icon-maskable-512.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

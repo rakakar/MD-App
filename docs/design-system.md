@@ -238,6 +238,21 @@ mitigation for Connect being two taps away, and what it cost was the four things
 wrapping to two rows at the text sizes this audience actually uses. Its job moved onto
 Home, where a shivir can say where it is.
 
+**The app mark is a file, and there are five renders of it.** The designer's export is
+`design_docs/MD Study logo.svg` — the Divya Path Sansthan tree emblem, white on a `#CD7233`
+rounded tile, with "DIVYA PATH SANSTHAN · AMARKANTAK · ESTD. 1981" set around the ring.
+`public/brand/logo.svg` is that file at 2dp and without its fixed 40×40, and it is what
+`BrandMark` renders; `scripts/build-icons.py` turns it into the manifest icons, the
+maskable icon, the Apple touch icon and the favicon. Change the logo in one place and
+re-run that script — do not hand-edit anything under `public/`.
+
+Two things follow from the mark being this detailed. The ring text stops being legible
+below roughly 64px, so the 32px app bar and the 30px sidebar show it as a tree in a circle
+and that is fine — it is the mark, not a sign to read. And the emblem is a *circle* inside
+the tile, which is what makes the maskable icon work: Android's circle crop takes the tile
+corners, never the artwork. Anything that needs the name spelled out should set "MD Study"
+in type beside the mark, the way the desktop sidebar already does.
+
 ---
 
 ## Scope — what is built, and what is not

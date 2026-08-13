@@ -117,8 +117,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // immutable build assets + fonts: cache-first
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.endsWith(".woff2")) {
+  // immutable build assets + fonts: cache-first.
+  //
+  // `/brand/` is in here for the app mark. It used to be an inline SVG, so it
+  // was offline by construction; the designer's real logo is a file, and
+  // without this line an offline reader gets a broken image in the app bar of
+  // every screen. It is versioned by name, like the rest of this branch.
+  if (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/brand/") ||
+    url.pathname.endsWith(".woff2")
+  ) {
     event.respondWith(
       caches.open(STATIC_CACHE).then(async (cache) => {
         const hit = await cache.match(req);
