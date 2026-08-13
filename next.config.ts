@@ -1,6 +1,23 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /**
+   * Where the project starts, stated rather than guessed.
+   *
+   * Turbopack infers the root by walking up for a lockfile, so a stray
+   * `package-lock.json` anywhere above this folder wins — a scratch project in
+   * the home directory is enough to make `/Users/<you>` the root. Nothing fails
+   * loudly when that happens: the dev server starts, prints a warning most
+   * people scroll past, and then watches an entire home directory.
+   *
+   * Pinning it keeps the answer the same on every machine regardless of what
+   * else is lying around above the checkout.
+   */
+  turbopack: {
+    root: path.join(__dirname),
+  },
+
   /**
    * Who may load dev resources cross-origin. Development only — the deployed
    * app never sees this.
