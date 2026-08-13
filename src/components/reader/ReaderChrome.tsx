@@ -39,7 +39,7 @@ function SquareBtn({
   children: React.ReactNode;
 }) {
   const cls =
-    "flex h-11 w-11 shrink-0 items-center justify-center rounded-tile border border-(--reader-rule) transition-colors active:bg-current/10";
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) transition-colors active:bg-current/10";
   return href ? (
     <Link href={href} aria-label={label} title={label} className={cls}>
       {children}
@@ -99,7 +99,14 @@ export function ReaderTopBar({
       data-hidden={hidden}
       className="reader-chrome reader-chrome-top fixed inset-x-0 top-0 z-40 bg-(--reader-bg)/95 pt-[env(safe-area-inset-top)] backdrop-blur"
     >
-      <div className="reader-content flex items-center gap-2 py-2">
+      {/* A fixed 16px gutter, not `.reader-content`. The bar used to be laid
+          out on the reading measure, which meant its controls moved whenever
+          the reader did: the margin presets set `--reader-pad` to 13.6, 21.6 or
+          36px, so changing the text's margins walked the back button across the
+          screen — and on a wide window the whole bar pulled in to the 40rem
+          column and left its own corners empty. The chrome is the app's, not
+          the page's; it stays put while the page reflows under it. */}
+      <div className="flex items-center gap-2 px-4 py-2">
         <SquareBtn href={backHref} label={backLabel}>
           <BackIcon className="h-5 w-5" />
         </SquareBtn>
@@ -116,7 +123,7 @@ export function ReaderTopBar({
             href={pagesHref}
             title="Read the original pages"
             aria-label="Read the original pages"
-            className="flex h-11 shrink-0 items-center rounded-tile border border-(--reader-rule) px-3 text-xs font-semibold active:bg-current/10"
+            className="flex h-11 shrink-0 items-center rounded-control border border-(--reader-rule) px-3 text-xs font-semibold active:bg-current/10"
           >
             Pages
           </Link>
@@ -133,7 +140,7 @@ export function ReaderTopBar({
           href={assistantHref}
           aria-label="Assistant — search Paribhasha and the books"
           title="Assistant"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tile text-white transition-opacity active:opacity-80"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-white transition-opacity active:opacity-80"
           style={{ background: "var(--ws-color)" }}
         >
           <Icon name="assistant" className="h-5 w-5" />
@@ -193,7 +200,11 @@ export function ReaderBottomBar({
       className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg)/95 backdrop-blur"
       style={{ bottom }}
     >
-      <div className="reader-content flex items-center gap-2 py-1.5">
+      {/* The same fixed 16px gutter as the top bar, and for the same reason —
+          see `ReaderTopBar`. The two bars frame the page between them, so a
+          reader who widens the margins would otherwise watch the bottom row
+          step inward while the top row stayed put. */}
+      <div className="flex items-center gap-2 px-4 py-1.5">
         <SquareBtn onClick={onContents} label="Contents">
           <TocIcon className="h-5 w-5" />
         </SquareBtn>
@@ -201,7 +212,7 @@ export function ReaderBottomBar({
         {/* The comps put this in its own sunk field rather than loose on the
             bar — it is a readout, and a readout that looks like a label gets
             read as one. */}
-        <span className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-tile border border-(--reader-rule) px-3 text-sm font-medium tabular-nums">
+        <span className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-control border border-(--reader-rule) px-3 text-sm font-medium tabular-nums">
           <span className="truncate">{position}</span>
         </span>
 
