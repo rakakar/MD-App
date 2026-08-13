@@ -21,23 +21,35 @@ import type { BookSummary } from "@/lib/types";
  * tile any more, and why the Home rail captions underneath as the shelf grid
  * already did.
  *
- * Covers fill their tile, and every tile a cover lands in is now portrait
- * (4:5) so that filling costs a sliver of margin rather than a third of the
- * book: on a square tile the same crop threw away the publisher's block and
- * half the printed title, which is why these were contained-with-a-blurred-
- * backdrop before.
+ * Covers fill their tile, and the tile is the shape of the cover: every book
+ * the BE serves is a 612×834 scan, so `--cover-ratio` is that exact figure
+ * (102/139) and filling crops nothing at all. It was 4:5 — chosen to make the
+ * crop a sliver of margin rather than the third of the book a square tile threw
+ * away — and a sliver is still the printed border, which is part of the object
+ * these are photographs of.
+ *
+ * `object-cover` stays rather than `contain`, so a future cover that is not
+ * 612×834 loses a sliver instead of sitting in bars. If the BE ever starts
+ * serving mixed shapes, that is the line to revisit, not this ratio.
  */
 type Size = "resume" | "rail" | "grid" | "lg";
 
+/** 612×834, the shape of every cover the BE has. Written as a fraction rather
+ *  than a decimal so the source of it is legible at the call site. */
+const COVER = "aspect-[102/139]";
+
+/** Four sizes, one shape and one corner. What differs between a cover on the
+ *  shelf and the same cover in a resume card is how big it is — nothing else,
+ *  or a book changes shape on the way between two screens. */
 const BOX: Record<Size, string> = {
   // the resume card's cover — a book someone is actually inside, drawn large
-  // enough to be recognised by its artwork rather than by its caption
-  resume: "h-[86px] w-[62px] rounded-xl p-2",
-  rail: "aspect-[4/5] w-full rounded-[14px] p-3",
-  // 4:5, not the square it was: now that a cover fills its tile rather than
-  // sitting inside it, a square would crop a third of a portrait book away.
-  grid: "aspect-[4/5] w-full rounded-xl p-3",
-  lg: "h-[130px] w-24 rounded-[14px] p-3.5",
+  // enough to be recognised by its artwork rather than by its caption. Fixed
+  // px because it sits beside text rather than in a grid, so the ratio is
+  // spelled out in the numbers: 63/86 is 102/139 to within a pixel.
+  resume: "h-[86px] w-[63px] rounded-cover p-2",
+  rail: `${COVER} w-full rounded-cover p-3`,
+  grid: `${COVER} w-full rounded-cover p-3`,
+  lg: "h-[130px] w-[95px] rounded-cover p-3.5",
 };
 
 const LETTER: Record<Size, string> = {
@@ -63,7 +75,13 @@ export function CoverTile({
 
   return (
     <div
-      className={`${BOX[size]} relative flex shrink-0 flex-col justify-between overflow-hidden border border-white/15 shadow-[0_10px_22px_-12px_rgba(20,15,10,.55)]`}
+      // `border-rule`, the same hairline the resume card beside it wears, and
+      // not the `white/15` it had. That was an inner highlight — a lit edge
+      // *inside* the artwork, which is a different object from the line that
+      // separates a card from the page — and on a pale cover it disappeared
+      // while on a dark one it glowed. One border on Home, and it follows the
+      // theme like every other one.
+      className={`${BOX[size]} relative flex shrink-0 flex-col justify-between overflow-hidden border border-rule shadow-[0_10px_22px_-12px_rgba(20,15,10,.55)]`}
       style={{ background: coverGradient(hue) }}
     >
       {book.cover_image && (

@@ -134,7 +134,7 @@ export function StatTile({
             the clamp was declared and never applied — three lines of Devanagari
             where two were asked for. */}
         <span
-          {...scripted(label, "line-clamp-2 shrink-0 text-sm font-semibold leading-snug")}
+          {...scripted(label, "line-clamp-2 shrink-0 text-sm font-semibold hi-tight")}
         >
           {label}
         </span>

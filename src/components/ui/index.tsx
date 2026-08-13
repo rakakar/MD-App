@@ -116,7 +116,7 @@ export function SectionHeading({
   tier?: "eyebrow" | "title";
 }) {
   return (
-    <div className="mb-3 mt-7 flex items-center justify-between gap-3 first:mt-0">
+    <div className="mb-3 mt-5 flex items-center justify-between gap-3 first:mt-0">
       <h2
         className={
           tier === "title"

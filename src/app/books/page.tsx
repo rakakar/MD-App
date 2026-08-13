@@ -55,11 +55,15 @@ export default async function BooksPage({
       {/* "Read", not "Originals" (design 1B): this is the Read tab, the
           workspace is already named in the app bar right above it, and the
           spec puts the shelf's identity in the summary line underneath. */}
-      <h1 className="font-display text-[1.625rem] font-medium tracking-[-0.015em] lg:text-4xl">
+      {/* `leading-tight` and a 2px margin under it: the summary line is this
+          title's own subtitle, not the next thing on the page, so it sits
+          against it. The air goes below the pair instead — see the resume
+          rail's own `mt-5`. */}
+      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
         {isTranslations ? "Translations" : "Read"}
       </h1>
       {all.length > 0 && (
-        <p className="mt-1 text-sm text-ink-soft">
+        <p className="mt-0.5 text-sm text-ink-soft">
           <span>
             {all.length} {all.length === 1 ? "book" : "books"}
           </span>

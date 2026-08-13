@@ -106,12 +106,16 @@ export function ShelfCard({ book }: { book: BookSummary }) {
     // width — which on a two-up phone grid is the only thing being scanned.
     <Link
       href={`/books/${encodeURIComponent(book.code)}`}
-      className="group flex h-full flex-col gap-2 rounded-card"
+      // gap-1 with the title carrying its own mt-1.5: the cover still gets its
+      // 10px of air, and the title and its page count close from 8px to 4px.
+      // They are one caption — a title and the size of the thing it names —
+      // and at 8px apart under a 2-line Devanagari title they read as two.
+      className="group flex h-full flex-col gap-1 rounded-card"
     >
       <CoverTile book={book} size="grid" />
       <span
         lang="hi"
-        className="hi mt-0.5 line-clamp-2 text-title font-semibold leading-snug group-hover:underline"
+        className="hi hi-tight mt-1.5 line-clamp-2 text-title font-semibold group-hover:underline"
       >
         {book.title_hi}
       </span>
@@ -119,7 +123,7 @@ export function ShelfCard({ book }: { book: BookSummary }) {
           a cover expecting the reader and gets a scanned PDF has been misled
           by the card, and the fact is one word long. */}
       {book.is_pdf_only && (
-        <span className="-mt-1.5 block text-xs font-bold uppercase tracking-wide text-ink-soft">
+        <span className="-mt-0.5 block text-xs font-bold uppercase tracking-wide text-ink-soft">
           PDF
         </span>
       )}
@@ -130,7 +134,7 @@ export function ShelfCard({ book }: { book: BookSummary }) {
         {book.page_count ? `${book.page_count} pages` : book.author}
       </span>
       {book.translation_of && book.translator && (
-        <span className="-mt-1.5 block truncate text-xs text-ink-soft">
+        <span className="-mt-0.5 block truncate text-xs text-ink-soft">
           Translator: {book.translator}
         </span>
       )}

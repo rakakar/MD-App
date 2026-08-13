@@ -38,7 +38,7 @@ export function BookRail({ books }: { books: BookSummary[] }) {
             <CoverTile book={b} size="rail" />
             <span
               lang="hi"
-              className="hi mt-2.5 block line-clamp-2 text-xs font-semibold leading-snug group-hover:underline"
+              className="hi hi-tight mt-2.5 block line-clamp-2 text-xs font-semibold group-hover:underline"
             >
               {b.title_hi}
             </span>
@@ -49,7 +49,7 @@ export function BookRail({ books }: { books: BookSummary[] }) {
                 it, and the shelf is where a reader is comparing books rather
                 than glancing across them. */}
             {b.page_count ? (
-              <span className="mt-1 block text-xs text-ink-soft">{b.page_count} pages</span>
+              <span className="mt-0.5 block text-xs text-ink-soft">{b.page_count} pages</span>
             ) : null}
           </Link>
         </li>

@@ -239,6 +239,15 @@
      this ladder exists to prevent — the designer's 8px settled it, so there is
      one name. */
   --radius-control: 0.5rem;
+  /* 10px — a book cover, at every size one is drawn at. Named for the object
+     rather than for a size because that is now the rule: the resume
+     thumbnail, the Home rail, the shelf grid and the detail hero are one
+     radius, so a book does not change shape on the way between two screens.
+     They were four values (12, 14, 12, 14) — two of them Tailwind's `xl` and
+     off the ladder — and the smallest cover was wearing the largest corner.
+     The value is the one `chip` used to hold, back for a different job than
+     it left for. */
+  --radius-cover: 0.625rem;
   --radius-tile: 0.875rem; /* 14px */
   --radius-card: 1.25rem; /* 20px */
   --radius-hero: 1.5rem; /* 24px */
@@ -684,6 +693,23 @@ body {
 .hi {
   font-family: var(--font-devanagari);
   line-height: 1.85;
+}
+
+/* A Devanagari label inside a fixed box — the Library stat tile's folder name,
+   which gets two lines of a 108px square and no more.
+ *
+ * It has to be its own class because a `leading-*` utility cannot do it: the
+ * utilities live in Tailwind's `utilities` layer and `.hi` above is unlayered,
+ * so `.hi` wins on the cascade whatever the source order. About twenty
+ * `leading-snug`/`leading-tight`/`leading-relaxed` classes on `.hi` elements in
+ * this tree are inert for that reason — worth a pass, but a pass that moves
+ * type on twenty screens is not a thing to do on the way past.
+ *
+ * 1.35, not Tailwind's 1.25: below about 1.3 the matras above and below the
+ * line start to touch the line either side of them, and every one of these
+ * names carries some. */
+.hi-tight {
+  line-height: 1.35;
 }
 
 /* Tiro ships a single 400 weight, so every bold Devanagari title in the app

@@ -53,11 +53,12 @@ into the code at the point it happens, the way `globals.css` already does.
 | Chips inside the filter sheet carry no counts | Adopted — the comp is followed | The panels this replaced printed a count on every chip. The sheet's footer counts the whole find live instead, and it re-counts on every tap, which is the number the reader is actually deciding with. |
 | Six themes in the reader sheet | Six *reading surfaces*; the app keeps Auto/Light/Sepia/Dark | Auto is what lets a phone that darkens at sunset take the app with it. A book chosen on cream should not turn grey because the sun went down. |
 
-## Revisions after the comps — Home, 13 Aug 2026
+## Revisions after the comps — Home and Read, 13 Aug 2026
 
 Not deviations. The 2026-08-11 comps are the source of truth for every screen *except*
-where the designer has since revised one, and Home has been revised once. Where the two
-disagree on the rows below, this table is the later word and the PNG is the older one.
+where the designer has since revised one, and Home and Read have been revised once. Where
+the two disagree on the rows below, this table is the later word and the PNG is the older
+one.
 
 | Comp (11 Aug) | Now | Note |
 |---|---|---|
@@ -66,8 +67,14 @@ disagree on the rows below, this table is the later word and the PNG is the olde
 | Sutra citation reads "जीवन विद्या एक परिचय · MKD 2.40.7" | The book alone | The ref is an internal address in Latin letters on the one card meant to be read. The link still lands on the verse. |
 | Bookmark button beside Share | Gone | Saved is in the account menu. On a card whose job is Share, a second control of equal weight split the one action. |
 | Section headings 20px/700 | 17px/600 | What separates a heading from the cards under it is now the rhythm rather than the size — see below. |
-| — | One 28px gap between every section on Home | It was 0 above Continue Reading (a first-child margin collapsed away), 28 in most places, and 36–39 after a rail or under a heading carrying a "See all". |
+| — | One 20px gap between every section on Home | It was 0 above Continue Reading (a first-child margin collapsed away), 28 in most places, and 36–39 after a rail or under a heading carrying a "See all". |
+| Cover tiles at 4:5, cover cropped | `aspect-[102/139]` — the covers' own 612×834 | Every cover the BE serves is that scan, so the tile is the shape of the thing in it and `object-cover` crops nothing. |
+| Workspace tile names at 17px | 15px | They were the card-title step from when the heading above them was 20px. Level with a 17px heading, four workspace names read as four more headings. |
 | Library stat tiles, height from content | Square as a floor | A square spacer shares a grid cell with the content and the taller one wins, so a short folder name leaves the tile square and "परिचयात्मक संकलन (प्रवेश सप्तम)" grows all three together instead of being cut. |
+| Cover tiles at four radii (12, 14, 12, 14) | One — `--radius-cover`, 10px | Named for the object, not a size: a book must not change shape between two screens. Two of the four were Tailwind's `xl` and off the ladder, and the smallest cover wore the largest corner. |
+| Cover tiles edged `white/15` | `border-rule` | That was an inner highlight, not a border — invisible on a pale cover, glowing on a dark one. It now follows the theme like every other edge, and matches the resume card it sits inside. |
+| Read: title, summary line and the resume rail evenly spaced | Title and summary tight (2px), 20px below the pair | The summary is the title's own subtitle. The gap under it was **0** — see the `.hi`/`first:` note below. |
+| Shelf and rail book captions at the `.hi` body leading | `hi-tight`, and title-to-page-count at 4px | A title and the size of the thing it names are one caption; at the full 1.85 leading and 8px apart they read as two. |
 | CTA buttons as pills, each written by hand | One `ctaPrimary` at 8px, terracotta | See below. |
 
 ### One CTA — `ctaPrimary` / `ctaPrimaryCompact` in `components/ui`
@@ -81,6 +88,25 @@ one class string now, and the sutra's Share is on it — it wore `--color-accent
 A class string rather than a component on purpose: half these are `<button type="submit">`
 inside a form and half are `<Link>`. The fill stays with the caller as
 `style={{ background: "var(--ws-color)" }}` — it is the one genuinely per-workspace part.
+
+### Known: `leading-*` does nothing on `.hi`, and `first:mt-0` was hiding a gap
+
+Two cascade traps, both found by measuring rather than by reading:
+
+**`.hi` beats every leading utility.** `.hi { line-height: 1.85 }` is unlayered and
+Tailwind's utilities live in the `utilities` layer, so `.hi` wins whatever the source
+order. About twenty `leading-snug` / `leading-tight` / `leading-relaxed` classes on `.hi`
+elements in this tree are therefore **inert** — the book-rail captions, the TOC sheet,
+search results, the reader's own headings. Where a Devanagari label has to fit a box, use
+`.hi-tight` (1.35, the floor that still clears the matras). Making the utilities live
+generally would move type on twenty screens; that is a deliberate pass, not a drive-by.
+
+**A `first:` margin on a component's own first child is dead code.** `ContinueReading`'s
+heading carried `mt-5 first:mt-0`, and the `h2` is always the first child of its own
+`<section>` — so the margin never applied anywhere. Home did not notice, because the
+stack's `gap-5` was spacing it; the Read shelf had nothing else, and the heading sat
+against the summary line. The margin belongs on the `<section>`, where `first:` describes
+something real about where the component was placed.
 
 ---
 

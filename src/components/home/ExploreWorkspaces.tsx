@@ -42,10 +42,16 @@ export function ExploreWorkspaces({ current }: { current: WorkspaceId }) {
                 <WorkspaceIcon id={id} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-title font-semibold leading-tight tracking-[-0.01em]">
+                {/* 15px, a step under the section heading rather than level
+                    with it. These were 17px, which was the card-title step
+                    when the heading above them was 20px — the heading has come
+                    down to 17px since, and a row of workspace names set as
+                    large as "Explore workspaces" reads as five headings rather
+                    than as one heading and its four doors. */}
+                <span className="block text-sm font-semibold leading-tight tracking-[-0.01em]">
                   {ws.name}
                 </span>
-                <span className="mt-0.5 block text-sm leading-snug text-ink-soft">
+                <span className="mt-0.5 block text-xs leading-snug text-ink-soft">
                   {ws.tagline}
                 </span>
               </span>

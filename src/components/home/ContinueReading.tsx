@@ -146,9 +146,16 @@ export function ContinueReading({
   if (cards.length === 0) return null;
 
   return (
-    <section aria-label={heading}>
+    // The section gap belongs on the section, not on its heading. On the
+    // heading it was dead code: the h2 is always the first child of this
+    // <section>, so `first:mt-0` always won, and the rail leaned on whatever
+    // was above it. That is fine on Home, where the stack's own `gap-5` does
+    // the spacing — and `first:` is still what keeps it from doubling there —
+    // but on the Read shelf nothing else was providing it, so the heading sat
+    // against the "13 books · … " line as if it were part of it.
+    <section aria-label={heading} className="mt-5 first:mt-0">
       <h2
-        className={`mb-3 mt-7 first:mt-0 ${
+        className={`mb-3 ${
           tier === "title"
             ? "text-title font-semibold tracking-[-0.015em] text-ink"
             : "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
