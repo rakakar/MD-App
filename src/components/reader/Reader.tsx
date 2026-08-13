@@ -52,6 +52,7 @@ import { SettingsSheet } from "./SettingsSheet";
 import { TocSheet } from "./TocSheet";
 import { useReaderChrome } from "./useReaderChrome";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
+import { ctaPrimary } from "@/components/ui";
 
 export interface ReaderBook {
   code: string;
@@ -1362,7 +1363,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                   <button
                     type="button"
                     onClick={() => void goToChapter(chapter.next!.number)}
-                    className="min-h-11 min-w-0 rounded-full px-4 font-semibold text-white"
+                    className={`min-w-0 ${ctaPrimary}`}
                     style={{ background: "var(--ws-color)" }}
                   >
                     <span lang="hi" className="hi">{chapter.next.title_hi}</span> →
@@ -1528,7 +1529,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 type="button"
                 onClick={commitNote}
                 disabled={!noteText.trim()}
-                className="min-h-11 rounded-full px-5 text-sm font-semibold text-white disabled:opacity-50"
+                className={ctaPrimary}
                 style={{ background: "var(--ws-color)" }}
               >
                 Save note
@@ -1559,7 +1560,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           />
           <button
             type="submit"
-            className="mt-3 min-h-11 w-full rounded-full text-sm font-semibold text-white"
+            className={`mt-3 w-full ${ctaPrimary}`}
             style={{ background: "var(--ws-color)" }}
           >
             Go

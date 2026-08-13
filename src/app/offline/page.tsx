@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ReportButton } from "@/components/feedback/ReportButton";
+import { ctaPrimary } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Offline" };
 
@@ -17,7 +18,7 @@ export default function OfflinePage() {
       <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/me/settings"
-          className="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
+          className={ctaPrimary}
           style={{ background: "var(--ws-color)" }}
         >
           My downloads

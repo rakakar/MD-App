@@ -53,6 +53,35 @@ into the code at the point it happens, the way `globals.css` already does.
 | Chips inside the filter sheet carry no counts | Adopted — the comp is followed | The panels this replaced printed a count on every chip. The sheet's footer counts the whole find live instead, and it re-counts on every tap, which is the number the reader is actually deciding with. |
 | Six themes in the reader sheet | Six *reading surfaces*; the app keeps Auto/Light/Sepia/Dark | Auto is what lets a phone that darkens at sunset take the app with it. A book chosen on cream should not turn grey because the sun went down. |
 
+## Revisions after the comps — Home, 13 Aug 2026
+
+Not deviations. The 2026-08-11 comps are the source of truth for every screen *except*
+where the designer has since revised one, and Home has been revised once. Where the two
+disagree on the rows below, this table is the later word and the PNG is the older one.
+
+| Comp (11 Aug) | Now | Note |
+|---|---|---|
+| App-bar controls at 12px | 8px — `--radius-control` | The switcher, display and account buttons, and the sutra's Share. |
+| Sutra card with no edge | A hairline — `--sutra-border` | The border is in the comp; the code never drew it. Themed with the rest of the sutra's own five. |
+| Sutra citation reads "जीवन विद्या एक परिचय · MKD 2.40.7" | The book alone | The ref is an internal address in Latin letters on the one card meant to be read. The link still lands on the verse. |
+| Bookmark button beside Share | Gone | Saved is in the account menu. On a card whose job is Share, a second control of equal weight split the one action. |
+| Section headings 20px/700 | 17px/600 | What separates a heading from the cards under it is now the rhythm rather than the size — see below. |
+| — | One 28px gap between every section on Home | It was 0 above Continue Reading (a first-child margin collapsed away), 28 in most places, and 36–39 after a rail or under a heading carrying a "See all". |
+| Library stat tiles, height from content | Square as a floor | A square spacer shares a grid cell with the content and the taller one wins, so a short folder name leaves the tile square and "परिचयात्मक संकलन (प्रवेश सप्तम)" grows all three together instead of being cut. |
+| CTA buttons as pills, each written by hand | One `ctaPrimary` at 8px, terracotta | See below. |
+
+### One CTA — `ctaPrimary` / `ctaPrimaryCompact` in `components/ui`
+
+About twenty call-to-action buttons agreed on being white-on-workspace-colour and on
+nothing else: five horizontal paddings, two type sizes, a pill radius, and three of them
+under the 44px touch floor because `py-2.5` is 40px and nobody had measured one. They are
+one class string now, and the sutra's Share is on it — it wore `--color-accent` and a
+36px height, and it is the same button as Sign in.
+
+A class string rather than a component on purpose: half these are `<button type="submit">`
+inside a form and half are `<Link>`. The fill stays with the caller as
+`style={{ background: "var(--ws-color)" }}` — it is the one genuinely per-workspace part.
+
 ---
 
 ## Tokens — `src/app/globals.css`
@@ -105,11 +134,20 @@ because four pale tiles on a near-black card are four lamps.
 `--color-hl-amber` · `--color-hl-sage` · `--color-hl-sky`. Book ink lands 13.9–14.5:1 on
 all three, and 8.3–9.5:1 on their deepened forms inside Quiet.
 
-### Radius — four, where there were eleven
+### Radius — five, where there were eleven
 
-`--radius-tile` 14px (a glyph or cover inside something else) · `--radius-card` 20px (a
-tappable thing on the page) · `--radius-hero` 24px (the coloured panel atop a detail
-screen) · `--radius-sheet` 26px (a bottom sheet's top corners) · plus `full` for pills.
+`--radius-control` 8px (**every CTA button**, and the small square: a 36px kind tile, a
+checkbox, an app-bar control) · `--radius-tile` 14px (a glyph or cover inside something
+else) · `--radius-card` 20px (a tappable thing on the page) · `--radius-hero` 24px (the
+coloured panel atop a detail screen) · `--radius-sheet` 26px (a bottom sheet's top
+corners) · plus `full`, now only for what is genuinely round — an avatar, a dot, an icon
+button, a progress track.
+
+`control` is the designer's 13 Aug value. It replaced `--radius-chip` (10px) rather than
+sitting beside it: two names for one step is the thing this ladder exists to prevent.
+
+`rounded-2xl` (16px) is not in the ladder and is used in about fifty places. That is the
+next thing to reconcile, not a licence to add a fifty-first.
 
 ### Elevation — three
 

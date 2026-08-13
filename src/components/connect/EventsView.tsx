@@ -58,7 +58,7 @@ function EventRow({ e }: { e: EventItem }) {
           actual form lives; this badge says registration is open from here. */}
       {e.registration_open === true && (
         <span
-          className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
+          className="shrink-0 rounded-control px-3 py-1.5 text-xs font-semibold text-white"
           style={{ background: "var(--ws-color)" }}
         >
           Register

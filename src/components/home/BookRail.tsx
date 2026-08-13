@@ -28,7 +28,10 @@ export function BookRail({ books }: { books: BookSummary[] }) {
     // swipe costs nothing; a grid cannot, and fourteen covers stacked 2-up
     // would run three screens down a column whose neighbours end in one. Four
     // is what the spec's desktop card shows, with the rest behind "All N →".
-    <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:[&>li:nth-child(n+5)]:hidden">
+    // pb-2 is headroom for the covers' drop shadow, which overflow-x-auto
+    // clips; -mb-2 keeps it out of the layout so the gap to the next heading
+    // is the heading's margin and nothing else. See ContinueReading.
+    <ul className="-mx-4 -mb-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:[&>li:nth-child(n+5)]:hidden">
       {books.map((b) => (
         <li key={b.code} className="w-[7.75rem] shrink-0 snap-start lg:w-full">
           <Link href={`/books/${encodeURIComponent(b.code)}`} className="group block">

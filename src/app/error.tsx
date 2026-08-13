@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { recordClientError } from "@/lib/clientErrors";
+import { ctaPrimary } from "@/components/ui";
 
 /**
  * The screen a reader is on at the exact moment they most want to tell us
@@ -38,7 +39,7 @@ export default function ErrorScreen({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
+          className={ctaPrimary}
           style={{ background: "var(--ws-color)" }}
         >
           Try again

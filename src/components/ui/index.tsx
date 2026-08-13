@@ -27,6 +27,32 @@ export * from "./Sheet";
 import { Chip, ChipRow } from "./Segmented";
 
 /**
+ * The call-to-action, in one place.
+ *
+ * Sign in, Share, Retry, Send feedback, Register, Turn on notifications — the
+ * app had about twenty of these and every one of them was written out by hand,
+ * so they agreed on being white-on-workspace-colour and on nothing else: five
+ * different horizontal paddings, two type sizes, and a pill radius that the
+ * designer's 8px has now replaced. Three of them were also under the 44px
+ * touch floor, because a `py-2.5` button is 40px and nobody had measured one.
+ *
+ * A class string rather than a component, deliberately: half of these are
+ * `<button type="submit">` inside a form, half are `<Link>`, and a wrapper
+ * that has to forward both would be more surface than the thing it wraps. The
+ * fill stays with the caller as `style={{ background: "var(--ws-color)" }}` —
+ * it is the one part that is genuinely per-workspace.
+ *
+ * `compact` is the same button at the metadata size, for the CTA that sits
+ * inside a card rather than under a paragraph — the sutra's Share, the push
+ * banner's Turn on. Same height, same radius; only the type steps down.
+ */
+const CTA_BASE =
+  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control " +
+  "font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60";
+export const ctaPrimary = `${CTA_BASE} min-h-11 px-5 text-sm`;
+export const ctaPrimaryCompact = `${CTA_BASE} min-h-11 px-3.5 text-xs`;
+
+/**
  * Page gutters and measure.
  *
  * Two widths, because the pages want different things. `text` keeps a reading
@@ -69,10 +95,16 @@ export function PageContainer({
  * A single middle tier for both, which is what this used to be, made the page
  * read as one flat list of equal things.
  *
- * The title tier was 17px until the finished comps arrived, where Home's
- * section headings are plainly a step above the 17px card titles under them.
- * At 17px the heading and the cards it introduced were the same size, which is
- * the specific way a long scrolling page stops having a shape.
+ * The title tier was 17px, then 20px/700 when the finished comps arrived, and
+ * is 17px/600 again on the designer's revision of Home. The reason it went up
+ * was that a heading the same size as the cards under it leaves a long page
+ * without a shape; what carries that job now is the rhythm rather than the
+ * type — one gap between every section, so a heading is read as a heading
+ * because of the air above it. Weight and tracking still separate it from a
+ * card title, which is 600 on a card, not on the page.
+ *
+ * The tier is only worn on Home. If it is ever used on a page that does not
+ * keep that rhythm, the size is the thing to revisit.
  */
 export function SectionHeading({
   children,
@@ -88,7 +120,7 @@ export function SectionHeading({
       <h2
         className={
           tier === "title"
-            ? "text-xl font-bold tracking-[-0.015em] text-ink"
+            ? "text-title font-semibold tracking-[-0.015em] text-ink"
             : "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
         }
       >
@@ -99,12 +131,22 @@ export function SectionHeading({
   );
 }
 
-/** The "All 6 →" / "See all →" link the spec pairs with a section heading. */
+/**
+ * The "All 6 →" / "See all →" link the spec pairs with a section heading.
+ *
+ * The 44px touch target is drawn by the `after:` overlay rather than by the
+ * link's own height, and that is the whole point of it. As `min-h-11` the
+ * target made the heading row 44px tall, so "Books" and "Library" — the two
+ * headings that carry one of these — sat 11px lower than "Shorts" and "Audio &
+ * Video" and left 23px under themselves where the others left 12. One section
+ * gap on Home means the headings have to sit on one baseline too, and the
+ * thumb still gets its 44px.
+ */
 export function SeeAll({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link
       href={href}
-      className="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold transition-opacity hover:opacity-75"
+      className="relative inline-flex shrink-0 items-center text-xs font-semibold transition-opacity after:absolute after:inset-x-[-0.5rem] after:top-1/2 after:h-11 after:-translate-y-1/2 hover:opacity-75"
       style={{ color: "var(--ws-ink)" }}
     >
       {children} →

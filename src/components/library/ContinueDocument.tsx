@@ -267,7 +267,7 @@ function ResumeCard({ row }: { row: ResumeRow }) {
   return (
     <Link
       href={href}
-      className="flex h-full w-full items-start gap-3 rounded-[20px] border border-rule bg-card p-3.5 text-left transition-shadow hover:shadow-md"
+      className="flex h-full w-full items-start gap-3 rounded-card border border-rule bg-card p-3.5 text-left transition-shadow hover:shadow-md"
     >
       {/* Portrait, and the same silhouette the shelf below uses: these are
           scans of printed pages, and a cover is what tells one document from

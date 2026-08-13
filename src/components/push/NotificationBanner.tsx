@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { track } from "@/lib/analytics";
 import { usePush } from "./usePush";
+import { ctaPrimaryCompact } from "@/components/ui";
 
 const DISMISSED_KEY = "md.push.banner_dismissed";
 
@@ -58,7 +59,7 @@ export function NotificationBanner() {
             type="button"
             onClick={() => void enable()}
             disabled={busy}
-            className="inline-flex min-h-11 items-center rounded-full px-4 text-xs font-semibold text-white disabled:opacity-50"
+            className={ctaPrimaryCompact}
             style={{ background: "var(--ws-color)" }}
           >
             {busy ? "Enabling…" : "Enable notifications"}

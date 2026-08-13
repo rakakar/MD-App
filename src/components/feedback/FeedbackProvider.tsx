@@ -15,6 +15,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 // The shell's sheet. Feedback can be sent from a chapter, but it is the app
 // being written to rather than the book being read — and the reader's own
 // paper on a form nobody is reading is a colour with no argument for it.
+import { ctaPrimary } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
 import { watchClientErrors } from "@/lib/clientErrors";
@@ -183,7 +184,7 @@ function FeedbackSheet({
             <Link
               href="/login?next=/me"
               onClick={onClose}
-              className="mt-3 inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
+              className={`mt-3 ${ctaPrimary}`}
               style={{ background: "var(--ws-color)" }}
             >
               Sign in
@@ -279,7 +280,7 @@ function FeedbackSheet({
                 type="button"
                 onClick={() => void submit()}
                 disabled={phase === "sending"}
-                className="min-h-11 rounded-full px-6 text-sm font-semibold text-white disabled:opacity-60"
+                className={ctaPrimary}
                 style={{ background: "var(--ws-color)" }}
               >
                 {phase === "sending" ? "Sending…" : "Send"}

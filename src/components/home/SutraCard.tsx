@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookmarkIcon, ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
+import { ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
+import { ctaPrimaryCompact } from "@/components/ui";
 import { track } from "@/lib/analytics";
 import { SUTRA } from "@/lib/labels";
 import { citationText, refToHref } from "@/lib/refs";
@@ -74,7 +75,11 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
 
   return (
     <figure
-      className="rounded-3xl p-5"
+      // The hairline is in the comp and was not in the code. It matters most
+      // in the theme the comp is not drawn in: on the sepia paper the peach
+      // ramp sits close enough to the page that without an edge the card stops
+      // being a card.
+      className="rounded-3xl border border-(--sutra-border) p-5"
       style={{
         // the spec's own peach ramp (1A) — a warm surface of its own rather
         // than a wash of the workspace hue, because the sutra belongs to the
@@ -136,37 +141,45 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
         />
 
         <div className="flex items-center gap-3">
+          {/* The book, and only the book. The canonical ref used to ride along
+              as "· MKD 2.40.7" — an internal address, in Latin letters and
+              digits, at the end of a Devanagari title on the one card that is
+              meant to be read rather than navigated. The link still lands on
+              the exact verse; it just no longer recites its own coordinates. */}
           <Link
             href={refToHref(sutra.canonical_ref)}
             className="min-w-0 flex-1 text-xs font-medium text-(--sutra-soft) underline-offset-2 hover:underline"
           >
-            <span lang="hi" className="hi">{sutra.book_title}</span> · {sutra.canonical_ref}
+            <span lang="hi" className="hi">{sutra.book_title}</span>
           </Link>
 
-          {browsing ? (
+          {/* Saved is reachable from the account menu, and the bookmark that
+              used to sit here is gone with the designer's revision: on a card
+              whose whole job is Share, a second control of equal weight was
+              splitting the one action the card exists for. It survives only
+              as the way back from browsing. */}
+          {browsing && (
             <button
               type="button"
               onClick={() => go(0)}
               disabled={busy}
-              className="flex h-9 items-center rounded-xl bg-(--sutra-chip) px-3 text-xs font-semibold text-(--sutra-soft) transition hover:brightness-105"
+              className="flex min-h-11 items-center rounded-control bg-(--sutra-chip) px-3 text-xs font-semibold text-(--sutra-soft) transition hover:brightness-105"
             >
               {`${SUTRA} of the day`}
             </button>
-          ) : (
-            <Link
-              href="/me/bookmarks"
-              aria-label="Saved"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-(--sutra-chip) text-(--sutra-soft) transition hover:brightness-105"
-            >
-              <BookmarkIcon className="h-4 w-4" />
-            </Link>
           )}
 
+          {/* The workspace's terracotta, the same fill Sign in wears, rather
+              than `--color-accent`. The card keeps its own peach surface for
+              the reason it always did — the verse belongs to the day — but the
+              button on it is a call to action like any other, and a reader
+              learns "this colour is the thing to press" from every screen at
+              once or from none of them. */}
           <button
             type="button"
             onClick={share}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ background: "var(--color-accent)" }}
+            className={ctaPrimaryCompact}
+            style={{ background: "var(--ws-color)" }}
           >
             <ShareIcon className="h-3.5 w-3.5" />
             Share

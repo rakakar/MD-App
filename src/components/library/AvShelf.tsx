@@ -367,7 +367,7 @@ function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: Shelf
   return (
     <Link
       href={nodeHref(group.id, shelves)}
-      className="group flex h-full flex-col rounded-[18px] border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
+      className="group flex h-full flex-col rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
     >
       <span
         aria-hidden

@@ -234,7 +234,7 @@ export function CheckRow({
     >
       <span
         aria-hidden
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border-2 text-white"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control border-2 text-white"
         style={
           checked
             ? { background: "var(--ws-color)", borderColor: "var(--ws-color)" }

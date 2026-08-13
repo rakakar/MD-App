@@ -109,18 +109,37 @@ export function StatTile({
   return (
     <Link
       href={href}
-      className="flex h-full flex-col gap-2 rounded-card border border-rule bg-card p-3 shadow-card transition-shadow hover:shadow-raised"
+      // Square as a *floor*, not as a height. Three of these across a phone is
+      // a row of tiles, and a tile whose height came from how long its label
+      // happened to be made that row read as three different objects — but the
+      // folder names here are things like "परिचयात्मक संकलन (प्रवेश सप्तम)",
+      // and a strict square cut the second line of that off mid-word.
+      //
+      // So the square is a spacer in the same grid cell as the content, and
+      // the row takes whichever is taller. `aspect-square` on the tile itself
+      // could not do this: with a definite width the ratio gives a definite
+      // height, and content simply overflows it. `min-h-full` keeps all three
+      // level once one of them has grown.
+      className="grid min-h-full grid-cols-1 rounded-card border border-rule bg-card p-3 shadow-card transition-shadow hover:shadow-raised"
     >
-      <KindTile kind={kind} cover={cover} size="sm" />
-      {/* Two lines, not one truncated one. The comps label these "PDFs" and
-          "Shivir"; the folders they actually stand for are called
-          "परिचयात्मक संकलन (प्रवेश सप्तम)", and three of those across a phone
-          truncate to "परिचयात्मक …", which names nothing. Two lines and a
-          clamp is the most a 110px tile can honestly show. */}
-      <span {...scripted(label, "block line-clamp-2 text-sm font-semibold leading-snug")}>
-        {label}
+      <span aria-hidden className="col-start-1 row-start-1 aspect-square w-full" />
+      <span className="col-start-1 row-start-1 flex flex-col gap-1.5">
+        <KindTile kind={kind} cover={cover} size="sm" />
+        {/* Two lines, and the tile makes room for them rather than the other
+            way round. `shrink-0` because `line-clamp` sets `overflow:hidden`,
+            which zeroes a flex item's automatic minimum size — without it the
+            label quietly shrank to whatever was left instead of pushing.
+            No `block` beside it, either: `line-clamp` needs the
+            `display:-webkit-box` it sets, and `block` was quietly winning, so
+            the clamp was declared and never applied — three lines of Devanagari
+            where two were asked for. */}
+        <span
+          {...scripted(label, "line-clamp-2 shrink-0 text-sm font-semibold leading-snug")}
+        >
+          {label}
+        </span>
+        <span className="mt-auto block text-xs tabular-nums text-ink-soft">{count}</span>
       </span>
-      <span className="mt-auto block text-xs tabular-nums text-ink-soft">{count}</span>
     </Link>
   );
 }

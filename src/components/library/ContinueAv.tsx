@@ -341,7 +341,7 @@ function ResumeCard({
   );
 
   const shell =
-    "flex h-full w-full items-start gap-3 rounded-[20px] border border-rule bg-card p-3.5 text-left transition-shadow hover:shadow-md";
+    "flex h-full w-full items-start gap-3 rounded-card border border-rule bg-card p-3.5 text-left transition-shadow hover:shadow-md";
 
   // Audio this page holds plays in place; everything else opens the folder it
   // lives in, where the same playhead is waiting. A row that can do neither —

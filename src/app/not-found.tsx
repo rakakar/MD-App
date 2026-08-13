@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageContainer } from "@/components/ui";
+import { PageContainer, ctaPrimary } from "@/components/ui";
 import { MovedNote } from "./not-found-note";
 
 /**
@@ -31,7 +31,7 @@ export default function NotFound() {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link
             href="/resources"
-            className="rounded-full px-4 py-2 text-sm font-semibold text-white"
+            className={ctaPrimary}
             style={{ background: "var(--ws-color)" }}
           >
             Resources

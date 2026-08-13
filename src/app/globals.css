@@ -231,10 +231,14 @@
      no shadow, which is why a white card on the old near-white page had
      nothing holding it up. `raised` is for what floats over content — the
      selection bar, the audio pill; `sheet` is the lift under a bottom sheet. */
-  /* 10px — the small square: a 36px kind tile, a checkbox. Below `tile` there
-     was nothing, so these were written as rounded-[9px] and rounded-[10px],
-     which is the same radius twice under two names. */
-  --radius-chip: 0.625rem;
+  /* 8px — the smallest step, and the one two different things share: every
+     call-to-action button in the app, and the small square (a 36px kind tile,
+     a checkbox, an app-bar control).
+     It was 10px under the name `chip` and 8px under the name `control` for
+     about a day, which is exactly the "same radius twice under two names"
+     this ladder exists to prevent — the designer's 8px settled it, so there is
+     one name. */
+  --radius-control: 0.5rem;
   --radius-tile: 0.875rem; /* 14px */
   --radius-card: 1.25rem; /* 20px */
   --radius-hero: 1.5rem; /* 24px */
@@ -338,6 +342,12 @@
   --sutra-soft: #8a6a4e;
   --sutra-chip: rgb(255 255 255 / 0.75);
   --sutra-rule: linear-gradient(90deg, #eedac4, rgb(238 218 196 / 0));
+  /* The hairline around the card. `--sutra-rule` cannot do this job — it is a
+     gradient that fades out to the right, which is right for a divider inside
+     the card and impossible as a border-color. A flat step deeper than the
+     ramp's darkest stop, so the edge holds on the page above it and on the
+     card below it. */
+  --sutra-border: #eed9c0;
 }
 
 [data-theme="sepia"] {
@@ -347,6 +357,7 @@
   --sutra-soft: #7a5c3f;
   --sutra-chip: rgb(255 255 255 / 0.6);
   --sutra-rule: linear-gradient(90deg, #e3ccae, rgb(227 204 174 / 0));
+  --sutra-border: #e2caa9;
 }
 
 [data-theme="dark"] {
@@ -355,6 +366,7 @@
   --sutra-soft: #c2a888; /* 7.7:1 on its own ground */
   --sutra-chip: rgb(255 255 255 / 0.08);
   --sutra-rule: linear-gradient(90deg, #4a3a2a, rgb(74 58 42 / 0));
+  --sutra-border: #3d3025;
 }
 
 [data-theme="sepia"] {

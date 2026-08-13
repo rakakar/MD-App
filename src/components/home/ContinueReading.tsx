@@ -150,7 +150,7 @@ export function ContinueReading({
       <h2
         className={`mb-3 mt-7 first:mt-0 ${
           tier === "title"
-            ? "text-xl font-bold tracking-[-0.015em] text-ink"
+            ? "text-title font-semibold tracking-[-0.015em] text-ink"
             : "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
         }`}
       >
@@ -161,8 +161,13 @@ export function ContinueReading({
           vertically pushed the book shelf below the fold on a phone. The rail
           bleeds to the screen edge so the second card peeks — which is what
           says "there are more" without a control saying it. */}
+      {/* pb/-mb in a pair: the padding is headroom for the card's hover
+          shadow, which `overflow-x-auto` would otherwise clip, and the
+          negative margin takes it back out of the layout so it cannot show up
+          as a wider gap before whatever follows. Every rail on Home does this,
+          so one heading margin is the only thing setting the rhythm. */}
       <ul
-        className={`-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 ${
+        className={`-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 ${
           layout === "stack" ? "lg:flex-col lg:overflow-visible" : ""
         }`}
       >
@@ -175,7 +180,11 @@ export function ContinueReading({
           >
             <Link
               href={c.href}
-              className="flex h-full items-center gap-4 rounded-[20px] border border-rule bg-card p-4 transition-shadow hover:shadow-md"
+              // px-4 py-3, not p-4. The cover is the tallest thing in the row
+              // and the text column beside it is shorter, so 16px top and
+              // bottom was 16px plus the slack the centred text already left —
+              // it read as a card with a hole in it.
+              className="flex h-full items-center gap-4 rounded-card border border-rule bg-card px-4 py-3 transition-shadow hover:shadow-md"
             >
               <CoverTile
                 book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
-import { EmptyState, PageContainer } from "@/components/ui";
+import { EmptyState, PageContainer, ctaPrimary } from "@/components/ui";
 import { getMyFeedback, queuedFeedbackCount, type MyFeedback } from "@/lib/feedback";
 import { refToHref } from "@/lib/refs";
 
@@ -53,7 +53,7 @@ export default function MyFeedbackPage() {
           <p className="text-sm text-ink-soft">Sign in to see what you&apos;ve sent us.</p>
           <Link
             href="/login?next=/me/feedback"
-            className="mt-3 inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
+            className={`mt-3 ${ctaPrimary}`}
             style={{ background: "var(--ws-color)" }}
           >
             Sign in

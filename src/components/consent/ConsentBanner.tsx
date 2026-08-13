@@ -4,6 +4,7 @@ import Script from "next/script";
 import { useEffect, useState } from "react";
 import { GA_ID, applyConsent } from "@/lib/analytics";
 import { getPrefs, setPrefs } from "@/lib/storage";
+import { ctaPrimary } from "@/components/ui";
 
 /**
  * GA4 with consent mode (PRD §1): gtag boots with analytics_storage denied,
@@ -64,7 +65,7 @@ export function ConsentBanner() {
         <button
           type="button"
           onClick={() => choose(true)}
-          className="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
+          className={ctaPrimary}
           style={{ background: "var(--ws-color)" }}
         >
           Allow analytics

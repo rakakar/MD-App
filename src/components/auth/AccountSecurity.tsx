@@ -12,6 +12,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { ctaPrimary } from "@/components/ui";
 import { changePassword, updateMe } from "@/lib/me";
 
 type Status = { kind: "ok" | "error"; message: string } | null;
@@ -80,8 +81,7 @@ export function AccountSecurity() {
 
   const field =
     "mt-1 w-full rounded-xl border border-rule bg-card p-2.5 text-sm outline-none focus:border-(--ws-color)";
-  const button =
-    "mt-2 self-start inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white disabled:opacity-60";
+  const button = `mt-2 self-start ${ctaPrimary}`;
 
   return (
     <div className="mt-3 space-y-3">

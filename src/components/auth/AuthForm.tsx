@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { track } from "@/lib/analytics";
 import { googleLoginUrl, login, primeSession, signup } from "@/lib/me";
+import { ctaPrimary } from "@/components/ui";
 
 const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
 
@@ -98,7 +99,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <button
           type="submit"
           disabled={busy}
-          className="mt-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          className={`mt-2 ${ctaPrimary}`}
           style={{ background: "var(--ws-color)" }}
         >
           {busy ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}

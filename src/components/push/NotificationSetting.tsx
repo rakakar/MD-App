@@ -1,6 +1,6 @@
 "use client";
 
-import { SectionHeading } from "@/components/ui";
+import { SectionHeading, ctaPrimary } from "@/components/ui";
 import { usePush } from "./usePush";
 
 /**
@@ -55,7 +55,7 @@ export function NotificationSetting() {
             type="button"
             onClick={() => void enable()}
             disabled={busy}
-            className="shrink-0 inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-white disabled:opacity-50"
+            className={ctaPrimary}
             style={{ background: "var(--ws-color)" }}
           >
             {busy ? "Enabling…" : "🔔 Enable notifications"}

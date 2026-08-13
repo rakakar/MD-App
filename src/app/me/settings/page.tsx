@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationSetting } from "@/components/push/NotificationSetting";
 import { DisplayControls } from "@/components/shell/DisplaySheet";
 import { useDisplay } from "@/components/shell/DisplayProvider";
-import { PageContainer, SectionHeading } from "@/components/ui";
+import { PageContainer, SectionHeading, ctaPrimary } from "@/components/ui";
 import { applyConsent } from "@/lib/analytics";
 import {
   formatBytes,
@@ -69,7 +69,7 @@ export default function SettingsPage() {
             <p className="text-sm text-ink-soft">Reading as guest — saved on this device only.</p>
             <Link
               href="/login?next=/me/settings"
-              className="inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold text-white"
+              className={ctaPrimary}
               style={{ background: "var(--ws-color)" }}
             >
               Sign in

@@ -175,7 +175,7 @@ export function SettingsSheet(p: SettingsSheetProps) {
                   aria-checked={active}
                   aria-label={f.label}
                   onClick={() => p.onFace(f.id)}
-                  className={`min-h-11 flex-1 rounded-chip py-1 transition-colors ${
+                  className={`min-h-11 flex-1 rounded-control py-1 transition-colors ${
                     active ? "bg-(--reader-bg) font-semibold shadow-card" : "text-(--reader-ink-soft)"
                   }`}
                 >
@@ -367,7 +367,7 @@ function Segmented<T extends string | number>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={`min-h-11 flex-1 rounded-chip text-sm transition-colors ${
+            className={`min-h-11 flex-1 rounded-control text-sm transition-colors ${
               active
                 ? "bg-(--reader-bg) font-semibold shadow-card"
                 : "text-(--reader-ink-soft)"

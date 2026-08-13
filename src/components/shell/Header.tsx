@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
+import { ctaPrimary } from "@/components/ui";
 import { track } from "@/lib/analytics";
 import { getEvents } from "@/lib/api";
 import { eventStart, shortDate, upcomingEvents } from "@/lib/events";
@@ -110,7 +111,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
         >
           <span
             aria-hidden
-            className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-chip text-white"
+            className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-control text-white"
             style={{
               background: `linear-gradient(150deg, color-mix(in srgb, ${ws.color} 78%, #fff), ${ws.color})`,
             }}
@@ -147,7 +148,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           aria-selected={active}
           aria-label={`${ws.name} — ${ws.tagline}`}
           onClick={() => choose(id)}
-          className={`flex items-center gap-2.5 rounded-chip px-2.5 py-2.5 text-xs transition-colors ${
+          className={`flex items-center gap-2.5 rounded-control px-2.5 py-2.5 text-xs transition-colors ${
             active ? "font-semibold" : "font-medium text-ink-soft hover:bg-canvas/60"
           }`}
           style={
@@ -228,7 +229,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
         aria-haspopup={variant === "sheet" ? "dialog" : "listbox"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex min-h-10 items-center gap-2 rounded-xl border bg-card pl-1.5 pr-2.5 text-left shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors ${
+        className={`flex min-h-10 items-center gap-2 rounded-control border bg-card pl-1.5 pr-2.5 text-left shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors ${
           variant === "popover" ? "w-full" : "max-w-full"
         } ${open ? "" : "hover:bg-accent-tint"}`}
         style={
@@ -331,14 +332,14 @@ function AvatarMenu() {
   }, [open]);
 
   if (loading) {
-    return <div className="h-10 w-10 rounded-xl bg-ink/5" aria-hidden />;
+    return <div className="h-10 w-10 rounded-control bg-ink/5" aria-hidden />;
   }
 
   if (!user) {
     return (
       <Link
         href="/login"
-        className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        className={ctaPrimary}
         style={{ background: "var(--ws-color)" }}
       >
         Sign in
@@ -358,7 +359,7 @@ function AvatarMenu() {
         aria-expanded={open}
         aria-label="Account menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-10 w-10 items-center justify-center rounded-xl border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+        className="flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
         <UserIcon className="h-4.5 w-4.5" />
       </button>
@@ -446,7 +447,7 @@ export function DisplayButton() {
         onClick={() => setOpen(true)}
         aria-label="Display settings"
         aria-haspopup="dialog"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
         <PaletteIcon />
       </button>
@@ -470,7 +471,7 @@ export function Header() {
         <Link
           href={workspace.home}
           aria-label={`${workspace.name} home`}
-          className="shrink-0 rounded-chip transition-opacity active:opacity-80"
+          className="shrink-0 rounded-control transition-opacity active:opacity-80"
         >
           <BrandMark className="h-8 w-8" />
         </Link>

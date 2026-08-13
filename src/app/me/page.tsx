@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ContinueAv } from "@/components/library/ContinueAv";
-import { EmptyState, PageContainer, SectionHeading } from "@/components/ui";
+import { EmptyState, PageContainer, SectionHeading, ctaPrimary } from "@/components/ui";
 import { getBooks } from "@/lib/api";
 import {
   localBookmarks,
@@ -29,7 +29,7 @@ function SyncCta() {
       </p>
       <Link
         href="/login?next=/me"
-        className="mt-3 inline-block inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
+        className={`mt-3 ${ctaPrimary}`}
         style={{ background: "var(--ws-color)" }}
       >
         Sign in to sync across devices

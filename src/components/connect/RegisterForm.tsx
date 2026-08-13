@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { track } from "@/lib/analytics";
 import { registerForEvent } from "@/lib/api";
+import { ctaPrimary } from "@/components/ui";
 
 type Status = "idle" | "busy" | "done" | "duplicate" | "error";
 
@@ -112,7 +113,7 @@ export function RegisterForm({ eventId, open }: { eventId: number; open: boolean
       <button
         type="submit"
         disabled={status === "busy" || (!phone.trim() && !email.trim())}
-        className="mt-1 rounded-full px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        className={`mt-1 ${ctaPrimary}`}
         style={{ background: "var(--ws-color)" }}
       >
         {status === "busy" ? "Registering…" : "Register"}

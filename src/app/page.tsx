@@ -81,11 +81,22 @@ export default async function OriginalsHome() {
         `items-start` so a tall section does not stretch its neighbours, and
         each child is a plain <section>: the columns are a layout, not a
         regrouping, so the reading order stays the order on the phone.
+
+        One gap, everywhere. `mt-7` is what a SectionHeading puts above itself
+        between two sections, so the stack repeats it here — above Continue
+        Reading, which was reading as part of the Sutra card because a heading
+        first in its own section had its margin collapsed away — and the rails
+        no longer add their shadow headroom on top of it. Change the number in
+        two places (here and SectionHeading) or the page loses its rhythm
+        again.
       */}
-      <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-6">
-        <section>
-          <ContinueReading layout="stack" />
-        </section>
+      <div className="mt-7 flex flex-col gap-7 lg:mt-8 lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-6">
+        {/* Its own <section>, so it is a grid child directly. Wrapped in one,
+            the wrapper stayed behind as a zero-height flex item when there is
+            nothing to resume — and took a 28px gap on each side with it, which
+            is how a reader who has never opened a book got a hole above Books
+            where the rail they do not have would have been. */}
+        <ContinueReading layout="stack" />
 
         <section>
           <SectionHeading
