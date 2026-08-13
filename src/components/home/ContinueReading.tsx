@@ -197,13 +197,22 @@ export function ContinueReading({
                 book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}
                 size="resume"
               />
+              {/* Both Devanagari lines are `hi-tight`, and between them that is
+                  what squares this column with the cover beside it. At the
+                  `.hi` body leading of 1.85 the title and the chapter line were
+                  31 and 24 tall — 15px of half-leading nobody asked for, on two
+                  single lines that are truncated anyway — and the column came
+                  out 101.5 against an 86px cover, so it overhung the artwork by
+                  7.5 at the head and the foot. Tight, it is 86.5: the title
+                  starts at the top of the cover and the page figures end at its
+                  foot. Change either leading and that alignment goes. */}
               <span className="min-w-0 flex-1">
-                <span lang="hi" className="hi block truncate text-title font-semibold">
+                <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
                   {c.title}
                 </span>
                 <span
                   lang="hi"
-                  className="hi mt-1 block truncate text-xs font-medium text-ink-soft"
+                  className="hi hi-tight mt-1 block truncate text-xs font-medium text-ink-soft"
                 >
                   {chapterLine(c.chapter, c.chapterTitle)}
                 </span>

@@ -79,7 +79,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
       // in the theme the comp is not drawn in: on the sepia paper the peach
       // ramp sits close enough to the page that without an edge the card stops
       // being a card.
-      className="rounded-3xl border border-(--sutra-border) p-5"
+      className="rounded-card border border-(--sutra-border) p-4"
       style={{
         // the spec's own peach ramp (1A) — a warm surface of its own rather
         // than a wash of the workspace hue, because the sutra belongs to the
