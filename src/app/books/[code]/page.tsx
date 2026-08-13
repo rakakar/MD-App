@@ -2,13 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { BookHeroActions } from "@/components/books/BookHeroActions";
-import { HighlightsPanel } from "@/components/books/HighlightsPanel";
+import { BookTabs } from "@/components/books/BookTabs";
 import { PdfView } from "@/components/library/PdfView";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import {
   CollectionHero,
-  CountTabs,
   HeroAction,
   ListRow,
   PageContainer,
@@ -319,38 +318,20 @@ export default async function BookDetailPage({
 
           The tab is a real URL so it survives reload and sharing, and the
           counts are on it because "2" is the reason to look. */}
-      {/* 16px above the tab bar, the same as the page's own side gutter — the
-          hero is full-bleed on a phone, so this gap and the gutter meet at the
-          bar's top-left corner and any difference between them shows there. */}
-      <div className="mt-4">
-        <CountTabs
-          label="This book"
-          value={tab}
-          tabs={[
-            {
-              value: "chapters",
-              label: "Chapters",
-              count: mainChapters.length,
-              href: `/books/${encodeURIComponent(book.code)}`,
-            },
-            {
-              value: "highlights",
-              label: "Highlights & Notes",
-              href: `/books/${encodeURIComponent(book.code)}?tab=highlights`,
-            },
-          ]}
-        />
-      </div>
-
-      {tab === "highlights" ? (
-        <HighlightsPanel bookCode={book.code} chapters={book.chapters} />
-      ) : (
+      <BookTabs
+        bookCode={book.code}
+        chapters={book.chapters}
+        chapterCount={mainChapters.length}
+        chaptersHref={`/books/${encodeURIComponent(book.code)}`}
+        highlightsHref={`/books/${encodeURIComponent(book.code)}?tab=highlights`}
+        tab={tab}
+      >
         <div className="mt-2">
-          {frontMatter.length > 0 && (
-            <p className="px-1 pb-1 pt-3 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-              Front matter
-            </p>
-          )}
+          {/* No "Front matter" heading over the first rows. It labelled a group
+              of one or two against a list of eighteen, and the rows already say
+              what they are — a front-matter row is called "Front-matters" and
+              numbered 0. A heading for a section nobody was going to mistake
+              cost the list its start. */}
           <RowGroup>
             {[...frontMatter, ...mainChapters].map((ch) => {
               // Span, not range — the row reads "8 pages", which is what a
@@ -374,7 +355,7 @@ export default async function BookDetailPage({
             })}
           </RowGroup>
         </div>
-      )}
+      </BookTabs>
         </>
       )}
       </div>

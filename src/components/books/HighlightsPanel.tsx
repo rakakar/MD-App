@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useMemo, useState } from "react";
 import { ShareIcon } from "@/components/shell/icons";
 import {
   CheckRow,
@@ -13,7 +12,7 @@ import {
   SheetAction,
   SheetTextAction,
 } from "@/components/ui";
-import { localHighlights, syncPersonal, type Highlight } from "@/lib/personal";
+import { type Highlight } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import type { HighlightColour } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
@@ -42,26 +41,22 @@ const FILL: Record<HighlightColour, string> = {
 type Mode = "all" | "notes";
 
 export function HighlightsPanel({
-  bookCode,
+  rows,
   chapters,
 }: {
-  bookCode: string;
+  /**
+   * The book's highlights, or `null` while the local store has not been read
+   * yet. Owned by `BookTabs` rather than loaded here: the tab above this panel
+   * counts them too, and two loaders on one screen would have meant two syncs
+   * and, when only one of them had finished, two different answers.
+   */
+  rows: Highlight[] | null;
   chapters: ChapterTocEntry[];
 }) {
-  const { user, loading } = useAuth();
-  const [rows, setRows] = useState<Highlight[] | null>(null);
   const [mode, setMode] = useState<Mode>("all");
   const [picked, setPicked] = useState<string[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draft, setDraft] = useState<string[]>([]);
-
-  const reload = useCallback(() => setRows(localHighlights(bookCode)), [bookCode]);
-
-  useEffect(() => {
-    if (loading) return;
-    reload();
-    if (user) void syncPersonal().then(reload);
-  }, [user, loading, reload]);
 
   const byChapter = useMemo(() => new Map(chapters.map((c) => [String(c.number), c])), [chapters]);
 

@@ -129,13 +129,18 @@ export function CountTabs<T extends string>({
             href={t.href}
             aria-current={active ? "page" : undefined}
             /* `min-w-0` for the same reason as above — "Highlights & Notes"
-               is the longest label in the app and the one that proved it. */
+               is the longest label in the app and the one that proved it.
+               `flex-auto`, not `flex-1`: equal halves fitted that label exactly
+               until it grew a count beside it, and then it truncated to
+               "Highlights & No…" while the other half sat half empty. Sized
+               from content, the long tab takes the room it needs and the spare
+               is still shared. */
             /* The selected pill takes the bar's own 8px rather than a radius
                of its own — it was `rounded-[1.125rem]`, an 18px literal under
                a 24px track, which is the pair of one-offs the ladder exists to
                stop. Not inset by the 4px of track padding, because the
                designer draws the two corners the same. */
-            className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-control px-2 text-sm transition-colors ${
+            className={`flex min-h-12 min-w-0 flex-auto items-center justify-center gap-2 rounded-control px-2 text-sm transition-colors ${
               active ? "bg-card font-semibold shadow-card" : "text-ink-soft"
             }`}
           >
