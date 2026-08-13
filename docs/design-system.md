@@ -75,6 +75,10 @@ one.
 | Cover tiles edged `white/15` | `border-rule` | That was an inner highlight, not a border — invisible on a pale cover, glowing on a dark one. It now follows the theme like every other edge, and matches the resume card it sits inside. |
 | Read: title, summary line and the resume rail evenly spaced | Title and summary tight (2px), 20px below the pair | The summary is the title's own subtitle. The gap under it was **0** — see the `.hi`/`first:` note below. |
 | Shelf and rail book captions at the `.hi` body leading | `hi-tight`, and title-to-page-count at 4px | A title and the size of the thing it names are one caption; at the full 1.85 leading and 8px apart they read as two. |
+| Book hero: back pill, Resume, download, Share at 12–14px; tab bar 24px over an 18px pill | All 8px — `--radius-control` | Resume and download are not the hero's own buttons but the reader's, which is why they read 14px after the first pass. The tab pill was an 18px literal under a 24px track. |
+| Book hero title sitting on the cover's foot | Top-aligned with it | `items-start` was half of it: at `.hi`'s 1.85 the glyphs float ~7px down inside a 39px line box, so a box-aligned title still read as hanging. Needs `hi-tight` too. |
+| Book hero meta as one run: "ए. नागराज · 18 chapters · 178 pages" | Author on its own line, dimensions on the next | A name and two measurements separated by the same dot read as three facts of one kind. |
+| Highlights filters scrolling away with the list | Sticky under the app bar — `--app-header-h` | A book's highlights run to dozens of cards, so the control saying which of them you are looking at was a screen or three above the ones you were reading. |
 | CTA buttons as pills, each written by hand | One `ctaPrimary` at 8px, terracotta | See below. |
 
 ### One CTA — `ctaPrimary` / `ctaPrimaryCompact` in `components/ui`
@@ -342,6 +346,19 @@ like it belonged to a different app.
 The hue is the collection's own (`bookHue`), never the workspace accent, because the comps
 put a purple album and an orange one in the same set — the rule the book pages already
 keep.
+
+A book's hue is now **sampled from its cover** rather than hashed from its code, which is
+what spec 1C asked for ("colour derived from the cover") and was not possible when most
+books had no cover. `COVER_HUES` in `lib/bookHue.ts` holds the printed band colour of each
+scan; `scripts/sample-cover-hues.mjs` regenerates it. Two consequences to know:
+
+- **The thirteen covers use five colours.** Four books are printed in the same olive, so
+  four heroes are the same olive. The hash gave each book its own; the truth does not.
+- **The table is committed, not sampled at request time.** The cover CDN's CORS allows
+  only `http://localhost:3000`, so client-side sampling works in dev and throws on a
+  tainted canvas in production; and sampling in the RSC would fetch and decode a cover on
+  every book's prerender, which is the load `AGENTS.md` exists to prevent. A committed
+  value can also be *measured* — every pair carries its real ratio against white.
 
 Two things the comps do not have to solve, because they draw depth 1:
 

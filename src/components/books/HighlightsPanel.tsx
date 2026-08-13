@@ -122,32 +122,46 @@ export function HighlightsPanel({
   }
 
   return (
-    <div className="mt-4">
-      <ChipRow label="Filter highlights">
-        <Chip
-          label={`All ${tagged.length}`}
-          selected={mode === "all"}
-          variant="tint"
-          onClick={() => setMode("all")}
-        />
-        <Chip
-          label={`With Notes ${withNotes}`}
-          selected={mode === "notes"}
-          variant="tint"
-          onClick={() => setMode("notes")}
-        />
-        <Chip
-          label={
-            picked.length > 0 ? `Chapters · ${picked.length}` : "Sort by Chapters"
-          }
-          selected={picked.length > 0}
-          variant="tint"
-          onClick={() => {
-            setDraft(picked);
-            setSheetOpen(true);
-          }}
-        />
-      </ChipRow>
+    <div className="mt-2">
+      {/* The filters follow the list down. A book's highlights run to dozens of
+          cards grouped by chapter, and the control that says *which* of them
+          you are looking at was a screen or three above the ones you were
+          reading — so narrowing a long list meant scrolling back to the top to
+          do it, and again to see the result.
+
+          Full-bleed on a phone and inline from sm, matching the chip row's own
+          bleed: the chips scroll to the screen edge there, so the background
+          that has to sit behind them does too. Opaque `bg-surface` rather than
+          the app bar's translucency — this row stops directly under that bar,
+          and two blurred layers over one another is a smear rather than a
+          material. `z-30` keeps it under the bar (z-40) and over the cards. */}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 py-2 sm:mx-0 sm:px-0 lg:top-0">
+        <ChipRow label="Filter highlights">
+          <Chip
+            label={`All ${tagged.length}`}
+            selected={mode === "all"}
+            variant="tint"
+            onClick={() => setMode("all")}
+          />
+          <Chip
+            label={`With Notes ${withNotes}`}
+            selected={mode === "notes"}
+            variant="tint"
+            onClick={() => setMode("notes")}
+          />
+          <Chip
+            label={
+              picked.length > 0 ? `Chapters · ${picked.length}` : "Sort by Chapters"
+            }
+            selected={picked.length > 0}
+            variant="tint"
+            onClick={() => {
+              setDraft(picked);
+              setSheetOpen(true);
+            }}
+          />
+        </ChipRow>
+      </div>
 
       {shown.length === 0 ? (
         <div className="mt-5">

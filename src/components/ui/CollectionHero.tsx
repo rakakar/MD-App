@@ -83,7 +83,7 @@ export function CollectionHero({
         {back && (
           <Link
             href={back.href}
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-tile border border-white/20 bg-white/10 pe-3.5 ps-2.5 text-sm font-semibold transition-colors hover:bg-white/20"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-white/20 bg-white/10 pe-3.5 ps-2.5 text-sm font-semibold transition-colors hover:bg-white/20"
           >
             <BackIcon className="h-4 w-4" />
             {/* On the compact variant the pill is just the arrow: the title is on
@@ -101,16 +101,24 @@ export function CollectionHero({
 
       {variant === "full" && (
         <>
-          <div className="mt-4 flex items-end gap-4">
+          {/* `items-start`, so the title begins where the cover does rather than
+              sitting on its foot. `hi-tight` on the title is half of what makes
+              that true: at `.hi`'s 1.85 a 21px line box is 39px tall and the
+              glyphs float ~7px down inside it, so a box-aligned title still
+              read as hanging below the artwork. */}
+          <div className="mt-4 flex items-start gap-4">
             {thumb}
-            <div className="min-w-0 flex-1 pb-1">
+            <div className="min-w-0 flex-1">
               {eyebrow && (
                 <div className="mb-1 text-xs font-semibold text-white/70">{eyebrow}</div>
               )}
-              <h1 {...t} className={`${t.className} text-[1.3125rem] font-semibold leading-tight`}>
+              <h1
+                {...t}
+                className={`${t.className} hi-tight text-[1.3125rem] font-semibold`}
+              >
                 {title}
               </h1>
-              {meta && <p className="mt-1.5 text-sm font-medium text-white/80">{meta}</p>}
+              {meta && <p className="mt-1 text-sm font-medium text-white/80">{meta}</p>}
               {chips && chips.length > 0 && (
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {chips.map((c) => (
@@ -183,7 +191,7 @@ export function HeroAction({
   return (
     <Link
       href={href}
-      className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-tile bg-on-accent px-4 text-title font-semibold transition-opacity hover:opacity-90"
+      className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-control bg-on-accent px-4 text-title font-semibold transition-opacity hover:opacity-90"
       style={{ color: tone }}
     >
       {children}
@@ -201,7 +209,7 @@ export function HeroIconButton({
     <button
       type="button"
       {...rest}
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-tile border border-white/20 bg-white/15 text-white transition-colors hover:bg-white/25"
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-white/20 bg-white/15 text-white transition-colors hover:bg-white/25"
     >
       {children}
     </button>

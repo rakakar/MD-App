@@ -120,7 +120,7 @@ export function CountTabs<T extends string>({
   value: T;
 }) {
   return (
-    <nav aria-label={label} className="flex items-stretch gap-1 rounded-hero bg-inset p-1">
+    <nav aria-label={label} className="flex items-stretch gap-1 rounded-control bg-inset p-1">
       {tabs.map((t) => {
         const active = t.value === value;
         return (
@@ -130,7 +130,12 @@ export function CountTabs<T extends string>({
             aria-current={active ? "page" : undefined}
             /* `min-w-0` for the same reason as above — "Highlights & Notes"
                is the longest label in the app and the one that proved it. */
-            className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-[1.125rem] px-2 text-sm transition-colors ${
+            /* The selected pill takes the bar's own 8px rather than a radius
+               of its own — it was `rounded-[1.125rem]`, an 18px literal under
+               a 24px track, which is the pair of one-offs the ladder exists to
+               stop. Not inset by the 4px of track padding, because the
+               designer draws the two corners the same. */
+            className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-control px-2 text-sm transition-colors ${
               active ? "bg-card font-semibold shadow-card" : "text-ink-soft"
             }`}
           >

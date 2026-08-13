@@ -1,17 +1,21 @@
 /**
  * A book's own colour (design 1A/1B/1C).
  *
- * The designer draws every cover in a different hue — plum, pine, iris, olive —
- * and the book-detail hero is explicitly "colour derived from the cover" (spec
- * 1C, Layout). The BE carries no such colour, and most books carry no cover
- * image either, so there is nothing to sample. Deriving it from the book code
- * gives the shelf the designer's variety and, unlike a random pick, gives each
- * book the *same* colour on the rail, the shelf, the resume card and its own
- * hero — which is what makes a cover recognisable at all.
+ * Spec 1C says the book hero's colour is "derived from the cover", and it now
+ * is: `COVER_HUES` below holds the printed band colour of every cover the BE
+ * serves, sampled from the scan itself. Everything else here is the fallback
+ * for a book that has not been sampled.
  *
- * The palette is the spec's own six, deepened where white needed the room:
- * the light end carries only the large initial (≥3:1 — large-text AA), the dark
- * end carries any small white label (≥4.5:1). Values measured, not guessed.
+ * It used to be *only* the fallback, for a reason that has since expired — the
+ * note said "most books carry no cover image, so there is nothing to sample",
+ * and today all thirteen are 612×834 scans. What survives is the shape of the
+ * answer: one colour per book code, so a book is the same colour on the rail,
+ * the shelf, the resume card and its own hero, which is what makes it
+ * recognisable at all.
+ *
+ * Both ends are measured against white, in both tables: the light end carries
+ * only the large initial (≥3:1 — large-text AA), the dark end carries any small
+ * white label (≥4.5:1), and the hero takes the dark end.
  */
 export interface BookHue {
   /** top-left of the 150° gradient */
@@ -30,11 +34,58 @@ const PALETTE: BookHue[] = [
 ];
 
 /**
- * Stable hue for a book code. FNV-1a rather than a sum of char codes: two
- * codes that are anagrams of each other ("MVD" / "VDM") must not collide onto
- * the same colour, and on a shelf of a dozen books that is a real risk.
+ * The colour actually printed on each cover, sampled from the scan by
+ * `scripts/sample-cover-hues.mjs` — run it again when a cover changes or a book
+ * is added, and paste the result here.
+ *
+ * A table rather than a sample at request time, for two reasons. The book page
+ * is prerendered for every book, and `AGENTS.md` is emphatic about what this
+ * build already asks of the network; fetching and decoding a cover per page
+ * would add to exactly that. And a committed value can be *measured* — the
+ * figures below are real contrast ratios against white, checked once, the same
+ * standard the fallback palette is held to. A heuristic running at build time
+ * would only be assumed to hold.
+ *
+ * The five colours are what the covers actually use: four of these books are
+ * printed in the same olive, three in the same pine, three in the same iris. So
+ * four books now share a hero, where the hash gave each its own. That is the
+ * cost of the hero telling the truth about the book in your hand, and it is the
+ * right way round — but it is a real change to how varied the shelf looks, and
+ * the fallback below is still what gives an unsampled book a colour of its own.
+ */
+const COVER_HUES: Record<string, BookHue> = {
+  // terracotta — 3.27:1 / 4.50:1
+  ABVP: { from: "#cd7a30", to: "#ab6628" },
+  JVEP: { from: "#cd7a30", to: "#ab6628" },
+  // pine — 3.49:1 / 4.55:1
+  ADVD: { from: "#4f958d", to: "#44807a" },
+  SBVD: { from: "#4f958d", to: "#44807a" },
+  VJVD: { from: "#4f958d", to: "#44807a" },
+  // iris — 4.00:1 / 5.13:1
+  AVAS: { from: "#8179ab", to: "#70669f" },
+  MSMV: { from: "#8179ab", to: "#70669f" },
+  VYSS: { from: "#8179ab", to: "#70669f" },
+  // olive — 3.27:1 / 4.51:1
+  MABD: { from: "#9c9025", to: "#82781f" },
+  MAND: { from: "#9c9025", to: "#82781f" },
+  MKD: { from: "#9c9025", to: "#82781f" },
+  MVD: { from: "#9c9025", to: "#82781f" },
+  // ultramarine — 5.19:1 / 6.49:1
+  MSSV: { from: "#2c6eba", to: "#265fa1" },
+};
+
+/**
+ * A book's colour: the one on its cover where we have sampled it, and a stable
+ * hue from its code where we have not.
+ *
+ * The fallback is FNV-1a rather than a sum of char codes: two codes that are
+ * anagrams of each other ("MVD" / "VDM") must not collide onto the same colour,
+ * and on a shelf of a dozen books that is a real risk.
  */
 export function bookHue(code: string | null | undefined): BookHue {
+  const sampled = code ? COVER_HUES[code] : undefined;
+  if (sampled) return sampled;
+
   let h = 0x811c9dc5;
   for (const ch of code ?? "") {
     h ^= ch.charCodeAt(0);

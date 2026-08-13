@@ -151,14 +151,25 @@ export default async function BookDetailPage({
         title={book.title_hi}
         meta={
           <>
-            <span {...contentLang(book.author)}>{book.author}</span>
-            {mainChapters.length > 0 && (
-              <span>
-                {" · "}
-                {mainChapters.length} {mainChapters.length === 1 ? "chapter" : "chapters"}
+            {/* The author gets the line to himself, and the book's dimensions
+                get the next one. As one run — "ए. नागराज · 18 chapters · 178
+                pages" — a name and two measurements were separated by the same
+                dot and read as three facts of one kind. `hi-tight` keeps the
+                two lines a line apart rather than a paragraph apart. */}
+            <span
+              {...contentLang(book.author)}
+              className={`${contentLang(book.author).className} hi-tight block`}
+            >
+              {book.author}
+            </span>
+            {(mainChapters.length > 0 || book.page_count) && (
+              <span className="block">
+                {mainChapters.length > 0 &&
+                  `${mainChapters.length} ${mainChapters.length === 1 ? "chapter" : "chapters"}`}
+                {mainChapters.length > 0 && book.page_count ? " · " : ""}
+                {book.page_count ? `${book.page_count} pages` : ""}
               </span>
             )}
-            {book.page_count ? ` · ${book.page_count} pages` : ""}
             {/*
               On a translation the author is still A. Nagraj — the words are
               his, the rendering is not. Naming the translator right under him
@@ -308,7 +319,10 @@ export default async function BookDetailPage({
 
           The tab is a real URL so it survives reload and sharing, and the
           counts are on it because "2" is the reason to look. */}
-      <div className="mt-7">
+      {/* 16px above the tab bar, the same as the page's own side gutter — the
+          hero is full-bleed on a phone, so this gap and the gutter meet at the
+          bar's top-left corner and any difference between them shows there. */}
+      <div className="mt-4">
         <CountTabs
           label="This book"
           value={tab}

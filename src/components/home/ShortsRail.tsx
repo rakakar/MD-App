@@ -57,7 +57,7 @@ export function ShortsRail({ shorts }: { shorts: Short[] }) {
               </span>
               <span
                 {...t}
-                className={`${t.className} relative line-clamp-2 text-sm font-semibold leading-snug`}
+                className={`${t.className} hi-tight relative line-clamp-2 text-sm font-semibold`}
               >
                 {s.title}
               </span>
