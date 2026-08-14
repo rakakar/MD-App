@@ -4,7 +4,7 @@ import { FindBar } from "@/components/library/FindBar";
 import { FindResults } from "@/components/library/FindResults";
 import { NodeCardView } from "@/components/library/NodeCard";
 import { Sieve } from "@/components/library/Sieve";
-import { filesSummary, languageInEnglish } from "@/components/library/format";
+import { filesSummary, languageInEnglish, totalRunTime } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { CollectionHero, EmptyState, ShareButton } from "@/components/ui";
@@ -301,9 +301,14 @@ function Header({
          reached from this tab — and it is still on each file's own row, where
          it can actually differ. "N as text" keeps its place beside the count:
          same kind of fact, same shape. */
-      chips={[filesSummary(files), readingCount > 0 ? `${readingCount} as text` : ""].filter(
-        Boolean
-      )}
+      chips={[
+        filesSummary(files),
+        // How many, then how long: the count is the number of decisions, the
+        // hours are what they come to. On a fourteen-part shivir the second is
+        // the one that decides whether tonight is the night.
+        totalRunTime(files),
+        readingCount > 0 ? `${readingCount} as text` : "",
+      ].filter(Boolean)}
       description={node.description}
     />
   );

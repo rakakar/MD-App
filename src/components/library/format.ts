@@ -184,6 +184,26 @@ export function nodeFacts(card: NodeCard): string {
 }
 
 /**
+ * How long the whole collection runs — "8 hrs", or minutes below one.
+ *
+ * A chip, beside the count: "19 videos" says how many decisions there are and
+ * this says what they add up to, which for a shivir is the fact a reader is
+ * actually weighing. Whole hours, because a hero is a decision aid and not a
+ * manifest — the exact figure is on each row.
+ *
+ * Empty where the BE has no durations for the files, which is honest: nothing
+ * is better than "0 hrs" on a folder whose lengths have not been imported.
+ * `AvShelf` says the same thing in words ("21 hours") on its collection cards,
+ * where there is room for them; this is the abbreviated form a chip can hold.
+ */
+export function totalRunTime(files: Pick<LibraryFile, "duration_seconds">[]): string {
+  const seconds = files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0);
+  if (seconds <= 0) return "";
+  const hours = Math.round(seconds / 3600);
+  return hours >= 1 ? `${hours} hrs` : `${Math.max(1, Math.round(seconds / 60))} min`;
+}
+
+/**
  * The language named once, in English — "Hindi", not "हिन्दी (Hindi)".
  *
  * The BE's label is bilingual because it is also what a Hindi-reading manager
