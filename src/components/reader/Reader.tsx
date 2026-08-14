@@ -1450,6 +1450,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       <TocSheet
         open={tocOpen}
         onClose={() => setTocOpen(false)}
+        bookCode={book.code}
         chapters={book.chapters}
         current={chapterNumber}
         bookType={book.book_type}
