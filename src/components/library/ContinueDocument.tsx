@@ -283,14 +283,14 @@ function ResumeCard({ row }: { row: ResumeRow }) {
         {row.subtitle && (
           <span
             {...contentLang(row.subtitle)}
-            className={`${contentLang(row.subtitle).className} block truncate text-xs font-semibold text-ink-soft`}
+            className={`${contentLang(row.subtitle).className} hi-tight block truncate text-sm text-ink-soft`}
           >
             {row.subtitle}
           </span>
         )}
         <span
           {...contentLang(row.title)}
-          className={`${contentLang(row.title).className} block truncate text-sm font-semibold leading-snug`}
+          className={`${contentLang(row.title).className} hi-tight mt-0.5 block truncate text-title font-bold`}
         >
           {row.title}
         </span>
@@ -321,33 +321,19 @@ function ResumeCard({ row }: { row: ResumeRow }) {
             }}
           />
         </span>
-        {/* The printed page, on both kinds of card.
+        {/* The printed page, and only that.
 
-            This said a bare percentage on a text edition for exactly one
-            release, on the reasoning that a reader who reflows the type never
-            sees a page number so should not be quoted one. The reasoning was
-            sound and the conclusion was still wrong: Home has always shown
-            "Page 18 of 195" against a book read in that same reflowable
-            reader, so the app had already answered this, and answering it the
-            other way here made two cards in one rail speak two languages about
-            the same fact. The page is honest either way — a text edition is
-            pipelined from the very file beside it and carries its pages.
+            This said a bare percentage for one release, then the page *and* a
+            percentage on the right, on the reasoning that Home says both. The
+            designer's card says one thing: the page a reader is on, out of the
+            pages there are. The bar above it is already the percentage drawn —
+            printing the same fact twice, once as a figure and once as a
+            length, is what made this card busier than the thing it describes.
 
-            The percentage keeps its place on the right, as on Home: the page
-            says where you are in the object, the figure says how far in that
-            is, and neither is the other. */}
-        <span className="mt-1.5 flex items-baseline justify-between gap-2">
-          <span className="truncate text-xs font-medium tabular-nums text-ink-soft">
-            Page {row.page} of {row.pageCount}
-          </span>
-          {row.mode === "text" && (
-            <span
-              className="shrink-0 text-xs font-bold tabular-nums"
-              style={{ color: "var(--ws-ink)" }}
-            >
-              {Math.round(percent)}%
-            </span>
-          )}
+            The page is honest on a text edition too: it is pipelined from the
+            very file beside it and carries its pages. */}
+        <span className="mt-1.5 block truncate text-sm font-medium tabular-nums text-ink-soft">
+          Page {row.page} of {row.pageCount}
         </span>
       </span>
     </Link>

@@ -205,10 +205,14 @@ export function ContinueAv({
   if (rows.length === 0) return null;
 
   // The verb names what the reader was actually doing. A rail of nothing but
-  // recordings says "listening"; anything with a video in it says "watching",
-  // which is the phrase every player has taught them and which no listener
-  // reads as wrong.
-  const heading = rows.every((row) => row.kind === "audio")
+  // "Resume", as the designer titles it, rather than "Continue listening" /
+  // "Continue watching". Those were picked to name the medium honestly on a
+  // rail that can hold both — but the card underneath already says which it is,
+  // with a waveform or a play glyph, and one short word does not have to carry
+  // a distinction the artwork is making anyway. The accessible name keeps the
+  // longer phrase, where there is no artwork to read.
+  const heading = "Resume";
+  const label = rows.every((row) => row.kind === "audio")
     ? "Continue listening"
     : "Continue watching";
 
@@ -229,7 +233,7 @@ export function ContinueAv({
   };
 
   return (
-    <section aria-label={heading} className="mt-5">
+    <section aria-label={label} className="mt-5">
       <h2 className="mb-2.5 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
         {heading}
       </h2>
@@ -239,7 +243,7 @@ export function ContinueAv({
           are more without a control saying it. */}
       <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
         {rows.map((row) => (
-          <li key={row.itemId} className="w-[15.5rem] shrink-0 snap-start sm:w-[19rem]">
+          <li key={row.itemId} className="w-[17.5rem] shrink-0 snap-start sm:w-[20rem]">
             <ResumeCard row={row} onPlay={row.kind === "audio" && row.file ? play : null} />
           </li>
         ))}
@@ -267,81 +271,92 @@ function ResumeCard({
 
   const body = (
     <>
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-        style={{
-          background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
-          color: "var(--ws-ink)",
-        }}
-        aria-hidden
-      >
-        {row.kind === "audio" ? (
-          <HeadphonesIcon className="h-5 w-5" />
-        ) : (
-          <VideoIcon className="h-5 w-5" />
-        )}
-      </span>
-      <span className="min-w-0 flex-1">
-        {row.subtitle && (
-          <span
-            {...contentLang(row.subtitle)}
-            className={`${contentLang(row.subtitle).className} block truncate text-xs font-semibold text-ink-soft`}
-          >
-            {row.subtitle}
-          </span>
-        )}
+      {/* Title first, collection under it, at the Read shelf's own two steps —
+          17px semibold over 13px medium. The collection led for a while, on the
+          argument that it says which set this is from; but the reader is
+          looking for the recording they left, and its name is the thing they
+          are scanning for. */}
+      <span className="flex w-full items-start gap-3">
         <span
-          {...contentLang(row.title)}
-          className={`${contentLang(row.title).className} block truncate text-sm font-semibold leading-snug`}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+            color: "var(--ws-ink)",
+          }}
+          aria-hidden
         >
-          {row.title}
+          {row.kind === "audio" ? (
+            <HeadphonesIcon className="h-5 w-5" />
+          ) : (
+            <VideoIcon className="h-5 w-5" />
+          )}
         </span>
-        {percent !== null ? (
-          <>
-            <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-canvas">
-              <span
-                role="progressbar"
-                aria-valuenow={Math.round(percent)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`${Math.round(percent)}% ${
-                  row.kind === "audio" ? "played" : "watched"
-                }`}
-                className="block h-full rounded-full"
-                style={{
-                  width: `${Math.round(percent)}%`,
-                  background:
-                    "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
-                }}
-              />
-            </span>
-            <span className="mt-1.5 block text-xs font-medium text-ink-soft">
-              {left ? `${left} left` : "Almost done"}
-            </span>
-          </>
-        ) : (
+        <span className="min-w-0 flex-1">
           <span
-            className="mt-2 block text-xs font-semibold"
+            {...contentLang(row.title)}
+            className={`${contentLang(row.title).className} hi-tight block truncate text-title font-semibold`}
+          >
+            {row.title}
+          </span>
+          {row.subtitle && (
+            <span
+              {...contentLang(row.subtitle)}
+              className={`${contentLang(row.subtitle).className} hi-tight mt-1 block truncate text-xs font-medium text-ink-soft`}
+            >
+              {row.subtitle}
+            </span>
+          )}
+        </span>
+      </span>
+
+      {/* The bar runs the card's own width, from the icon's left edge rather
+          than the text column's — it measures the whole recording, not the
+          part of the card the words happen to occupy, and inset by 56px it
+          read as belonging to the title. */}
+      {percent !== null ? (
+        <span className="mt-3 flex w-full items-center gap-3">
+          <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-canvas">
+            <span
+              role="progressbar"
+              aria-valuenow={Math.round(percent)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`${Math.round(percent)}% ${
+                row.kind === "audio" ? "played" : "watched"
+              }`}
+              className="block h-full rounded-full"
+              style={{
+                width: `${Math.round(percent)}%`,
+                background:
+                  "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
+              }}
+            />
+          </span>
+          <span className="shrink-0 text-xs font-medium text-ink-soft">
+            {left ? `${left} left` : "Almost done"}
+          </span>
+          {onPlay && <PlayBadge />}
+        </span>
+      ) : (
+        <span className="mt-3 flex w-full items-center gap-3">
+          <span
+            className="min-w-0 flex-1 truncate text-xs font-semibold"
             style={{ color: "var(--ws-ink)" }}
           >
             {onPlay ? "Resume" : "Open"} →
           </span>
-        )}
-      </span>
-      {onPlay && (
-        <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full text-white"
-          style={{ background: "var(--ws-color)" }}
-          aria-hidden
-        >
-          <PlayIcon className="h-3.5 w-3.5" />
+          {onPlay && <PlayBadge />}
         </span>
       )}
     </>
   );
 
+  // A column now, so the bar can span the card rather than the text beside the
+  // icon. `rounded-card` and `px-4 py-3` are the Read shelf's resume card
+  // exactly — two cards doing the same job on two tabs, and any difference
+  // between them is one a reader has to account for.
   const shell =
-    "flex h-full w-full items-start gap-3 rounded-card border border-rule bg-card p-3.5 text-left transition-shadow hover:shadow-md";
+    "flex h-full w-full flex-col rounded-card border border-rule bg-card px-4 py-3 text-left transition-shadow hover:shadow-md";
 
   // Audio this page holds plays in place; everything else opens the folder it
   // lives in, where the same playhead is waiting. A row that can do neither —
@@ -363,5 +378,18 @@ function ResumeCard({
     <Link href={`/library/${row.nodeId}`} className={shell}>
       {body}
     </Link>
+  );
+}
+
+/** The terracotta play circle on a resume card's progress line. */
+function PlayBadge() {
+  return (
+    <span
+      aria-hidden
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white"
+      style={{ background: "var(--ws-color)" }}
+    >
+      <PlayIcon className="h-3 w-3" />
+    </span>
   );
 }

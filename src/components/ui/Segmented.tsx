@@ -56,7 +56,12 @@ export function CountedSegmented<T extends string>({
       // the same job — "which of these am I looking at" — had a pill each, one
       // round and accented and one square and raised, and a reader met both
       // within two taps of each other.
-      className="flex items-stretch gap-1 rounded-control bg-inset p-1"
+      // A hairline on the track, in the same `rule` the resume cards above it
+      // wear. The sunk fill alone was doing two jobs — holding the pill and
+      // marking the edge of the control — and on this page it sits a few
+      // pixels under a card that does have an edge, so the control read as a
+      // smudge on the page rather than as an object on it.
+      className="flex items-stretch gap-1 rounded-control border border-rule bg-inset p-1"
     >
       {segments.map((s) => {
         const active = s.value === value;
@@ -64,10 +69,22 @@ export function CountedSegmented<T extends string>({
         // floor is its longest word, so at the largest text size three
         // segments asked for more than a 390px phone has and the control ran
         // off the screen taking the page's horizontal scroll with it.
+        // The selected pill wears the kind tile's own pairing — a 12% wash of
+        // the workspace colour with `--ws-ink` on it — and no outline. It was
+        // a white raised card first, which had nothing to be lighter than on
+        // this page, then an accent-bordered one, which put a second edge
+        // inside the track's. The tile beside every recording on this shelf
+        // already says what "this one" looks like; the pill says it the same
+        // way, and the track's own hairline is the only line in the control.
         const cls = `flex min-h-11 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-control px-2 text-sm transition-colors ${
-          active ? "bg-card font-semibold shadow-card" : "text-ink-soft"
+          active ? "font-semibold" : "text-ink-soft"
         }`;
-        const style = undefined;
+        const style = active
+          ? {
+              background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+              color: "var(--ws-ink)",
+            }
+          : undefined;
         const inner = (
           <>
             {s.icon && (
@@ -81,8 +98,8 @@ export function CountedSegmented<T extends string>({
               // the selected segment is a raised card now, and a loose figure
               // on it read as part of the label — "Audios 35" as a title.
               <span
-                className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums text-ink-soft ${
-                  active ? "bg-inset" : ""
+                className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
+                  active ? "bg-card" : "text-ink-soft"
                 }`}
               >
                 {s.count}
@@ -206,8 +223,13 @@ export function Chip({
   onRemove?: () => void;
 }) {
   const l = contentLang(label);
+  // `shrink-0` and `whitespace-nowrap` together are what keep a chip on one
+  // line. Without them a two-word Devanagari label — "व्यवस्था सम्बन्धित" — broke
+  // across two lines inside its own pill and left the × floating at the height
+  // of neither, because the chip is a flex item in a scrolling row and was
+  // being squeezed rather than allowed to scroll out of view.
   const base =
-    "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors";
+    "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors";
   const cls = !selected
     ? `${base} border-rule bg-card text-ink`
     : variant === "solid"
