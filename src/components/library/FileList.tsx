@@ -96,15 +96,26 @@ function KindGroup({
   if (kind === "image") return <ImageGallery items={files} />;
 
   if (kind === "video") {
+    // A playlist, not a grid of posters — see `VideoView`'s `row`. One video
+    // keeps the card: a single line with a thumbnail the size of a stamp is a
+    // list of one, and the poster is the whole invitation there.
+    if (files.length === 1) {
+      return (
+        <div>
+          <VideoView file={files[0]} />
+          <Located file={files[0]} />
+        </div>
+      );
+    }
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
+      <ul className="flex flex-col gap-1">
         {files.map((file) => (
-          <div key={file.id}>
-            <VideoView file={file} />
+          <li key={file.id}>
+            <VideoView file={file} layout="row" />
             <Located file={file} />
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     );
   }
 

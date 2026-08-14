@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { formatDuration } from "@/components/library/format";
+import { PlayIcon } from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
 import { savePlayhead } from "@/lib/personal";
 import { contentLang } from "@/lib/script";
@@ -163,8 +165,26 @@ function useKeepPlace(file: LibraryFile) {
  * Click to load in every case. A folder holding six recordings would otherwise
  * mount six third-party players — and start six downloads — the moment it
  * opens, and the poster is enough to choose from.
+ *
+ * **Two shapes, one component.** `card` is a 16:9 poster with its title under
+ * it, which is right for one video or two. `row` is the playlist line — a
+ * small poster beside a title, the way every catalogue of recordings a reader
+ * has ever used draws one — and it is what a collection of five or fourteen
+ * gets: the card grid spent a screen and a half on posters that are all the
+ * same man at the same sammelan, and pushed the titles, which are the only
+ * thing telling them apart, to the bottom of each tile.
+ *
+ * Tapping a row turns *that row* into the player, in place. The alternative
+ * was a watch route per file, which would be a second address for a thing the
+ * collection page already holds.
  */
-export function VideoView({ file }: { file: LibraryFile }) {
+export function VideoView({
+  file,
+  layout = "card",
+}: {
+  file: LibraryFile;
+  layout?: "card" | "row";
+}) {
   const src = source(file.url);
   const [activated, setActivated] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -220,6 +240,20 @@ export function VideoView({ file }: { file: LibraryFile }) {
       mark(true);
     };
   }, [activated, src?.host, src?.id, keep]);
+
+  // Untouched until tapped, the row is the whole component. Once it is
+  // playing it becomes the card below, because a 16:9 player is the one thing
+  // here that cannot be small.
+  if (layout === "row" && !activated) {
+    return (
+      <PlaylistRow
+        file={file}
+        posterId={src?.host === "youtube" ? src.id : null}
+        resumeAt={keep.resumeAt}
+        onPlay={() => setActivated(true)}
+      />
+    );
+  }
 
   return (
     // The Video Album comp's card: the same radius and lift every other row on
@@ -296,5 +330,102 @@ export function VideoView({ file }: { file: LibraryFile }) {
         {file.title}
       </p>
     </div>
+  );
+}
+
+/**
+ * The playlist line — poster, length, title.
+ *
+ * Three facts, and only three, because those are the three this app actually
+ * has. A YouTube row also carries a channel, a view count and an age; the BE
+ * knows none of them for a library file, and a row that invented a place to
+ * put them would be a row with three holes in it.
+ *
+ * The red bar is the exception worth having: the playhead is already kept for
+ * every video (see `useKeepPlace`), so "you are eleven minutes into this one"
+ * is a fact this app *does* hold, and it is the one a reader returning to a
+ * fourteen-part shivir most wants off the list.
+ */
+function PlaylistRow({
+  file,
+  posterId,
+  resumeAt,
+  onPlay,
+}: {
+  file: LibraryFile;
+  /** the YouTube id, where there is one — an uploaded file has no poster */
+  posterId: string | null;
+  resumeAt: number;
+  onPlay: () => void;
+}) {
+  const t = contentLang(file.title);
+  const length = formatDuration(file.duration_seconds);
+
+  // The playhead lives in localStorage, so it exists on the client and not on
+  // the server. Drawn only after mount, or the bar would be markup the server
+  // could not have produced and hydration would throw it away.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const percent =
+    mounted && file.duration_seconds
+      ? Math.min(100, (resumeAt / file.duration_seconds) * 100)
+      : 0;
+
+  return (
+    <button
+      type="button"
+      onClick={onPlay}
+      aria-label={`Play ${file.title}`}
+      className="group flex w-full items-start gap-3 rounded-card p-1.5 text-start transition-colors hover:bg-ink/[.04]"
+    >
+      <span className="relative aspect-video w-[38%] max-w-[10.5rem] shrink-0 overflow-hidden rounded-lg bg-black">
+        {posterId && (
+          // poster from YouTube's image CDN; the player itself is the IFrame
+          // API, which is what the PRD requires
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`https://i.ytimg.com/vi/${posterId}/hqdefault.jpg`}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
+          />
+        )}
+        <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white">
+            <PlayIcon className="h-4 w-4" />
+          </span>
+        </span>
+        {length && (
+          <span className="absolute bottom-1 end-1 rounded bg-black/80 px-1.5 py-1 text-xs font-semibold leading-none tabular-nums text-white">
+            {length}
+          </span>
+        )}
+        {/* The workspace accent, not YouTube's red: this bar is *our* record of
+            where the reader stopped, and it sits beside a resume rail that
+            already marks progress in the same colour. */}
+        {percent > 1 && (
+          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-white/30">
+            <span className="block h-full bg-(--ws-ink)" style={{ width: `${percent}%` }} />
+          </span>
+        )}
+      </span>
+
+      <span className="min-w-0 flex-1 py-0.5">
+        <span
+          {...t}
+          className={`${t.className} hi-tight line-clamp-2 text-sm font-semibold group-hover:underline`}
+        >
+          {file.title}
+        </span>
+        {file.description && (
+          <span
+            {...contentLang(file.description)}
+            className={`${contentLang(file.description).className} mt-1 line-clamp-1 text-xs text-ink-soft`}
+          >
+            {file.description}
+          </span>
+        )}
+      </span>
+    </button>
   );
 }

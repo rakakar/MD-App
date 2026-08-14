@@ -25,12 +25,21 @@ interface WorkspaceState {
   select: (id: WorkspaceId) => void;
   /** derived from a content page's section (PRD §2 canonical URLs rule) */
   derive: (id: WorkspaceId) => void;
+  /**
+   * The tab to light on a route that is not itself a tab — see `NavScope`.
+   * Carries the path it was declared for, so a stale claim can never outlive
+   * the page that made it.
+   */
+  tab: { path: string; href: string } | null;
+  claimTab: (claim: { path: string; href: string }) => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceState>({
   workspace: WORKSPACES.originals,
   select: () => {},
   derive: () => {},
+  tab: null,
+  claimTab: () => {},
 });
 
 export const useWorkspace = () => useContext(WorkspaceContext);
@@ -70,9 +79,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setDerived(id);
   }, []);
 
+  // A claim is only honoured on the path that made it, so nothing has to be
+  // torn down on the way out: the next route either files its own claim or
+  // this one stops matching and the bar goes back to reading the URL. Clearing
+  // on unmount instead would depend on whether the old page's cleanup runs
+  // before or after the new page's effect, which is not a thing to bet a lit
+  // tab on.
+  const [tab, setTab] = useState<{ path: string; href: string } | null>(null);
+  const claimTab = useCallback((claim: { path: string; href: string }) => {
+    setTab((prev) =>
+      prev && prev.path === claim.path && prev.href === claim.href ? prev : claim
+    );
+  }, []);
+
   const value = useMemo(
-    () => ({ workspace: WORKSPACES[active], select, derive }),
-    [active, select, derive]
+    () => ({ workspace: WORKSPACES[active], select, derive, tab, claimTab }),
+    [active, select, derive, tab, claimTab]
   );
 
   return (
@@ -96,5 +118,23 @@ export function WorkspaceScope({ ws }: { ws: WorkspaceId }) {
   useEffect(() => {
     derive(ws);
   }, [ws, derive]);
+  return null;
+}
+
+/**
+ * "This page belongs under that tab" — for routes no tab's href can match.
+ *
+ * `/library/<id>` is the case it was built for: one workspace-neutral URL for
+ * a tree that four tabs lead into, so the bar had nothing to light and lit
+ * nothing. The page knows the answer (the node's workspace, and whether it is
+ * a collection of recordings); the nav cannot work it out from the path. This
+ * is how the one tells the other.
+ */
+export function NavScope({ href }: { href: string }) {
+  const { claimTab } = useWorkspace();
+  const path = usePathname() ?? "/";
+  useEffect(() => {
+    claimTab({ path, href });
+  }, [claimTab, path, href]);
   return null;
 }

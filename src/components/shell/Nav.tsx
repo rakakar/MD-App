@@ -8,7 +8,13 @@ import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
 import type { NavItem } from "@/lib/workspaceConfig";
 
-function isActive(item: NavItem, pathname: string): boolean {
+/**
+ * A page that named its own tab wins outright — it knows something the path
+ * does not (see `NavScope`), and a claim is only ever honoured on the path
+ * that made it. Everything else is decided by the URL, as before.
+ */
+function isActive(item: NavItem, pathname: string, claimed: string | null): boolean {
+  if (claimed !== null) return item.href === claimed;
   const base = item.href.split("?")[0];
   if (base === "/") return pathname === "/";
   if (base === "/me") return pathname === "/me";
@@ -27,11 +33,12 @@ function isActive(item: NavItem, pathname: string): boolean {
  * distances in the three-slot workspaces.
  */
 export function BottomNav() {
-  const { workspace } = useWorkspace();
+  const { workspace, tab } = useWorkspace();
   const pathname = usePathname() ?? "/";
+  const claimed = tab && tab.path === pathname ? tab.href : null;
 
   const item = (nav: NavItem) => {
-    const active = isActive(nav, pathname);
+    const active = isActive(nav, pathname, claimed);
     return (
       // `min-w-0`, or the `truncate` below never fires: a flex item's floor is
       // its longest word, so at the largest text size the five labels asked for
@@ -63,8 +70,9 @@ export function BottomNav() {
 
 /** Desktop ≥1024px: persistent sidebar — selector top, nav, avatar bottom. */
 export function Sidebar() {
-  const { workspace } = useWorkspace();
+  const { workspace, tab } = useWorkspace();
   const pathname = usePathname() ?? "/";
+  const claimed = tab && tab.path === pathname ? tab.href : null;
 
   return (
     // 256px, the width every desktop panel in the spec is drawn against
@@ -92,7 +100,7 @@ export function Sidebar() {
         <nav aria-label={`${workspace.name} navigation`} className="p-3">
           <ul className="flex flex-col gap-1">
             {workspace.nav.map((item) => {
-              const active = isActive(item, pathname);
+              const active = isActive(item, pathname, claimed);
               return (
                 <li key={item.href}>
                   <Link

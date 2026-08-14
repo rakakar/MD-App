@@ -201,6 +201,23 @@ export function libraryWorkspace(code: string | null | undefined): WorkspaceId {
   return code?.toLowerCase() === "connect" ? "connect" : contentWorkspace(code);
 }
 
+/**
+ * Which tab a folder page stands under — **the browse tab of its workspace**.
+ *
+ * `/library/<id>` is workspace-neutral by design (§13.2) and matches no tab's
+ * href, so the whole bar used to go dark the moment a reader opened a
+ * collection: five tabs, none of them lit, on the screen where they had gone
+ * furthest in. The route cannot answer this on its own — the node's workspace
+ * can, which is why this is asked with a code in hand rather than a path.
+ *
+ * `null` for a workspace with no browse tab. Connect's was removed while its
+ * folders ship empty and Translations has no folders yet, so there is
+ * genuinely no tab to light, and inventing one would be worse than none.
+ */
+export function libraryTab(ws: WorkspaceId): string | null {
+  return WORKSPACES[ws].nav.find((item) => item.icon === "browse")?.href ?? null;
+}
+
 export function workspaceForPath(path: string): WorkspaceId | null {
   if (path === "/") return "originals";
   // `/av` is Originals' own door onto its recordings — the tree behind it is

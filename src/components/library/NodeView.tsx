@@ -7,6 +7,7 @@ import { provenanceLabel } from "@/components/library/ProvenanceBadge";
 import { Sieve } from "@/components/library/Sieve";
 import { filesSummary, nodeFacts } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
+import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { CollectionHero, EmptyState, ShareButton } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
 import { bookHue } from "@/lib/bookHue";
@@ -19,6 +20,10 @@ import {
 } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import type { LibraryFindResponse, LibraryNode } from "@/lib/types";
+import { libraryTab, libraryWorkspace } from "@/lib/workspaceConfig";
+
+/** the A/V tab's address, which is both a back destination and a nav claim */
+const AV_TAB = "/av";
 
 /**
  * One folder — **the same component at every depth**.
@@ -82,9 +87,25 @@ export async function NodeView({
   // as an app that changes its mind.
   const isAlbum = children.length + node.linked_children.length === 0 && files.length > 0;
 
+  // A folder holding a recording of its own is one of the collections `/av`
+  // lists — that page groups files under the folder each came from, so this is
+  // the same test it makes, read from the other side. It decides two things:
+  // where back goes, and which tab is lit.
+  const isRecordings = files.some((f) => f.kind === "audio" || f.kind === "video");
+  const tab = isRecordings ? AV_TAB : libraryTab(libraryWorkspace(node.workspace));
+
   return (
     <>
-      <Header node={node} shelves={shelves} isShelf={isShelf} isAlbum={isAlbum} />
+      {/* Which tab a workspace-neutral `/library/<id>` stands under — the bar
+          cannot tell from the path, and went dark on every collection. */}
+      {!isShelf && tab && <NavScope href={tab} />}
+      <Header
+        node={node}
+        shelves={shelves}
+        isShelf={isShelf}
+        isAlbum={isAlbum}
+        isRecordings={isRecordings}
+      />
 
       {searchable && find && (
         <>
@@ -175,11 +196,14 @@ function Header({
   shelves,
   isShelf,
   isAlbum,
+  isRecordings,
 }: {
   node: LibraryNode;
   shelves: ShelfMap;
   isShelf: boolean;
   isAlbum: boolean;
+  /** this folder is one of the collections the A/V tab lists — see `NodeView` */
+  isRecordings: boolean;
 }) {
   const hue = bookHue(`node-${node.id}`);
   const parent = node.breadcrumb.at(-1);
@@ -198,15 +222,31 @@ function Header({
   // The path down to here, minus the step the back pill already offers. One
   // pill is the whole path on the comps' screens, which sit a level under a
   // shelf; four levels into a shivir it is the last step of six.
-  const trail = node.breadcrumb.slice(0, -1);
+  //
+  // A shelf root is dropped from it — "मूल ग्रंथ" over a 2005 sammelan was the
+  // Originals shelf naming itself a third time, under an app bar and a tab
+  // that both already say where the reader is. What the eyebrow is for is the
+  // middle of a deep path, which no other control offers.
+  const trail = node.breadcrumb.slice(0, -1).filter((step) => !shelves[step.id]);
 
   return (
     <CollectionHero
       tone={hue.to}
+      /* Back goes where the reader came from, which for a collection of
+         recordings is the A/V tab and not the folder above it. The tree step
+         was literally true and useless: a reader arrives here off `/av`, and
+         backing out of a 2005 sammelan into "वीडियो" — one of two filing
+         folders under मूल ग्रंथ — put them somewhere they had never been, one
+         more tap from where they were. The parent is still reachable; it is
+         the eyebrow's job, on the paths deep enough to need it. */
       back={
-        parent && !isShelf
-          ? { href: nodeHref(parent.id, shelves), label: parent.name }
-          : undefined
+        isShelf
+          ? undefined
+          : isRecordings
+            ? { href: AV_TAB, label: "Audio/Video" }
+            : parent
+              ? { href: nodeHref(parent.id, shelves), label: parent.name }
+              : undefined
       }
       topRight={<ShareButton title={node.name} />}
       thumb={
@@ -277,7 +317,10 @@ function WholeSetLink({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/30 px-3 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+      /* The back pill's own shape, to the class — they are the two plain
+         controls on this panel and the only difference between them was that
+         nobody had said they were the same thing. */
+      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-white/20 bg-white/10 pe-3.5 ps-3.5 text-sm font-semibold transition-colors hover:bg-white/20"
     >
       <span>See the full series</span>
       <span aria-hidden>↗</span>
