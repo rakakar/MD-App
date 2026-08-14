@@ -248,7 +248,16 @@ function Header({
               ? { href: nodeHref(parent.id, shelves), label: parent.name }
               : undefined
       }
-      topRight={<ShareButton title={node.name} />}
+      /* Both of the panel's ways *out* of this collection, in one place: the
+         set where it also lives, and the link to this page. They were a row
+         apart — the link sitting alone under the description, where it was the
+         last thing on a panel that had already finished. */
+      topRight={
+        <div className="flex items-center gap-2">
+          {node.external_url && <WholeSetLink url={node.external_url} />}
+          <ShareButton title={node.name} />
+        </div>
+      }
       thumb={
         isAlbum ? (
           <div className="w-24 shrink-0">
@@ -295,9 +304,6 @@ function Header({
          place to say whose word this is. */
       chips={[provenanceLabel(node.provenance)?.label ?? ""].filter(Boolean)}
       description={node.description}
-      /* Conditional at the call site, not inside: an `actions` node that
-         renders nothing still buys the slot's top margin. */
-      actions={node.external_url ? <WholeSetLink url={node.external_url} /> : undefined}
     />
   );
 }
@@ -306,10 +312,13 @@ function Header({
  * "The whole set, where it also lives" — a YouTube playlist for a folder of
  * recordings.
  *
- * Under the files rather than over them, and worded as *also*: every video is
- * here as its own item and plays here, so a link out offered first would send
- * a reader away from the thing they already have. It is for the reader who
- * wants the set in one piece, or wants it on the platform they keep it on.
+ * In the panel's top row next to Share, which is where the two controls that
+ * leave this page belong. Two words rather than five: it is a small control on
+ * a busy row now, and "the full series" was explaining itself to a reader who
+ * is looking at the series.
+ *
+ * The arrow is the whole warning that this opens YouTube. Nothing else here
+ * leaves the app, so it does not have to compete for notice.
  */
 function WholeSetLink({ url }: { url: string }) {
   return (
@@ -317,12 +326,11 @@ function WholeSetLink({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      /* The back pill's own shape, to the class — they are the two plain
-         controls on this panel and the only difference between them was that
-         nobody had said they were the same thing. */
-      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-white/20 bg-white/10 pe-3.5 ps-3.5 text-sm font-semibold transition-colors hover:bg-white/20"
+      /* Share's fill and height, the back pill's shape — it stands beside the
+         one and answers to the other. */
+      className="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-control border border-white/20 bg-white/15 px-3.5 text-sm font-semibold transition-colors hover:bg-white/25"
     >
-      <span>See the full series</span>
+      <span>Full series</span>
       <span aria-hidden>↗</span>
     </a>
   );

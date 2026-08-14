@@ -133,14 +133,6 @@ function PlaylistRow({
             {length}
           </span>
         )}
-        {/* The workspace accent, not YouTube's red: this bar is *our* record of
-            where the reader stopped, and the resume rail on the tab above
-            marks progress in the same colour. */}
-        {percent > 1 && (
-          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-white/30">
-            <span className="block h-full bg-(--ws-ink)" style={{ width: `${percent}%` }} />
-          </span>
-        )}
       </span>
 
       <span className="min-w-0 flex-1 py-0.5">
@@ -159,6 +151,33 @@ function PlaylistRow({
             className={`${contentLang(file.description).className} mt-1 line-clamp-1 text-xs text-ink-soft`}
           >
             {file.description}
+          </span>
+        )}
+        {/*
+          Under the title, with the figure said out loud.
+
+          It was a hairline across the foot of the poster, YouTube's own
+          placement — and at 160px wide over a photograph of a man in a white
+          shawl it was not a thing anyone would notice unless they were looking
+          for it. Out here it has the row's own width, a track to be read
+          against, and the one number that makes it worth drawing: a reader
+          scanning fourteen parts for the one they are halfway through can now
+          do it without opening any of them.
+        */}
+        {percent > 1 && (
+          <span className="mt-1.5 flex items-center gap-2">
+            <span
+              aria-hidden
+              className="h-1 flex-1 overflow-hidden rounded-full bg-ink/10"
+            >
+              <span
+                className="block h-full rounded-full bg-(--ws-ink)"
+                style={{ width: `${percent}%` }}
+              />
+            </span>
+            <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
+              {Math.round(percent)}% watched
+            </span>
           </span>
         )}
       </span>
