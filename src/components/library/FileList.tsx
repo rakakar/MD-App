@@ -3,6 +3,7 @@ import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ImageGallery } from "@/components/library/ImageGallery";
 import { PdfCard } from "@/components/library/PdfCard";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
+import { VideoPlaylist } from "@/components/library/VideoPlaylist";
 import { VideoView } from "@/components/library/VideoView";
 import { KIND_LABEL, KIND_ORDER, fileFacts } from "@/components/library/format";
 import { DownloadIcon, ExternalLinkIcon } from "@/components/shell/icons";
@@ -107,16 +108,7 @@ function KindGroup({
         </div>
       );
     }
-    return (
-      <ul className="flex flex-col gap-1">
-        {files.map((file) => (
-          <li key={file.id}>
-            <VideoView file={file} layout="row" />
-            <Located file={file} />
-          </li>
-        ))}
-      </ul>
-    );
+    return <VideoPlaylist files={files} />;
   }
 
   if (kind === "pdf") {
