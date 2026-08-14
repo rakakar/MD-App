@@ -1,11 +1,24 @@
-import Link from "next/link";
-import { ImageIcon } from "@/components/shell/icons";
 import { findLibrary } from "@/lib/api";
-import { EMPTY_FIND, findHref, type FindState } from "@/lib/find";
+import { EMPTY_FIND, type FindState } from "@/lib/find";
 import type { LibraryFacets, LibrarySearchRow } from "@/lib/types";
+import { PhotoStripView } from "./PhotoStripView";
 
 /** how many photographs the strip shows before the counter tile */
 const SHOWN = 4;
+/**
+ * How many the viewer can page through.
+ *
+ * The strip needs four; the viewer needs enough that swiping does not run out
+ * in a few seconds. Sixty thumbnails is a few hundred kilobytes and loads lazily
+ * in the reel, where sixty *originals* would be sixty megabytes — the whole
+ * reason `thumbnail_url` exists.
+ *
+ * A shelf with more than sixty photographs shows the true count on the "+N"
+ * tile and opens a viewer holding the first sixty, which is the honest
+ * shortcut: this is a door onto the pictures, and the shelf's own image filter
+ * is still the way to all of them.
+ */
+const VIEWABLE = 60;
 
 /**
  * A shelf's photographs, as photographs (designer, "Desktop UI").
@@ -30,13 +43,9 @@ const SHOWN = 4;
 export async function PhotoStrip({
   scope,
   facets,
-  basePath,
-  state,
 }: {
   scope: { workspace?: string; under?: number };
   facets: LibraryFacets | undefined;
-  basePath: string;
-  state: FindState;
 }) {
   const total = (facets?.kind ?? []).find((f) => f.value === "image")?.count ?? 0;
   // Under a handful, the images tile in the grid above has already said
@@ -48,73 +57,14 @@ export async function PhotoStrip({
   const found = await findLibrary({
     ...scope,
     state: onlyImages,
-    limit: SHOWN,
+    limit: VIEWABLE,
   }).catch(() => null);
   const photos = (found?.results ?? []).filter(isImage);
   if (photos.length < SHOWN) return null;
 
-  const gallery = findHref(basePath, { ...state, selection: { kind: ["image"] } });
-  const rest = total - photos.length;
-
   return (
     <section className="mt-8">
-      <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="text-sm font-semibold tracking-[-0.01em]">
-          Photos
-          <span className="ms-1.5 text-xs font-medium text-ink-soft">
-            · <span className="tabular-nums">{total}</span>
-          </span>
-        </h2>
-        <Link
-          href={gallery}
-          className="text-xs font-semibold"
-          style={{ color: "var(--ws-ink)" }}
-        >
-          Open gallery →
-        </Link>
-      </div>
-      {/* Five across on every screen, counter included — the strip is one row
-          or it is a gallery, and at four columns the counter wrapped onto a
-          line of its own under four photographs, reading as a sixth picture
-          that failed to load. Five 67px squares on the narrowest phone is
-          small, which is the right size for a thing whose whole job is to say
-          "there are photographs in here, come and look". */}
-      <ul className="grid grid-cols-5 gap-1.5 sm:gap-2">
-        {photos.map((photo) => (
-          <li key={photo.id}>
-            <Link
-              href={gallery}
-              className="block overflow-hidden rounded-xl border border-rule bg-canvas"
-            >
-              {/* Plain <img>: these are library media on a host the image
-                  optimiser is not configured for, and a broken optimiser here
-                  costs the whole strip. Lazy, because the strip is below a grid
-                  most readers never scroll past. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photo.thumbnail_url ?? photo.url}
-                alt={photo.title}
-                loading="lazy"
-                decoding="async"
-                className="aspect-square w-full object-cover"
-              />
-            </Link>
-          </li>
-        ))}
-        {rest > 0 && (
-          <li>
-            <Link
-              href={gallery}
-              className="flex aspect-square items-center justify-center gap-1 rounded-xl border border-rule text-xs font-semibold text-white"
-              style={{ background: "var(--ws-color)" }}
-              aria-label={`${rest} more photographs`}
-            >
-              <ImageIcon className="hidden h-3.5 w-3.5 sm:block" />
-              <span className="tabular-nums">+{rest}</span>
-            </Link>
-          </li>
-        )}
-      </ul>
+      <PhotoStripView photos={photos} shown={SHOWN} total={total} />
     </section>
   );
 }

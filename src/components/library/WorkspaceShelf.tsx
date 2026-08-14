@@ -281,9 +281,7 @@ export async function WorkspaceShelf({
           nothing about what is in it. */}
       <PhotoStrip
         scope={scope}
-        facets={facets}
-        basePath={basePath}
-        state={state}
+        facets={find?.facets}
       />
 
       {/* The desktop's copy of the filters, drawn for a 232px column and living
