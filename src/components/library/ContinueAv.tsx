@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AV_KINDS, AV_PAGE } from "@/components/library/AvShelf";
 import { formatDuration } from "@/components/library/format";
+import { VideoStage } from "@/components/library/VideoStage";
+import { videoSource } from "@/components/library/VideoView";
 import { usePlayer } from "@/components/player/PlayerProvider";
 import { PlayIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { findLibrary } from "@/lib/api";
@@ -88,6 +90,10 @@ export function ContinueAv({
   const { user, loading } = useAuth();
   const player = usePlayer();
   const [rows, setRows] = useState<ResumeRow[]>([]);
+  /** the video this rail has open full screen, if any */
+  const [watching, setWatching] = useState<LibraryFile | null>(null);
+  /** bumped when it closes, to re-read the playheads it just moved */
+  const [afterWatching, setAfterWatching] = useState(0);
 
   const onPage = useMemo(
     () =>
@@ -202,6 +208,16 @@ export function ContinueAv({
     if (user) void syncPersonal().then(() => render(true));
   }, [user, loading, render]);
 
+  // After the stage closes. An effect rather than the click handler, because
+  // the player writes its final position while being torn down — and a
+  // teardown in a commit runs before that commit's effects, so this reads
+  // where the reader actually stopped. A card watched to the end drops off the
+  // rail here, which is the same rule that kept it off in the first place.
+  useEffect(() => {
+    if (afterWatching === 0 || loading) return;
+    void render(Boolean(user));
+  }, [afterWatching, loading, user, render]);
+
   if (rows.length === 0) return null;
 
   // The verb names what the reader was actually doing. A rail of nothing but
@@ -232,6 +248,15 @@ export function ContinueAv({
     );
   };
 
+  // Video plays where the reader is standing, in the same full-screen stage a
+  // row in a collection opens — the card said "carry on" and then handed over
+  // a folder page to find the recording in again. Only where this rail holds
+  // the file itself; a playhead named by the account alone has no URL to play,
+  // so that card still opens the folder, which does.
+  const watch = (row: ResumeRow) => {
+    if (row.file) setWatching(row.file);
+  };
+
   return (
     <section aria-label={label} className="mt-5">
       <h2 className="mb-2.5 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
@@ -244,10 +269,22 @@ export function ContinueAv({
       <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
         {rows.map((row) => (
           <li key={row.itemId} className="w-[17.5rem] shrink-0 snap-start sm:w-[20rem]">
-            <ResumeCard row={row} onPlay={row.kind === "audio" && row.file ? play : null} />
+            <ResumeCard
+              row={row}
+              onPlay={row.file ? (row.kind === "audio" ? play : watch) : null}
+            />
           </li>
         ))}
       </ul>
+      {watching && (
+        <VideoStage
+          file={watching}
+          onClose={() => {
+            setWatching(null);
+            setAfterWatching((n) => n + 1);
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -268,6 +305,7 @@ function ResumeCard({
     row.durationMs && row.durationMs > row.positionMs
       ? formatDuration(Math.round((row.durationMs - row.positionMs) / 1000))
       : "";
+  const poster = row.kind === "video" ? videoPoster(row.file) : null;
 
   const body = (
     <>
@@ -281,20 +319,37 @@ function ResumeCard({
             audio, the same pair the collection cards and the Library shelf use.
             A terracotta tile on a video row said "Originals" where the reader
             needed it to say "this is the one you were watching". */}
-        <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-            row.kind === "audio"
-              ? "bg-kind-audio text-kind-audio-ink"
-              : "bg-kind-video text-kind-video-ink"
-          }`}
-          aria-hidden
-        >
-          {row.kind === "audio" ? (
-            <WaveformIcon className="h-5 w-5" />
-          ) : (
-            <VideoIcon className="h-5 w-5" />
-          )}
-        </span>
+        {/* A video shows the recording itself. The frame is the one thing that
+            says *which* of six parts of a sammelan this is before the title is
+            read — and it costs nothing: the poster is a still the host already
+            serves. Audio has no frame to show and keeps its glyph; so does a
+            video the account named but this page never fetched, which has no
+            URL to take a poster from. */}
+        {poster ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={poster}
+            alt=""
+            loading="lazy"
+            aria-hidden
+            className="aspect-video h-11 shrink-0 rounded-lg bg-black object-cover"
+          />
+        ) : (
+          <span
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+              row.kind === "audio"
+                ? "bg-kind-audio text-kind-audio-ink"
+                : "bg-kind-video text-kind-video-ink"
+            }`}
+            aria-hidden
+          >
+            {row.kind === "audio" ? (
+              <WaveformIcon className="h-5 w-5" />
+            ) : (
+              <VideoIcon className="h-5 w-5" />
+            )}
+          </span>
+        )}
         <span className="min-w-0 flex-1">
           <span
             {...contentLang(row.title)}
@@ -383,6 +438,22 @@ function ResumeCard({
       {body}
     </Link>
   );
+}
+
+/**
+ * A still of the recording — the BE's own thumbnail if it has one, else the
+ * frame YouTube already serves for the video.
+ *
+ * `hqdefault` rather than `maxresdefault`: every video has one, including a
+ * 1999 sammelan digitised at 480p, and the file is a few kB at the 78×44 this
+ * card draws it. Nothing at all for an upload or a Vimeo link, which have no
+ * poster to ask for — the glyph tile stands in.
+ */
+function videoPoster(file: LibraryFile | null): string | null {
+  if (!file) return null;
+  if (file.thumbnail_url) return file.thumbnail_url;
+  const src = videoSource(file.url);
+  return src?.host === "youtube" ? `https://i.ytimg.com/vi/${src.id}/hqdefault.jpg` : null;
 }
 
 /**
