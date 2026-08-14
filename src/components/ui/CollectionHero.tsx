@@ -163,10 +163,13 @@ export function CollectionHero({
                   <p className="mt-2 text-sm font-semibold">{progress.label}</p>
                 </>
               )}
+              {/* `hi-note` is Mukta at 1.5 — the chrome face, set tighter than
+                  the book one. `leading-relaxed` covers the Latin case, where
+                  no `.hi` rule is in play to outrank it. */}
               {description && (
                 <p
                   {...contentLang(description)}
-                  className={`${contentLang(description).className} mt-3 text-sm leading-relaxed text-white/85`}
+                  className={`${contentLang(description).className} hi-note mt-3 text-sm leading-relaxed text-white/85`}
                 >
                   {description}
                 </p>

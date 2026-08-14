@@ -53,13 +53,13 @@ export function FileList({
   return (
     <>
       {groups.map(({ kind, files: kindFiles }) => (
-        <section key={kind} className="mt-7">
+        <section key={kind} className="mt-5">
           {/* Only labelled when there is more than one kind to tell apart — a
               heading over the only thing on the page is noise. */}
           {groups.length > 1 && (
             <h2
               lang="hi"
-              className="hi mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
+              className="hi mb-3.5 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft"
             >
               {KIND_LABEL[kind]} · {kindFiles.length}
             </h2>

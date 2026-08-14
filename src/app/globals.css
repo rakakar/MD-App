@@ -704,6 +704,23 @@ body {
   line-height: 1.85;
 }
 
+/* A Devanagari *description* — the sentence under a collection's title, in the
+   hero panel.
+ *
+ * Mukta rather than Tiro, and set tighter. Tiro is the book face and it earns
+ * the whole page in a chapter; a two-line note on a saturated panel is chrome,
+ * and at 1.85 its lines drifted so far apart that the second one read as a
+ * separate thought. 1.5 is as tight as Devanagari goes here before the matras
+ * above and below start meeting — see `.hi-tight`, which is 1.35 and only for
+ * a name that cannot wrap more than twice.
+ *
+ * Its own class for the same reason `.hi-tight` is: `.hi` is unlayered, so a
+ * `leading-*` utility on it is inert whatever the source order. */
+.hi-note {
+  font-family: var(--font-devanagari-sans);
+  line-height: 1.5;
+}
+
 /* A Devanagari label inside a fixed box — the Library stat tile's folder name,
    which gets two lines of a 108px square and no more.
  *

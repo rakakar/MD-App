@@ -57,7 +57,11 @@ export function VideoPlaylist({ files }: { files: Row[] }) {
 
   return (
     <>
-      <ul className="flex flex-col gap-1">
+      {/* The row carries 4px of padding for its hover shape to sit in, and the
+          page 16 — so the list's own edge, the thumbnail, lands at 20 from the
+          screen and 20 under the hero. `-mt-1` takes the first row's padding
+          back out of the section's 20 rather than adding to it. */}
+      <ul className="-mt-1 flex flex-col gap-1">
         {files.map((file) => (
           <li key={file.id}>
             <PlaylistRow
@@ -109,7 +113,7 @@ function PlaylistRow({
       type="button"
       onClick={onOpen}
       aria-label={`Play ${file.title}`}
-      className="group flex w-full items-start gap-3 rounded-card p-1.5 text-start transition-colors hover:bg-ink/[.04]"
+      className="group flex w-full items-start gap-3 rounded-card p-1 text-start transition-colors hover:bg-ink/[.04]"
     >
       <span className="relative aspect-video w-[38%] max-w-[10.5rem] shrink-0 overflow-hidden rounded-lg bg-black">
         {posterId && (
