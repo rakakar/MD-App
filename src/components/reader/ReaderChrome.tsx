@@ -5,9 +5,9 @@ import {
   BackIcon,
   HeadphonesIcon,
   Icon,
+  PaletteIcon,
   ShareIcon,
   TocIcon,
-  TypeIcon,
 } from "@/components/shell/icons";
 import { HIGHLIGHT_COLOURS, type HighlightColour } from "@/lib/storage";
 
@@ -129,11 +129,14 @@ export function ReaderTopBar({
           </Link>
         )}
 
-        {/* "Aa" survives here even though the app bar's became a palette: this
-            one really is the type control, and it is the mark every reading
-            app uses for it. */}
+        {/* The palette, the same mark the app bar carries for the same sheet's
+            worth of choices. This was "Aa" on the argument that the reader's
+            button really is the type control — but it has not been only that
+            for a while: behind it are the six reading surfaces, the typeface,
+            the layout and the margins as well as the size. One glyph for
+            "how this looks", in the book and in the shell. */}
         <SquareBtn onClick={onType} label="Reading settings">
-          <TypeIcon className="h-5 w-5" />
+          <PaletteIcon className="h-5 w-5" />
         </SquareBtn>
 
         <Link

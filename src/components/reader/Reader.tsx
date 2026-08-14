@@ -1451,6 +1451,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         open={tocOpen}
         onClose={() => setTocOpen(false)}
         bookCode={book.code}
+        bookTitle={book.title_hi}
         chapters={book.chapters}
         current={chapterNumber}
         bookType={book.book_type}

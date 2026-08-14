@@ -37,6 +37,7 @@ export function TocSheet({
   open,
   onClose,
   bookCode,
+  bookTitle,
   chapters,
   current,
   bookType,
@@ -45,6 +46,8 @@ export function TocSheet({
   open: boolean;
   onClose: () => void;
   bookCode: string;
+  /** the sheet's heading — the book, not the word "book" */
+  bookTitle: string;
   chapters: ChapterTocEntry[];
   current: number;
   bookType: "print" | "digital";
@@ -180,7 +183,11 @@ export function TocSheet({
   const count = rows?.length ?? 0;
 
   return (
-    <Sheet open={open} onClose={onClose} title="This book">
+    // The book's own name, not "This book". A reader who is four levels into
+    // the app and two taps from the last thing they opened is being told what
+    // they already know; the title says which book these chapters belong to,
+    // which on a shelf of thirteen is the thing worth saying.
+    <Sheet open={open} onClose={onClose} title={bookTitle}>
       {/* Sticky, so the pair stays reachable down a chapter list of forty. The
           sheet's own header is above it and does not scroll, so this only has
           to clear the top of the scroller. */}
@@ -206,15 +213,11 @@ export function TocSheet({
       </div>
 
       {tab === "contents" ? (
+        // No "Front matter" heading over the first rows, as on the book page:
+        // it labelled a group of one or two against a list of eighteen, and the
+        // rows already say what they are.
         <ul>
-          {frontMatter.length > 0 && (
-            <>
-              <li className="px-5 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-(--reader-ink-soft)">
-                Front matter
-              </li>
-              {frontMatter.map(row)}
-            </>
-          )}
+          {frontMatter.map(row)}
           {main.map(row)}
         </ul>
       ) : count === 0 ? (

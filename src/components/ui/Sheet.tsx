@@ -104,7 +104,7 @@ export function Sheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-tile border ${rule} transition-colors active:bg-current/5`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-control border ${rule} transition-colors active:bg-current/5`}
             >
               <CloseIcon className="h-4 w-4" />
             </button>
@@ -142,7 +142,7 @@ export function SheetAction({
     <button
       type="button"
       {...rest}
-      className="flex min-h-12 w-full items-center justify-center rounded-tile px-4 text-title font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+      className="flex min-h-12 w-full items-center justify-center rounded-control px-4 text-title font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       style={{ background: "var(--ws-color)" }}
     >
       {children}
@@ -159,7 +159,7 @@ export function SheetTextAction({
     <button
       type="button"
       {...rest}
-      className="inline-flex min-h-10 shrink-0 items-center rounded-tile border border-rule px-3 text-sm font-medium transition-colors active:bg-current/5"
+      className="inline-flex min-h-10 shrink-0 items-center rounded-control border border-rule px-3 text-sm font-medium transition-colors active:bg-current/5"
     >
       {children}
     </button>

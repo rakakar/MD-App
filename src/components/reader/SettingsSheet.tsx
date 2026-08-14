@@ -163,7 +163,7 @@ export function SettingsSheet(p: SettingsSheetProps) {
           <div
             role="radiogroup"
             aria-label="Typeface"
-            className="flex gap-1 rounded-tile bg-current/[0.06] p-1"
+            className="flex gap-1 rounded-control bg-current/[0.06] p-1"
           >
             {FACES.map((f) => {
               const active = p.face === f.id;
@@ -238,7 +238,7 @@ export function SettingsSheet(p: SettingsSheetProps) {
           <button
             type="button"
             onClick={p.onGoToPage}
-            className="w-full rounded-tile border border-(--reader-rule) py-2.5 text-sm font-medium"
+            className="w-full rounded-control border border-(--reader-rule) py-2.5 text-sm font-medium"
           >
             Go to printed page…
           </button>
@@ -328,7 +328,7 @@ function StepBtn({
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tile border border-(--reader-rule) disabled:opacity-35"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) disabled:opacity-35"
     >
       {children}
     </button>
@@ -356,7 +356,7 @@ function Segmented<T extends string | number>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className="flex gap-1 rounded-tile bg-current/[0.06] p-1"
+      className="flex gap-1 rounded-control bg-current/[0.06] p-1"
     >
       {options.map((o) => {
         const active = o.value === value;
