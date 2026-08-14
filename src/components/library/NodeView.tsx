@@ -3,9 +3,8 @@ import { FileList } from "@/components/library/FileList";
 import { FindBar } from "@/components/library/FindBar";
 import { FindResults } from "@/components/library/FindResults";
 import { NodeCardView } from "@/components/library/NodeCard";
-import { provenanceLabel } from "@/components/library/ProvenanceBadge";
 import { Sieve } from "@/components/library/Sieve";
-import { filesSummary, nodeFacts } from "@/components/library/format";
+import { filesSummary, languageInEnglish } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { CollectionHero, EmptyState, ShareButton } from "@/components/ui";
@@ -287,22 +286,24 @@ function Header({
         ) : undefined
       }
       title={node.name}
-      meta={
-        // Year · place · people · language, then what is actually inside, then
-        // how much of it reads as text. That last one is stated rather than
-        // left to be discovered a row at a time: a mixed folder is the normal
-        // case and always will be — extraction is per file and proofreading is
-        // its real cost — so a header that said nothing would imply the rows
-        // are alike when the whole point is that they are not. Counted by the
-        // BE over the folder, so a cross-posted text edition counts once.
-        [nodeFacts(node), filesSummary(files), readingCount > 0 ? `${readingCount} as text` : ""]
-          .filter(Boolean)
-          .join(" · ") || undefined
-      }
-      /* The provenance rides on the folder too, not only on its card: this is
-         the screen where someone actually reads or listens, and it is the last
-         place to say whose word this is. */
-      chips={[provenanceLabel(node.provenance)?.label ?? ""].filter(Boolean)}
+      /* **Where it is from — year, place, language, and nothing else.**
+         Three facts of one kind, which is what makes the line scannable: a
+         reader takes it in as provenance-in-the-world rather than reading it.
+         The language is named once and in English (`languageInEnglish`), since
+         the interface is English and the label's own Devanagari half was the
+         only Hindi in a line of numbers and place names. */
+      meta={[node.year, node.place, languageInEnglish(node)].filter(Boolean).join(" · ") || undefined}
+      /* **What is inside — as tags, because that is what a reader chooses on.**
+         "19 Videos" was buried mid-line among the facts above, where the one
+         number that says how big a commitment this is read like a footnote.
+         It takes the chip the provenance had: every folder under मूल ग्रंथ is
+         Original, so that badge said the same word on every screen a reader
+         reached from this tab — and it is still on each file's own row, where
+         it can actually differ. "N as text" keeps its place beside the count:
+         same kind of fact, same shape. */
+      chips={[filesSummary(files), readingCount > 0 ? `${readingCount} as text` : ""].filter(
+        Boolean
+      )}
       description={node.description}
     />
   );

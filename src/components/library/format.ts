@@ -182,3 +182,29 @@ export function fileFacts(file: LibraryFile): string {
 export function nodeFacts(card: NodeCard): string {
   return [card.year, card.place, card.people, card.language_label].filter(Boolean).join(" · ");
 }
+
+/**
+ * The language named once, in English — "Hindi", not "हिन्दी (Hindi)".
+ *
+ * The BE's label is bilingual because it is also what a Hindi-reading manager
+ * sees. On a hero's facts line it was the only run of Devanagari in a line of
+ * numbers and place names, and it said the same word twice. The interface is
+ * English throughout (contract §0) and this is interface, not content.
+ *
+ * The parenthetical first, because that is the BE's own English for it;
+ * `Intl` from the ISO code where there is no parenthetical, and the label
+ * itself — already English, e.g. "English" — where neither applies.
+ */
+export function languageInEnglish(card: Pick<NodeCard, "language" | "language_label">): string {
+  const inside = card.language_label?.match(/\(([^)]+)\)/)?.[1];
+  if (inside) return inside;
+  if (card.language) {
+    try {
+      const named = new Intl.DisplayNames(["en"], { type: "language" }).of(card.language);
+      if (named && named !== card.language) return named;
+    } catch {
+      // a runtime without the data — the label below is still true
+    }
+  }
+  return card.language_label ?? "";
+}
