@@ -255,6 +255,11 @@ export function ReaderBottomBar({
             }
           >
             <span className="relative" style={listening ? { color: "var(--ws-ink)" } : undefined}>
+              {/* Headphones here, waveform elsewhere — and the split is the
+                  rule, not an oversight. A glyph standing for an audio *file*
+                  is the wave (the A/V shelf, its facets, its resume row); the
+                  headphones are for listening as an act, which is what this
+                  button offers and what the A/V tab's nav glyph promises. */}
               <HeadphonesIcon className="h-5 w-5" />
               {deviceFallback && (
                 <span

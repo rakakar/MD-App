@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { AV_KINDS, AV_PAGE } from "@/components/library/AvShelf";
 import { formatDuration } from "@/components/library/format";
 import { usePlayer } from "@/components/player/PlayerProvider";
-import { HeadphonesIcon, PlayIcon, VideoIcon } from "@/components/shell/icons";
+import { PlayIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { findLibrary } from "@/lib/api";
 import { EMPTY_FIND } from "@/lib/find";
 import { getProgress } from "@/lib/me";
@@ -290,7 +290,7 @@ function ResumeCard({
           aria-hidden
         >
           {row.kind === "audio" ? (
-            <HeadphonesIcon className="h-5 w-5" />
+            <WaveformIcon className="h-5 w-5" />
           ) : (
             <VideoIcon className="h-5 w-5" />
           )}

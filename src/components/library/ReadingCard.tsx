@@ -9,7 +9,7 @@ import {
   ChevronRight,
   DocumentIcon,
   DownloadIcon,
-  HeadphonesIcon,
+  WaveformIcon,
 } from "@/components/shell/icons";
 import { parseRef } from "@/lib/refs";
 import { documentHref, documentTextHref } from "@/lib/routes";
@@ -208,9 +208,12 @@ export function ReadingCard({
             >
               Text edition
             </span>
+            {/* The wave, because this marks that an audio *file* exists — the
+                headphones are for listening as an act (the reader's Listen
+                button, the A/V tab's nav glyph) and for nothing else. */}
             {reading.has_audio && (
               <span className="inline-flex items-center gap-1 text-xs text-ink-soft">
-                <HeadphonesIcon className="h-3.5 w-3.5" />
+                <WaveformIcon className="h-3.5 w-3.5" />
                 <span>Audio</span>
               </span>
             )}

@@ -4,9 +4,9 @@ import { yearBands } from "./years";
 import {
   DocumentIcon,
   FolderIcon,
-  HeadphonesIcon,
   ImageIcon,
   VideoIcon,
+  WaveformIcon,
 } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import {
@@ -269,7 +269,10 @@ function FacetRow({
 
 function KindIcon({ kind }: { kind: FileKind }) {
   const className = "h-4 w-4";
-  if (kind === "audio") return <HeadphonesIcon className={className} />;
+  // Waveform, not headphones: in this app the headphones are the Audio/Video
+  // tab's own glyph in the nav, and everywhere a glyph stands for an audio
+  // *file* — here, the segment control, the collection cards — it is the wave.
+  if (kind === "audio") return <WaveformIcon className={className} />;
   if (kind === "video") return <VideoIcon className={className} />;
   if (kind === "image") return <ImageIcon className={className} />;
   if (kind === "pdf") return <DocumentIcon className={className} />;

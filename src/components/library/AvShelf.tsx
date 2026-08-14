@@ -8,7 +8,7 @@ import { filesSummary, formatDuration } from "./format";
 import { RailSlot } from "@/components/shell/Rail";
 import { CountedSegmented, EmptyState } from "@/components/ui";
 import { CollectionViewport } from "./CollectionViewport";
-import { ChevronRight, HeadphonesIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
+import { ChevronRight, VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
@@ -192,10 +192,6 @@ export function AvShelf({
           <CollectionLayout
             groups={groups}
             shelves={shelves}
-            /* The Library shelf's own heading, word-shape for word-shape: one
-               uppercase line naming what is below and counting it, rather than
-               a lowercase sentence of statistics. Both tabs are shelves of
-               collections and a reader crosses between them in one tap. */
             /* The Library shelf's heading, with the count moved under it
                rather than strung after it on the same line. The heading names
                what is below; the count is a fact *about* it, and at the same
@@ -402,10 +398,13 @@ function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: Shelf
           color: tint?.ink ?? "var(--ws-ink)",
         }}
       >
+        {/* The waveform, not the headphones — the same glyph the Audio segment
+            above and the row below use, so flipping layouts does not appear to
+            change what the collection is. */}
         {only === "video" ? (
           <VideoIcon className="h-[18px] w-[18px]" />
         ) : (
-          <HeadphonesIcon className="h-[18px] w-[18px]" />
+          <WaveformIcon className="h-[18px] w-[18px]" />
         )}
       </span>
       <span
