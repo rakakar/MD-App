@@ -69,17 +69,15 @@ export default async function AvPage({
   return (
     <PageContainer size="shelf">
       <WorkspaceScope ws="originals" />
-      {/* The shelves' eyebrow: the tab that got here is at the foot of the
-          screen, four rows away, so the workspace is named above the title. */}
-      <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        Originals
-      </p>
-      <h1 className="mt-0.5 font-display text-[1.625rem] font-medium tracking-[-0.015em] lg:text-4xl">
+      {/* No "Originals" eyebrow. The workspace is named in the app bar at the
+          top of the screen and again in the switcher inside it, and a third
+          naming above the title was answering a question the reader had not
+          asked on the way to a page they chose from the tab bar. */}
+      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
         Audio/Video
       </h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        Discourses, satsangs and shivir sessions — everything in Originals you
-        can listen to or watch.
+      <p className="mt-0.5 text-sm text-ink-soft">
+        Discourses, satsangs and shivir sessions of Shri A. Nagraj.
       </p>
 
       <AvShelf

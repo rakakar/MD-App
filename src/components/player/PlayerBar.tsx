@@ -1,9 +1,8 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
-  ChevronDown,
   CloseIcon,
   PauseIcon,
   PlayIcon,
@@ -11,19 +10,9 @@ import {
   SkipForwardIcon,
 } from "@/components/shell/icons";
 import { ownsViewport } from "@/lib/routes";
-import { SKIP_SECONDS, activeRendition, usePlayer } from "./PlayerProvider";
+import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
 
-const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
-const SLEEP_OPTIONS = [10, 20, 30, 45, 60];
 
-function fmt(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(s / 60);
-  const h = Math.floor(m / 60);
-  const mm = h > 0 ? String(m % 60).padStart(2, "0") : String(m);
-  const ss = String(s % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-}
 
 /**
  * Persistent bottom-bar player (PRD §6) — lives in the app shell, survives
@@ -38,25 +27,22 @@ export function PlayerBar() {
 function PlayerBarInner() {
   const player = usePlayer();
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState<"rate" | "sleep" | "voice" | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
-  // no bottom nav to clear inside a reader, and the reader stacks its own
-  // controls on top of this bar via --player-h. True of the PDF reader too:
-  // it drops the same chrome, so padding for a nav that isn't there would
-  // float this bar above the bottom of the screen.
+  // Only where it sits differs now: inside a book it clears the reader's own
+  // bottom bar, everywhere else the tab bar.
   const reader = ownsViewport(usePathname());
 
   useEffect(() => {
     const el = barRef.current;
     if (!el) return;
-    // Inside a book the pill *floats over* the page rather than stacking under
-    // the reader's own bar, so it takes no layout: the reader keeps its chrome
-    // at the foot of the screen, as the comp draws, and the pill sits above it
-    // over the text. Everywhere else the bar is real furniture and publishes
-    // its height so the page can clear it.
+    // The pill floats over the page in both places, so it takes no layout in
+    // either — `--player-h` stays 0 and the shelf no longer reserves a strip
+    // for it. That is the trade the pill makes: it is a lighter object over
+    // the content instead of a band under it, and the last row of a list can
+    // pass beneath it. Scroll a thumb's width and the row is clear.
     const publish = () => {
       const root = document.documentElement.style;
-      root.setProperty("--player-h", reader ? "0px" : `${el.offsetHeight}px`);
+      root.setProperty("--player-h", "0px");
       // What a *floating* control has to clear to sit above the pill. The
       // reader's selection bar is the one other thing that floats in this
       // corner, and without this it lands on top of the pill — both were
@@ -76,16 +62,7 @@ function PlayerBarInner() {
   const { source } = player;
   if (!source) return null;
 
-  const rendition = activeRendition(source);
   const device = source.kind === "device";
-  const title =
-    source.kind === "track" ? source.title : source.chapterTitle;
-  const subtitle =
-    source.kind === "tts"
-      ? `${source.bookTitle}${rendition ? ` · ${rendition.voice_label}` : ""}`
-      : source.kind === "device"
-        ? `${source.bookTitle} · Device voice`
-        : (source.subtitle ?? "");
   /**
    * The overlay pill names the book first and the chapter second, which is the
    * other way round from the bar's `title`/`subtitle`. The bar is a strip on a
@@ -97,10 +74,6 @@ function PlayerBarInner() {
   const pillTitle = source.kind === "track" ? source.title : source.bookTitle;
   const pillSubtitle =
     source.kind === "track" ? (source.subtitle ?? "") : source.chapterTitle;
-
-  const paraProgress = device
-    ? `${Math.min(player.deviceParaIndex + 1, source.paras.length)} / ${source.paras.length}`
-    : null;
 
   /**
    * Back up to the full listening screen.
@@ -142,316 +115,87 @@ function PlayerBarInner() {
    * the speed, the sleep timer and the voice picker are all in Audio Mode,
    * which is what the title opens.
    */
-  if (reader) {
-    return (
-      <div
-        ref={barRef}
-        role="region"
-        aria-label="Audio player"
-        // Re-keyed on the audio-mode flag so collapsing remounts the pill and
-        // its entrance replays. It stays mounted the whole time Audio Mode is
-        // up — merely covered — so without this it would simply be revealed.
-        key={player.audioModeOpen ? "expanded" : "collapsed"}
-        // `player-pill` carries the ground — see globals; the equaliser is
-        // painted there rather than here because it is six gradient layers and
-        // a sweep, which is a stylesheet's job and not a class list's.
-        className="player-pill player-pill-in fixed inset-x-3 z-40 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-white shadow-raised"
-        // Above the reader's bottom bar by the same 3.75rem the selection bar
-        // clears it with. One number for "what a floating control clears",
-        // rather than two that drift apart.
-        style={{ bottom: "calc(env(safe-area-inset-bottom) + 3.75rem)" }}
-      >
-        <button
-          type="button"
-          onClick={player.close}
-          aria-label="Stop listening"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/70 active:bg-white/15"
-        >
-          <CloseIcon className="h-4.5 w-4.5" />
-        </button>
-
-        {/* The book on top, the chapter under it — the same order as the
-            reader's own top bar, so the pill reads as the strip that was
-            already there rather than as a second, differently-ordered one. */}
-        <button
-          type="button"
-          onClick={expand}
-          aria-label="Open audio mode"
-          className="flex min-w-0 flex-1 flex-col text-left"
-        >
-          <span className="hi hi-tight w-full truncate text-sm font-semibold">
-            {pillTitle}
-          </span>
-          <span className="hi hi-tight w-full truncate text-xs text-white/70">
-            {pillSubtitle}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-          aria-label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
-        >
-          <SkipBackIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
-        </button>
-        <button
-          type="button"
-          onClick={player.toggle}
-          aria-label={player.playing ? "Pause" : "Play"}
-          // Terracotta to start, cream to stop — the same pair Audio Mode's own
-          // play button wears, so the two read as one player in two sizes.
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95 ${
-            player.playing ? "bg-audio-ink text-overlay" : "text-white"
-          }`}
-          style={player.playing ? undefined : { background: "var(--ws-color)" }}
-        >
-          {player.playing ? (
-            <PauseIcon className="h-5 w-5" />
-          ) : (
-            <PlayIcon className="ms-0.5 h-5 w-5" />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={() => player.skipSeconds(SKIP_SECONDS)}
-          aria-label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
-        >
-          <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div
       ref={barRef}
       role="region"
       aria-label="Audio player"
-      className={`fixed inset-x-0 z-40 border-t backdrop-blur ${
-        reader
-          ? "bottom-[env(safe-area-inset-bottom)] border-(--reader-rule) bg-(--reader-bg)/95 text-(--reader-ink)"
-          : "bottom-[calc(3.4rem+env(safe-area-inset-bottom))] border-rule bg-card/95 lg:bottom-0 lg:left-60"
-      }`}
+      // Re-keyed on the audio-mode flag so collapsing remounts the pill and
+      // its entrance replays. It stays mounted the whole time Audio Mode is
+      // up — merely covered — so without this it would simply be revealed.
+      key={player.audioModeOpen ? "expanded" : "collapsed"}
+      // `player-pill` carries the ground — see globals; the equaliser is
+      // painted there rather than here because it is six gradient layers and
+      // a sweep, which is a stylesheet's job and not a class list's.
+      className="player-pill player-pill-in fixed inset-x-3 z-40 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-white shadow-raised lg:left-[15.75rem]"
+      style={{
+        // Inside a book it clears the reader's own bottom bar; everywhere else
+        // it clears the tab bar. Same pill, one number apart — on a desktop
+        // there is neither, so it sits on the floor beside the sidebar.
+        bottom: reader
+          ? "calc(env(safe-area-inset-bottom) + 3.75rem)"
+          : "calc(env(safe-area-inset-bottom) + 3.9rem)",
+      }}
     >
-      {/* Progress. The device voice exposes no timeline, so it gets a
-          paragraph-based bar with no scrubbing rather than a dead seek bar. */}
-      {device ? (
-        <div
-          className="h-1 w-full"
-          role="progressbar"
-          aria-label="Reading progress"
-          aria-valuemin={0}
-          aria-valuemax={source.paras.length}
-          aria-valuenow={player.deviceParaIndex + 1}
-          style={{
-            background: `linear-gradient(to right, var(--ws-color) ${
-              source.paras.length
-                ? ((player.deviceParaIndex + 1) / source.paras.length) * 100
-                : 0
-            }%, var(--color-rule) 0)`,
-          }}
-        />
-      ) : (
-        <input
-          type="range"
-          aria-label="Seek"
-          min={0}
-          max={player.durationMs || 1}
-          value={Math.min(player.positionMs, player.durationMs || 0)}
-          onChange={(e) => player.seekMs(Number(e.target.value))}
-          className="block h-1 w-full cursor-pointer appearance-none bg-transparent align-top accent-(--ws-color)"
-          style={{
-            background: `linear-gradient(to right, var(--ws-color) ${
-              player.durationMs ? (player.positionMs / player.durationMs) * 100 : 0
-            }%, var(--color-rule) 0)`,
-          }}
-        />
-      )}
-      <div className="flex items-center gap-1.5 px-3 py-2 sm:gap-3">
-        {/* Skip flanks play, as it does on every player people already use.
-            The device voice has no timeline, so there the same two buttons
-            step a paragraph — the label says so, and the icon shows ¶. */}
-        <button
-          type="button"
-          onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-          aria-label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-ink/5"
-        >
-          <SkipBackIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
-        </button>
+      <button
+        type="button"
+        onClick={player.close}
+        aria-label="Stop listening"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/70 active:bg-white/15"
+      >
+        <CloseIcon className="h-4.5 w-4.5" />
+      </button>
 
-        <button
-          type="button"
-          onClick={player.toggle}
-          aria-label={player.playing ? "Pause" : "Play"}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
-          style={{ background: "var(--ws-color)" }}
-        >
-          {player.playing ? <PauseIcon className="h-4.5 w-4.5" /> : <PlayIcon className="h-4.5 w-4.5" />}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => player.skipSeconds(SKIP_SECONDS)}
-          aria-label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-ink/5"
-        >
-          <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "¶" : SKIP_SECONDS} />
-        </button>
-
-        {/* The title is the way back into Audio Mode — the whole strip, not a
-            5mm chevron, because that is the target a thumb actually finds. */}
-        <button
-          type="button"
-          onClick={expand}
-          aria-label="Open audio mode"
-          className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
-        >
-          <span className="min-w-0 flex-1">
-            <span className="hi block truncate text-sm font-medium leading-tight">{title}</span>
-            <span className="block truncate text-xs text-ink-soft">
-              {subtitle}
-              {rendition?.is_stale && (
-                <span className="ml-1 text-xs text-ink-soft/80" title="Text was edited after this audio was generated">
-                  · Older audio
-                </span>
-              )}
-            </span>
-          </span>
-          <ChevronDown className="h-4 w-4 shrink-0 rotate-180 text-ink-soft" />
-        </button>
-
-        <span className="hidden text-xs tabular-nums text-ink-soft sm:block">
-          {device ? `Para ${paraProgress}` : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
+      {/* The book on top, the chapter under it — the same order as the
+          reader's own top bar, so the pill reads as the strip that was
+          already there rather than as a second, differently-ordered one. */}
+      <button
+        type="button"
+        onClick={expand}
+        aria-label="Open audio mode"
+        className="flex min-w-0 flex-1 flex-col text-left"
+      >
+        <span className="hi hi-tight w-full truncate text-sm font-semibold">
+          {pillTitle}
         </span>
+        <span className="hi hi-tight w-full truncate text-xs text-white/70">
+          {pillSubtitle}
+        </span>
+      </button>
 
-        {/* voice picker (TTS only, multiple renditions) */}
-        {source.kind === "tts" && source.renditions.length > 1 && (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(menuOpen === "voice" ? null : "voice")}
-              className="rounded-full border border-rule px-2 py-1 text-xs font-medium"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen === "voice"}
-            >
-              Voice
-            </button>
-            {menuOpen === "voice" && (
-              <div role="menu" className="absolute bottom-full right-0 mb-2 w-44 rounded-xl border border-rule bg-card py-1 shadow-lg">
-                {source.renditions.map((r) => (
-                  <button
-                    key={r.voice_key}
-                    role="menuitem"
-                    type="button"
-                    onClick={() => {
-                      player.switchVoice(r.voice_key);
-                      setMenuOpen(null);
-                    }}
-                    className={`hi block w-full px-3 py-1.5 text-left text-sm hover:bg-ink/5 ${
-                      r.voice_key === source.voiceKey ? "font-bold" : ""
-                    }`}
-                  >
-                    {r.voice_label}
-                    {r.is_stale && <span className="ml-1 text-xs text-ink-soft">·</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      <button
+        type="button"
+        onClick={() => player.skipSeconds(-SKIP_SECONDS)}
+        aria-label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
+      >
+        <SkipBackIcon className="h-5.5 w-5.5" seconds={device ? "\u00b6" : SKIP_SECONDS} />
+      </button>
+      <button
+        type="button"
+        onClick={player.toggle}
+        aria-label={player.playing ? "Pause" : "Play"}
+        // Terracotta to start, cream to stop — the same pair Audio Mode's own
+        // play button wears, so the two read as one player in two sizes.
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95 ${
+          player.playing ? "bg-audio-ink text-overlay" : "text-white"
+        }`}
+        style={player.playing ? undefined : { background: "var(--ws-color)" }}
+      >
+        {player.playing ? (
+          <PauseIcon className="h-5 w-5" />
+        ) : (
+          <PlayIcon className="ms-0.5 h-5 w-5" />
         )}
-
-        {/* speed */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(menuOpen === "rate" ? null : "rate")}
-            className="rounded-full border border-rule px-2 py-1 text-xs font-semibold tabular-nums"
-            aria-haspopup="menu"
-            aria-expanded={menuOpen === "rate"}
-            aria-label={`Playback speed ${player.rate}x`}
-          >
-            {player.rate}×
-          </button>
-          {menuOpen === "rate" && (
-            <div role="menu" className="absolute bottom-full right-0 mb-2 w-20 rounded-xl border border-rule bg-card py-1 shadow-lg">
-              {RATES.map((r) => (
-                <button
-                  key={r}
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    player.setRate(r);
-                    setMenuOpen(null);
-                  }}
-                  className={`block w-full px-3 py-1.5 text-left text-sm tabular-nums hover:bg-ink/5 ${
-                    r === player.rate ? "font-bold" : ""
-                  }`}
-                >
-                  {r}×
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* sleep timer */}
-        <div className="relative hidden sm:block">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(menuOpen === "sleep" ? null : "sleep")}
-            className={`rounded-full border border-rule px-2 py-1 text-xs font-medium ${
-              player.sleepRemainingMs !== null ? "text-(--ws-ink)" : ""
-            }`}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen === "sleep"}
-          >
-            {player.sleepRemainingMs !== null
-              ? fmt(player.sleepRemainingMs)
-              : "Sleep"}
-          </button>
-          {menuOpen === "sleep" && (
-            <div role="menu" className="absolute bottom-full right-0 mb-2 w-28 rounded-xl border border-rule bg-card py-1 shadow-lg">
-              {SLEEP_OPTIONS.map((m) => (
-                <button
-                  key={m}
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    player.setSleepTimer(m);
-                    setMenuOpen(null);
-                  }}
-                  className="block w-full px-3 py-1.5 text-left text-sm hover:bg-ink/5"
-                >
-                  {m} min
-                </button>
-              ))}
-              <button
-                role="menuitem"
-                type="button"
-                onClick={() => {
-                  player.setSleepTimer(null);
-                  setMenuOpen(null);
-                }}
-                className="block w-full px-3 py-1.5 text-left text-sm text-ink-soft hover:bg-ink/5"
-              >
-                Off
-              </button>
-            </div>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={player.close}
-          aria-label="Close player"
-          className="rounded-full p-1.5 text-ink-soft hover:bg-ink/5"
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
-      </div>
+      </button>
+      <button
+        type="button"
+        onClick={() => player.skipSeconds(SKIP_SECONDS)}
+        aria-label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
+      >
+        <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "\u00b6" : SKIP_SECONDS} />
+      </button>
     </div>
   );
 }

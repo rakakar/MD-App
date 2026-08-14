@@ -141,7 +141,7 @@ export function FindBar({
         filters={filters && <div className="lg:hidden">{filters}</div>}
       />
       <p className={`mt-1.5 px-1 text-xs text-ink-soft ${dense ? "lg:hidden" : ""}`}>
-        By name, topic, year or place — not inside the files.
+        By name, topic, year or place
       </p>
     </div>
   );

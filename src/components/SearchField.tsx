@@ -64,7 +64,7 @@ export function SearchField({
       }}
       // No vertical padding of its own: the button carries the height, and
       // `min-h-11` there is the 44px this row has always been.
-      className="flex items-center gap-1 rounded-2xl border border-rule bg-card ps-1 pe-3 focus-within:border-(--ws-color)"
+      className="flex items-center gap-1 rounded-control border border-rule bg-card ps-1 pe-3 focus-within:border-(--ws-color)"
     >
       <button
         type="submit"

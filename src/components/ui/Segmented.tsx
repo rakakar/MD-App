@@ -50,7 +50,13 @@ export function CountedSegmented<T extends string>({
     <div
       role={onChange ? "radiogroup" : undefined}
       aria-label={label}
-      className="flex items-stretch gap-1 rounded-full bg-inset p-1"
+      // The same object as `CountTabs`, which the book page wears: an 8px track
+      // with an 8px pill riding in it, and the selected segment lifted on the
+      // card surface rather than filled with the accent. Two controls that do
+      // the same job — "which of these am I looking at" — had a pill each, one
+      // round and accented and one square and raised, and a reader met both
+      // within two taps of each other.
+      className="flex items-stretch gap-1 rounded-control bg-inset p-1"
     >
       {segments.map((s) => {
         const active = s.value === value;
@@ -58,10 +64,10 @@ export function CountedSegmented<T extends string>({
         // floor is its longest word, so at the largest text size three
         // segments asked for more than a 390px phone has and the control ran
         // off the screen taking the page's horizontal scroll with it.
-        const cls = `flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-sm transition-colors ${
-          active ? "font-semibold text-white" : "text-ink"
+        const cls = `flex min-h-11 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-control px-2 text-sm transition-colors ${
+          active ? "bg-card font-semibold shadow-card" : "text-ink-soft"
         }`;
-        const style = active ? { background: "var(--ws-color)" } : undefined;
+        const style = undefined;
         const inner = (
           <>
             {s.icon && (
@@ -71,7 +77,16 @@ export function CountedSegmented<T extends string>({
             )}
             <span className="truncate">{s.label}</span>
             {s.count !== undefined && (
-              <span className={`tabular-nums ${active ? "" : "text-ink-soft"}`}>{s.count}</span>
+              // The counted chip `CountTabs` draws, rather than a bare number:
+              // the selected segment is a raised card now, and a loose figure
+              // on it read as part of the label — "Audios 35" as a title.
+              <span
+                className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums text-ink-soft ${
+                  active ? "bg-inset" : ""
+                }`}
+              >
+                {s.count}
+              </span>
             )}
           </>
         );

@@ -38,7 +38,7 @@ export function FilterButton({
       onClick={onClick}
       aria-haspopup="dialog"
       aria-label={on ? `Filters, ${count} applied` : "Filters"}
-      className="flex min-h-12 shrink-0 items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition-colors"
+      className="flex min-h-12 shrink-0 items-center gap-2 rounded-control border px-4 text-sm font-medium transition-colors"
       style={
         on
           ? {
