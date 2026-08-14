@@ -58,18 +58,16 @@ export default async function OriginalsLibraryPage({
   return (
     <PageContainer size="shelf">
       <WorkspaceScope ws="originals" />
-      {/* The design's eyebrow. "Library" alone does not say which shelf this
-          is; the tab that got here is four rows away at the foot of the
-          screen, so the workspace is named above the title. */}
-      <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        Originals
-      </p>
-      <h1 className="mt-0.5 font-display text-[1.625rem] font-medium tracking-[-0.015em] lg:text-4xl">
+      {/* No "Originals" eyebrow, matching Audio/Video. It was here because
+          "Library" alone does not say which shelf this is — but the app bar at
+          the top of the screen says it, and the switcher inside that bar says
+          it again, so this was the third telling on the way to a page chosen
+          from the tab bar. */}
+      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
         Library
       </h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        Photographs, letters and documents — A. Nagraj ji&apos;s own material,
-        beyond the books. Recordings have a tab of their own.
+      <p className="mt-0.5 text-sm text-ink-soft">
+        Compilations, diaries, letters, articles and photos of Shri A. Nagraj.
       </p>
 
       {/* Above the shelf, for the same reason the Audio/Video tab puts its own

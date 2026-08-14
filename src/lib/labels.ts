@@ -46,3 +46,36 @@ export const PARIBHASHA = "Paribhasha";
 export function genreLabel(code: string, apiName?: string): string {
   return apiName ?? code;
 }
+
+/**
+ * The order a shelf of books reads in: Parichay, Darshan, Vaad, Shastra, then
+ * whatever else.
+ *
+ * A reading order rather than the API's. The BE's own `ordering` puts Darshan
+ * first because that is where the material begins — but a shelf is not a
+ * syllabus, and the first cover a newcomer meets should be the one written to
+ * be met first. Parichay is literally the introductory set; Darshan is the core
+ * work it introduces.
+ *
+ * Unlisted genres — `diary`, `other`, anything a manager adds after a deploy —
+ * fall to the end together rather than disappearing, and keep whatever order
+ * the API gave them.
+ */
+const GENRE_ORDER = ["parichay", "darshan", "vaad", "shastra"];
+
+/** Where a genre sits in that order; unknown and unfiled both sort last. */
+export function genreRank(genre: string | null | undefined): number {
+  const at = genre ? GENRE_ORDER.indexOf(genre) : -1;
+  return at === -1 ? GENRE_ORDER.length : at;
+}
+
+/**
+ * A shelf's books in reading order. Stable: two books of one genre keep the
+ * order the API sent them in, which is the manager's own.
+ */
+export function byGenre<T extends { genre: string | null }>(books: T[]): T[] {
+  return books
+    .map((book, i) => ({ book, i }))
+    .sort((a, b) => genreRank(a.book.genre) - genreRank(b.book.genre) || a.i - b.i)
+    .map((row) => row.book);
+}

@@ -6,17 +6,13 @@ import { PhotoStripView } from "./PhotoStripView";
 /** how many photographs the strip shows before the counter tile */
 const SHOWN = 4;
 /**
- * How many the viewer can page through.
+ * The first page the viewer opens on. The rest are asked for as the reader
+ * swipes toward them — see `PhotoStripView` — so this is a head start rather
+ * than a limit, and every photograph on the shelf is reachable.
  *
- * The strip needs four; the viewer needs enough that swiping does not run out
- * in a few seconds. Sixty thumbnails is a few hundred kilobytes and loads lazily
- * in the reel, where sixty *originals* would be sixty megabytes — the whole
- * reason `thumbnail_url` exists.
- *
- * A shelf with more than sixty photographs shows the true count on the "+N"
- * tile and opens a viewer holding the first sixty, which is the honest
- * shortcut: this is a door onto the pictures, and the shelf's own image filter
- * is still the way to all of them.
+ * Sixty thumbnails is a few hundred kilobytes and loads lazily in the reel;
+ * sixty *originals* would be sixty megabytes, which is the whole reason
+ * `thumbnail_url` exists.
  */
 const VIEWABLE = 60;
 
@@ -64,7 +60,7 @@ export async function PhotoStrip({
 
   return (
     <section className="mt-8">
-      <PhotoStripView photos={photos} shown={SHOWN} total={total} />
+      <PhotoStripView photos={photos} shown={SHOWN} total={total} scope={scope} />
     </section>
   );
 }

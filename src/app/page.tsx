@@ -16,7 +16,7 @@ import {
 } from "@/components/ui";
 import { getBooks, getEvents } from "@/lib/api";
 import { eventLocation, eventStart, eventTitle, shortDate, upcomingEvents } from "@/lib/events";
-import { SHIVIRS } from "@/lib/labels";
+import { SHIVIRS, byGenre } from "@/lib/labels";
 import { getShorts, type Short } from "@/lib/shorts";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { BookSummary, EventItem, SutraOfTheDay } from "@/lib/types";
@@ -30,7 +30,12 @@ async function loadHome(): Promise<{
   shorts: Short[];
 }> {
   const [books, sutra, events, shorts] = await Promise.all([
-    getBooks({ workspace: "originals" }).catch(() => [] as BookSummary[]),
+    getBooks({ workspace: "originals" })
+      // Parichay first, then Darshan, Vaad, Shastra — see `byGenre`. The rail
+      // shows the first few and "All Books →" the rest, so which few is
+      // decided here rather than by whatever the API happened to return first.
+      .then(byGenre)
+      .catch(() => [] as BookSummary[]),
     ACTIVE_SUTRA_SOURCE.getToday().catch(() => null),
     getEvents().catch(() => [] as EventItem[]),
     getShorts().catch(() => [] as Short[]),

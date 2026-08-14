@@ -33,11 +33,22 @@ export function Lightbox({
   index,
   onIndex,
   onClose,
+  total,
 }: {
   items: LibraryFile[];
   index: number;
   onIndex: (i: number) => void;
   onClose: () => void;
+  /**
+   * How many there are altogether, when that is more than has been loaded.
+   *
+   * The counter says the true figure — "12 / 171" — while the reel and the
+   * navigation work on what has actually arrived. A reader who is told 60 and
+   * then finds there are 171 has been misinformed by the app once; a reader
+   * told 171 while the next twenty are still coming has been told the truth
+   * slightly early.
+   */
+  total?: number;
 }) {
   const item = items[index];
   const stageRef = useRef<HTMLDivElement>(null);
@@ -221,7 +232,7 @@ export function Lightbox({
             {item.title}
           </p>
           <p className="mt-0.5 text-xs text-white/60">
-            {index + 1} / {items.length}
+            {index + 1} / {total ?? items.length}
             {view.scale > 1.05 && ` · ${view.scale.toFixed(1)}×`}
             {/* Said out loud, because until the original lands the picture on
                 screen is a 480px thumbnail: a reader who pinches into a chart
