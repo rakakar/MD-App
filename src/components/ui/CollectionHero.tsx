@@ -101,14 +101,34 @@ export function CollectionHero({
 
       {variant === "full" && (
         <>
-          {/* `items-start`, so the title begins where the cover does rather than
-              sitting on its foot. `hi-tight` on the title is half of what makes
-              that true: at `.hi`'s 1.85 a 21px line box is 39px tall and the
-              glyphs float ~7px down inside it, so a box-aligned title still
-              read as hanging below the artwork. */}
-          <div className="mt-4 flex items-start gap-4">
-            {thumb}
-            <div className="min-w-0 flex-1">
+          {/*
+            **The cover is floated, not a flex column — and that is what closes
+            the hole.**
+
+            A 96px cover is 131px tall and the title, facts and chip beside it
+            come to 90. Sat in a flex row those two are columns, so the 41px
+            difference was dead panel next to the artwork, with the description
+            starting again below the whole row: a notch in the middle of the
+            one block on the screen that is meant to read as a block.
+
+            Floated, the text simply flows — beside the cover while there is
+            room and under it once there is not — which is the shape an album
+            header has had since album headers existed. Nothing is centred and
+            nothing is stretched; the words just fill the space.
+
+            **Except where a progress bar is in it.** A bar is a measured
+            length, and beside a float it would be measuring the space left
+            over rather than the book — so the book hero keeps the flex row it
+            was drawn with. `items-start` there, so the title begins where the
+            cover does; `hi-tight` on the title is half of what makes that
+            true, since at `.hi`'s 1.85 a 21px line box is 39px tall and the
+            glyphs float ~7px down inside it.
+          */}
+          <div className={progress ? "mt-4 flex items-start gap-4" : "mt-4"}>
+            {thumb && (
+              <div className={progress ? "contents" : "float-start me-4"}>{thumb}</div>
+            )}
+            <div className={progress ? "min-w-0 flex-1" : "min-w-0"}>
               {eyebrow && (
                 <div className="mb-1 text-xs font-semibold text-white/70">{eyebrow}</div>
               )}
@@ -145,10 +165,24 @@ export function CollectionHero({
                   <p className="mt-2 text-sm font-semibold">{progress.label}</p>
                 </>
               )}
+              {/* Beside the cover, and on past its foot — the float's whole
+                  point. The book keeps it below the row instead, where its
+                  column is only 231px wide. */}
+              {!progress && description && (
+                <p
+                  {...contentLang(description)}
+                  className={`${contentLang(description).className} mt-4 text-sm leading-relaxed text-white/85`}
+                >
+                  {description}
+                </p>
+              )}
             </div>
+            {/* So the panel is at least as tall as the artwork it holds, on the
+                folders whose title and facts are shorter than their cover. */}
+            {!progress && <div className="clear-both" />}
           </div>
 
-          {description && (
+          {progress && description && (
             <p
               {...contentLang(description)}
               className={`${contentLang(description).className} mt-4 text-sm leading-relaxed text-white/85`}
