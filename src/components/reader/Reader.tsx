@@ -60,6 +60,8 @@ export interface ReaderBook {
   book_type: "print" | "digital";
   /** shown in Audio Mode and on the lock screen */
   cover_image?: string | null;
+  /** the printed book's last page — the denominator the bottom bar counts to */
+  page_count?: number | null;
   chapters: ChapterTocEntry[];
 }
 
@@ -1187,28 +1189,48 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         : 0
       : scrollProgress;
   /**
-   * "Page 19 : 3 / 19" — the comps' exact string, and its exact meaning:
-   * the **printed** page, then where that page sits in this chapter. The two
-   * are different numbers and both are wanted — the first is what a reader
-   * checks against a paper copy and what every canonical_ref is built on, the
-   * second is how much of the chapter is left.
+   * Where you are in the book, as one fraction on one scale: "30 / 178".
    *
-   * A digital-first book has no printed page to quote, so it says only the
-   * second; a scrolled chapter has no page at all, so it says a percentage.
+   * It read "Page 30 : 1 / 21" — the printed page, then where that page sat in
+   * this chapter. Both numbers were wanted and the string said so honestly, but
+   * it asked a reader to hold two different scales at once and to work out
+   * which of the three numbers was the one they cared about. The printed page
+   * against the printed book is the scale they already have: it is what a paper
+   * copy shows, what every canonical_ref is built on, and the same figure the
+   * resume card and the book page quote back to them.
+   *
+   * A digital-first book has no printed page, and a book whose page count the
+   * BE has not sent has no total, so both fall back to the position within the
+   * chapter. A scrolled chapter has no page at all, so it stays a percentage.
    */
+  const printedPage =
+    book.book_type === "print" && page && page.label === String(Number(page.label))
+      ? page.label
+      : null;
+
   const positionLabel =
     mode === "page" && page
-      ? book.book_type === "print" && page.label === String(Number(page.label))
-        ? `Page ${page.label} : ${pageIndex + 1} / ${pages.length}`
+      ? printedPage && book.page_count
+        ? `${printedPage} / ${book.page_count}`
         : `${pageIndex + 1} / ${pages.length}`
       : `${Math.round(progress * 100)}%`;
 
-  /** the top bar's second line: which chapter, and the same position again */
+  /**
+   * The top bar's second line: which chapter you are in, and nothing about the
+   * page. The position is on the bottom bar, in the reader's own hand, and
+   * saying it twice on one screen was the other half of what made it hard to
+   * read — three numbers up here and the same three down there.
+   */
   const topBarMeta = (
     <>
-      {isFrontMatter ? "Front matter" : `Chapter ${chapterNumber}`}
-      {" · "}
-      {positionLabel}
+      {isFrontMatter
+        ? "Front matter"
+        : `Chapter ${chapterNumber}${chapter?.title_hi ? " · " : ""}`}
+      {!isFrontMatter && chapter?.title_hi && (
+        <span lang="hi" className="hi">
+          {chapter.title_hi}
+        </span>
+      )}
       {/* What this text is, on the line that is already about what the reader
           is in — not a badge somewhere they have to go looking. A compilation
           reads exactly like a book, which is precisely why it has to say that
@@ -1238,7 +1260,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         hidden={!chrome.visible}
         backHref={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
         backLabel={home?.backLabel ?? "Back to book"}
-        title={chapter?.title_hi ?? book.title_hi}
+        // The book on the first line, the chapter on the second. It was the
+        // chapter on top with "Chapter 2 · Page 30 : 1 / 21" under it — which
+        // named the one thing a reader in a chapter cannot forget and never
+        // named the book they were in, reachable only by reading the back
+        // button.
+        title={book.title_hi}
         meta={topBarMeta}
         progress={progress}
         // At the page being read, not at page one — the same bargain the पाठ
@@ -1305,26 +1332,54 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 selectedRef={selection?.para.canonical_ref}
                 painted={painted}
               />
-              <nav aria-label="Page navigation" className="mt-10 flex items-center justify-between text-sm">
-                <button
-                  type="button"
-                  onClick={() => advance(-1)}
-                  disabled={pageIndex === 0 && !chapter.prev}
-                  className="min-h-11 rounded-full border border-(--reader-rule) px-4 disabled:opacity-40"
-                >
-                  ← {pageIndex === 0 && chapter.prev ? "Previous chapter" : "Previous"}
-                </button>
-                <span className="text-xs tabular-nums text-(--reader-ink-soft)">
+              {/* Forward is the filled one, back is the outline — the same pair
+                  as the chapter nav below, so "the accent is the way on" holds
+                  wherever a reader meets it.
+
+                  Each button is inside a `min-w-0` box rather than being a flex
+                  item itself: `ctaPrimary` carries `shrink-0`, correctly, since
+                  a call to action must not be squeezed to nothing — but two of
+                  them in one row means whichever button *can* shrink absorbs all
+                  of it. The wrapper is what shrinks; the label truncates.
+
+                  `shrink`, not `flex-1`: these labels are short English, and
+                  split into equal halves "Previous chapter" truncated with the
+                  row half empty. They size to their words and give way only when
+                  the row runs out. */}
+              <nav
+                aria-label="Page navigation"
+                className="mt-10 flex items-center justify-between gap-3 text-sm"
+              >
+                <span className="min-w-0 shrink">
+                  <button
+                    type="button"
+                    onClick={() => advance(-1)}
+                    disabled={pageIndex === 0 && !chapter.prev}
+                    className="flex min-h-11 w-full items-center justify-center gap-1.5 truncate rounded-control border border-(--reader-rule) px-4 font-semibold disabled:opacity-40"
+                  >
+                    <span aria-hidden>←</span>
+                    <span className="truncate">
+                      {pageIndex === 0 && chapter.prev ? "Previous chapter" : "Previous"}
+                    </span>
+                  </button>
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-(--reader-ink-soft)">
                   {pageIndex + 1} / {pages.length}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => advance(1)}
-                  disabled={pageIndex === pages.length - 1 && !chapter.next}
-                  className="min-h-11 rounded-full border border-(--reader-rule) px-4 disabled:opacity-40"
-                >
-                  {pageIndex === pages.length - 1 && chapter.next ? "Next chapter" : "Next"} →
-                </button>
+                <span className="min-w-0 shrink">
+                  <button
+                    type="button"
+                    onClick={() => advance(1)}
+                    disabled={pageIndex === pages.length - 1 && !chapter.next}
+                    className={`w-full ${ctaPrimary}`}
+                    style={{ background: "var(--ws-color)" }}
+                  >
+                    <span className="truncate">
+                      {pageIndex === pages.length - 1 && chapter.next ? "Next chapter" : "Next"}
+                    </span>
+                    <span aria-hidden>→</span>
+                  </button>
+                </span>
               </nav>
             </section>
           )}
@@ -1347,28 +1402,45 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                   />
                 </section>
               ))}
-              <nav aria-label="Chapter navigation" className="mt-12 flex items-center justify-between gap-3 text-sm">
-                {chapter.prev ? (
-                  <button
-                    type="button"
-                    onClick={() => void goToChapter(chapter.prev!.number)}
-                    className="min-h-11 min-w-0 rounded-full border border-(--reader-rule) px-4"
-                  >
-                    ← <span lang="hi" className="hi">{chapter.prev.title_hi}</span>
-                  </button>
-                ) : (
-                  <span />
-                )}
-                {chapter.next && (
-                  <button
-                    type="button"
-                    onClick={() => void goToChapter(chapter.next!.number)}
-                    className={`min-w-0 ${ctaPrimary}`}
-                    style={{ background: "var(--ws-color)" }}
-                  >
-                    <span lang="hi" className="hi">{chapter.next.title_hi}</span> →
-                  </button>
-                )}
+              {/* Equal halves, and each label on one line. These carry chapter
+                  names in Devanagari — "अध्याय 3 : सहअस्तित्ववादी विज्ञान" — and
+                  as bare flex items beside a `shrink-0` call to action the back
+                  button took all the shrinking there was and broke its title a
+                  character to a line. `flex-1` on the wrappers splits the row;
+                  `truncate` ends the name rather than stacking it. */}
+              <nav
+                aria-label="Chapter navigation"
+                className="mt-12 flex items-stretch justify-between gap-3 text-sm"
+              >
+                <span className="min-w-0 flex-1">
+                  {chapter.prev && (
+                    <button
+                      type="button"
+                      onClick={() => void goToChapter(chapter.prev!.number)}
+                      className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-control border border-(--reader-rule) px-4 font-semibold"
+                    >
+                      <span aria-hidden>←</span>
+                      <span lang="hi" className="hi hi-tight min-w-0 truncate">
+                        {chapter.prev.title_hi}
+                      </span>
+                    </button>
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  {chapter.next && (
+                    <button
+                      type="button"
+                      onClick={() => void goToChapter(chapter.next!.number)}
+                      className={`w-full ${ctaPrimary}`}
+                      style={{ background: "var(--ws-color)" }}
+                    >
+                      <span lang="hi" className="hi hi-tight min-w-0 truncate">
+                        {chapter.next.title_hi}
+                      </span>
+                      <span aria-hidden>→</span>
+                    </button>
+                  )}
+                </span>
               </nav>
             </div>
           )}
