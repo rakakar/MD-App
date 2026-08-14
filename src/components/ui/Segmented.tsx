@@ -19,6 +19,78 @@ import { contentLang } from "@/lib/script";
  * will do.
  */
 
+/**
+ * One selected look for every segmented control in the app.
+ *
+ * It has been three things. A raised white pill, which works on the book page —
+ * the panel below it is white too, so the tab reads as the front edge of what
+ * it opens — and nowhere else, because on any other page it had nothing to be
+ * lighter *than*. Then an accent-bordered pill, which put a second edge inside
+ * the track's own. Now the accent itself, filled, with white on it.
+ *
+ * Filled because the question these controls answer — *which of these am I
+ * looking at* — should be answerable from across the room, and because the app
+ * already answers it this way: `SegmentedNav` on Connect has always been a
+ * solid accent segment. Two shapes for one question was the thing to fix.
+ *
+ * White on `--ws-color` clears AA in every theme by construction: there the
+ * accent is the background, so no theme can change the pairing. Selection is
+ * still never colour alone — the weight carries it too, and `aria-current` /
+ * `aria-checked` carry it for anyone not looking.
+ *
+ * The track keeps a hairline in `rule`, the same edge the cards above it wear,
+ * so the control reads as an object on the page rather than a smudge in it.
+ */
+const SEGMENT_TRACK =
+  "flex items-stretch gap-1 rounded-control border border-rule bg-inset p-1";
+
+/* `min-w-0`, or the `truncate` on a label never fires: a flex item's floor is
+   its longest word, so at the largest text size three segments asked for more
+   than a 390px phone has and the control ran off the screen taking the page's
+   horizontal scroll with it. `flex-auto` rather than `flex-1` so a long label
+   takes the room it needs instead of truncating beside a half-empty neighbour. */
+const SEGMENT =
+  "flex min-h-11 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-control px-2 text-sm transition-colors";
+const SEGMENT_ON = "font-semibold text-white";
+const SEGMENT_OFF = "text-ink-soft";
+const SEGMENT_ON_STYLE = { background: "var(--ws-color)" };
+
+/**
+ * The one exception, and it is the book page's.
+ *
+ * `CountTabs` sits directly on top of the panel it opens, and that panel is
+ * `card` — so a raised card *is* the selected state there: the tab reads as the
+ * front edge of the thing below it, which is a relationship the accent cannot
+ * express and would talk over. Everywhere else the panel is the page, the pill
+ * had nothing to be lighter than, and the fill is what makes it legible.
+ */
+const SEGMENT_ON_RAISED = "bg-card font-semibold shadow-card";
+
+/** The count beside a segment's label — a chip, so it is not read as part of
+ *  the name. On the filled pill it sits in a wash of white rather than a fill
+ *  of its own, which would be a third colour inside one control. */
+function SegmentCount({
+  active,
+  value,
+  raised,
+}: {
+  active: boolean;
+  value: number;
+  /** the book page's white pill, which needs a sunk chip rather than a lit one */
+  raised?: boolean;
+}) {
+  const on = raised ? "bg-inset text-ink-soft" : "bg-white/20 text-white";
+  return (
+    <span
+      className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
+        active ? on : "text-ink-soft"
+      }`}
+    >
+      {value}
+    </span>
+  );
+}
+
 /** A segment, as a link when it has its own URL and a button when it does not. */
 type Segment<T> = {
   value: T;
@@ -50,41 +122,12 @@ export function CountedSegmented<T extends string>({
     <div
       role={onChange ? "radiogroup" : undefined}
       aria-label={label}
-      // The same object as `CountTabs`, which the book page wears: an 8px track
-      // with an 8px pill riding in it, and the selected segment lifted on the
-      // card surface rather than filled with the accent. Two controls that do
-      // the same job — "which of these am I looking at" — had a pill each, one
-      // round and accented and one square and raised, and a reader met both
-      // within two taps of each other.
-      // A hairline on the track, in the same `rule` the resume cards above it
-      // wear. The sunk fill alone was doing two jobs — holding the pill and
-      // marking the edge of the control — and on this page it sits a few
-      // pixels under a card that does have an edge, so the control read as a
-      // smudge on the page rather than as an object on it.
-      className="flex items-stretch gap-1 rounded-control border border-rule bg-inset p-1"
+      className={SEGMENT_TRACK}
     >
       {segments.map((s) => {
         const active = s.value === value;
-        // `min-w-0`, or the `truncate` on the label never fires: a flex item's
-        // floor is its longest word, so at the largest text size three
-        // segments asked for more than a 390px phone has and the control ran
-        // off the screen taking the page's horizontal scroll with it.
-        // The selected pill wears the kind tile's own pairing — a 12% wash of
-        // the workspace colour with `--ws-ink` on it — and no outline. It was
-        // a white raised card first, which had nothing to be lighter than on
-        // this page, then an accent-bordered one, which put a second edge
-        // inside the track's. The tile beside every recording on this shelf
-        // already says what "this one" looks like; the pill says it the same
-        // way, and the track's own hairline is the only line in the control.
-        const cls = `flex min-h-11 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-control px-2 text-sm transition-colors ${
-          active ? "font-semibold" : "text-ink-soft"
-        }`;
-        const style = active
-          ? {
-              background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
-              color: "var(--ws-ink)",
-            }
-          : undefined;
+        const cls = `${SEGMENT} ${active ? SEGMENT_ON : SEGMENT_OFF}`;
+        const style = active ? SEGMENT_ON_STYLE : undefined;
         const inner = (
           <>
             {s.icon && (
@@ -93,18 +136,7 @@ export function CountedSegmented<T extends string>({
               </span>
             )}
             <span className="truncate">{s.label}</span>
-            {s.count !== undefined && (
-              // The counted chip `CountTabs` draws, rather than a bare number:
-              // the selected segment is a raised card now, and a loose figure
-              // on it read as part of the label — "Audios 35" as a title.
-              <span
-                className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
-                  active ? "bg-card" : "text-ink-soft"
-                }`}
-              >
-                {s.count}
-              </span>
-            )}
+            {s.count !== undefined && <SegmentCount active={active} value={s.count} />}
           </>
         );
         return s.href ? (
@@ -138,9 +170,9 @@ export function CountedSegmented<T extends string>({
 /**
  * Chapters 4 | Highlights & Notes 2.
  *
- * The active tab is a raised white card rather than an accent fill, which is
- * the one place in the app that distinction is load-bearing: the panel below
- * it is white too, so the tab reads as the front edge of the thing it opens.
+ * Two different things about one object, where `CountedSegmented` splits one
+ * set into parts that add up. Same track, and the one different selected look
+ * in the app — see `SEGMENT_ON_RAISED`.
  */
 export function CountTabs<T extends string>({
   label,
@@ -152,7 +184,7 @@ export function CountTabs<T extends string>({
   value: T;
 }) {
   return (
-    <nav aria-label={label} className="flex items-stretch gap-1 rounded-control bg-inset p-1">
+    <nav aria-label={label} className={SEGMENT_TRACK}>
       {tabs.map((t) => {
         const active = t.value === value;
         return (
@@ -160,31 +192,14 @@ export function CountTabs<T extends string>({
             key={t.value}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            /* `min-w-0` for the same reason as above — "Highlights & Notes"
-               is the longest label in the app and the one that proved it.
-               `flex-auto`, not `flex-1`: equal halves fitted that label exactly
-               until it grew a count beside it, and then it truncated to
-               "Highlights & No…" while the other half sat half empty. Sized
-               from content, the long tab takes the room it needs and the spare
-               is still shared. */
-            /* The selected pill takes the bar's own 8px rather than a radius
-               of its own — it was `rounded-[1.125rem]`, an 18px literal under
-               a 24px track, which is the pair of one-offs the ladder exists to
-               stop. Not inset by the 4px of track padding, because the
-               designer draws the two corners the same. */
-            className={`flex min-h-12 min-w-0 flex-auto items-center justify-center gap-2 rounded-control px-2 text-sm transition-colors ${
-              active ? "bg-card font-semibold shadow-card" : "text-ink-soft"
-            }`}
+            /* min-h-12 rather than the shared 11: "Highlights & Notes" is the
+               longest label in the app, and this is the one bar that carries
+               two of them. */
+            className={`${SEGMENT} min-h-12 ${active ? SEGMENT_ON_RAISED : SEGMENT_OFF}`}
           >
             <span className="truncate">{t.label}</span>
             {t.count !== undefined && (
-              <span
-                className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
-                  active ? "bg-inset text-ink-soft" : "text-ink-soft"
-                }`}
-              >
-                {t.count}
-              </span>
+              <SegmentCount active={active} value={t.count} raised />
             )}
           </Link>
         );

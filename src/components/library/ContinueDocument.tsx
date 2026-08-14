@@ -280,20 +280,25 @@ function ResumeCard({ row }: { row: ResumeRow }) {
         className="h-[3.5rem] w-[2.625rem] rounded-lg shadow-[0_1px_3px_rgba(0,0,0,.18)]"
       />
       <span className="min-w-0 flex-1">
+        {/* Title first, collection under it — the Read shelf's order, and now
+            Audio/Video's. A reader scanning this rail is looking for the
+            document they left; its name is the thing they are scanning for,
+            and the set it came from is the answer to a question they have not
+            asked yet. */}
+        <span
+          {...contentLang(row.title)}
+          className={`${contentLang(row.title).className} hi-tight block truncate text-title font-semibold`}
+        >
+          {row.title}
+        </span>
         {row.subtitle && (
           <span
             {...contentLang(row.subtitle)}
-            className={`${contentLang(row.subtitle).className} hi-tight block truncate text-sm text-ink-soft`}
+            className={`${contentLang(row.subtitle).className} hi-tight mt-1 block truncate text-xs font-medium text-ink-soft`}
           >
             {row.subtitle}
           </span>
         )}
-        <span
-          {...contentLang(row.title)}
-          className={`${contentLang(row.title).className} hi-tight mt-0.5 block truncate text-title font-bold`}
-        >
-          {row.title}
-        </span>
         {/* Where in the text they were, in the unit that reader is actually
             given — the reflowable reader numbers chapters, not pages. Absent
             on a one-chapter edition like `S-A`, where "Chapter 1" is the title

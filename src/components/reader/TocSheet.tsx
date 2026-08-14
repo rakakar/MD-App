@@ -195,7 +195,7 @@ export function TocSheet({
         <div
           role="tablist"
           aria-label="This book"
-          className="flex items-stretch gap-1 rounded-control border border-(--reader-rule) p-1"
+          className="flex items-stretch gap-1 rounded-control border border-(--reader-rule) bg-current/[0.06] p-1"
         >
           <TabButton
             selected={tab === "contents"}
@@ -234,12 +234,12 @@ export function TocSheet({
 }
 
 /**
- * One tab. Reader-tinted rather than `CountTabs`, which paints itself in the
- * app's `inset`/`card` — inside a sheet printed on the book's own paper those
- * are the wrong two colours, and on Quiet paper they are a light control on a
- * near-black panel. This is the same treatment the active chapter row already
- * uses in this file, and selection is never colour alone: the weight and
- * `aria-selected` carry it too.
+ * One tab. Drawn here rather than with `CountTabs`, because the track has to
+ * be the book's paper — `inset`/`card` are the app's, and on Quiet paper they
+ * are a light control on a near-black panel. The *selected* look is the app's
+ * one selected look, though: the accent filled, white on it, which holds on
+ * either surface because there the accent is the background. Selection is
+ * never colour alone — the weight and `aria-selected` carry it too.
  */
 function TabButton({
   selected,
@@ -259,20 +259,19 @@ function TabButton({
       aria-selected={selected}
       onClick={onClick}
       className={`flex min-h-11 min-w-0 flex-auto items-center justify-center gap-2 rounded-control px-2 text-sm transition-colors ${
-        selected ? "font-semibold" : "text-(--reader-ink-soft)"
+        selected ? "font-semibold text-white" : "text-(--reader-ink-soft)"
       }`}
-      style={
-        selected
-          ? {
-              background: "color-mix(in srgb, var(--ws-color) 12%, transparent)",
-              color: "var(--ws-ink)",
-            }
-          : undefined
-      }
+      style={selected ? { background: "var(--ws-color)" } : undefined}
     >
       <span className="truncate">{label}</span>
       {count !== undefined && (
-        <span className="shrink-0 text-xs tabular-nums opacity-70">{count}</span>
+        <span
+          className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
+            selected ? "bg-white/20" : "opacity-70"
+          }`}
+        >
+          {count}
+        </span>
       )}
     </button>
   );

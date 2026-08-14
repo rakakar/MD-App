@@ -367,6 +367,11 @@ function Segmented<T extends string | number>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
+            /* The raised pill, not the app's filled one. Four of these rows
+               stack in this sheet, and four filled accent segments in one panel
+               is the accent shouting over the settings it is describing. The
+               sheet is also the one place a reader is *comparing* options
+               rather than switching between two views. */
             className={`min-h-11 flex-1 rounded-control text-sm transition-colors ${
               active
                 ? "bg-(--reader-bg) font-semibold shadow-card"
