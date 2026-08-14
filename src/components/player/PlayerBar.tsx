@@ -86,6 +86,18 @@ function PlayerBarInner() {
       : source.kind === "device"
         ? `${source.bookTitle} · Device voice`
         : (source.subtitle ?? "");
+  /**
+   * The overlay pill names the book first and the chapter second, which is the
+   * other way round from the bar's `title`/`subtitle`. The bar is a strip on a
+   * shelf where the book is not otherwise on screen; the pill floats inside the
+   * book, over its own pages, under a top bar that already reads book-then-
+   * chapter. A recording is not a chapter of anything, so there it is the
+   * track's own pair either way.
+   */
+  const pillTitle = source.kind === "track" ? source.title : source.bookTitle;
+  const pillSubtitle =
+    source.kind === "track" ? (source.subtitle ?? "") : source.chapterTitle;
+
   const paraProgress = device
     ? `${Math.min(player.deviceParaIndex + 1, source.paras.length)} / ${source.paras.length}`
     : null;
@@ -136,7 +148,14 @@ function PlayerBarInner() {
         ref={barRef}
         role="region"
         aria-label="Audio player"
-        className="fixed inset-x-3 z-40 flex items-center gap-2 rounded-hero bg-overlay px-3 py-2.5 text-white shadow-raised"
+        // Re-keyed on the audio-mode flag so collapsing remounts the pill and
+        // its entrance replays. It stays mounted the whole time Audio Mode is
+        // up — merely covered — so without this it would simply be revealed.
+        key={player.audioModeOpen ? "expanded" : "collapsed"}
+        // `player-pill` carries the ground — see globals; the equaliser is
+        // painted there rather than here because it is six gradient layers and
+        // a sweep, which is a stylesheet's job and not a class list's.
+        className="player-pill player-pill-in fixed inset-x-3 z-40 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-white shadow-raised"
         // Above the reader's bottom bar by the same 3.75rem the selection bar
         // clears it with. One number for "what a floating control clears",
         // rather than two that drift apart.
@@ -151,16 +170,21 @@ function PlayerBarInner() {
           <CloseIcon className="h-4.5 w-4.5" />
         </button>
 
+        {/* The book on top, the chapter under it — the same order as the
+            reader's own top bar, so the pill reads as the strip that was
+            already there rather than as a second, differently-ordered one. */}
         <button
           type="button"
           onClick={expand}
           aria-label="Open audio mode"
           className="flex min-w-0 flex-1 flex-col text-left"
         >
-          <span className="hi w-full truncate text-sm font-semibold leading-tight">
-            {title}
+          <span className="hi hi-tight w-full truncate text-sm font-semibold">
+            {pillTitle}
           </span>
-          <span className="hi w-full truncate text-xs text-white/70">{subtitle}</span>
+          <span className="hi hi-tight w-full truncate text-xs text-white/70">
+            {pillSubtitle}
+          </span>
         </button>
 
         <button
@@ -175,9 +199,12 @@ function PlayerBarInner() {
           type="button"
           onClick={player.toggle}
           aria-label={player.playing ? "Pause" : "Play"}
-          // Cream on near-black, the one filled control here: the same pairing
-          // Audio Mode gives its play button, so the two read as one player.
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-audio-ink text-overlay active:scale-95"
+          // Terracotta to start, cream to stop — the same pair Audio Mode's own
+          // play button wears, so the two read as one player in two sizes.
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95 ${
+            player.playing ? "bg-audio-ink text-overlay" : "text-white"
+          }`}
+          style={player.playing ? undefined : { background: "var(--ws-color)" }}
         >
           {player.playing ? (
             <PauseIcon className="h-5 w-5" />

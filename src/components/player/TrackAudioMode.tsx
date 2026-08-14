@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CloseIcon, PauseIcon, PlayIcon, SkipBackIcon, SkipForwardIcon } from "@/components/shell/icons";
+import { ChevronDown, PauseIcon, PlayIcon, SkipBackIcon, SkipForwardIcon } from "@/components/shell/icons";
 import { bookHue } from "@/lib/bookHue";
 import { contentLang } from "@/lib/script";
 import {
@@ -96,9 +96,9 @@ export function TrackAudioMode() {
           type="button"
           onClick={closeAudioMode}
           aria-label="Close audio mode"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tile bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/10"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/10"
         >
-          <CloseIcon className="h-5.5 w-5.5" />
+          <ChevronDown className="h-5.5 w-5.5" />
         </button>
         <div className="min-w-0 flex-1 pt-1.5 text-center">
           <p className="text-xs font-semibold tracking-[0.18em] text-audio-accent">AUDIO MODE</p>
@@ -115,7 +115,7 @@ export function TrackAudioMode() {
             aria-haspopup="menu"
             aria-expanded={menu === "rate"}
             aria-label={`Playback speed ${player.rate}x`}
-            className="flex h-11 min-w-11 items-center justify-center rounded-tile bg-audio-ink/10 px-3 text-sm font-semibold tabular-nums"
+            className="flex h-11 min-w-11 items-center justify-center rounded-control bg-audio-ink/10 px-3 text-sm font-semibold tabular-nums"
           >
             {player.rate}×
           </button>
@@ -185,7 +185,13 @@ export function TrackAudioMode() {
             type="button"
             onClick={player.toggle}
             aria-label={player.playing ? "Pause" : "Play"}
-            className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full bg-audio-ink text-audio-bg shadow-lg active:scale-95"
+            /* Terracotta to start, cream to stop — the same pair the chapter
+               player wears. `audioChrome`'s whole reason for existing is that a
+               listener must not relearn the controls on a recording. */
+            className={`flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full shadow-lg transition-colors active:scale-95 ${
+              player.playing ? "bg-audio-ink text-audio-bg" : "text-white"
+            }`}
+            style={player.playing ? undefined : { background: "var(--ws-color)" }}
           >
             {player.playing ? <PauseIcon className="h-7 w-7" /> : <PlayIcon className="ms-0.5 h-7 w-7" />}
           </button>

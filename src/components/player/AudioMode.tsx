@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  CloseIcon,
+  ChevronDown,
   PauseIcon,
   PlayIcon,
   SkipBackIcon,
@@ -17,7 +17,6 @@ import {
   saveAudio,
 } from "@/lib/audioCache";
 import { bookHue } from "@/lib/bookHue";
-import { contentLang } from "@/lib/script";
 import type { AudioRendition, Paragraph } from "@/lib/types";
 import {
   CoverArt,
@@ -25,7 +24,6 @@ import {
   NextChapterIcon,
   PrevChapterIcon,
   RATES,
-  SLEEP_OPTIONS,
   ScrubBar,
   TransportBtn,
   fmt,
@@ -41,8 +39,6 @@ export interface AudioModeProps {
   onSeekPara: (para: Paragraph) => void;
   prevChapterTitle?: string | null;
   nextChapterTitle?: string | null;
-  /** open this chapter's contents, so a listener can pick another chapter */
-  onOpenContents?: () => void;
 }
 
 /**
@@ -55,9 +51,11 @@ export interface AudioModeProps {
  *
  * Two rules shape everything here:
  *
- * 1. **Leaving is not stopping.** ✕ returns to the page and the audio keeps
- *    playing in the bottom bar; that bar's ⌃ brings this back. The listener
- *    should never learn to fear the close button.
+ * 1. **Leaving is not stopping.** ⌄ collapses to the pill and the audio keeps
+ *    playing; tapping the pill's title brings this back. The control is a
+ *    chevron down rather than a cross for exactly that reason — a listener
+ *    should never have to wonder whether the button they are about to press
+ *    will silence the thing they are listening to.
  * 2. **The text is a control, not decoration.** Tapping a paragraph plays from
  *    it. For a study text that is the most-wanted action in the room — "read
  *    that sutra to me again" — and a scrub bar cannot express it.
@@ -73,24 +71,46 @@ export function AudioMode({
   onSeekPara,
   prevChapterTitle,
   nextChapterTitle,
-  onOpenContents,
 }: AudioModeProps) {
   const player = usePlayer();
-  const [menu, setMenu] = useState<"rate" | "sleep" | "voice" | null>(null);
+  const [menu, setMenu] = useState<"rate" | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement | null>(null);
   const { source } = player;
 
+  /**
+   * Collapsing runs an exit animation before the surface goes.
+   *
+   * React unmounts on the same tick it is told to, so an element on its way out
+   * has to be kept for as long as it takes to leave. `closing` holds it for the
+   * animation's own 260ms and then hands over to the provider; the pill, which
+   * has been mounted underneath the whole time, replays its entrance as it is
+   * uncovered. Under `prefers-reduced-motion` the wait is skipped entirely
+   * rather than shortened — a held frame with no movement in it is just lag.
+   */
+  const [closing, setClosing] = useState(false);
   const closeAudioMode = player.closeAudioMode;
+
+  const collapse = useCallback(() => {
+    const still =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (still) {
+      closeAudioMode();
+      return;
+    }
+    setClosing(true);
+    window.setTimeout(closeAudioMode, 260);
+  }, [closeAudioMode]);
 
   // Escape closes, as it does on every sheet in the app.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeAudioMode();
+      if (e.key === "Escape") collapse();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [closeAudioMode]);
+  }, [collapse]);
 
   // While this is up, the page behind it must not scroll under the finger.
   // Mount-only: re-running it would capture "hidden" as the value to restore
@@ -137,16 +157,15 @@ export function AudioMode({
   const paraProgress = device
     ? `${Math.min(player.deviceParaIndex + 1, source.paras.length)} / ${source.paras.length}`
     : null;
-  const voiceLabel = device
-    ? (player.deviceVoiceLabel ?? "Device voice")
-    : (rendition?.voice_label ?? "");
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Audio mode"
-      className="fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink"
+      className={`fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink ${
+        closing ? "audio-mode-out" : ""
+      }`}
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
@@ -163,22 +182,30 @@ export function AudioMode({
       <div className="flex items-start gap-2 px-4 pt-3">
         <button
           type="button"
-          onClick={closeAudioMode}
-          aria-label="Close audio mode and return to the page"
-          /* A rounded square, not a circle, as the comp draws both corners of
+          onClick={collapse}
+          aria-label="Collapse to the mini player"
+          /* A chevron down, not a cross. This does not stop anything — the
+             audio keeps playing and the pill takes over — and a cross on a
+             control that leaves the sound running is a promise it does not
+             keep. Down is where it goes, and the pill is what it becomes.
+             A rounded square, not a circle, as the comp draws both corners of
              this header: round is the play button's shape here, and giving it
              to a control that does the opposite thing was the one place this
              screen contradicted itself. */
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-tile bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/20"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/20"
         >
-          <CloseIcon className="h-5.5 w-5.5" />
+          <ChevronDown className="h-5.5 w-5.5" />
         </button>
         <div className="min-w-0 flex-1 pt-1.5 text-center">
           <p className="text-xs font-semibold tracking-[0.18em] text-audio-accent">
             AUDIO MODE
           </p>
-          <p lang="hi" className="hi truncate text-xs text-audio-ink/70">
-            {source.bookTitle} · {source.chapterTitle}
+          {/* The book. The chapter is named twice already below this — as the
+              heading under the cover and, when there is text, on the line the
+              voice is reading — so a third naming here spent the one line this
+              strip has on the thing least in doubt. */}
+          <p lang="hi" className="hi hi-tight truncate text-xs text-audio-ink/70">
+            {source.bookTitle}
           </p>
         </div>
         <div className="relative shrink-0">
@@ -188,7 +215,7 @@ export function AudioMode({
             aria-haspopup="menu"
             aria-expanded={menu === "rate"}
             aria-label={`Playback speed ${player.rate}x`}
-            className="flex h-11 min-w-11 items-center justify-center rounded-tile bg-audio-ink/10 px-3 text-sm font-semibold tabular-nums"
+            className="flex h-11 min-w-11 items-center justify-center rounded-control bg-audio-ink/10 px-3 text-sm font-semibold tabular-nums"
           >
             {player.rate}×
           </button>
@@ -224,11 +251,15 @@ export function AudioMode({
         <p lang="hi" className="hi mt-4 line-clamp-2 text-center text-base font-semibold">
           {source.chapterTitle}
         </p>
+        {/* The clock, and nothing else. The voice's name — "स्वरा (Azure)" —
+            was the engine that made the file, which is a fact about how this
+            was produced rather than about what is playing, and it sat on the
+            one line under the chapter where a listener looks to see how far in
+            they are. */}
         <p className="mt-1 text-xs tabular-nums text-audio-ink/55">
           {device
             ? `Para ${paraProgress}`
             : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
-          {voiceLabel && <span {...contentLang(voiceLabel)}> · {voiceLabel}</span>}
         </p>
         {/* The one honest sentence this mode owes the listener: the device
             voice is not background audio, and finding that out with the phone
@@ -279,8 +310,12 @@ export function AudioMode({
         </div>
       </div>
 
-      {/* ---- transport ---- */}
-      <div className="shrink-0 border-t border-audio-ink/10 bg-audio-bg px-5 pb-2 pt-3">
+      {/* ---- transport ----
+          24px under the controls. It was 8, which was enough while the foot row
+          sat below them and gave the play button something to stand on; with
+          that row gone the transport was the last thing on the screen and ended
+          a thumb's width from the edge. */}
+      <div className="shrink-0 border-t border-audio-ink/10 bg-audio-bg px-5 pb-6 pt-3">
         {device ? (
           <div
             className="h-1 w-full overflow-hidden rounded-full bg-audio-ink/12"
@@ -328,7 +363,14 @@ export function AudioMode({
             type="button"
             onClick={player.toggle}
             aria-label={player.playing ? "Pause" : "Play"}
-            className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full bg-audio-ink text-audio-bg shadow-lg active:scale-95"
+            /* Terracotta to start it, cream to stop it. The accent is what the
+               app means by "press this"; once it is running the button's job
+               is to be found and not to shout, and cream on the near-black is
+               the quieter of the two. */
+            className={`flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full shadow-lg transition-colors active:scale-95 ${
+              player.playing ? "bg-audio-ink text-audio-bg" : "text-white"
+            }`}
+            style={player.playing ? undefined : { background: "var(--ws-color)" }}
           >
             {player.playing ? (
               <PauseIcon className="h-7 w-7" />
@@ -352,102 +394,20 @@ export function AudioMode({
           </TransportBtn>
         </div>
 
-        {/* ---- the row that makes it a listening app, not a play button ----
-            Scrolls rather than wraps: five short labels fit a 390pt phone, and
-            a narrower one should shorten the row, not double its height and
-            push the play button up. */}
-        <div className="mt-1 flex items-center justify-center gap-1 overflow-x-auto text-xs [scrollbar-width:none]">
-          {onOpenContents && (
-            <FootBtn
-              onClick={() => {
-                closeAudioMode();
-                onOpenContents();
-              }}
-            >
-              Chapters
-            </FootBtn>
-          )}
-          {source.kind === "tts" && source.renditions.length > 1 && (
-            <div className="relative">
-              <FootBtn onClick={() => setMenu(menu === "voice" ? null : "voice")}>
-                Voice
-              </FootBtn>
-              {menu === "voice" && (
-                <div
-                  role="menu"
-                  className="absolute bottom-full left-1/2 z-10 mb-1 w-44 -translate-x-1/2 overflow-hidden rounded-tile bg-audio-raised py-1 shadow-2xl ring-1 ring-audio-ink/10"
-                >
-                  {source.renditions.map((r) => (
-                    <button
-                      key={r.voice_key}
-                      role="menuitem"
-                      type="button"
-                      lang="hi"
-                      onClick={() => {
-                        player.switchVoice(r.voice_key);
-                        setMenu(null);
-                      }}
-                      className={`hi block w-full px-4 py-2 text-start text-sm ${
-                        r.voice_key === source.voiceKey
-                          ? "font-bold text-audio-accent"
-                          : "text-audio-ink/85"
-                      }`}
-                    >
-                      {r.voice_label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          <div className="relative">
-            <FootBtn
-              onClick={() => setMenu(menu === "sleep" ? null : "sleep")}
-              active={player.sleepRemainingMs !== null}
-            >
-              {player.sleepRemainingMs !== null ? fmt(player.sleepRemainingMs) : "Sleep"}
-            </FootBtn>
-            {menu === "sleep" && (
-              <div
-                role="menu"
-                className="absolute bottom-full left-1/2 z-10 mb-1 w-32 -translate-x-1/2 overflow-hidden rounded-tile bg-audio-raised py-1 shadow-2xl ring-1 ring-audio-ink/10"
-              >
-                {SLEEP_OPTIONS.map((m) => (
-                  <button
-                    key={m}
-                    role="menuitem"
-                    type="button"
-                    onClick={() => {
-                      player.setSleepTimer(m);
-                      setMenu(null);
-                    }}
-                    className="block w-full px-4 py-2 text-start text-sm text-audio-ink/85"
-                  >
-                    {m} min
-                  </button>
-                ))}
-                <button
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    player.setSleepTimer(null);
-                    setMenu(null);
-                  }}
-                  className="block w-full px-4 py-2 text-start text-sm text-audio-ink/55"
-                >
-                  Off
-                </button>
-              </div>
-            )}
-          </div>
-          {source.kind === "tts" && rendition && (
-            <SaveChapterButton source={source} rendition={rendition} />
-          )}
-          {/* The read↔listen handoff, said out loud. Closing keeps the audio
-              running and the page behind is already scrolled to this very
-              paragraph, so it is a switch of mode, not a stop. */}
-          <FootBtn onClick={closeAudioMode}>Read</FootBtn>
-        </div>
+        {/* The foot row is gone at the designer's decision — it held
+            Chapters, Voice, Sleep, the offline save and Read.
+
+            Two of those had nowhere else to be, and the loss is real rather
+            than tidied away: **the sleep timer** exists on the shelf's player
+            bar but that control is `hidden sm:block`, so on a phone there is
+            now no way to set one at all; and **saving a chapter's audio for
+            offline** was only ever offered here — the book hero's download
+            button caches text, not audio. `SaveChapterButton` below is kept
+            for whatever surface takes it next.
+
+            The other three lost nothing. Chapters is the two chapter buttons
+            in the transport above; Read is the chevron in the header, which
+            does exactly what it did; Voice is on the shelf's bar. */}
       </div>
     </div>
   );
@@ -469,7 +429,17 @@ export function AudioMode({
  * response is opaque and its body cannot be read to count bytes. Better an
  * honest spinner than a fake percentage.
  */
-function SaveChapterButton({
+/**
+ * Save this chapter's audio for offline, as a foot-row button.
+ *
+ * Exported with no caller, which is deliberate and the honest version of what
+ * the comment upstairs promises: the foot row it lived in is gone, and the
+ * book hero's download button caches text rather than audio, so this is the
+ * app's only implementation of saving a recording and there is currently
+ * nowhere to press it. Exported rather than left local so it is a thing
+ * waiting for a surface instead of dead code with a lint warning on it.
+ */
+export function SaveChapterButton({
   source,
   rendition,
 }: {

@@ -716,7 +716,10 @@ body {
  *
  * 1.35, not Tailwind's 1.25: below about 1.3 the matras above and below the
  * line start to touch the line either side of them, and every one of these
- * names carries some. */
+ * names carries some.
+ *
+ * Repeated below at `.reader-surface .hi-tight`, which is the only way to
+ * outrank the reader's own line-spacing rule. Change both. */
 .hi-tight {
   line-height: 1.35;
 }
@@ -753,6 +756,16 @@ html[data-reader-face="sans"] .reader-surface .hi {
    the reader so book titles and nav labels elsewhere keep their own rhythm. */
 .reader-surface .hi {
   line-height: var(--reader-line-height, 2.05);
+}
+
+/* …but the reader's *chrome* is not body copy, and it was following that
+   setting too: the top bar's book title grew every time someone chose Airy,
+   because the rule above outranks `.hi-tight` on specificity as well as order.
+   This is `.hi-tight` again at matching specificity, so anything asking for the
+   tight leading opts out of the reading setting inside the reader as well as
+   outside it. Change the number in both places. */
+.reader-surface .hi-tight {
+  line-height: 1.35;
 }
 
 .reader-surface {
@@ -902,10 +915,98 @@ html[data-reading="1"] body {
   }
 }
 
+/* The listening pill's ground: an equaliser standing in the warm dark.
+ *
+ * Bars rather than a plain wash, because the pill has to say "sound" with no
+ * room to say it in words — it is a strip of chrome floating over a page of
+ * Devanagari, and the reader glances at it rather than reads it. They rise from
+ * the floor on the right, under the transport, and stop before the title: the
+ * two lines of text sit on flat ground so nothing competes with them.
+ *
+ * All of it is gradients on one element — six bars, each a solid layer sized
+ * and anchored to the bottom, over a warm sweep out of the right-hand corner.
+ * No image, so it costs nothing to load, it cannot go missing offline, and it
+ * follows `--ws-color` into whichever workspace is playing.
+ *
+ * The alpha is the whole design here. At 26% the bars read as texture; much
+ * above that and they are a chart, which invites the eye to try to read them
+ * against the audio, which they have nothing to do with. */
+.player-pill {
+  --pill-bar: color-mix(in srgb, var(--ws-color) 26%, transparent);
+  background-color: var(--color-audio-bg);
+  background-image:
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(
+      105deg,
+      transparent 30%,
+      color-mix(in srgb, var(--color-audio-top) 55%, transparent) 100%
+    );
+  background-repeat: no-repeat;
+  background-size:
+    14px 34%,
+    14px 62%,
+    14px 26%,
+    14px 78%,
+    14px 44%,
+    14px 20%,
+    100% 100%;
+  background-position:
+    56% 100%,
+    64% 100%,
+    72% 100%,
+    80% 100%,
+    88% 100%,
+    96% 100%,
+    0 0;
+}
+
+/* Audio Mode collapsing into the pill, and the pill arriving.
+ *
+ * Not a shared-element transition — the two share no DOM node and the full
+ * screen has no single element the pill is a smaller copy of. What sells it is
+ * the direction and the timing: the sheet drops and shrinks toward the foot of
+ * the screen, where the pill is, and the pill rises the last of that distance
+ * as it lands. The pill's own entrance is deliberately shorter than the exit,
+ * so it appears to be uncovered by the sheet rather than to follow it. */
+.audio-mode-out {
+  animation: audio-mode-down 0.26s cubic-bezier(0.4, 0, 0.9, 0.6) 1 forwards;
+  transform-origin: 50% 100%;
+}
+@keyframes audio-mode-down {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(14%) scale(0.92);
+    opacity: 0;
+  }
+}
+.player-pill-in {
+  animation: player-pill-up 0.2s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes player-pill-up {
+  from {
+    transform: translateY(35%) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :target,
   .ws-sheet,
-  .ws-sheet-backdrop {
+  .ws-sheet-backdrop,
+  .audio-mode-out,
+  .player-pill-in {
     animation: none;
   }
   /* chrome still hides, it just stops sliding */

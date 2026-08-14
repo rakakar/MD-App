@@ -111,11 +111,16 @@ export function ReaderTopBar({
           <BackIcon className="h-5 w-5" />
         </SquareBtn>
 
+        {/* `hi-tight` on the book, and that is what closes the gap rather than
+            any margin: `leading-tight` was declared here and never applied,
+            because `.hi` fixes Devanagari at 1.85 and outranks it, so a 17px
+            title carried 31px of line box and pushed the chapter away from
+            it. */}
         <div className="min-w-0 flex-1">
-          <p lang="hi" className="hi truncate text-sm font-semibold leading-tight">
+          <p lang="hi" className="hi hi-tight truncate text-title font-semibold">
             {title}
           </p>
-          <p className="truncate text-xs leading-tight text-(--reader-ink-soft)">{meta}</p>
+          <p className="hi-tight truncate text-xs text-(--reader-ink-soft)">{meta}</p>
         </div>
 
         {pagesHref && (
@@ -180,6 +185,7 @@ export function ReaderBottomBar({
   bottom,
   position,
   onContents,
+  onPosition,
   onListen,
   canListen,
   listening,
@@ -187,9 +193,15 @@ export function ReaderBottomBar({
 }: {
   hidden: boolean;
   bottom: string;
-  /** "Page 19 : 3 / 19" */
+  /** "30 / 178" */
   position: string;
   onContents: () => void;
+  /**
+   * Opens "Go to printed page". Absent where there is no printed page to go
+   * to, and then the readout stays a readout — a control that does nothing
+   * when pressed is worse than a label.
+   */
+  onPosition?: () => void;
   onListen: () => void;
   canListen: boolean;
   listening: boolean;
@@ -214,10 +226,24 @@ export function ReaderBottomBar({
 
         {/* The comps put this in its own sunk field rather than loose on the
             bar — it is a readout, and a readout that looks like a label gets
-            read as one. */}
-        <span className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-control border border-(--reader-rule) px-3 text-sm font-medium tabular-nums">
-          <span className="truncate">{position}</span>
-        </span>
+            read as one. It is also the way to jump: a reader who is looking at
+            "30 / 178" and wants page 142 is already pressing the number, and
+            the alternative was Aa → Go to printed page, two taps into a sheet
+            about type. */}
+        {onPosition ? (
+          <button
+            type="button"
+            onClick={onPosition}
+            aria-label={`${position} — go to a printed page`}
+            className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-control border border-(--reader-rule) px-3 text-sm font-medium tabular-nums transition-colors active:bg-current/10"
+          >
+            <span className="truncate">{position}</span>
+          </button>
+        ) : (
+          <span className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-control border border-(--reader-rule) px-3 text-sm font-medium tabular-nums">
+            <span className="truncate">{position}</span>
+          </span>
+        )}
 
         {canListen ? (
           <SquareBtn

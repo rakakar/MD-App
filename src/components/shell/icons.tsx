@@ -370,28 +370,64 @@ export function PauseIcon({ className }: { className?: string }) {
  * as "back ten seconds", and this player's step is a decision worth showing:
  * in device-voice mode the same control moves a whole paragraph instead.
  */
+/**
+ * Material Symbols `replay_10` / `forward_10`, the designer's pick, drawn as
+ * one filled path each with the digits already in the artwork.
+ *
+ * That last part is why `SkipIcon` still exists below. These say "10" and
+ * cannot say anything else, and the device-voice player does not skip ten
+ * seconds — it steps a whole paragraph, and its buttons show ¶. So the drawn
+ * ring stays as the general case and these take over for the one length they
+ * are.
+ */
+function Skip10({ className, back }: { className?: string; back: boolean }) {
+  return (
+    <svg
+      viewBox="0 -960 960 960"
+      fill="currentColor"
+      className={className ?? "h-5 w-5"}
+      aria-hidden="true"
+    >
+      {back ? (
+        <path d="M339.5-108.17q-65.5-28.16-114.33-77-48.84-48.83-77-114.33Q120-365 120-440h66.67q0 122.33 85.5 207.83 85.5 85.5 207.83 85.5 122.33 0 207.83-85.38 85.5-85.38 85.5-207.95T689.5-647.95q-83.83-85.38-206.17-85.38h-16.66L536-664l-46.67 47.33L338-768l151.33-151.33 46 46.66L462.67-800H480q75 0 140.5 28.17 65.5 28.16 114.33 77 48.84 48.83 77 114.33Q840-515 840-440t-28.17 140.5q-28.16 65.5-77 114.33-48.83 48.84-114.33 77Q555-80 480-80t-140.5-28.17ZM360-313.33v-201.34h-56v-52.66h109.33v254H360Zm144.67 0q-18.14 0-30.4-12.27Q462-337.87 462-356v-168.67q0-18.13 12.27-30.4 12.26-12.26 30.4-12.26h82q18.13 0 30.4 12.26 12.26 12.27 12.26 30.4V-356q0 18.13-12.26 30.4-12.27 12.27-30.4 12.27h-82Zm10.66-53.34H576v-148h-60.67v148Z" />
+      ) : (
+        <path d="M360-313.33v-201.34h-56v-52.66h109.33v254H360Zm144.67 0q-18.14 0-30.4-12.27Q462-337.87 462-356v-168.67q0-18.13 12.27-30.4 12.26-12.26 30.4-12.26h82q18.13 0 30.4 12.26 12.26 12.27 12.26 30.4V-356q0 18.13-12.26 30.4-12.27 12.27-30.4 12.27h-82Zm10.66-53.34H576v-148h-60.67v148ZM339.5-108.17q-65.5-28.16-114.33-77-48.84-48.83-77-114.33Q120-365 120-440t28.17-140.5q28.16-65.5 77-114.33 48.83-48.84 114.33-77Q405-800 480-800h16l-72.67-72.67 46-46.66L620.67-768 469.33-616.67l-46-46.66 70-70H480q-122.57 0-207.95 85.38T186.67-440q0 122.57 85.5 207.95T480-146.67q122.33 0 207.83-85.38 85.5-85.38 85.5-207.95H840q0 75-28.17 140.5-28.16 65.5-77 114.33-48.83 48.84-114.33 77Q555-80 480-80t-140.5-28.17Z" />
+      )}
+    </svg>
+  );
+}
+
 function SkipIcon({ className, seconds, back }: { className?: string; seconds: number | string; back: boolean }) {
+  if (seconds === 10) return <Skip10 className={className} back={back} />;
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.8}
+      strokeWidth={1.7}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className ?? "h-5 w-5"}
       aria-hidden="true"
     >
+      {/* The arc is centred on the box and open at the top, and the arrowhead
+          is a filled triangle sitting *on* the open end rather than a stroked
+          chevron floating above it — at 20px the old head hung a stroke-width
+          clear of the arc and read as a separate mark, and its apex at y=2.2
+          pushed the whole ring off-centre, which is what made these look
+          bent. The label is the reason the ring is open: it sits in the
+          middle at a size that can be read, and the gap is cut to clear it. */}
       <g transform={back ? undefined : "scale(-1,1) translate(-24,0)"}>
-        <path d="M12 5.5a7.5 7.5 0 1 0 7.2 5.4" />
-        <path d="M12 2.2 8.8 5.5 12 8.8" />
+        <path d="M12 4.4a7.6 7.6 0 1 0 6.9 4.4" />
+        <path d="M12.1 1.4 8.6 4.4l3.5 3v-6Z" fill="currentColor" stroke="none" />
       </g>
       <text
         x="12"
-        y="16.4"
+        y="15.9"
         textAnchor="middle"
-        fontSize="8"
-        fontWeight="700"
+        fontSize="9"
+        fontWeight="600"
+        letterSpacing="-0.4"
         stroke="none"
         fill="currentColor"
       >

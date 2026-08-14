@@ -1223,13 +1223,17 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    */
   const topBarMeta = (
     <>
-      {isFrontMatter
-        ? "Front matter"
-        : `Chapter ${chapterNumber}${chapter?.title_hi ? " · " : ""}`}
-      {!isFrontMatter && chapter?.title_hi && (
-        <span lang="hi" className="hi">
+      {/* The chapter names itself, in its own script. "Chapter 2 · अध्याय 2 :
+          उपासना" said the number twice in two languages, and the Devanagari
+          half is the one printed in the book. The English is the fallback for
+          front matter and for a chapter the TOC has no title for — where there
+          is nothing to repeat. */}
+      {!isFrontMatter && chapter?.title_hi ? (
+        <span lang="hi" className="hi hi-tight">
           {chapter.title_hi}
         </span>
+      ) : (
+        <>{isFrontMatter ? "Front matter" : `Chapter ${chapterNumber}`}</>
       )}
       {/* What this text is, on the line that is already about what the reader
           is in — not a badge somewhere they have to go looking. A compilation
@@ -1363,9 +1367,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     </span>
                   </button>
                 </span>
-                <span className="shrink-0 text-xs tabular-nums text-(--reader-ink-soft)">
-                  {pageIndex + 1} / {pages.length}
-                </span>
+                {/* No counter between the two buttons. It was a third number on
+                    a screen that already carries the position in the bottom
+                    bar, on its own chapter scale rather than the book's — so
+                    the two disagreed by design and a reader had to work out
+                    which was which. */}
                 <span className="min-w-0 shrink">
                   <button
                     type="button"
@@ -1452,6 +1458,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         bottom={bottomOffset}
         position={positionLabel}
         onContents={() => setTocOpen(true)}
+        // Only on a printed book: the sheet asks for a printed page number, and
+        // a digital-first edition has none to ask for.
+        onPosition={book.book_type === "print" ? () => setGotoOpen(true) : undefined}
         onListen={openListening}
         canListen={canListen}
         listening={listening}
@@ -1509,7 +1518,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           onSeekPara={playFromPara}
           prevChapterTitle={chapter.prev?.title_hi}
           nextChapterTitle={chapter.next?.title_hi}
-          onOpenContents={() => setTocOpen(true)}
         />
       )}
 
