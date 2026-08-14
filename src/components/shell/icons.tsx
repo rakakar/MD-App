@@ -573,3 +573,23 @@ export function TypeIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** The two shapes a shelf can take, for the control that swaps between them. */
+export function GridIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className}>
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+    </Svg>
+  );
+}
+
+export function ListIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </Svg>
+  );
+}

@@ -277,12 +277,16 @@ function ResumeCard({
           looking for the recording they left, and its name is the thing they
           are scanning for. */}
       <span className="flex w-full items-start gap-3">
+        {/* The kind's own tint, not the workspace's: blue for video, warm for
+            audio, the same pair the collection cards and the Library shelf use.
+            A terracotta tile on a video row said "Originals" where the reader
+            needed it to say "this is the one you were watching". */}
         <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-          style={{
-            background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
-            color: "var(--ws-ink)",
-          }}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+            row.kind === "audio"
+              ? "bg-kind-audio text-kind-audio-ink"
+              : "bg-kind-video text-kind-video-ink"
+          }`}
           aria-hidden
         >
           {row.kind === "audio" ? (
@@ -335,7 +339,7 @@ function ResumeCard({
           <span className="shrink-0 text-xs font-medium text-ink-soft">
             {left ? `${left} left` : "Almost done"}
           </span>
-          {onPlay && <PlayBadge />}
+          <PlayBadge />
         </span>
       ) : (
         <span className="mt-3 flex w-full items-center gap-3">
@@ -345,7 +349,7 @@ function ResumeCard({
           >
             {onPlay ? "Resume" : "Open"} →
           </span>
-          {onPlay && <PlayBadge />}
+          <PlayBadge />
         </span>
       )}
     </>
@@ -381,7 +385,17 @@ function ResumeCard({
   );
 }
 
-/** The terracotta play circle on a resume card's progress line. */
+/**
+ * The play circle on a resume card's progress line — on every card, audio or
+ * video.
+ *
+ * It used to appear only where the card could play in place, which is audio.
+ * That made a video's resume card a different object from an audio one for a
+ * reason the reader cannot see: a video opens the folder it lives in, where its
+ * own player is, and from where they are standing that is the same act. The
+ * badge is `aria-hidden` and the whole card is the control, so this is the
+ * card's picture of "carry on", not a second button making a promise.
+ */
 function PlayBadge() {
   return (
     <span

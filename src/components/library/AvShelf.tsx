@@ -7,7 +7,8 @@ import { RailFacets } from "./RailFacets";
 import { filesSummary, formatDuration } from "./format";
 import { RailSlot } from "@/components/shell/Rail";
 import { CountedSegmented, EmptyState } from "@/components/ui";
-import { HeadphonesIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
+import { CollectionViewport } from "./CollectionViewport";
+import { ChevronRight, HeadphonesIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
@@ -149,22 +150,6 @@ export function AvShelf({
         />
       </RailSlot>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
-        <span className="tabular-nums">
-          {/* Nothing at all when there is nothing — the empty state below says
-              it once, and saying it twice in two different wordings reads as
-              two separate facts. */}
-          {find.count > 0 &&
-            `${find.count} ${find.count === 1 ? "recording" : "recordings"}`}
-          {groups.length > 1 && ` · ${groups.length} collections`}
-        </span>
-        {/* No "Clear" here any more. It has moved beside the chips it clears,
-            where the comps put it and where a reader is already looking to
-            remove one — and the query's own way out is the × in the box, so the
-            two things a page can be narrowed by are each cleared where they are
-            shown rather than both by one control at the far edge of a line. */}
-      </div>
-
       {find.searched_as && (
         <p className="mt-2 text-xs text-ink-soft">
           Showing results for{" "}
@@ -181,6 +166,21 @@ export function AvShelf({
         </p>
       )}
 
+      {/* The count, which the browse hands to the layout switch to share a row
+          with and a find prints on its own. */}
+      {asked && find.count > 0 && (
+        <p className="mt-4 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+          <span className="tabular-nums">{find.count}</span>{" "}
+          {find.count === 1 ? "recording" : "recordings"}
+          {groups.length > 1 && (
+            <>
+              {" · "}
+              <span className="tabular-nums">{groups.length}</span> collections
+            </>
+          )}
+        </p>
+      )}
+
       {groups.length > 0 ? (
         asked ? (
           <div className="mt-2 flex flex-col">
@@ -189,13 +189,39 @@ export function AvShelf({
             ))}
           </div>
         ) : (
-          <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
-            {groups.map((group) => (
-              <li key={group.id} className="contents">
-                <CollectionCard group={group} shelves={shelves} />
-              </li>
-            ))}
-          </ul>
+          <CollectionLayout
+            groups={groups}
+            shelves={shelves}
+            /* The Library shelf's own heading, word-shape for word-shape: one
+               uppercase line naming what is below and counting it, rather than
+               a lowercase sentence of statistics. Both tabs are shelves of
+               collections and a reader crosses between them in one tap. */
+            /* The Library shelf's heading, with the count moved under it
+               rather than strung after it on the same line. The heading names
+               what is below; the count is a fact *about* it, and at the same
+               size and weight the two were competing to be read first. It also
+               buys the width back: this row shares it with the layout switch,
+               and on one line the pair truncated. */
+            summary={
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+                  Collections
+                </span>
+                {find.count > 0 && (
+                  <span className="mt-0.5 block truncate text-xs text-ink-soft">
+                    <span className="tabular-nums">{find.count}</span>{" "}
+                    {find.count === 1 ? "recording" : "recordings"}
+                    {groups.length > 1 && (
+                      <>
+                        {" · "}
+                        <span className="tabular-nums">{groups.length}</span> collections
+                      </>
+                    )}
+                  </span>
+                )}
+              </span>
+            }
+          />
         )
       ) : (
         <div className="mt-6">
@@ -358,11 +384,10 @@ function groupByFolder(results: LibraryFindResponse["results"]): FolderGroup[] {
  * use, and on this tab every collection is purely one kind or the other.
  */
 function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
-  const duration = group.files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0);
   const kinds = [...new Set(group.files.map((f) => f.kind))];
   const only = kinds.length === 1 ? kinds[0] : null;
   const tint = only === "audio" || only === "video" ? AV_TINT[only] : undefined;
-  const hours = duration / 3600;
+  const length = collectionLength(group.files);
 
   return (
     <Link
@@ -383,37 +408,150 @@ function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: Shelf
           <HeadphonesIcon className="h-[18px] w-[18px]" />
         )}
       </span>
-      {group.trail.length > 0 && (
-        <span
-          lang="hi"
-          className="hi mb-0.5 block truncate text-xs font-semibold text-ink-soft"
-        >
-          {group.trail.map((step) => step.name).join(" / ")}
-        </span>
-      )}
       <span
         {...contentLang(group.name)}
-        className={`${contentLang(group.name).className} line-clamp-2 text-sm font-semibold leading-snug group-hover:underline`}
+        className={`${contentLang(group.name).className} hi-tight line-clamp-2 text-sm font-semibold group-hover:underline`}
       >
         {group.name}
       </span>
-      {/* Hours lead where there are hours: a count is a number a reader cannot
-          weigh, and twenty hours of recordings is a promise. Same line the
-          Library shelf's tiles print, for the same reason. */}
-      <span className="mt-auto pt-2.5 text-xs font-semibold" style={{ color: "var(--ws-ink)" }}>
-        {[
-          hours >= 1
-            ? `${Math.round(hours)} ${Math.round(hours) === 1 ? "hour" : "hours"}`
-            : duration > 0
-              ? `${Math.max(1, Math.round(duration / 60))} min`
-              : "",
-          filesSummary(group.files),
-        ]
-          .filter(Boolean)
-          .join(" · ")}
+      {/* The list's own pair, so a reader who flips layouts finds the same two
+          facts drawn the same way: the count as a chip in the kind's tint,
+          because that is what they are choosing on, and the length beside it in
+          plain grey, because that is what they weigh it against. It used to be
+          one accent-coloured run reading "3 hours · 5 Videos", where the two
+          were the same colour and the wrong one came first. */}
+      <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2.5">
+        <span
+          className="rounded-full px-2 py-0.5 text-xs font-bold"
+          style={{
+            background: tint?.bg ?? "var(--color-accent-tint)",
+            color: tint?.ink ?? "var(--ws-ink)",
+          }}
+        >
+          {filesSummary(group.files)}
+        </span>
+        {length && <span className="text-xs text-ink-soft">{length}</span>}
       </span>
     </Link>
   );
+}
+
+/**
+ * The collections, in whichever shape the reader last chose.
+ *
+ * A client boundary only for the toggle's own state — the cards and rows below
+ * it stay server-rendered children, so choosing a layout re-renders two
+ * wrappers rather than the shelf.
+ */
+function CollectionLayout({
+  groups,
+  shelves,
+  summary,
+}: {
+  groups: FolderGroup[];
+  shelves: ShelfMap;
+  summary: React.ReactNode;
+}) {
+  return (
+    <CollectionViewport
+      summary={summary}
+      grid={
+        <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+          {groups.map((group) => (
+            <li key={group.id} className="contents">
+              <CollectionCard group={group} shelves={shelves} />
+            </li>
+          ))}
+        </ul>
+      }
+      list={
+        <ul className="flex flex-col gap-2.5">
+          {groups.map((group) => (
+            <li key={group.id}>
+              <CollectionRow group={group} shelves={shelves} />
+            </li>
+          ))}
+        </ul>
+      }
+    />
+  );
+}
+
+/**
+ * One collection, as a row — the same object as `CollectionCard`, drawn for a
+ * reader who is scanning names rather than looking at shapes.
+ *
+ * A card each rather than rows on one divided sheet, as the designer draws it:
+ * the tile is large enough here to be the row's anchor, and a hairline between
+ * two 100px rows would have read as a table. The grid is right when the tiles
+ * differ from one another; on this tab they are the same glyph in one of two
+ * tints, so a 165px column spends its width on artwork that carries almost
+ * nothing while the name it needs wraps to three lines.
+ */
+function CollectionRow({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
+  const kinds = [...new Set(group.files.map((f) => f.kind))];
+  const only = kinds.length === 1 ? kinds[0] : null;
+  const tint = only === "audio" || only === "video" ? AV_TINT[only] : undefined;
+  const length = collectionLength(group.files);
+
+  return (
+    <Link
+      href={nodeHref(group.id, shelves)}
+      className="group flex items-center gap-3.5 rounded-card border border-rule bg-card p-2.5 transition-shadow hover:shadow-md"
+    >
+      <span
+        aria-hidden
+        className="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-tile"
+        style={{
+          background: tint?.bg ?? "var(--color-accent-tint)",
+          color: tint?.ink ?? "var(--ws-ink)",
+        }}
+      >
+        {only === "video" ? (
+          <VideoIcon className="h-7 w-7" />
+        ) : (
+          <WaveformIcon className="h-7 w-7" />
+        )}
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span
+          {...contentLang(group.name)}
+          className={`${contentLang(group.name).className} hi-tight line-clamp-2 text-sm font-semibold group-hover:underline`}
+        >
+          {group.name}
+        </span>
+        {/* The count in the kind's own tint and the length beside it in plain
+            grey — how many is the fact a reader is choosing on, and how long is
+            what they weigh it against. One is the chip, the other is not. */}
+        <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <span
+            className="rounded-full px-2.5 py-0.5 text-xs font-bold"
+            style={{
+              background: tint?.bg ?? "var(--color-accent-tint)",
+              color: tint?.ink ?? "var(--ws-ink)",
+            }}
+          >
+            {filesSummary(group.files)}
+          </span>
+          {length && <span className="text-sm text-ink-soft">{length}</span>}
+        </span>
+      </span>
+
+      <span aria-hidden className="shrink-0 text-muted">
+        <ChevronRight />
+      </span>
+    </Link>
+  );
+}
+
+/** "21 hours", or minutes below one, or nothing where the BE has no durations.
+ *  Both layouts print it, so both read it from here. */
+function collectionLength(files: LibraryFile[]): string {
+  const seconds = files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0);
+  const hours = seconds / 3600;
+  if (hours >= 1) return `${Math.round(hours)} ${Math.round(hours) === 1 ? "hour" : "hours"}`;
+  return seconds > 0 ? `${Math.max(1, Math.round(seconds / 60))} min` : "";
 }
 
 /** the two tints the Library shelf gives these kinds, so a card reads the same
