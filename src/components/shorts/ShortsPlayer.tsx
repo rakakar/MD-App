@@ -490,7 +490,11 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-10">
                 <p
                   {...contentLang(c.title)}
-                  className={`${contentLang(c.title).className} hi-tight line-clamp-2 text-base font-semibold`}
+                  /* A size up from `text-base`. It is the only writing on the
+                     screen and it is read at arm's length over a moving
+                     picture, which is the one place in this app where 16px was
+                     doing the work of a caption on a poster. */
+                  className={`${contentLang(c.title).className} hi-tight line-clamp-2 text-lg font-semibold`}
                 >
                   {c.title}
                 </p>
@@ -537,7 +541,12 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
             */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black via-black/85 to-transparent"
+              /* `z-10` is not decoration: this wrapper is transformed, which
+                 promotes the iframe inside it to its own compositing layer, and
+                 an overlay left at `z-index: auto` paints *under* it however
+                 late it comes in the DOM. Losing this line is how YouTube's
+                 title, channel and Shorts mark came back over the picture. */
+              className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-black via-black/85 to-transparent"
             />
           </div>
         </div>
