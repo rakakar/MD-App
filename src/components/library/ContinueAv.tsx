@@ -13,6 +13,7 @@ import { findLibrary } from "@/lib/api";
 import { EMPTY_FIND } from "@/lib/find";
 import { getProgress } from "@/lib/me";
 import { itemIdFromResumeKey, syncPersonal } from "@/lib/personal";
+import { AUDIO_POSTER } from "@/lib/media";
 import { contentLang } from "@/lib/script";
 import { getPlayheads } from "@/lib/storage";
 import type { FileKind, LibraryFile } from "@/lib/types";
@@ -305,7 +306,9 @@ function ResumeCard({
     row.durationMs && row.durationMs > row.positionMs
       ? formatDuration(Math.round((row.durationMs - row.positionMs) / 1000))
       : "";
-  const poster = row.kind === "video" ? videoPoster(row.file) : null;
+  // Both kinds carry a picture now: a video its own still, a recording the
+  // shared portrait. The tile they replaced was the same glyph on every card.
+  const poster = row.kind === "video" ? videoPoster(row.file) : AUDIO_POSTER;
 
   const body = (
     <>
@@ -315,16 +318,14 @@ function ResumeCard({
           looking for the recording they left, and its name is the thing they
           are scanning for. */}
       <span className="flex w-full items-start gap-3">
-        {/* The kind's own tint, not the workspace's: blue for video, warm for
-            audio, the same pair the collection cards and the Library shelf use.
-            A terracotta tile on a video row said "Originals" where the reader
-            needed it to say "this is the one you were watching". */}
-        {/* A video shows the recording itself. The frame is the one thing that
-            says *which* of six parts of a sammelan this is before the title is
-            read — and it costs nothing: the poster is a still the host already
-            serves. Audio has no frame to show and keeps its glyph; so does a
+        {/* A video shows the recording itself — the frame is what says *which*
+            of six parts of a sammelan this is before the title is read, and it
+            costs nothing, being a still the host already serves. Audio has no
+            frame of its own and takes the shared portrait, so the two cards are
+            one object. The glyph tile is left for the case with neither: a
             video the account named but this page never fetched, which has no
-            URL to take a poster from. */}
+            URL to take a poster from — and it keeps the kind's own tint there,
+            blue for video and warm for audio, the pair the Library shelf uses. */}
         {poster ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

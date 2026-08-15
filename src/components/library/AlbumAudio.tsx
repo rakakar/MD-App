@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueue";
 import { formatDuration } from "@/components/library/format";
-import { PlayIcon } from "@/components/shell/icons";
-import { KindTile } from "@/components/ui";
+import { PlayIcon, WaveformIcon } from "@/components/shell/icons";
+import { AUDIO_POSTER } from "@/lib/media";
 import { contentLang } from "@/lib/script";
 import type { LibraryFile } from "@/lib/types";
 
@@ -85,13 +85,24 @@ export function AlbumAudio({
 }
 
 /**
- * One recording in the album — tile, title, length, and how much of it is done.
+ * One recording in the album — **the video playlist's row, to the pixel**.
+ *
+ * Same 16:9 thumbnail at the same width, same length badge in its corner, same
+ * title beside it, same bar and percentage underneath. The only thing that had
+ * been keeping the two lists apart was that audio has no still of its own to
+ * show; it wears the shared portrait instead (see `AUDIO_POSTER`), which gives
+ * the row the same weight of ink and lets a reader crossing from a video
+ * collection to an audio one recognise what they are looking at.
+ *
+ * What audio adds is the playing state, which a video list has no equivalent
+ * of: the track the player is on keeps its play badge lit in the accent rather
+ * than only on hover, because in a list of fourteen that is the one thing that
+ * has to be findable without reading any of it.
  *
  * The percentage rather than the timecode "Resume · 12:04". A position is a
  * fact about the file; a fraction is a fact about the reader, and it is the one
- * being scanned for down a list of fourteen. The exact place is still what the
- * player resumes from — nothing about the playhead changed, only what the row
- * says about it.
+ * being scanned for. The exact place is still what the player resumes from —
+ * nothing about the playhead changed, only what the row says about it.
  */
 function TrackRow({
   item,
@@ -111,6 +122,17 @@ function TrackRow({
   const percent = item.duration_seconds
     ? Math.min(100, (resumeMs / 1000 / item.duration_seconds) * 100)
     : 0;
+  // The portrait is a file in `public/`, so a build that has not been given it
+  // yet falls back to the kind tile rather than to a broken image. `onError`
+  // alone does not cover it: the row is server-rendered, so the browser can
+  // have tried and failed before React ever attached a handler — hence the
+  // check on mount for an image that is `complete` with no pixels in it.
+  const [posterFailed, setPosterFailed] = useState(false);
+  const posterRef = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    const el = posterRef.current;
+    if (el && el.complete && el.naturalWidth === 0) setPosterFailed(true);
+  }, []);
 
   return (
     <button
@@ -119,20 +141,46 @@ function TrackRow({
       aria-label={`Play ${item.title}`}
       className="group flex w-full items-start gap-3 rounded-card p-1 text-start transition-colors hover:bg-ink/[.04]"
     >
-      {active ? (
-        // The playing track keeps the tile's shape and takes the accent: what
-        // is playing has to be findable in a list of fourteen without reading
-        // any of it.
+      <span className="relative aspect-video w-[38%] max-w-[10.5rem] shrink-0 overflow-hidden rounded-lg bg-black">
+        {posterFailed ? (
+          // Not `KindTile` with a size override: two Tailwind size utilities on
+          // one element are resolved by their order in the stylesheet, not in
+          // the class list, so `h-full` beside `h-14` is a coin toss.
+          <span
+            aria-hidden
+            className="flex h-full w-full items-center justify-center bg-kind-audio text-kind-audio-ink"
+          >
+            <WaveformIcon className="h-6 w-6" />
+          </span>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            ref={posterRef}
+            src={AUDIO_POSTER}
+            alt=""
+            loading="lazy"
+            onError={() => setPosterFailed(true)}
+            className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
+          />
+        )}
         <span
-          aria-hidden
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-tile text-white"
-          style={{ background: "var(--ws-color)" }}
+          className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+            active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
         >
-          <PlayIcon className="h-6 w-6" />
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-full text-white"
+            style={{ background: active ? "var(--ws-color)" : "rgb(0 0 0 / 0.7)" }}
+          >
+            <PlayIcon className="h-4 w-4" />
+          </span>
         </span>
-      ) : (
-        <KindTile kind="audio" size="lg" />
-      )}
+        {length && (
+          <span className="absolute bottom-1 end-1 rounded bg-black/80 px-1.5 py-1 text-xs font-semibold leading-none tabular-nums text-white">
+            {length}
+          </span>
+        )}
+      </span>
 
       <span className="min-w-0 flex-1 py-0.5">
         <span
@@ -149,17 +197,6 @@ function TrackRow({
             {item.description}
           </span>
         )}
-        {/* The length alone. Under the title rather than out at the right
-            margin: the video row carries its length on the poster, and a column
-            of bold numbers on the far edge made the two lists read as different
-            kinds of thing.
-
-            No provenance badge. Every part of a collection inherits the
-            collection's, so it printed "Original" fourteen times down one
-            screen to say something the hero had already said — and the video
-            row beside it says it none. Where a borrowed file really does
-            disagree, its breadcrumb is what marks it. */}
-        {length && <span className="mt-1 block text-xs tabular-nums text-ink-soft">{length}</span>}
         {percent > 1 && (
           <span className="mt-1.5 flex items-center gap-2">
             <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-ink/10">
