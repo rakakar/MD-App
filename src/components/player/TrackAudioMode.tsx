@@ -16,6 +16,7 @@ import {
   ScrubBar,
   TransportBtn,
   fmt,
+  useSheetDismiss,
 } from "./audioChrome";
 import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
 
@@ -45,15 +46,18 @@ export function TrackAudioMode() {
   const player = usePlayer();
   const [menu, setMenu] = useState<"rate" | "sleep" | null>(null);
   const { source, audioModeOpen, closeAudioMode } = player;
+  // Rises on open, drops on ⌄, and follows a thumb pushed down the screen —
+  // the same gesture the chapter's Audio Mode has, from the same hook.
+  const { collapse, sheetProps } = useSheetDismiss(closeAudioMode);
 
   // Escape closes, as on every sheet in the app.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeAudioMode();
+      if (e.key === "Escape") collapse();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [closeAudioMode]);
+  }, [collapse]);
 
   const open = audioModeOpen && source?.kind === "track";
 
@@ -79,8 +83,10 @@ export function TrackAudioMode() {
       role="dialog"
       aria-modal="true"
       aria-label="Audio mode"
-      className="fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink"
+      {...sheetProps}
+      className={`fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink ${sheetProps.className}`}
       style={{
+        ...sheetProps.style,
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         // The same ember the chapter's Audio Mode wears. A listener who learns
@@ -94,7 +100,7 @@ export function TrackAudioMode() {
       <div className="flex items-start gap-2 px-4 pt-3">
         <button
           type="button"
-          onClick={closeAudioMode}
+          onClick={collapse}
           aria-label="Close audio mode"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/10"
         >
@@ -246,7 +252,7 @@ export function TrackAudioMode() {
           </div>
           {/* Same promise the reader's Audio Mode makes: closing is not
               stopping. The bar keeps playing and its ⌃ brings this back. */}
-          <FootBtn onClick={closeAudioMode}>Close</FootBtn>
+          <FootBtn onClick={collapse}>Close</FootBtn>
         </div>
       </div>
     </div>

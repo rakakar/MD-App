@@ -6,8 +6,8 @@ import { CloseIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import type { LibraryFile } from "@/lib/types";
 
-/** how long the stage takes to leave — the stylesheet animates over the same */
-const LEAVE_MS = 280;
+/** how long the stage takes to fade out — the stylesheet animates over the same */
+const LEAVE_MS = 200;
 
 /**
  * The video, full screen — the photo viewer's shell around a player.
@@ -17,16 +17,16 @@ const LEAVE_MS = 280;
  * photograph and tapping a recording should not open two different kinds of
  * full screen.
  *
- * **It slides, both ways, and it owns that itself.** The player pill does the
+ * **It fades in and out, and it owns that itself.** The player pill does the
  * same thing and has to be held mounted by its parent to do it; this one keeps
- * the whole business inside — `dismiss` starts the slide and calls `onClose`
+ * the whole business inside — `dismiss` starts the fade and calls `onClose`
  * when it is over, so a caller still writes `{open && <VideoStage …/>}` and
  * gets the animation without knowing there is one. Which matters: two screens
  * open this already.
  *
- * The video keeps playing through those 280ms. Cutting it dead on the first
- * frame of the slide is the version that feels broken — the sound would stop
- * while its own picture is still on screen.
+ * The video keeps playing through those 200ms. Cutting it dead on the first
+ * frame is the version that feels broken — the sound would stop while its own
+ * picture is still on screen.
  */
 export function VideoStage({ file, onClose }: { file: LibraryFile; onClose: () => void }) {
   const [leaving, setLeaving] = useState(false);

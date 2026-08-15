@@ -990,14 +990,40 @@ html[data-reading="1"] body {
  * the screen, where the pill is, and the pill rises the last of that distance
  * as it lands. The pill's own entrance is deliberately shorter than the exit,
  * so it appears to be uncovered by the sheet rather than to follow it. */
+.audio-mode-in {
+  animation: audio-mode-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  transform-origin: 50% 100%;
+}
 .audio-mode-out {
   animation: audio-mode-down 0.26s cubic-bezier(0.4, 0, 0.9, 0.6) 1 forwards;
   transform-origin: 50% 100%;
+}
+/* The pill opening. Not a shared-element transition either — it is the exit
+ * played backwards, from the same origin at the foot of the screen, so the
+ * surface appears to grow out of where the pill is standing rather than to
+ * arrive from off-screen. Slightly longer than the drop: opening is the move
+ * a listener chose and is watching, closing is the one they want over. */
+@keyframes audio-mode-up {
+  from {
+    transform: translateY(14%) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 @keyframes audio-mode-down {
   from {
     transform: translateY(0) scale(1);
     opacity: 1;
+  }
+  /* Gone before it has stopped moving. The last frames of a drop are the ones
+     that read as a jump — the surface is still travelling when React takes it
+     away — so it finishes its journey invisible and there is nothing left to
+     see disappear. */
+  72% {
+    opacity: 0;
   }
   to {
     transform: translateY(14%) scale(0.92);
@@ -1039,44 +1065,39 @@ html[data-reading="1"] body {
     opacity: 1;
   }
 }
-/* The full-screen video, arriving and leaving — the pill's motion at the size
- * of the window.
+/* The full-screen video, arriving and leaving — **a fade, not a slide.**
  *
- * Same 280ms and the same pair of curves, because they are the same gesture:
- * a thing that was not there comes up from the foot of the screen and goes
- * back down the way it came. A full-screen panel appearing in one frame is
- * the harshest cut in the app — it is the whole window — and it left a reader
- * unsure for a beat whether they had opened something or the page had
- * navigated.
+ * It slid up from the foot of the screen for a day, matching the pill, and
+ * the pill is where that motion belongs: a small object arriving at the edge
+ * of a page that stays put. Here the panel *is* the window, and a window-sized
+ * black sheet travelling up the screen reads as the app moving rather than as
+ * a thing opening on top of what is already there. The fade says the same
+ * sentence quietly — the shelf is still where it was, this is now in front of
+ * it — which is also what the photo viewer this borrows its shell from does.
  *
- * The panel moves as a whole rather than fading its ground and sliding its
- * contents: the ground *is* the object here, and a black field fading up over
- * a bright shelf is a flash rather than an entrance. */
+ * Slightly quicker than the pill's 280ms: nothing is travelling, so the eye
+ * has no distance to follow and the extra time only registers as lag. */
 .video-stage-in {
-  animation: video-stage-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: video-stage-fade-in 0.2s ease-out 1;
 }
 .video-stage-out {
-  animation: video-stage-down 0.28s cubic-bezier(0.4, 0, 0.8, 0.4) 1;
+  animation: video-stage-fade-out 0.2s ease-in 1;
   animation-fill-mode: forwards;
 }
-@keyframes video-stage-up {
+@keyframes video-stage-fade-in {
   from {
-    translate: 0 100%;
-    opacity: 0.4;
+    opacity: 0;
   }
   to {
-    translate: 0 0;
     opacity: 1;
   }
 }
-@keyframes video-stage-down {
+@keyframes video-stage-fade-out {
   from {
-    translate: 0 0;
     opacity: 1;
   }
   to {
-    translate: 0 100%;
-    opacity: 0.4;
+    opacity: 0;
   }
 }
 
@@ -1097,6 +1118,7 @@ html[data-reading="1"] body {
   :target,
   .ws-sheet,
   .ws-sheet-backdrop,
+  .audio-mode-in,
   .audio-mode-out,
   .player-pill-in,
   .player-pill-out,

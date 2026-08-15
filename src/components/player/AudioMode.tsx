@@ -27,6 +27,7 @@ import {
   ScrubBar,
   TransportBtn,
   fmt,
+  useSheetDismiss,
 } from "./audioChrome";
 import { SKIP_SECONDS, activeRendition, usePlayer, type TtsSource } from "./PlayerProvider";
 
@@ -79,29 +80,14 @@ export function AudioMode({
   const { source } = player;
 
   /**
-   * Collapsing runs an exit animation before the surface goes.
-   *
-   * React unmounts on the same tick it is told to, so an element on its way out
-   * has to be kept for as long as it takes to leave. `closing` holds it for the
-   * animation's own 260ms and then hands over to the provider; the pill, which
-   * has been mounted underneath the whole time, replays its entrance as it is
-   * uncovered. Under `prefers-reduced-motion` the wait is skipped entirely
-   * rather than shortened — a held frame with no movement in it is just lag.
+   * Arriving and leaving, including the thumb pushing it back down — all of it
+   * in `useSheetDismiss`, which the recording's own surface shares. React
+   * unmounts on the tick it is told to, so the hook holds this one for its
+   * animation's 260ms before handing over to the provider; the pill, mounted
+   * underneath the whole time, replays its entrance as it is uncovered.
    */
-  const [closing, setClosing] = useState(false);
   const closeAudioMode = player.closeAudioMode;
-
-  const collapse = useCallback(() => {
-    const still =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (still) {
-      closeAudioMode();
-      return;
-    }
-    setClosing(true);
-    window.setTimeout(closeAudioMode, 260);
-  }, [closeAudioMode]);
+  const { collapse, sheetProps } = useSheetDismiss(closeAudioMode);
 
   // Escape closes, as it does on every sheet in the app.
   useEffect(() => {
@@ -163,10 +149,10 @@ export function AudioMode({
       role="dialog"
       aria-modal="true"
       aria-label="Audio mode"
-      className={`fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink ${
-        closing ? "audio-mode-out" : ""
-      }`}
+      {...sheetProps}
+      className={`fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink ${sheetProps.className}`}
       style={{
+        ...sheetProps.style,
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         // The comp's gradient, sampled at both ends: a warm ember at the top

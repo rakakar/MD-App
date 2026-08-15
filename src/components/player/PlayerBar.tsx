@@ -9,6 +9,7 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
 } from "@/components/shell/icons";
+import { fmt } from "./audioChrome";
 import { ownsViewport } from "@/lib/routes";
 import { SKIP_SECONDS, usePlayer, type PlayerSource } from "./PlayerProvider";
 
@@ -158,10 +159,13 @@ function PlayerBarInner({
       ref={barRef}
       role="region"
       aria-label="Audio player"
-      // Re-keyed on the audio-mode flag so collapsing remounts the pill and
-      // its entrance replays. It stays mounted the whole time Audio Mode is
-      // up — merely covered — so without this it would simply be revealed.
-      key={player.audioModeOpen ? "expanded" : "collapsed"}
+      // Deliberately *not* re-keyed on the audio-mode flag. It used to be, so
+      // that collapsing remounted the pill and replayed its entrance — which
+      // read as being uncovered while the entrance was a 22px settle. Now that
+      // the pill rises its whole height from below the floor, the same replay
+      // landed as a second, unrelated movement after the sheet had already
+      // gone: the jump at the end of the collapse. The pill has been standing
+      // there the whole time; the sheet dropping off it is the animation.
       // Nothing to press on the way out: the source is already gone, so the
       // controls would be acting on a player that has stopped.
       inert={leaving || undefined}
@@ -170,7 +174,7 @@ function PlayerBarInner({
       // a sweep, which is a stylesheet's job and not a class list's.
       className={`player-pill ${
         leaving ? "player-pill-out" : "player-pill-in"
-      } fixed inset-x-3 z-40 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-white shadow-raised lg:left-[15.75rem]`}
+      } fixed inset-x-3 z-40 flex flex-col rounded-2xl px-3 pb-2 pt-2.5 text-white shadow-raised lg:left-[15.75rem]`}
       style={{
         // Inside a book it clears the reader's own bottom bar; everywhere else
         // it clears the tab bar. Same pill, one number apart — on a desktop
@@ -180,6 +184,7 @@ function PlayerBarInner({
           : "calc(env(safe-area-inset-bottom) + 3.9rem)",
       }}
     >
+      <div className="flex w-full items-center gap-2">
       <button
         type="button"
         onClick={player.close}
@@ -239,6 +244,95 @@ function PlayerBarInner({
       >
         <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "\u00b6" : SKIP_SECONDS} />
       </button>
+      </div>
+
+      {/* A recording and a recorded chapter are measured in time; the device
+          voice has no timeline at all and is measured in paragraphs, which is
+          the same question — how far in, how much left — asked of the only
+          unit it has.
+
+          The bar alone there, with no numbers at its ends. "¶ 4" and "52" are
+          true and nobody wants them: a timecode is a thing a listener reaches
+          for — how long until this is over — and a paragraph ordinal is only
+          the machine explaining how it is counting. The length of the bar says
+          the useful half by itself. The screen reader still gets the numbers,
+          where a shape says nothing. */}
+      {device && source.kind === "device" ? (
+        <PillProgress
+          percent={
+            source.paras.length > 0
+              ? ((player.deviceParaIndex + 1) / source.paras.length) * 100
+              : 0
+          }
+          valueText={`Paragraph ${Math.min(
+            player.deviceParaIndex + 1,
+            source.paras.length
+          )} of ${source.paras.length}`}
+        />
+      ) : player.durationMs > 0 ? (
+        <PillProgress
+          percent={(player.positionMs / player.durationMs) * 100}
+          start={fmt(player.positionMs)}
+          end={fmt(player.durationMs)}
+          valueText={`${fmt(player.positionMs)} of ${fmt(player.durationMs)}`}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * How far in, and how far there is to go — **the pill's own floor**.
+ *
+ * The pill said what was playing and offered to move it, and never once said
+ * where in a ninety-minute recording it had got to. Audio Mode has the scrub
+ * bar, but that is a tap and a full screen away, and "how much of this is
+ * left" is the question a listener asks most often and can least afford to
+ * open a new surface for.
+ *
+ * A readout, not a scrubber. The pill is three finger-sized controls in a
+ * 62px-tall strip; a drag target three pixels high wedged between them would
+ * be a control that mostly misses, and the scrub bar that *is* draggable is
+ * one tap away on the title. So this reports, and the ends carry the numbers.
+ *
+ * It takes a percentage and, optionally, the two labels — because the two
+ * things it measures are not the same unit, and only one of them has ends
+ * worth printing. See the caller.
+ */
+function PillProgress({
+  percent,
+  start,
+  end,
+  valueText,
+}: {
+  percent: number;
+  /** the left end — where the listener is; omitted where that is not a time */
+  start?: string;
+  /** the right end — how much there is altogether */
+  end?: string;
+  valueText: string;
+}) {
+  const width = Math.min(100, Math.max(0, percent));
+
+  return (
+    <div className="mt-1.5 flex w-full items-center gap-2">
+      {start && (
+        <span className="shrink-0 text-xs font-medium tabular-nums text-white/70">{start}</span>
+      )}
+      <span
+        role="progressbar"
+        aria-label="Playback position"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(width)}
+        aria-valuetext={valueText}
+        className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-white/25"
+      >
+        <span className="block h-full rounded-full bg-white/90" style={{ width: `${width}%` }} />
+      </span>
+      {end && (
+        <span className="shrink-0 text-xs font-medium tabular-nums text-white/70">{end}</span>
+      )}
     </div>
   );
 }
