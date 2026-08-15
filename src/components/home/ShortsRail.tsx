@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PlayIcon } from "@/components/shell/icons";
 import { bookHue, coverGradient } from "@/lib/bookHue";
 import { contentLang } from "@/lib/script";
@@ -17,12 +18,11 @@ import { shortDuration, type Short } from "@/lib/shorts";
  * fewer — and with the feed live, an empty rail is also what a channel with no
  * shorts looks like.
  *
- * **The card leaves the app**, so it is an `<a target="_blank">` and not a
- * `Link` — the app's rule for anything that goes to another site (`HeroPill`,
- * the map links, the PDF fallback all do the same). `href` is the clip's
- * YouTube page because that is the only place it can be watched today; when
- * there is an in-app player this becomes a `Link` to it again, and `lib/shorts`
- * already carries the `embedUrl` and `isEmbeddable` such a player needs.
+ * The card opens our own player at `/shorts/{videoId}` — a `Link` like any other
+ * card here, because the clip plays inside the app. A clip the uploader has
+ * blocked from embedding goes to the same place: the player says so there and
+ * offers YouTube, rather than this rail having two kinds of card that look the
+ * same and behave differently.
  */
 export function ShortsRail({ shorts }: { shorts: Short[] }) {
   if (shorts.length === 0) return null;
@@ -33,10 +33,8 @@ export function ShortsRail({ shorts }: { shorts: Short[] }) {
         const t = contentLang(s.title);
         return (
           <li key={s.id} className="w-[9.5rem] shrink-0 snap-start">
-            <a
+            <Link
               href={s.href}
-              target="_blank"
-              rel="noopener noreferrer"
               className="group relative flex aspect-9/16 flex-col justify-end overflow-hidden rounded-card p-2.5 text-white shadow-card transition-shadow hover:shadow-raised"
               style={
                 s.poster
@@ -70,7 +68,7 @@ export function ShortsRail({ shorts }: { shorts: Short[] }) {
               >
                 {s.title}
               </span>
-            </a>
+            </Link>
           </li>
         );
       })}

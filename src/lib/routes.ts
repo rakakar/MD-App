@@ -19,6 +19,21 @@ export const READER_ROUTE = /^\/books\/[^/]+\/\d+$/;
 export const PDF_READER_ROUTE = /^\/library\/\d+\/read\/\d+$/;
 
 /**
+ * One short, and the swipe feed it sits in.
+ *
+ * The same rule as the readers, arrived at from the other direction: a 9:16 clip
+ * is *taller* than the screen it plays on, so every row of app chrome is taken
+ * out of the picture itself rather than from space beside it. The player carries
+ * its own close button, which is the only control it needs.
+ *
+ * **Deliberately absent from the pre-hydration theme script in
+ * `app/layout.tsx`.** That script decides whether to paint the reader's paper
+ * before React arrives; this screen is a black field with a video on it and has
+ * no use for sepia. Chrome is what it opts out of, not typography.
+ */
+export const SHORTS_ROUTE = /^\/shorts\/[^/]+$/;
+
+/**
  * One document, opened as the pages it was printed as.
  *
  * A file has no URL of its own in the API — it is only ever returned inside its
@@ -121,5 +136,8 @@ export function isReaderRoute(pathname: string | null | undefined): boolean {
  * belongs only to the one that renders text.
  */
 export function ownsViewport(pathname: string | null | undefined): boolean {
-  return isReaderRoute(pathname) || (!!pathname && PDF_READER_ROUTE.test(pathname));
+  return (
+    isReaderRoute(pathname) ||
+    (!!pathname && (PDF_READER_ROUTE.test(pathname) || SHORTS_ROUTE.test(pathname)))
+  );
 }

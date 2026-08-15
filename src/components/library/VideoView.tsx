@@ -8,58 +8,16 @@ import { savePlayhead } from "@/lib/personal";
 import { contentLang } from "@/lib/script";
 import { clearPlayhead, getPlayhead, setPlayhead } from "@/lib/storage";
 import type { LibraryFile } from "@/lib/types";
+import { loadIframeApi, type YouTubePlayer } from "@/lib/youtubeIframe";
 
 // Official YouTube IFrame Player API only (PRD §3.3) — never download or
-// extract YouTube audio.
-
-/**
- * Only what this file calls. `getCurrentTime` is the whole reason the IFrame
- * API is used rather than a bare `<iframe>`: a plain embed cannot say where the
- * viewer is, so a video could never keep its place the way a recording does.
- */
-interface YouTubePlayer {
-  getCurrentTime: () => number;
-  getDuration: () => number;
-}
-
-declare global {
-  interface Window {
-    YT?: {
-      Player: new (
-        el: HTMLElement,
-        opts: {
-          videoId: string;
-          playerVars?: Record<string, number | string>;
-          events?: {
-            onReady?: (e: { target: YouTubePlayer }) => void;
-            onStateChange?: (e: { data: number }) => void;
-          };
-        }
-      ) => YouTubePlayer;
-      PlayerState?: { PLAYING: number; PAUSED?: number; ENDED?: number };
-    };
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
-let apiPromise: Promise<void> | null = null;
-
-function loadIframeApi(): Promise<void> {
-  if (window.YT?.Player) return Promise.resolve();
-  if (!apiPromise) {
-    apiPromise = new Promise((resolve) => {
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        prev?.();
-        resolve();
-      };
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      document.head.appendChild(tag);
-    });
-  }
-  return apiPromise;
-}
+// extract YouTube audio. The loader and its typings moved to `lib/youtubeIframe`
+// when the shorts player became a second caller: the API has one global ready
+// hook, and two copies of the loader would race for it.
+//
+// `getCurrentTime` is the whole reason the IFrame API is used here rather than a
+// bare `<iframe>`: a plain embed cannot say where the viewer is, so a video
+// could never keep its place the way a recording does.
 
 /**
  * Which host a `video` file points at, and its id there.

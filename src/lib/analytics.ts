@@ -34,6 +34,10 @@ export type GaEvent =
   | "audio_mode_open"
   | "audio_track_play"
   | "video_play"
+  // A clip in the shorts feed actually starting — fired per clip swiped to, not
+  // per screen opened, because "how far down the feed do people get" is the one
+  // question this rail exists to answer.
+  | "short_play"
   | "search"
   // Expanding a result in place vs opening the book — the ratio tells us
   // whether readers can judge a passage from the list, or need its context.

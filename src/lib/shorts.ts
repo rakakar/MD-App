@@ -44,9 +44,11 @@ export interface Short {
 /**
  * One wire clip as the card wants it.
  *
- * `href` is the clip's YouTube page, because that is the only place it can be
- * watched today. **When there is an in-app player, this line is the only thing
- * that changes** — every other field it would need is already here.
+ * `href` is our own player at `/shorts/{videoId}` — **including for a clip the
+ * uploader has blocked from embedding.** Sending those straight to YouTube from
+ * the rail would mean two kinds of card that look identical and behave
+ * differently; the player has room to say "this one only plays on YouTube" and
+ * offer the link, and it is the only screen that knows enough to say it.
  */
 function toShort(clip: ShortClip): Short {
   return {
@@ -56,7 +58,7 @@ function toShort(clip: ShortClip): Short {
     seconds: clip.seconds ?? 0,
     // "" is how the BE says "no still yet"; the card's own branch is on null.
     poster: clip.poster || null,
-    href: clip.watch_url,
+    href: shortHref(clip.video_id),
     videoId: clip.video_id,
     embedUrl: clip.embed_url,
     watchUrl: clip.watch_url,
@@ -65,6 +67,22 @@ function toShort(clip: ShortClip): Short {
     channel: clip.channel,
   };
 }
+
+/** One clip in our own player. The feed it swipes through is fetched there. */
+export function shortHref(videoId: string): string {
+  return `/shorts/${videoId}`;
+}
+
+/**
+ * How many clips the swipe feed holds — the BE's own ceiling.
+ *
+ * The rail shows a dozen; the player is a feed somebody keeps flicking, and
+ * running out after twelve is the thing that would make it feel like a demo.
+ * There is no paging beyond this: a reader who swipes past sixty clips has
+ * watched an hour of them, and the honest fix then is a cursor on the endpoint,
+ * not a bigger number here.
+ */
+export const FEED_LIMIT = 60;
 
 /**
  * The clips for Home's Shorts rail, newest first (pinned ones ahead of them).
