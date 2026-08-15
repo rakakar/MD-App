@@ -5,7 +5,7 @@ import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueu
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { formatDuration } from "@/components/library/format";
 import { PlayIcon } from "@/components/shell/icons";
-import { KindTile, ListRow, RowCard } from "@/components/ui";
+import { KindTile } from "@/components/ui";
 import { contentLang } from "@/lib/script";
 import type { LibraryFile } from "@/lib/types";
 
@@ -27,6 +27,15 @@ function trackId(item: LibraryFile): string {
  * - **resume** — each part keeps its own playhead, so a 90-minute recording
  *   picks up where it stopped instead of starting again;
  * - speed and background playback, which the player already had.
+ *
+ * **The row is the video playlist's row.** These two lists are the same object
+ * — the parts of one recorded collection, in order, to pick up in the middle of
+ * — and they were drawn as two: a stack of bordered cards here against a flat
+ * playlist there, a duration in bold on the right against one under the title,
+ * and a "Resume · 12:04" that named a timecode where the video said what
+ * fraction was done. A reader crosses between an audio and a video collection
+ * in one tap from the same tab, and nothing about either kind justifies making
+ * them relearn the row.
  */
 export function AlbumAudio({
   items,
@@ -55,75 +64,114 @@ export function AlbumAudio({
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
 
   return (
-    // One card per track, as the Audio Album comp draws them, rather than the
-    // ruled list this was. The change that matters is not the gap: it is that
-    // the row now leads with the kind tile every other list in the app leads
-    // with, and ends with the duration, which is the one fact a reader picking
-    // a 90-minute part out of fourteen is actually choosing on. The track
-    // number it replaces was ordinal information the order already carried.
-    <ol className="flex flex-col gap-3">
+    <ol className="-mt-1 flex flex-col gap-1">
       {items.map((item) => {
         const key = trackId(item);
-        const active = activeId === key;
-        const resume = resumes[key];
         return (
           <li key={item.id}>
-            <RowCard>
-              <ListRow
-                onClick={() => {
-                  const entry = byId.get(key);
-                  if (entry) play(entry);
-                }}
-                label={`Play ${item.title}`}
-                leading={
-                  active ? (
-                    // The playing track keeps the tile's shape and takes the
-                    // accent: what is playing has to be findable in a list of
-                    // fourteen without reading any of it.
-                    <span
-                      aria-hidden
-                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-tile text-white"
-                      style={{ background: "var(--ws-color)" }}
-                    >
-                      <PlayIcon className="h-6 w-6" />
-                    </span>
-                  ) : (
-                    <KindTile kind="audio" size="lg" />
-                  )
-                }
-                title={item.title}
-                meta={
-                  <>
-                    {item.description && (
-                      <span
-                        {...contentLang(item.description)}
-                        className={`${contentLang(item.description).className} block`}
-                      >
-                        {item.description}
-                      </span>
-                    )}
-                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      {resume && (
-                        <span className="font-medium" style={{ color: "var(--ws-ink)" }}>
-                          Resume · {formatDuration(Math.round(resume / 1000))}
-                        </span>
-                      )}
-                      <ProvenanceBadge provenance={item.provenance} />
-                    </span>
-                  </>
-                }
-                trailing={
-                  formatDuration(item.duration_seconds) ? (
-                    <span className="text-sm font-semibold tabular-nums text-ink">
-                      {formatDuration(item.duration_seconds)}
-                    </span>
-                  ) : null
-                }
-              />
-            </RowCard>
+            <TrackRow
+              item={item}
+              active={activeId === key}
+              resumeMs={resumes[key] ?? 0}
+              onPlay={() => {
+                const entry = byId.get(key);
+                if (entry) play(entry);
+              }}
+            />
           </li>
         );
       })}
     </ol>
+  );
+}
+
+/**
+ * One recording in the album — tile, title, length, and how much of it is done.
+ *
+ * The percentage rather than the timecode "Resume · 12:04". A position is a
+ * fact about the file; a fraction is a fact about the reader, and it is the one
+ * being scanned for down a list of fourteen. The exact place is still what the
+ * player resumes from — nothing about the playhead changed, only what the row
+ * says about it.
+ */
+function TrackRow({
+  item,
+  active,
+  resumeMs,
+  onPlay,
+}: {
+  item: LibraryFile;
+  /** this is the track the player is on — the one thing a list of fourteen
+   *  must be able to say without being read */
+  active: boolean;
+  resumeMs: number;
+  onPlay: () => void;
+}) {
+  const t = contentLang(item.title);
+  const length = formatDuration(item.duration_seconds);
+  const percent = item.duration_seconds
+    ? Math.min(100, (resumeMs / 1000 / item.duration_seconds) * 100)
+    : 0;
+
+  return (
+    <button
+      type="button"
+      onClick={onPlay}
+      aria-label={`Play ${item.title}`}
+      className="group flex w-full items-start gap-3 rounded-card p-1 text-start transition-colors hover:bg-ink/[.04]"
+    >
+      {active ? (
+        // The playing track keeps the tile's shape and takes the accent: what
+        // is playing has to be findable in a list of fourteen without reading
+        // any of it.
+        <span
+          aria-hidden
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-tile text-white"
+          style={{ background: "var(--ws-color)" }}
+        >
+          <PlayIcon className="h-6 w-6" />
+        </span>
+      ) : (
+        <KindTile kind="audio" size="lg" />
+      )}
+
+      <span className="min-w-0 flex-1 py-0.5">
+        <span
+          {...t}
+          className={`${t.className} hi-tight line-clamp-2 text-sm font-semibold group-hover:underline`}
+        >
+          {item.title}
+        </span>
+        {item.description && (
+          <span
+            {...contentLang(item.description)}
+            className={`${contentLang(item.description).className} mt-1 line-clamp-1 text-xs text-ink-soft`}
+          >
+            {item.description}
+          </span>
+        )}
+        {/* The length, and whose word it is where that differs from the folder.
+            Under the title rather than out at the right margin: the video row
+            carries its length on the poster, and a column of bold numbers on
+            the far edge made the two lists read as different kinds of thing. */}
+        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
+          {length && <span className="tabular-nums">{length}</span>}
+          <ProvenanceBadge provenance={item.provenance} />
+        </span>
+        {percent > 1 && (
+          <span className="mt-1.5 flex items-center gap-2">
+            <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-ink/10">
+              <span
+                className="block h-full rounded-full bg-(--ws-ink)"
+                style={{ width: `${percent}%` }}
+              />
+            </span>
+            <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
+              {Math.round(percent)}% listened
+            </span>
+          </span>
+        )}
+      </span>
+    </button>
   );
 }
