@@ -23,6 +23,13 @@ export interface YouTubePlayer {
   unMute?: () => void;
   isMuted?: () => boolean;
   getPlayerState?: () => number;
+  /**
+   * Hands a new video to a player that is already running — and the reason the
+   * shorts feed keeps one player rather than building one per clip: a phone
+   * grants permission to play to the player, not to the page, so a player built
+   * after a swipe has none and stops on YouTube's idle screen.
+   */
+  loadVideoById?: (video: { videoId: string; startSeconds?: number }) => void;
   /** frees the iframe; the element passed at construction is already gone */
   destroy?: () => void;
 }

@@ -11,85 +11,92 @@ import { loadIframeApi, type YouTubePlayer } from "@/lib/youtubeIframe";
 /**
  * **The shorts feed — one clip on screen, the next one a swipe away.**
  *
- * A vertical scroll-snap column, one clip per screen, with **exactly one player
- * alive at a time**: the clip you are looking at. Every other slide is its own
- * still. That is not a memory optimisation dressed up as design — sixty YouTube
- * iframes would each open their own connections and start their own buffers, and
- * a feed that took a phone's whole network to show one clip would stutter
- * precisely while being swiped.
+ * A vertical scroll-snap column, one clip per screen, over **one player that
+ * lives for the whole screen** and is handed a new video as the feed moves.
+ * Every slide is its own still; the player is a single element floating above
+ * them, on whichever slide is current.
+ *
+ * **That the player is reused is the load-bearing decision.** Building a fresh
+ * one per clip is the obvious shape and it fails on a phone: iOS grants
+ * permission to play to a *player*, not to a page, so the second clip — built
+ * after the swipe, with no tap of its own — sat there showing YouTube's idle
+ * screen and its red Shorts button until it was tapped. One player keeps the
+ * permission the first clip earned, and `loadVideoById` starts the next video
+ * inside it.
+ *
+ * **The player is only on screen while it is actually playing.** Underneath is
+ * the slide's own still, which is what shows while a video is loading, while
+ * the feed is being swiped, and while it is paused. That is not a nicety: the
+ * one thing `controls: 0` cannot take off a YouTube embed is the idle state —
+ * the title, the channel, the share arrow and the red Shorts mark it draws
+ * before it starts — and the only way to keep them off this screen is to not
+ * show the player until there is a picture in it.
  *
  * **Swiping is the browser's own scroll**, not a gesture handler. Scroll-snap
  * gives momentum, rubber-banding, trackpads, mouse wheels, arrow keys, screen
- * readers and page-up all at once, and every hand-written swipe recogniser gives
- * back a worse version of the first two and none of the rest.
+ * readers and page-up all at once, and every hand-written swipe recogniser
+ * gives back a worse version of the first two and none of the rest.
  *
- * **It plays by itself, muted, and asks once for sound.** A feed that opens on
- * a still with a play button in the middle of it is not a feed. Browsers will
- * always autoplay a muted video and will not reliably autoplay an audible one,
- * so the clip starts silent and the first tap anywhere turns the sound on — for
- * that clip and every one after it, since the choice is remembered for the
- * session. These are people speaking, so the offer is on screen the whole time
- * it is silent rather than being something to discover.
- *
- * **Nothing of YouTube's is on the picture.** `controls: 0` takes the bar, the
- * title, the channel and the Watch-on-YouTube button off it: this screen exists
- * so that a clip can be watched *here*, and a permanent link out of it is the
- * one thing on it that contradicts that. What that removes has to be given back
- * in our own terms, so a tap on the picture is play/pause and the caption sits
- * over the foot of it — which it now can, having lost the control bar it used
- * to collide with.
+ * **It plays by itself, muted, and asks once for sound.** Browsers will always
+ * autoplay a muted video and will not reliably autoplay an audible one, so the
+ * clip starts silent and the first tap turns the sound on — for that clip and
+ * every one after it.
  *
  * **One ends, the next begins.** The clip does not loop; on its last frame the
- * feed scrolls itself on, which is what makes this something a reader can put
- * down and keep watching rather than a thing to keep swiping.
+ * feed scrolls itself on, which is what makes this something to be carried by
+ * rather than a thing to keep swiping.
  */
-
 export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex: number }) {
   const router = useRouter();
   const scroller = useRef<HTMLDivElement | null>(null);
   const host = useRef<HTMLDivElement | null>(null);
   const player = useRef<YouTubePlayer | null>(null);
   const [active, setActive] = useState(startIndex);
+
+  /**
+   * The player has a picture in it — it has reported PLAYING for the clip now
+   * on screen. Until then the still is what is shown, which is how YouTube's
+   * idle screen is kept off this one.
+   */
+  const [started, setStarted] = useState(false);
+  /** paused by the viewer, after it had started — the frame stays on screen */
+  const [paused, setPaused] = useState(false);
+  /** mid-swipe: the player is a fixed element and does not travel with the slides */
+  const [scrolling, setScrolling] = useState(false);
   /** the player is up but the browser refused to start it even muted */
   const [blocked, setBlocked] = useState(false);
+
   /**
    * Sound, once asked for, stays on for the rest of the session — a viewer who
    * turned it on for one clip has said what they want from the feed, and asking
-   * again at every swipe would be a tap per clip.
+   * again at every swipe would be a tap per clip. Held as a ref as well, so the
+   * player's own callbacks can read it without being rebuilt.
    */
   const [sound, setSound] = useState(false);
-  /**
-   * The same answer, readable from inside the player effect without being one
-   * of its dependencies. Turning the sound on must *not* rebuild the player —
-   * that would restart the clip from zero at the exact moment the viewer asked
-   * to hear it — so the live player is unmuted in place and only the next one
-   * is constructed differently.
-   */
   const soundRef = useRef(false);
-  const [paused, setPaused] = useState(false);
+
   /** how far through the clip on screen is, 0–1 */
   const [progress, setProgress] = useState(0);
+
   /**
-   * The clip's true shape, so the picture can be made to *cover* the screen.
+   * The clip's true shape.
    *
-   * A short is not always 9:16. This channel's are square — the portrait on
-   * black, 1080×1080 — and YouTube fits a video into whatever box it is given,
-   * so a square clip in a 9:16 box is a square with a black band above and
-   * below it, which is exactly the letterboxing this screen exists not to have.
-   * Sizing the box by the clip's own ratio instead means the picture always
-   * fills the screen and the crop falls on the parts a centred subject can
-   * spare.
+   * A short is not always 9:16 — this channel's are square, a portrait on black
+   * — and YouTube fits a video into whatever box it is given. Sizing the box by
+   * the clip's own ratio is what puts the picture at the screen's full width
+   * with its whole frame intact, rather than inside margins of our making.
    *
    * Measured from `oardefault.jpg`, YouTube's *original aspect ratio* still,
-   * which the feed is already loading for the slide. 9:16 until it answers,
-   * which is the shape most shorts are and the one that crops least if it is
-   * wrong.
+   * which the feed is already loading for the slide.
    */
   const [ratio, setRatio] = useState(9 / 16);
   /** hidden the moment they move: it is an instruction, not a label */
   const [showHint, setShowHint] = useState(clips.length > 1);
 
   const clip = clips[active];
+  const playable = clip?.isEmbeddable ?? false;
+  /** the picture is up, so the still beneath it can be covered */
+  const showPlayer = started && !scrolling && playable;
 
   // Land on the clip that was tapped. Instant, not animated: this is where the
   // screen starts, and scrolling to it would look like it had scrolled away —
@@ -127,32 +134,25 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
     return () => io.disconnect();
   }, [clips.length]);
 
-  /** how far to scroll the feed, in whole screens */
-  const stepRef = useRef<(by: number) => void>(() => {});
-
-  /**
-   * How far through the clip is — polled, because the IFrame API has no event
-   * for it.
-   *
-   * Four times a second, which is finer than the eye reads a 3px line and far
-   * cheaper than the animation frame a smoother bar would cost. One timer for
-   * the whole feed, not one per slide: only the clip on screen has a player,
-   * and the bar is only drawn there.
-   */
+  // Whether the feed is moving. The player is one fixed element rather than a
+  // child of a slide, so during a swipe it would hang in the middle of the
+  // screen while the pictures slid past it; hidden, the slides' own stills do
+  // the travelling and it reappears when the feed settles.
   useEffect(() => {
-    setProgress(0);
-    const id = setInterval(() => {
-      const p = player.current;
-      if (!p) return;
-      // The player's own length where it has one, the BE's seconds until it
-      // does — so the bar is honest from the first tick rather than sitting at
-      // zero while the video loads.
-      const total = p.getDuration?.() || clips[active]?.seconds || 0;
-      const at = p.getCurrentTime?.() ?? 0;
-      if (total > 0) setProgress(Math.min(1, at / total));
-    }, 250);
-    return () => clearInterval(id);
-  }, [active, clips]);
+    const el = scroller.current;
+    if (!el) return;
+    let idle: ReturnType<typeof setTimeout> | null = null;
+    const onScroll = () => {
+      setScrolling(true);
+      if (idle !== null) clearTimeout(idle);
+      idle = setTimeout(() => setScrolling(false), 140);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (idle !== null) clearTimeout(idle);
+    };
+  }, []);
 
   // The shape of the clip now on screen, from its own still.
   useEffect(() => {
@@ -175,21 +175,24 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
     };
   }, [active, clips]);
 
-  // The one live player, rebuilt whenever the clip on screen changes.
+  /** how far to scroll the feed, in whole screens — set below, called from the
+   *  player's own callbacks, which are built once and outlive any one clip */
+  const stepRef = useRef<(by: number) => void>(() => {});
+
+  // **The player, built once for the screen.** Not per clip: see the note at
+  // the top of the file — a player built after a swipe has no permission to
+  // play and stops dead on iOS.
   useEffect(() => {
-    const current = clips[active];
-    const mount = host.current;
-    if (!current || !current.isEmbeddable || !mount) return;
+    const first = clips[startIndex];
+    if (!first?.isEmbeddable || !host.current) return;
 
     let cancelled = false;
     let watchdog: ReturnType<typeof setTimeout> | null = null;
-    setBlocked(false);
-    setPaused(false);
 
     void loadIframeApi().then(() => {
       if (cancelled || !window.YT || !host.current) return;
       player.current = new window.YT.Player(host.current, {
-        videoId: current.videoId,
+        videoId: first.videoId,
         playerVars: {
           autoplay: 1,
           // Muted unless the viewer has already asked for sound. This is the
@@ -201,10 +204,8 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
           playsinline: 1,
           rel: 0,
           modestbranding: 1,
-          // Nothing of YouTube's over the picture: no control bar, no title,
-          // no channel, no Watch-on-YouTube, no annotations, no keyboard
-          // shortcuts belonging to a player the viewer cannot see. Play and
-          // pause come back as a tap on the picture, below.
+          // Nothing of YouTube's over the picture *while it plays*; its idle
+          // screen is dealt with by not showing the player until it does.
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -212,7 +213,6 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
         },
         events: {
           onReady: (e) => {
-            if (soundRef.current) e.target.unMute?.();
             e.target.playVideo?.();
             // Blocked autoplay looks exactly like slow autoplay for the first
             // moment, so the overlay waits to be sure rather than flashing on
@@ -221,18 +221,19 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
               if (cancelled) return;
               const playing = window.YT?.PlayerState?.PLAYING ?? 1;
               if (e.target.getPlayerState?.() !== playing) setBlocked(true);
-            }, 1500);
+            }, 2000);
           },
           onStateChange: (e) => {
             const states = window.YT?.PlayerState;
             if (e.data === (states?.PLAYING ?? 1)) {
               setBlocked(false);
               setPaused(false);
-              track("short_play", { id: current.videoId });
+              setStarted(true);
+              track("short_play");
             } else if (e.data === (states?.PAUSED ?? 2)) {
               setPaused(true);
             } else if (e.data === (states?.ENDED ?? 0)) {
-              // On to the next one by itself. The clip no longer loops: a feed
+              // On to the next one by itself. The clip does not loop: a feed
               // that repeats the same sixty seconds asks the viewer to decide
               // when to leave it, and the whole point of the form is that it
               // carries them.
@@ -246,11 +247,46 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
     return () => {
       cancelled = true;
       if (watchdog !== null) clearTimeout(watchdog);
-      // Frees the iframe and stops the audio. Without it the clip you swiped
-      // away from keeps talking underneath the one you are watching.
       player.current?.destroy?.();
       player.current = null;
     };
+    // Once. `startIndex` is the address this screen was opened at and does not
+    // change under it; every later clip arrives through `loadVideoById` below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // The clip on screen, handed to the player that is already running. Hiding it
+  // first is what keeps YouTube's loading screen — red button and all — from
+  // being the thing a swipe reveals.
+  useEffect(() => {
+    const current = clips[active];
+    if (!current?.isEmbeddable) return;
+    setStarted(false);
+    setPaused(false);
+    setProgress(0);
+    const p = player.current;
+    if (!p?.loadVideoById) return;
+    p.loadVideoById({ videoId: current.videoId });
+    if (!soundRef.current) p.mute?.();
+  }, [active, clips]);
+
+  /**
+   * How far through the clip is — polled, because the IFrame API has no event
+   * for it. Four times a second, which is finer than the eye reads a 3px line
+   * and far cheaper than the animation frame a smoother bar would cost.
+   */
+  useEffect(() => {
+    const id = setInterval(() => {
+      const p = player.current;
+      if (!p) return;
+      // The player's own length where it has one, the BE's seconds until it
+      // does — so the bar is honest from the first tick rather than sitting at
+      // zero while the video loads.
+      const total = p.getDuration?.() || clips[active]?.seconds || 0;
+      const at = p.getCurrentTime?.() ?? 0;
+      if (total > 0) setProgress(Math.min(1, at / total));
+    }, 250);
+    return () => clearInterval(id);
   }, [active, clips]);
 
   const step = useCallback((by: number) => {
@@ -307,15 +343,18 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
       if (e.key === "Escape") close();
       else if (e.key === "ArrowDown" || e.key === "PageDown") {
         e.preventDefault();
-        step(1);
+        stepOrReplay(1);
       } else if (e.key === "ArrowUp" || e.key === "PageUp") {
         e.preventDefault();
-        step(-1);
+        stepOrReplay(-1);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [close, step]);
+  }, [close, stepOrReplay]);
+
+  /** the stage: the screen on a phone, a phone-shaped column on a desktop */
+  const stage = "relative h-dvh w-full max-w-[calc(100dvh*9/16)]";
 
   return (
     <div className="fixed inset-0 z-50 bg-black text-white">
@@ -330,30 +369,17 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
             aria-label={c.title}
             className="relative flex h-dvh snap-start items-center justify-center overflow-hidden"
           >
-            {/*
-              **The whole clip, across the whole width.**
+            <div className={stage}>
+              {/*
+                The still — and on this screen it is not a placeholder. It is
+                what shows while a clip loads, while the feed is being swiped
+                and while it is paused, which between them are every moment the
+                player is not to be seen.
 
-              These are not 9:16 clips — this channel's are square, a portrait on
-              black — and there is no way to fill a phone screen with a square
-              picture except by throwing a third of it away. The face is the
-              subject: cropping to fit would take the top of his head off to
-              avoid two bands of the black the picture is mostly made of.
-
-              So it is as wide as the screen and as tall as its own ratio makes
-              it, centred, whole. A clip that really is 9:16 fills the screen
-              exactly — the width gives it the height. What is left above and
-              below is the black this screen is anyway.
-            */}
-            {/* The stage. On a phone it *is* the screen; on a desktop window it
-                is a phone-shaped column in the middle of one, because a square
-                clip made to cover a 1280px window would be cropped to a band
-                across the middle of itself. Everything below — picture, tap
-                layer, caption — lives inside it, so the words stay with the
-                picture at every width. */}
-            <div className="relative h-dvh w-full max-w-[calc(100dvh*9/16)] overflow-hidden">
-              {/* The still, under everything: it is what the clip looks like
-                  before its player exists, and what it looks like on the slides
-                  that have none. */}
+                Contained, like the player above it: these clips are square, and
+                cropping to fill would take the top of his head off to avoid
+                bands of the black the picture is mostly made of.
+              */}
               {c.poster && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -364,150 +390,146 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
                   // which fetches the ones near the viewport and no more —
                   // except the one being opened, which is wanted now.
                   loading={i === startIndex ? "eager" : "lazy"}
-                  // Contained, like the player it stands in for — a still that
-                  // filled the screen would jump to a smaller picture the moment
-                  // the video arrived.
                   className="absolute inset-0 h-full w-full object-contain"
                 />
               )}
 
+              {/* A clip its uploader has blocked from embedding. It stays in the
+                  feed — hiding it would leave a gap nobody could explain — and
+                  says what it is instead of failing silently. This is the one
+                  place a link out is the whole answer. */}
+              {!c.isEmbeddable && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/55 px-8 text-center">
+                  <p className="text-sm text-white/80">This clip can only be played on YouTube.</p>
+                  <a
+                    href={c.watchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white px-5 font-semibold text-black"
+                  >
+                    Watch on YouTube <span aria-hidden>↗</span>
+                  </a>
+                </div>
+              )}
+
+              {/*
+                The picture is also the button — play, pause, and the first tap
+                of all, which is the one that turns the sound on. It sits over
+                the player on purpose twice over: `controls: 0` leaves nothing
+                to press, and an iframe swallows the drag of a swipe, so the
+                feed scrolls far better with a layer of our own on top of it.
+              */}
               {i === active && c.isEmbeddable && (
-                // Wrapped, and keyed on the clip. The IFrame API *replaces* the
-                // element it is given, so React must only ever be asked to
-                // remove this wrapper — never the node that is no longer there.
-                <div
-                  key={c.videoId}
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                  style={{
-                    // The stage's full width, unless the clip is tall enough
-                    // that its own height would then overflow — in which case
-                    // the height decides. Either way the whole frame is on
-                    // screen.
-                    width: `min(100%, calc(100dvh * ${ratio}))`,
-                    aspectRatio: `${ratio}`,
-                  }}
+                <button
+                  type="button"
+                  onClick={tap}
+                  aria-label={
+                    sound ? (paused ? `Play ${c.title}` : `Pause ${c.title}`) : "Turn on sound"
+                  }
+                  className="absolute inset-0 z-20 h-full w-full"
                 >
-                  <div ref={host} className="h-full w-full" />
-                  {/*
-                    **The lid**, and it belongs to the picture rather than to the
-                    screen. YouTube writes its title and channel across the top
-                    of *the player*, which with bands above and below is not the
-                    top of the screen — a scrim pinned to the window would cover
-                    black and leave the title showing on the picture underneath
-                    it. Opaque where their strip sits, fading out below it.
-                  */}
+                  {(paused || blocked) && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black">
+                        <PlayIcon className="h-7 w-7" />
+                      </span>
+                    </span>
+                  )}
+                  {/* Said out loud while it is silent, rather than left to be
+                      discovered: these are people talking, and a viewer who does
+                      not know the sound is one tap away is watching a mime. */}
+                  {!sound && !paused && !blocked && (
+                    <span className="absolute left-1/2 top-[calc(1.25rem+env(safe-area-inset-top))] -translate-x-1/2 rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm">
+                      Tap for sound
+                    </span>
+                  )}
+                </button>
+              )}
+
+              {/*
+                How far through, along the very foot of the screen — under the
+                caption rather than over the picture, which is where a feed puts
+                it and where it can be read without being looked at. A readout,
+                not a scrubber: a 3px drag target under a thumb that is there to
+                swipe would be a control that mostly misfires.
+              */}
+              {i === active && c.isEmbeddable && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-[3px] bg-white/20"
+                >
                   <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-black via-black/85 to-transparent"
+                    className="h-full bg-white/90 transition-[width] duration-200 ease-linear"
+                    style={{ width: `${Math.round(progress * 1000) / 10}%` }}
                   />
                 </div>
               )}
 
-            {/* A clip its uploader has blocked from embedding. It stays in the
-                feed — hiding it would leave a gap nobody could explain — and
-                says what it is instead of failing silently. This is the one
-                place a link out is the whole answer. */}
-            {!c.isEmbeddable && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/55 px-8 text-center">
-                <p className="text-sm text-white/80">This clip can only be played on YouTube.</p>
-                <a
-                  href={c.watchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white px-5 font-semibold text-black"
+              {/* Over the foot of the picture. Always mounted, the hint faded
+                  rather than removed: taking it out would re-centre everything
+                  above it the moment they scroll. */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-10">
+                <p
+                  {...contentLang(c.title)}
+                  className={`${contentLang(c.title).className} hi-tight line-clamp-2 text-base font-semibold`}
                 >
-                  Watch on YouTube <span aria-hidden>↗</span>
-                </a>
+                  {c.title}
+                </p>
+                <p
+                  className={`mt-1.5 text-xs text-white/55 transition-opacity ${
+                    showHint ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  Swipe up for the next one
+                </p>
               </div>
-            )}
-
-            {/*
-              The picture is also the button — play, pause, and the first tap of
-              all, which is the one that turns the sound on. It sits over the
-              iframe on purpose twice over: `controls: 0` left the player with
-              nothing to press, and an iframe swallows the drag of a swipe, so
-              the feed scrolls far better with a layer of our own on top of it.
-            */}
-            {i === active && c.isEmbeddable && (
-              <button
-                type="button"
-                onClick={tap}
-                aria-label={sound ? (paused ? `Play ${c.title}` : `Pause ${c.title}`) : "Turn on sound"}
-                className="absolute inset-0 z-10 h-full w-full"
-              >
-                {(paused || blocked) && (
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black">
-                      <PlayIcon className="h-7 w-7" />
-                    </span>
-                  </span>
-                )}
-                {/* Said out loud while it is silent, rather than left to be
-                    discovered: these are people talking, and a viewer who does
-                    not know the sound is one tap away is watching a mime. */}
-                {!sound && !paused && !blocked && (
-                  <span className="absolute left-1/2 top-[calc(1.25rem+env(safe-area-inset-top))] -translate-x-1/2 rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm">
-                    Tap for sound
-                  </span>
-                )}
-              </button>
-            )}
-
-            {/*
-              How far through, along the very foot of the screen — under the
-              caption rather than over the picture, which is where a feed puts
-              it and where it can be read without being looked at. A readout,
-              not a scrubber: a 3px drag target under a thumb that is there to
-              swipe would be a control that mostly misfires, and the clip is a
-              minute long.
-            */}
-            {i === active && c.isEmbeddable && (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-[3px] bg-white/20"
-              >
-                <div
-                  className="h-full bg-white/90 transition-[width] duration-200 ease-linear"
-                  style={{ width: `${Math.round(progress * 1000) / 10}%` }}
-                />
-              </div>
-            )}
-
-            {/* Over the foot of the picture now, not in a strip below it. The
-                strip existed because YouTube's control bar sat here and won
-                every argument about the space; with the controls gone the words
-                can be where the form puts them, on a scrim dark enough to hold
-                them against any frame. */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-10">
-              <p
-                {...contentLang(c.title)}
-                className={`${contentLang(c.title).className} hi-tight line-clamp-2 text-base font-semibold`}
-              >
-                {c.title}
-              </p>
-              {/* Always mounted, faded rather than removed: taking it out would
-                  re-centre everything above it the moment they scroll. */}
-              <p
-                className={`mt-1.5 text-xs text-white/55 transition-opacity ${
-                  showHint ? "opacity-100" : "opacity-0"
-                }`}
-              >
-                Swipe up for the next one
-              </p>
-            </div>
             </div>
           </section>
         ))}
       </div>
 
-      {/* Chrome, above the scroller so it stays put while the feed moves. */}
+      {/*
+        **The player itself** — one element for the whole screen, over whichever
+        slide is current. `pointer-events-none`, so the tap layer on the slide
+        below owns every touch; invisible until it has a picture, so YouTube's
+        idle screen is never what a swipe reveals.
+      */}
+      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+        <div className={`${stage} overflow-hidden`}>
+          <div
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-150 ${
+              showPlayer ? "opacity-100" : "opacity-0"
+            }`}
+            style={{
+              // The stage's full width, unless the clip is tall enough that its
+              // own height would then overflow — in which case the height
+              // decides. Either way the whole frame is on screen.
+              width: `min(100%, calc(100dvh * ${ratio}))`,
+              aspectRatio: `${ratio}`,
+            }}
+          >
+            <div ref={host} className="h-full w-full" />
+            {/*
+              **The lid**, and it belongs to the picture rather than to the
+              screen. YouTube writes its title and channel across the top of
+              *the player*, which with bands above and below is not the top of
+              the screen — a scrim pinned to the window would cover black and
+              leave the title showing on the picture underneath it.
+            */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black via-black/85 to-transparent"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Chrome, above everything, so it stays put while the feed moves. */}
       <button
         type="button"
         onClick={close}
         aria-label="Close"
-        /* Above the slides' own scrims (`z-10`), which sit above the player's
-           compositing layer: three levels, and the way out is the top one. */
-        className="absolute right-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm"
+        className="absolute right-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm"
       >
         <CloseIcon className="h-5 w-5" />
       </button>
