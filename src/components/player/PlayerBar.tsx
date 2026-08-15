@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CloseIcon,
   PauseIcon,
@@ -10,7 +10,14 @@ import {
   SkipForwardIcon,
 } from "@/components/shell/icons";
 import { ownsViewport } from "@/lib/routes";
-import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
+import { SKIP_SECONDS, usePlayer, type PlayerSource } from "./PlayerProvider";
+
+/**
+ * How long the pill takes to leave — the same 280ms its entrance takes, and
+ * the number the stylesheet animates over. Kept here because the pill has to
+ * stay mounted for exactly that long after the player has already stopped.
+ */
+const LEAVE_MS = 280;
 
 
 
@@ -20,11 +27,41 @@ import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
  */
 export function PlayerBar() {
   const player = usePlayer();
-  if (!player.source) return null;
-  return <PlayerBarInner />;
+  // The last thing that was playing, kept so the pill has something to draw
+  // while it leaves: `close` clears the source in the same tick, and a pill
+  // whose title vanished mid-slide would be a strip of empty ground sliding
+  // off the screen.
+  const last = useRef<PlayerSource | null>(null);
+  if (player.source) last.current = player.source;
+
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (player.source) {
+      setLeaving(false);
+      return;
+    }
+    if (!last.current) return;
+    setLeaving(true);
+    const timer = setTimeout(() => {
+      last.current = null;
+      setLeaving(false);
+    }, LEAVE_MS);
+    return () => clearTimeout(timer);
+  }, [player.source]);
+
+  const source = player.source ?? (leaving ? last.current : null);
+  if (!source) return null;
+  return <PlayerBarInner source={source} leaving={leaving} />;
 }
 
-function PlayerBarInner() {
+function PlayerBarInner({
+  source,
+  /** stopped, and on its way out — see `PlayerBar` */
+  leaving,
+}: {
+  source: PlayerSource;
+  leaving: boolean;
+}) {
   const player = usePlayer();
   const router = useRouter();
   const barRef = useRef<HTMLDivElement>(null);
@@ -58,9 +95,6 @@ function PlayerBarInner() {
       document.documentElement.style.setProperty("--player-float-h", "0px");
     };
   }, [reader]);
-
-  const { source } = player;
-  if (!source) return null;
 
   const device = source.kind === "device";
   /**
@@ -124,10 +158,15 @@ function PlayerBarInner() {
       // its entrance replays. It stays mounted the whole time Audio Mode is
       // up — merely covered — so without this it would simply be revealed.
       key={player.audioModeOpen ? "expanded" : "collapsed"}
+      // Nothing to press on the way out: the source is already gone, so the
+      // controls would be acting on a player that has stopped.
+      inert={leaving || undefined}
       // `player-pill` carries the ground — see globals; the equaliser is
       // painted there rather than here because it is six gradient layers and
       // a sweep, which is a stylesheet's job and not a class list's.
-      className="player-pill player-pill-in fixed inset-x-3 z-40 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-white shadow-raised lg:left-[15.75rem]"
+      className={`player-pill ${
+        leaving ? "player-pill-out" : "player-pill-in"
+      } fixed inset-x-3 z-40 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-white shadow-raised lg:left-[15.75rem]`}
       style={{
         // Inside a book it clears the reader's own bottom bar; everywhere else
         // it clears the tab bar. Same pill, one number apart — on a desktop

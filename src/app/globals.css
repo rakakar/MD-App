@@ -1004,17 +1004,51 @@ html[data-reading="1"] body {
     opacity: 0;
   }
 }
+/* The pill arriving, and leaving.
+ *
+ * It used to rise 35% of its own height over 200ms, which at a 62px pill is
+ * 22px in a fifth of a second — near enough to instant that it read as the
+ * thing having simply appeared. It now comes from below the floor it sits on:
+ * its whole height plus the gap under it, far enough that the eye catches the
+ * direction, over 280ms on the same decelerating curve the sheets use.
+ *
+ * Leaving is the entrance run backwards, and the reason `PlayerBar` keeps the
+ * pill mounted for `LEAVE_MS` after the player has already stopped. Stopping
+ * used to be a frame: press the cross and a lit strip at the foot of the
+ * screen was simply not there any more, which is the one transition in this
+ * app a reader is guaranteed to be looking straight at.
+ *
+ * `translate`/`scale` rather than `transform`, so nothing here fights the
+ * pill's own transform if it ever gets one. */
 .player-pill-in {
-  animation: player-pill-up 0.2s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: player-pill-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+.player-pill-out {
+  animation: player-pill-down 0.28s cubic-bezier(0.4, 0, 0.8, 0.4) 1;
+  animation-fill-mode: forwards;
 }
 @keyframes player-pill-up {
   from {
-    transform: translateY(35%) scale(0.96);
+    translate: 0 calc(100% + 1rem);
+    scale: 0.98;
     opacity: 0;
   }
   to {
-    transform: translateY(0) scale(1);
+    translate: 0 0;
+    scale: 1;
     opacity: 1;
+  }
+}
+@keyframes player-pill-down {
+  from {
+    translate: 0 0;
+    scale: 1;
+    opacity: 1;
+  }
+  to {
+    translate: 0 calc(100% + 1rem);
+    scale: 0.98;
+    opacity: 0;
   }
 }
 
@@ -1023,7 +1057,8 @@ html[data-reading="1"] body {
   .ws-sheet,
   .ws-sheet-backdrop,
   .audio-mode-out,
-  .player-pill-in {
+  .player-pill-in,
+  .player-pill-out {
     animation: none;
   }
   /* chrome still hides, it just stops sliding */

@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueue";
-import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { formatDuration } from "@/components/library/format";
 import { PlayIcon } from "@/components/shell/icons";
 import { KindTile } from "@/components/ui";
@@ -150,14 +149,17 @@ function TrackRow({
             {item.description}
           </span>
         )}
-        {/* The length, and whose word it is where that differs from the folder.
-            Under the title rather than out at the right margin: the video row
-            carries its length on the poster, and a column of bold numbers on
-            the far edge made the two lists read as different kinds of thing. */}
-        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
-          {length && <span className="tabular-nums">{length}</span>}
-          <ProvenanceBadge provenance={item.provenance} />
-        </span>
+        {/* The length alone. Under the title rather than out at the right
+            margin: the video row carries its length on the poster, and a column
+            of bold numbers on the far edge made the two lists read as different
+            kinds of thing.
+
+            No provenance badge. Every part of a collection inherits the
+            collection's, so it printed "Original" fourteen times down one
+            screen to say something the hero had already said — and the video
+            row beside it says it none. Where a borrowed file really does
+            disagree, its breadcrumb is what marks it. */}
+        {length && <span className="mt-1 block text-xs tabular-nums text-ink-soft">{length}</span>}
         {percent > 1 && (
           <span className="mt-1.5 flex items-center gap-2">
             <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-ink/10">
