@@ -31,25 +31,29 @@ export function PlayerBar() {
   // while it leaves: `close` clears the source in the same tick, and a pill
   // whose title vanished mid-slide would be a strip of empty ground sliding
   // off the screen.
-  const last = useRef<PlayerSource | null>(null);
-  if (player.source) last.current = player.source;
-
+  //
+  // State rather than a ref, because a ref would have to be written during
+  // render to be ready in the same paint — and a render that writes is a
+  // render React is allowed to throw away and redo.
+  const [last, setLast] = useState<PlayerSource | null>(null);
   const [leaving, setLeaving] = useState(false);
+
   useEffect(() => {
     if (player.source) {
+      setLast(player.source);
       setLeaving(false);
       return;
     }
-    if (!last.current) return;
+    if (!last) return;
     setLeaving(true);
     const timer = setTimeout(() => {
-      last.current = null;
+      setLast(null);
       setLeaving(false);
     }, LEAVE_MS);
     return () => clearTimeout(timer);
-  }, [player.source]);
+  }, [player.source, last]);
 
-  const source = player.source ?? (leaving ? last.current : null);
+  const source = player.source ?? (leaving ? last : null);
   if (!source) return null;
   return <PlayerBarInner source={source} leaving={leaving} />;
 }
