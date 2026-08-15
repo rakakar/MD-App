@@ -1039,6 +1039,47 @@ html[data-reading="1"] body {
     opacity: 1;
   }
 }
+/* The full-screen video, arriving and leaving — the pill's motion at the size
+ * of the window.
+ *
+ * Same 280ms and the same pair of curves, because they are the same gesture:
+ * a thing that was not there comes up from the foot of the screen and goes
+ * back down the way it came. A full-screen panel appearing in one frame is
+ * the harshest cut in the app — it is the whole window — and it left a reader
+ * unsure for a beat whether they had opened something or the page had
+ * navigated.
+ *
+ * The panel moves as a whole rather than fading its ground and sliding its
+ * contents: the ground *is* the object here, and a black field fading up over
+ * a bright shelf is a flash rather than an entrance. */
+.video-stage-in {
+  animation: video-stage-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+.video-stage-out {
+  animation: video-stage-down 0.28s cubic-bezier(0.4, 0, 0.8, 0.4) 1;
+  animation-fill-mode: forwards;
+}
+@keyframes video-stage-up {
+  from {
+    translate: 0 100%;
+    opacity: 0.4;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+@keyframes video-stage-down {
+  from {
+    translate: 0 0;
+    opacity: 1;
+  }
+  to {
+    translate: 0 100%;
+    opacity: 0.4;
+  }
+}
+
 @keyframes player-pill-down {
   from {
     translate: 0 0;
@@ -1058,7 +1099,9 @@ html[data-reading="1"] body {
   .ws-sheet-backdrop,
   .audio-mode-out,
   .player-pill-in,
-  .player-pill-out {
+  .player-pill-out,
+  .video-stage-in,
+  .video-stage-out {
     animation: none;
   }
   /* chrome still hides, it just stops sliding */

@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { VideoView } from "@/components/library/VideoView";
 import { CloseIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import type { LibraryFile } from "@/lib/types";
+
+/** how long the stage takes to leave — the stylesheet animates over the same */
+const LEAVE_MS = 280;
 
 /**
  * The video, full screen — the photo viewer's shell around a player.
@@ -13,8 +16,37 @@ import type { LibraryFile } from "@/lib/types";
  * close button along the top, Escape and the page frozen behind it. Tapping a
  * photograph and tapping a recording should not open two different kinds of
  * full screen.
+ *
+ * **It slides, both ways, and it owns that itself.** The player pill does the
+ * same thing and has to be held mounted by its parent to do it; this one keeps
+ * the whole business inside — `dismiss` starts the slide and calls `onClose`
+ * when it is over, so a caller still writes `{open && <VideoStage …/>}` and
+ * gets the animation without knowing there is one. Which matters: two screens
+ * open this already.
+ *
+ * The video keeps playing through those 280ms. Cutting it dead on the first
+ * frame of the slide is the version that feels broken — the sound would stop
+ * while its own picture is still on screen.
  */
 export function VideoStage({ file, onClose }: { file: LibraryFile; onClose: () => void }) {
+  const [leaving, setLeaving] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dismiss = useCallback(() => {
+    // Guarded, or a second press inside the slide queues a second unmount —
+    // and Escape is an easy key to press twice.
+    if (timer.current !== null) return;
+    setLeaving(true);
+    timer.current = setTimeout(onClose, LEAVE_MS);
+  }, [onClose]);
+
+  useEffect(
+    () => () => {
+      if (timer.current !== null) clearTimeout(timer.current);
+    },
+    []
+  );
+
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -25,11 +57,11 @@ export function VideoStage({ file, onClose }: { file: LibraryFile; onClose: () =
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") dismiss();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [dismiss]);
 
   const t = contentLang(file.title);
   return (
@@ -37,7 +69,9 @@ export function VideoStage({ file, onClose }: { file: LibraryFile; onClose: () =
       role="dialog"
       aria-modal="true"
       aria-label={file.title}
-      className="fixed inset-0 z-50 flex flex-col bg-black/95 pt-[env(safe-area-inset-top)]"
+      className={`${
+        leaving ? "video-stage-out" : "video-stage-in"
+      } fixed inset-0 z-50 flex flex-col bg-black/95 pt-[env(safe-area-inset-top)]`}
     >
       <div className="flex items-start gap-3 p-3 text-white">
         <p {...t} className={`${t.className} hi-tight min-w-0 flex-1 text-sm font-semibold`}>
@@ -45,7 +79,7 @@ export function VideoStage({ file, onClose }: { file: LibraryFile; onClose: () =
         </p>
         <button
           type="button"
-          onClick={onClose}
+          onClick={dismiss}
           aria-label="Close video"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-white/10 text-white"
         >
