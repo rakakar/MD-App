@@ -233,6 +233,32 @@ export interface SutraOfTheDay extends ParaResolution {
   has_next: boolean;
 }
 
+/**
+ * shorts/ (contract §2.7) — one clip on the home rail, as the BE serves it.
+ *
+ * The only content in the app the BE does not author: these are mirrored hourly
+ * from our own YouTube channels, so **an entry can disappear between two
+ * fetches** — a clip deleted or made private upstream is withdrawn, and an
+ * editor can hide one. Nothing may treat this list as a stable set.
+ *
+ * `seconds` is null for a clip YouTube is still processing, and `poster` is ""
+ * when there is no still yet; `lib/shorts.ts` is where both are turned into
+ * something a card can draw without branching.
+ */
+export interface ShortClip {
+  id: number;
+  video_id: string;
+  title: string;
+  seconds: number | null;
+  poster: string;
+  published_at: string;
+  /** false when the uploader disallows playback outside YouTube */
+  is_embeddable: boolean;
+  watch_url: string;
+  embed_url: string;
+  channel: { title: string; handle: string; url: string };
+}
+
 // ---- The library — one tree for everything that is not a book (§13) ----
 //
 // A **folder** (`node`) holds child folders, **files** (`item`), or both, to

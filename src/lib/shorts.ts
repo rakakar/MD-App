@@ -1,26 +1,24 @@
 /**
- * **Shorts — the one placeholder in the app, and the whole of it.**
+ * **Shorts — the home rail's clips, straight from our own YouTube channels.**
  *
- * The designer's Home draws a rail of vertical clips between the book shelf and
- * the Audio/Video door. The backend has no feed for them: there is no
- * short-form kind in the content model, no duration ceiling that would mark one,
- * and no field saying which frame to show. So this file exists to keep that
- * absence in exactly one place.
+ * This file used to hold the app's one invented list. It no longer does: the BE
+ * mirrors the channels hourly (`/panel/shorts/`) and serves them at
+ * `shorts/` (contract §2.7), so a short posted on the channel reaches the rail
+ * on its own with nothing filed by anyone.
  *
- * Everything else about Shorts is real — the rail is a real component, it
- * renders real data shapes, and it renders nothing at all when the list is
- * empty. Only the list is invented.
+ * What stays here is the seam between the wire and the card: `ShortClip` is what
+ * the BE sends, `Short` is what `ShortsRail` draws, and the mapping below is the
+ * one place that knows the difference — a card that had to branch on a null
+ * duration or an empty poster would be carrying the API's shape into the layout.
  *
- * **To make it real:** replace the body of `getShorts` with the fetch, delete
- * `PLACEHOLDER`, and delete this comment. Nothing else in the app imports
- * anything from here except `getShorts` and the `Short` type, which is the
- * point of it being a file rather than an array inside the page.
- *
- * The clips are captioned with lines from the books rather than with invented
- * quotes, and they carry no poster image, because we have no stills and a
- * stock photograph of somebody else would be worse than a coloured card. The
- * rail draws its own gradient from the id, the way covers already do.
+ * **These clips are not a stable set.** The BE withdraws anything deleted or
+ * made private on the channel, and an editor can hide one, so a clip that was in
+ * yesterday's rail can simply be gone. Nothing here caches beyond the page's own
+ * ISR window.
  */
+
+import { getShortClips } from "./api";
+import type { ShortClip } from "./types";
 
 export interface Short {
   id: string;
@@ -28,27 +26,65 @@ export interface Short {
   title: string;
   /** runtime, for the badge */
   seconds: number;
-  /** a still, when there is one — there is not yet */
+  /** a still — 9:16 where the channel kept one, else null and the card draws its own */
   poster: string | null;
   href: string;
+  /** YouTube's id — the stable identity, and what an in-app route would key on */
+  videoId: string;
+  /** for an IFrame-API player; `/shorts/…` refuses to be framed, `/embed/…` is the form that works */
+  embedUrl: string;
+  /** the clip's own page on YouTube */
+  watchUrl: string;
+  /** false when the uploader disallows playback outside YouTube — such a clip must open `watchUrl` */
+  isEmbeddable: boolean;
+  publishedAt: string;
+  channel: { title: string; handle: string; url: string };
 }
 
-/** Not content. See the note above. */
-const PLACEHOLDER: Short[] = [
-  { id: "s1", title: "समाधान ही मानव का लक्ष्य है", seconds: 48, poster: null, href: "/av" },
-  { id: "s2", title: "परिवार ही समाज की इकाई है", seconds: 72, poster: null, href: "/av" },
-  { id: "s3", title: "अध्ययन ही विधि है", seconds: 36, poster: null, href: "/av" },
-];
+/**
+ * One wire clip as the card wants it.
+ *
+ * `href` is the clip's YouTube page, because that is the only place it can be
+ * watched today. **When there is an in-app player, this line is the only thing
+ * that changes** — every other field it would need is already here.
+ */
+function toShort(clip: ShortClip): Short {
+  return {
+    id: String(clip.video_id),
+    title: clip.title,
+    // Guarded by the filter in `getShorts`, so this is a real runtime.
+    seconds: clip.seconds ?? 0,
+    // "" is how the BE says "no still yet"; the card's own branch is on null.
+    poster: clip.poster || null,
+    href: clip.watch_url,
+    videoId: clip.video_id,
+    embedUrl: clip.embed_url,
+    watchUrl: clip.watch_url,
+    isEmbeddable: clip.is_embeddable,
+    publishedAt: clip.published_at,
+    channel: clip.channel,
+  };
+}
 
 /**
- * The clips for Home's Shorts rail, newest first.
+ * The clips for Home's Shorts rail, newest first (pinned ones ahead of them).
  *
  * Returns an empty list rather than throwing if it cannot answer, because the
  * rail draws nothing for an empty list — a Home page missing one section is a
  * smaller failure than a Home page that does not render.
+ *
+ * Clips with no runtime yet are left out. YouTube reports none for a minute or
+ * two after an upload while it processes, and the card's badge has nothing
+ * honest to show for that: `0:00` reads as broken and a blank pill reads as a
+ * bug. The next hourly sync brings the clip in with its length.
  */
-export async function getShorts(): Promise<Short[]> {
-  return PLACEHOLDER;
+export async function getShorts(limit = 12): Promise<Short[]> {
+  try {
+    const clips = await getShortClips(limit);
+    return clips.filter((c) => (c.seconds ?? 0) > 0).map(toShort);
+  } catch {
+    return [];
+  }
 }
 
 /** `48` → `0:48`, `72` → `1:12`. The badge in the card's top corner. */

@@ -21,6 +21,7 @@ import type {
   ParibhashaWord,
   SearchResponse,
   SearchResult,
+  ShortClip,
   SutraOfTheDay,
   Topic,
 } from "./types";
@@ -193,6 +194,21 @@ export async function getSutraOfTheDay(offset = 0): Promise<SutraOfTheDay | null
     if (e instanceof ApiError && e.status === 404) return null;
     throw e;
   }
+}
+
+/**
+ * The home rail's shorts (contract §2.7), newest first, pinned ones ahead of
+ * them. `limit` is clamped by the BE (max 60), never rejected.
+ *
+ * Cached like everything else here, and the window matters more than usual: the
+ * BE refreshes the mirror hourly and caches for 900s, so this is at worst about
+ * an hour behind the channel — which is the whole promise of the feature and not
+ * something to shorten by fetching more often.
+ */
+export async function getShortClips(limit?: number): Promise<ShortClip[]> {
+  return unwrapList(
+    await apiFetch<ShortClip[] | { results: ShortClip[] }>(`shorts/${qs({ limit })}`)
+  );
 }
 
 // ---- §9 live endpoints ----
