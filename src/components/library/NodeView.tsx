@@ -7,7 +7,7 @@ import { Sieve } from "@/components/library/Sieve";
 import { filesSummary, languageInEnglish, totalRunTime } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
-import { CollectionHero, EmptyState, ShareButton } from "@/components/ui";
+import { CollectionHero, EmptyState, HeroPill, ShareButton } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
 import { bookHue } from "@/lib/bookHue";
 import {
@@ -327,19 +327,7 @@ function Header({
  * leaves the app, so it does not have to compete for notice.
  */
 function WholeSetLink({ url }: { url: string }) {
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      /* Share's fill and height, the back pill's shape — it stands beside the
-         one and answers to the other. */
-      className="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-control border border-white/20 bg-white/15 px-3.5 text-sm font-semibold transition-colors hover:bg-white/25"
-    >
-      <span>Full series</span>
-      <span aria-hidden>↗</span>
-    </a>
-  );
+  return <HeroPill href={url} external>Full series</HeroPill>;
 }
 
 /**

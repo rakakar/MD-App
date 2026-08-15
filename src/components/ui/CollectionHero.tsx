@@ -191,6 +191,45 @@ export function CollectionHero({
 }
 
 /**
+ * A plain control in the hero's top row, beside Share — the way *out* of this
+ * page that is not the way back.
+ *
+ * Two screens want one: a collection of recordings points at the whole set on
+ * YouTube, a book points at its translation. They are the same object and were
+ * briefly two, drawn a class apart, which is how a panel ends up with two
+ * subtly different pills on the same row.
+ *
+ * Share's fill and height at the back pill's shape: it stands beside the one
+ * and answers to the other.
+ */
+export function HeroPill({
+  href,
+  external = false,
+  children,
+}: {
+  href: string;
+  /** leaves the app — opens in a new tab, and says so with an arrow */
+  external?: boolean;
+  children: React.ReactNode;
+}) {
+  const className =
+    "inline-flex h-12 shrink-0 items-center gap-1.5 rounded-control border border-white/20 bg-white/15 px-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/25";
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {children}
+        <span aria-hidden>↗</span>
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+}
+
+/**
  * The hero's primary button — white on the panel, so it is the one thing on a
  * saturated field that reads as pressable. `tone` comes back in as its ink,
  * which is what stops it looking like a piece of the page that fell off.

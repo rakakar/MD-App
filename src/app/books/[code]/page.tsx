@@ -9,11 +9,11 @@ import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import {
   CollectionHero,
   HeroAction,
+  HeroPill,
   ListRow,
   PageContainer,
   RowGroup,
   RowNumber,
-  SectionHeading,
   ShareButton,
 } from "@/components/ui";
 import { ApiError, bookPdfUrl, getBook, getBookGenres, getBooks } from "@/lib/api";
@@ -104,6 +104,22 @@ export default async function BookDetailPage({
   const mainChapters = book.chapters.filter((c) => !c.is_front_matter);
   const firstChapter = book.chapters[0];
 
+  /**
+   * Where "Translations" goes — **the Translations shelf, always**.
+   *
+   * Not the translation itself, even where there is only one of it. The button
+   * is a door into the other workspace rather than a link to one book: a
+   * reader who wants this book in English wants the English shelf, where the
+   * next one they read is also standing, and where the chrome tells them which
+   * workspace they are now in. Opening the single edition directly was one tap
+   * shorter and left them somewhere they had not asked to be, with no sense of
+   * what else was there.
+   *
+   * The shelf is `/books?ws=translations` — the same address the Translations
+   * workspace's own Read tab points at.
+   */
+  const translationsHref = book.translations.length > 0 ? "/books?ws=translations" : null;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Book",
@@ -145,7 +161,14 @@ export default async function BookDetailPage({
       <CollectionHero
         tone={hue.to}
         back={{ href: "/books", label: "Books" }}
-        topRight={<ShareButton title={book.title_hi} />}
+        /* Both ways out of this page in one place, as on a collection's hero:
+           the translation, and the link to here. */
+        topRight={
+          <div className="flex items-center gap-2">
+            {translationsHref && <HeroPill href={translationsHref}>Translations</HeroPill>}
+            <ShareButton title={book.title_hi} />
+          </div>
+        }
         thumb={<CoverTile book={book} size="lg" />}
         title={book.title_hi}
         meta={
@@ -248,42 +271,6 @@ export default async function BookDetailPage({
             See the original book
           </Link>
         </p>
-      )}
-
-      {book.translations.length > 0 && (
-        <>
-          <SectionHeading>Translations of this book</SectionHeading>
-          <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
-            {book.translations.map((t) => (
-              <li key={t.code}>
-                <Link
-                  href={`/books/${encodeURIComponent(t.code)}`}
-                  className="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-ink/[.03]"
-                >
-                  <span className="flex items-baseline gap-2">
-                    <span
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--ws-ink)" }}
-                    >
-                      {t.language_label}
-                    </span>
-                    <span
-                      {...contentLang(t.title_hi)}
-                      className={`${contentLang(t.title_hi).className} min-w-0 flex-1 truncate text-sm`}
-                    >
-                      {t.title_hi}
-                    </span>
-                  </span>
-                  {t.translator && (
-                    <span className="text-xs text-ink-soft">
-                      Translator: {t.translator}
-                    </span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
       )}
 
       {/*
