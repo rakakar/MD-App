@@ -212,7 +212,16 @@ export function ReaderBottomBar({
     <div
       data-reader-chrome
       data-hidden={hidden}
-      className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg)/95 backdrop-blur"
+      /* The safe-area inset is padding here, not an offset: a docked bar goes
+         to the floor and lets the home indicator sit on its own ground. Lifted
+         by the inset instead — which is what it used to be — it left a strip of
+         moving text under it on every iPhone.
+
+         (Described in words rather than by writing the utility out here:
+         Tailwind scans comments as well as code, so a class name spelt in a
+         comment with an ellipsis inside its brackets is emitted as a real rule
+         — and an elided CSS function does not parse. It cost a build.) */
+      className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg)/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
       style={{ bottom }}
     >
       {/* The same fixed 16px gutter as the top bar, and for the same reason —

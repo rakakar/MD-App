@@ -98,6 +98,25 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
   /** the picture is up, so the still beneath it can be covered */
   const showPlayer = started && !scrolling && playable;
 
+  /**
+   * The page itself goes black while the feed is up.
+   *
+   * The feed is `position: fixed`, which covers the *layout* viewport — and on
+   * iOS the visual viewport is taller than that whenever Safari's toolbar is
+   * retracted, so the app's own paper showed through as a white band along the
+   * bottom of a black screen. Nothing sized in `dvh` can close that gap,
+   * because the gap is outside what the fixed layer is measured against; the
+   * only thing that reaches it is the document's own background.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    const previous = root.style.backgroundColor;
+    root.style.backgroundColor = "#000";
+    return () => {
+      root.style.backgroundColor = previous;
+    };
+  }, []);
+
   // Land on the clip that was tapped. Instant, not animated: this is where the
   // screen starts, and scrolling to it would look like it had scrolled away —
   // which is also why the scroller does not carry `scroll-smooth` as a class.

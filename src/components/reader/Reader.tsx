@@ -1252,7 +1252,19 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       <span className="text-xs text-(--reader-ink-soft) opacity-70">{p.label}</span>
     );
 
+  /**
+   * What a *floating* control clears — the selection bar, which hovers over the
+   * page and must sit above the home indicator rather than under it.
+   */
   const bottomOffset = "calc(var(--player-h, 0px) + env(safe-area-inset-bottom))";
+  /**
+   * What a *docked* bar sits at: the floor itself. The bottom bar used to be
+   * lifted by the safe-area inset too, which on an iPhone left a 34px strip
+   * between it and the bottom of the screen with the page's own text scrolling
+   * through it. A docked bar reaches the edge and holds the inset as padding
+   * instead, which is what every other bar in this app does.
+   */
+  const dockOffset = "var(--player-h, 0px)";
 
   return (
     <div
@@ -1455,7 +1467,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 
       <ReaderBottomBar
         hidden={!chrome.visible}
-        bottom={bottomOffset}
+        bottom={dockOffset}
         position={positionLabel}
         onContents={() => setTocOpen(true)}
         // Only on a printed book: the sheet asks for a printed page number, and
