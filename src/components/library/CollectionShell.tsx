@@ -96,6 +96,7 @@ export function CollectionGridCard({
 export function CollectionListRow({
   href,
   name,
+  description,
   tile,
   chip,
   note,
@@ -103,6 +104,16 @@ export function CollectionListRow({
 }: {
   href: string;
   name: string;
+  /**
+   * A line of what the folder is, between the name and the count.
+   *
+   * Only the folders inside a collection have one — a shelf of seven
+   * collections is scanned by name, and seven descriptions there would be a
+   * paragraph where a list was wanted. One level down there are three or four
+   * folders and the reader has already chosen the subject, so what each one
+   * holds is the question they now have.
+   */
+  description?: string | null;
   /** the kind tile at `xl` — 72px, the row's anchor */
   tile: React.ReactNode;
   chip: React.ReactNode;
@@ -123,6 +134,14 @@ export function CollectionListRow({
         >
           {name}
         </span>
+        {description && (
+          <span
+            {...contentLang(description)}
+            className={`${contentLang(description).className} mt-1 line-clamp-2 block text-xs text-ink-soft`}
+          >
+            {description}
+          </span>
+        )}
         <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
           <span
             className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${chipTint ?? ""}`}
@@ -175,6 +194,8 @@ export interface DoorProps {
   door: NodeCard;
   rollup: LibraryRollup;
   shelves: Record<number, string>;
+  /** a folder listed *inside* a collection says what it holds — see the row */
+  withDescription?: boolean;
 }
 
 function doorFacts({ door, rollup, shelves }: DoorProps) {
@@ -186,6 +207,7 @@ function doorFacts({ door, rollup, shelves }: DoorProps) {
     name: door.name,
     kind: (kinds.length === 1 ? kinds[0] : "folder") as TileKind,
     cover: door.cover_url,
+    description: door.description || null,
     chip: cardSummary(door) || "Nothing yet",
     note: hours > 0 ? `${hours} ${hours === 1 ? "hour" : "hours"}` : undefined,
   };
@@ -205,11 +227,12 @@ export function DoorCard(props: DoorProps) {
 }
 
 export function DoorRow(props: DoorProps) {
-  const { href, name, kind, cover, chip, note } = doorFacts(props);
+  const { href, name, description, kind, cover, chip, note } = doorFacts(props);
   return (
     <CollectionListRow
       href={href}
       name={name}
+      description={props.withDescription ? description : undefined}
       tile={<KindTile kind={kind} cover={cover} size="xl" />}
       chip={chip}
       note={note}

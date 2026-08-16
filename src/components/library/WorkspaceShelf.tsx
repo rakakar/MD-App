@@ -142,7 +142,7 @@ export async function WorkspaceShelf({
         <FindBar
           basePath={basePath}
           state={state}
-          scope={root.name}
+          scope="library"
           dense
           filters={
             <FindFilters
@@ -213,7 +213,11 @@ export async function WorkspaceShelf({
           <FindBar
             basePath={basePath}
             state={state}
-            scope={root.name}
+            /* "library", not the root's own name. The box is scoped to this
+               shelf either way; what changed is that it says so in the
+               interface's language rather than printing मूल ग्रंथ at a reader
+               who is standing on a tab labelled Library. */
+            scope="library"
             dense
             /* No facets, no filters: a failed find leaves the shelf standing and
                the browse needs nothing from it, but a button that opened onto an

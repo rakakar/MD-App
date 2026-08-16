@@ -2,7 +2,7 @@ import Link from "next/link";
 import { FileList } from "@/components/library/FileList";
 import { FindBar } from "@/components/library/FindBar";
 import { FindResults } from "@/components/library/FindResults";
-import { NodeCardView } from "@/components/library/NodeCard";
+import { DoorRow } from "@/components/library/CollectionShell";
 import { Sieve } from "@/components/library/Sieve";
 import { filesSummary, languageInEnglish, totalRunTime } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
@@ -123,11 +123,24 @@ export async function NodeView({
         />
       ) : (
         <>
+          {/* The folders inside a collection, as the Audio/Video tab's list
+              rows: tile, name, what it holds, how many files. It was a wider
+              card carrying a provenance badge and a facts line of year ·
+              place · language — and inside a collection every one of those
+              read the same on every row, because they are inherited from the
+              collection the reader is already standing in. What differs
+              between these folders is their names and their descriptions, so
+              those are what the row says. */}
           {children.length > 0 && (
-            <ul className="mt-4 flex flex-col gap-3">
+            <ul className="mt-4 flex flex-col gap-2.5">
               {children.map((child) => (
                 <li key={child.id}>
-                  <NodeCardView card={child} shelves={shelves} />
+                  <DoorRow
+                    door={child}
+                    rollup={find?.rollup ?? {}}
+                    shelves={shelves}
+                    withDescription
+                  />
                 </li>
               ))}
             </ul>
@@ -143,10 +156,15 @@ export async function NodeView({
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
                 Also filed here
               </h2>
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-2.5">
                 {node.linked_children.map((card) => (
                   <li key={card.id}>
-                    <NodeCardView card={card} shelves={shelves} />
+                    <DoorRow
+                      door={card}
+                      rollup={find?.rollup ?? {}}
+                      shelves={shelves}
+                      withDescription
+                    />
                   </li>
                 ))}
               </ul>
@@ -244,7 +262,16 @@ function Header({
           : isRecordings
             ? { href: AV_TAB, label: "Audio/Video" }
             : parent
-              ? { href: nodeHref(parent.id, shelves), label: parent.name }
+              ? {
+                  href: nodeHref(parent.id, shelves),
+                  /* A shelf root is named for the tab it is, not for the folder
+                     it happens to be: "मूल ग्रंथ" is what a manager called the
+                     top of the tree, and a reader who tapped Library and then a
+                     collection expects Library to be what takes them back. Any
+                     other parent is a folder the reader has actually seen, so
+                     it keeps its own name. */
+                  label: shelves[parent.id] ? "Library" : parent.name,
+                }
               : undefined
       }
       /* Both of the panel's ways *out* of this collection, in one place: the
