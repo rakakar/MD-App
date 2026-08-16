@@ -12,7 +12,7 @@ import { CollectionViewport } from "./CollectionViewport";
 import {
   CollectionGridCard,
   CollectionListRow,
-  CollectionsHeading,
+  CountedHeading,
 } from "./CollectionShell";
 import { VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
@@ -205,7 +205,7 @@ export function AvShelf({
                buys the width back: this row shares it with the layout switch,
                and on one line the pair truncated. */
             summary={
-              <CollectionsHeading>
+              <CountedHeading>
                 {find.count > 0 && (
                   <>
                     <span className="tabular-nums">{find.count}</span>{" "}
@@ -218,7 +218,7 @@ export function AvShelf({
                     )}
                   </>
                 )}
-              </CollectionsHeading>
+              </CountedHeading>
             }
           />
         )

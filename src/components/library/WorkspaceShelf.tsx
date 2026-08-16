@@ -4,7 +4,7 @@ import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
 import { shelfTotals } from "./format";
 import { CollectionViewport } from "./CollectionViewport";
-import { CollectionsHeading, DoorCard, DoorRow } from "./CollectionShell";
+import { CountedHeading, DoorCard, DoorRow } from "./CollectionShell";
 import { PhotoStrip } from "./PhotoStrip";
 import { RailFacets } from "./RailFacets";
 import { RailSlot } from "@/components/shell/Rail";
@@ -354,7 +354,7 @@ function ShelfHeading({
   const total = shelfTotals(doors.map((d) => rollup[String(d.id)]));
   const hours = Math.round(total.duration / 3600);
   return (
-    <CollectionsHeading>
+    <CountedHeading>
       {total.items > 0 && (
         <>
           <span className="tabular-nums">{total.items}</span>{" "}
@@ -368,7 +368,7 @@ function ShelfHeading({
         </>
       )}
       {hours > 0 && ` · ${hours} ${hours === 1 ? "hour" : "hours"}`}
-    </CollectionsHeading>
+    </CountedHeading>
   );
 }
 

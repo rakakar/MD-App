@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CountedHeading } from "@/components/library/CollectionShell";
 import { Lightbox } from "@/components/library/Lightbox";
-import { ImageIcon } from "@/components/shell/icons";
 import { findLibrary } from "@/lib/api";
 import { EMPTY_FIND, type FindState } from "@/lib/find";
 import type { LibraryFile, LibrarySearchRow } from "@/lib/types";
@@ -109,72 +109,83 @@ export function PhotoStripView({
   }, [openAt, photos.length, total, scope, first, firstKey]);
 
   const strip = first.slice(0, shown);
-  const rest = total - strip.length;
+  // The last tile is a photograph *and* the counter, so what is left over is
+  // everything but the ones fully on show.
+  const rest = total - (strip.length - 1);
 
   return (
     <>
-      <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="text-sm font-semibold tracking-[-0.01em]">
-          Photos
-          <span className="ms-1.5 text-xs font-medium text-ink-soft">
-            · <span className="tabular-nums">{total}</span>
-          </span>
-        </h2>
+      {/* The collections' own heading, one section down: PHOTOS on its line and
+          the count under it, with the way in opposite. It used to be "Photos ·
+          171" at the weight of a card title, which made this section look like
+          a different kind of thing from the one directly above it. */}
+      <div className="mb-2.5 flex items-center justify-between gap-3">
+        <CountedHeading label="Photos">
+          <span className="tabular-nums">{total}</span>{" "}
+          {total === 1 ? "photograph" : "photographs"}
+        </CountedHeading>
         <button
           type="button"
           onClick={() => setOpenAt(0)}
-          className="text-xs font-semibold"
+          className="shrink-0 text-xs font-semibold"
           style={{ color: "var(--ws-ink)" }}
         >
           Open gallery →
         </button>
       </div>
 
-      {/* Five across on every screen, counter included — the strip is one row
-          or it is a gallery, and at four columns the counter wrapped onto a
-          line of its own under four photographs, reading as a sixth picture
-          that failed to load. Five 67px squares on the narrowest phone is
-          small, which is the right size for a thing whose whole job is to say
-          "there are photographs in here, come and look". */}
-      <ul className="grid grid-cols-5 gap-1.5 sm:gap-2">
-        {strip.map((photo, i) => (
-          <li key={photo.id}>
+      {/*
+        **A mosaic, not a row of stamps.**
+
+        Five 67px squares said "there are photographs in here" and showed
+        nobody a photograph: at that size a shivir snapshot, a chart and a
+        scanned letter are three grey rectangles. Three tiles instead — one
+        large, two stacked beside it — which is enough for the big one to be
+        worth looking at, and the whole point of this section is that a picture
+        is cheaper to understand than any label written about it.
+
+        The counter rides the bottom-right *photograph* rather than taking a
+        tile of its own: a solid accent square in a mosaic of pictures reads as
+        a picture that failed to load, and the count means more over the thing
+        it is counting. Which is also why it says `total - 2`: two photographs
+        are fully on show, and this one is the third with the rest behind it.
+      */}
+      <div className="grid grid-cols-3 grid-rows-2 gap-1.5 sm:gap-2">
+        {strip.map((photo, i) => {
+          const big = i === 0;
+          const last = i === strip.length - 1;
+          const hidden = last && rest > 0;
+          return (
             <button
+              key={photo.id}
               type="button"
               onClick={() => setOpenAt(i)}
-              aria-label={photo.title}
-              className="block w-full overflow-hidden rounded-xl border border-rule bg-canvas"
+              aria-label={hidden ? `${rest} more photographs` : photo.title}
+              className={`relative block overflow-hidden rounded-xl border border-rule bg-canvas ${
+                big ? "col-span-2 row-span-2" : ""
+              }`}
             >
               {/* Plain <img>: these are library media on a host the image
                   optimiser is not configured for, and a broken optimiser here
-                  costs the whole strip. Lazy, because the strip is below a grid
+                  costs the whole strip. Lazy, because this sits below a grid
                   most readers never scroll past. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photo.thumbnail_url ?? photo.url}
-                alt={photo.title}
+                alt={hidden ? "" : photo.title}
                 loading="lazy"
                 decoding="async"
-                className="aspect-square w-full object-cover"
+                className={`w-full object-cover ${big ? "h-full" : "aspect-square"}`}
               />
+              {hidden && (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-sm font-bold text-white tabular-nums">
+                  +{rest}
+                </span>
+              )}
             </button>
-          </li>
-        ))}
-        {rest > 0 && (
-          <li>
-            <button
-              type="button"
-              onClick={() => setOpenAt(strip.length)}
-              className="flex aspect-square w-full items-center justify-center gap-1 rounded-xl border border-rule text-xs font-semibold text-white"
-              style={{ background: "var(--ws-color)" }}
-              aria-label={`${rest} more photographs`}
-            >
-              <ImageIcon className="hidden h-3.5 w-3.5 sm:block" />
-              <span className="tabular-nums">+{rest}</span>
-            </button>
-          </li>
-        )}
-      </ul>
+          );
+        })}
+      </div>
 
       {openAt !== null && (
         <Lightbox

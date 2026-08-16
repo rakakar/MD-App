@@ -164,19 +164,26 @@ export function CollectionListRow({
 }
 
 /**
- * The heading a shelf of collections wears, and the shape of it: one uppercase
- * line naming what is below, the count on its own line under it.
+ * The heading a section of a shelf wears: one uppercase line naming what is
+ * below, the count on its own line under it.
  *
  * The count used to be strung after the name on the same line. It is a fact
  * *about* the heading rather than part of it, and at the same size and weight
  * the two competed to be read first — and the pair truncated, because this row
- * shares its width with the layout switch.
+ * shares its width with whatever the section puts opposite it: the layout
+ * switch on the collections, "Open gallery" on the photographs.
  */
-export function CollectionsHeading({ children }: { children: React.ReactNode }) {
+export function CountedHeading({
+  label = "Collections",
+  children,
+}: {
+  label?: string;
+  children: React.ReactNode;
+}) {
   return (
     <span className="min-w-0">
       <span className="block truncate text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        Collections
+        {label}
       </span>
       <span className="mt-0.5 block truncate text-xs text-ink-soft">{children}</span>
     </span>

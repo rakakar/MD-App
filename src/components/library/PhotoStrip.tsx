@@ -3,8 +3,12 @@ import { EMPTY_FIND, type FindState } from "@/lib/find";
 import type { LibraryFacets, LibrarySearchRow } from "@/lib/types";
 import { PhotoStripView } from "./PhotoStripView";
 
-/** how many photographs the strip shows before the counter tile */
-const SHOWN = 4;
+/**
+ * How many photographs the mosaic draws: one large, two stacked beside it. The
+ * last of the three carries the "+N" for everything behind it — see
+ * `PhotoStripView`.
+ */
+const SHOWN = 3;
 /**
  * The first page the viewer opens on. The rest are asked for as the reader
  * swipes toward them — see `PhotoStripView` — so this is a head start rather
