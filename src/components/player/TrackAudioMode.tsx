@@ -6,13 +6,11 @@ import { bookHue } from "@/lib/bookHue";
 import { contentLang } from "@/lib/script";
 import {
   CoverArt,
-  FootBtn,
   Menu,
   MenuItem,
   NextChapterIcon,
   PrevChapterIcon,
   RATES,
-  SLEEP_OPTIONS,
   ScrubBar,
   TransportBtn,
   fmt,
@@ -33,7 +31,7 @@ import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
  * read, so give the eye the thing being listened to.
  *
  * Everything around the middle is imported from `audioChrome`, not
- * re-implemented — the transport, the scrub bar, the speed and sleep menus
+ * re-implemented — the transport, the scrub bar, the speed menu
  * behave identically in both surfaces because they are literally the same
  * components. A listener who learned the controls inside a book already knows
  * them here.
@@ -44,7 +42,7 @@ import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
  */
 export function TrackAudioMode() {
   const player = usePlayer();
-  const [menu, setMenu] = useState<"rate" | "sleep" | null>(null);
+  const [menu, setMenu] = useState<"rate" | null>(null);
   const { source, audioModeOpen, closeAudioMode } = player;
   // Rises on open, drops on ⌄, and follows a thumb pushed down the screen —
   // the same gesture the chapter's Audio Mode has, from the same hook.
@@ -217,43 +215,13 @@ export function TrackAudioMode() {
           </TransportBtn>
         </div>
 
-        <div className="mt-1 flex items-center justify-center gap-1 text-xs">
-          <div className="relative">
-            <FootBtn
-              onClick={() => setMenu(menu === "sleep" ? null : "sleep")}
-              active={player.sleepRemainingMs !== null}
-            >
-              {player.sleepRemainingMs !== null ? fmt(player.sleepRemainingMs) : "Sleep"}
-            </FootBtn>
-            {menu === "sleep" && (
-              <Menu className="bottom-full left-1/2 mb-1 w-32 -translate-x-1/2">
-                {SLEEP_OPTIONS.map((m) => (
-                  <MenuItem
-                    key={m}
-                    onClick={() => {
-                      player.setSleepTimer(m);
-                      setMenu(null);
-                    }}
-                  >
-                    {m} min
-                  </MenuItem>
-                ))}
-                <MenuItem
-                  muted
-                  onClick={() => {
-                    player.setSleepTimer(null);
-                    setMenu(null);
-                  }}
-                >
-                  Off
-                </MenuItem>
-              </Menu>
-            )}
-          </div>
-          {/* Same promise the reader's Audio Mode makes: closing is not
-              stopping. The bar keeps playing and its ⌃ brings this back. */}
-          <FootBtn onClick={collapse}>Close</FootBtn>
-        </div>
+        {/* No foot row. It held a sleep timer and a Close, and the chapter's
+            Audio Mode dropped its own for the same reason: Close repeats the ⌄
+            in the header exactly, and a second way to do the one thing this
+            screen already offers at the top is a button whose only job is to
+            be found twice. The sleep timer goes with it — it is on the shelf's
+            player bar, and this screen is a recording playing, not a room of
+            settings. */}
       </div>
     </div>
   );
