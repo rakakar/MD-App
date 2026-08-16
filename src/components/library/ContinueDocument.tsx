@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { FileCover } from "@/components/library/FileCover";
+import { ProgressBar } from "@/components/shelf/CoverTile";
 import { getBook, findLibrary } from "@/lib/api";
 import { chapterLine } from "@/lib/chapter";
 import { EMPTY_FIND } from "@/lib/find";
@@ -241,10 +242,7 @@ export function ContinueDocument({ limit = 4 }: { limit?: number }) {
           collections a reader came for off the bottom of a phone. */}
       <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
         {rows.map((row) => (
-          <li
-            key={row.itemId}
-            className="w-[15.5rem] shrink-0 snap-start sm:w-[19rem]"
-          >
+          <li key={row.itemId} className="w-[17.5rem] shrink-0 snap-start sm:w-[340px]">
             <ResumeCard row={row} />
           </li>
         ))}
@@ -267,17 +265,24 @@ function ResumeCard({ row }: { row: ResumeRow }) {
   return (
     <Link
       href={href}
-      className="flex h-full w-full items-start gap-3 rounded-card border border-rule bg-card p-3.5 text-left transition-shadow hover:shadow-md"
+      /* The Read shelf's resume card, to the class. These are the same object
+         — something half-finished, waiting to be gone back into — and a reader
+         crosses between the two shelves in one tap; the only honest difference
+         is that one holds a book and the other a scanned document. `px-4 py-3`
+         rather than `p-4` for the reason that card gives: the cover is the
+         tallest thing in the row and 16px top and bottom left the card looking
+         like it had a hole in it. */
+      className="flex h-full items-center gap-4 rounded-card border border-rule bg-card px-4 py-3 transition-shadow hover:shadow-md"
     >
-      {/* Portrait, and the same silhouette the shelf below uses: these are
-          scans of printed pages, and a cover is what tells one document from
-          another at arm's length — which a row of identical "PDF" squares
-          never did. */}
+      {/* `FileCover`, not `CoverTile` — a document's face is its own first page
+         where a manager has given it none — but at the resume cover's size, so
+         the two rails line up: 63×86 is 102/139, the shape every cover on this
+         shelf has. */}
       <FileCover
         src={row.cover}
         title={row.title}
         id={row.itemId}
-        className="h-[3.5rem] w-[2.625rem] rounded-lg shadow-[0_1px_3px_rgba(0,0,0,.18)]"
+        className="h-[86px] w-[63px] rounded-cover"
       />
       <span className="min-w-0 flex-1">
         {/* Title first, collection under it — the Read shelf's order, and now
@@ -305,40 +310,25 @@ function ResumeCard({ row }: { row: ResumeRow }) {
             again and names no position, and absent on the pages, which say
             where they are on the line below. */}
         {row.mode === "text" && row.chapterCount > 1 && row.chapter !== undefined && (
-          <span
-            lang="hi"
-            className="hi mt-0.5 block truncate text-xs font-medium text-ink-soft"
-          >
+          <span lang="hi" className="hi hi-tight mt-0.5 block truncate text-xs font-medium text-ink-soft">
             {chapterLine(String(row.chapter), row.chapterTitle)}
           </span>
         )}
-        <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-canvas">
+        {/* The bar full width, the two figures under it: the printed page on
+            the left, where a reader looks to check they are where they think
+            they are, and the percentage on the right. Both from the shared
+            `ProgressBar`, so the two shelves cannot drift apart again. */}
+        <ProgressBar percent={percent} showValue={false} className="mt-3" />
+        <span className="mt-1.5 flex items-baseline justify-between gap-2">
+          <span className="truncate text-xs font-medium text-ink-soft">
+            Page {row.page} of {row.pageCount}
+          </span>
           <span
-            role="progressbar"
-            aria-valuenow={Math.round(percent)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`${Math.round(percent)}% read`}
-            className="block h-full rounded-full"
-            style={{
-              width: `${Math.round(percent)}%`,
-              background: "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
-            }}
-          />
-        </span>
-        {/* The printed page, and only that.
-
-            This said a bare percentage for one release, then the page *and* a
-            percentage on the right, on the reasoning that Home says both. The
-            designer's card says one thing: the page a reader is on, out of the
-            pages there are. The bar above it is already the percentage drawn —
-            printing the same fact twice, once as a figure and once as a
-            length, is what made this card busier than the thing it describes.
-
-            The page is honest on a text edition too: it is pipelined from the
-            very file beside it and carries its pages. */}
-        <span className="mt-1.5 block truncate text-sm font-medium tabular-nums text-ink-soft">
-          Page {row.page} of {row.pageCount}
+            className="shrink-0 text-xs font-bold tabular-nums"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            {Math.round(percent)}%
+          </span>
         </span>
       </span>
     </Link>
