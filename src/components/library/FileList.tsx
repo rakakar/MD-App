@@ -112,11 +112,11 @@ function KindGroup({
   }
 
   if (kind === "pdf") {
-    // The card owns its own heading, unlike every other kind here: a document
-    // is one tappable object, and a title outside the thing you tap is a title
-    // that does nothing. See `PdfCard`.
+    // Hairlines, not gaps: these rows are one folder's files, and the divider
+    // is the whole of the structure a list of like things needs — see
+    // `PdfCard` for why the cards' own borders went.
     return (
-      <ul className="flex flex-col gap-3">
+      <ul className="-mt-2 flex flex-col divide-y divide-rule">
         {files.map((file) => (
           <li key={file.id}>
             <PdfCard file={file} folderProvenance={folderProvenance} />
