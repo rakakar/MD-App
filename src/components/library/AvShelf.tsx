@@ -6,9 +6,15 @@ import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
 import { filesSummary, formatDuration } from "./format";
 import { RailSlot } from "@/components/shell/Rail";
-import { CountedSegmented, EmptyState } from "@/components/ui";
+import { CountedSegmented, EmptyState, KindTile } from "@/components/ui";
+import type { TileKind } from "@/components/ui/KindTile";
 import { CollectionViewport } from "./CollectionViewport";
-import { ChevronRight, VideoIcon, WaveformIcon } from "@/components/shell/icons";
+import {
+  CollectionGridCard,
+  CollectionListRow,
+  CollectionsHeading,
+} from "./CollectionShell";
+import { VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
@@ -199,12 +205,9 @@ export function AvShelf({
                buys the width back: this row shares it with the layout switch,
                and on one line the pair truncated. */
             summary={
-              <span className="min-w-0">
-                <span className="block truncate text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-                  Collections
-                </span>
+              <CollectionsHeading>
                 {find.count > 0 && (
-                  <span className="mt-0.5 block truncate text-xs text-ink-soft">
+                  <>
                     <span className="tabular-nums">{find.count}</span>{" "}
                     {find.count === 1 ? "recording" : "recordings"}
                     {groups.length > 1 && (
@@ -213,9 +216,9 @@ export function AvShelf({
                         <span className="tabular-nums">{groups.length}</span> collections
                       </>
                     )}
-                  </span>
+                  </>
                 )}
-              </span>
+              </CollectionsHeading>
             }
           />
         )
@@ -380,58 +383,16 @@ function groupByFolder(results: LibraryFindResponse["results"]): FolderGroup[] {
  * use, and on this tab every collection is purely one kind or the other.
  */
 function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
-  const kinds = [...new Set(group.files.map((f) => f.kind))];
-  const only = kinds.length === 1 ? kinds[0] : null;
-  const tint = only === "audio" || only === "video" ? AV_TINT[only] : undefined;
-  const length = collectionLength(group.files);
-
+  const kind = onlyKind(group);
   return (
-    <Link
+    <CollectionGridCard
       href={nodeHref(group.id, shelves)}
-      className="group flex h-full flex-col rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
-    >
-      <span
-        aria-hidden
-        className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl"
-        style={{
-          background: tint?.bg ?? "var(--color-accent-tint)",
-          color: tint?.ink ?? "var(--ws-ink)",
-        }}
-      >
-        {/* The waveform, not the headphones — the same glyph the Audio segment
-            above and the row below use, so flipping layouts does not appear to
-            change what the collection is. */}
-        {only === "video" ? (
-          <VideoIcon className="h-[18px] w-[18px]" />
-        ) : (
-          <WaveformIcon className="h-[18px] w-[18px]" />
-        )}
-      </span>
-      <span
-        {...contentLang(group.name)}
-        className={`${contentLang(group.name).className} hi-tight line-clamp-2 text-sm font-semibold group-hover:underline`}
-      >
-        {group.name}
-      </span>
-      {/* The list's own pair, so a reader who flips layouts finds the same two
-          facts drawn the same way: the count as a chip in the kind's tint,
-          because that is what they are choosing on, and the length beside it in
-          plain grey, because that is what they weigh it against. It used to be
-          one accent-coloured run reading "3 hours · 5 Videos", where the two
-          were the same colour and the wrong one came first. */}
-      <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2.5">
-        <span
-          className="rounded-full px-2 py-0.5 text-xs font-bold"
-          style={{
-            background: tint?.bg ?? "var(--color-accent-tint)",
-            color: tint?.ink ?? "var(--ws-ink)",
-          }}
-        >
-          {filesSummary(group.files)}
-        </span>
-        {length && <span className="text-xs text-ink-soft">{length}</span>}
-      </span>
-    </Link>
+      name={group.name}
+      tile={<KindTile kind={kind} size="sm" />}
+      chip={filesSummary(group.files)}
+      chipTint={CHIP_TINT[kind]}
+      note={collectionLength(group.files)}
+    />
   );
 }
 
@@ -488,61 +449,37 @@ function CollectionLayout({
  * nothing while the name it needs wraps to three lines.
  */
 function CollectionRow({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
-  const kinds = [...new Set(group.files.map((f) => f.kind))];
-  const only = kinds.length === 1 ? kinds[0] : null;
-  const tint = only === "audio" || only === "video" ? AV_TINT[only] : undefined;
-  const length = collectionLength(group.files);
-
+  const kind = onlyKind(group);
   return (
-    <Link
+    <CollectionListRow
       href={nodeHref(group.id, shelves)}
-      className="group flex items-center gap-3.5 rounded-card border border-rule bg-card p-2.5 transition-shadow hover:shadow-md"
-    >
-      <span
-        aria-hidden
-        className="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-tile"
-        style={{
-          background: tint?.bg ?? "var(--color-accent-tint)",
-          color: tint?.ink ?? "var(--ws-ink)",
-        }}
-      >
-        {only === "video" ? (
-          <VideoIcon className="h-7 w-7" />
-        ) : (
-          <WaveformIcon className="h-7 w-7" />
-        )}
-      </span>
-
-      <span className="min-w-0 flex-1">
-        <span
-          {...contentLang(group.name)}
-          className={`${contentLang(group.name).className} hi-tight line-clamp-2 text-sm font-semibold group-hover:underline`}
-        >
-          {group.name}
-        </span>
-        {/* The count in the kind's own tint and the length beside it in plain
-            grey — how many is the fact a reader is choosing on, and how long is
-            what they weigh it against. One is the chip, the other is not. */}
-        <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <span
-            className="rounded-full px-2.5 py-0.5 text-xs font-bold"
-            style={{
-              background: tint?.bg ?? "var(--color-accent-tint)",
-              color: tint?.ink ?? "var(--ws-ink)",
-            }}
-          >
-            {filesSummary(group.files)}
-          </span>
-          {length && <span className="text-sm text-ink-soft">{length}</span>}
-        </span>
-      </span>
-
-      <span aria-hidden className="shrink-0 text-muted">
-        <ChevronRight />
-      </span>
-    </Link>
+      name={group.name}
+      tile={<KindTile kind={kind} size="xl" />}
+      chip={filesSummary(group.files)}
+      chipTint={CHIP_TINT[kind]}
+      note={collectionLength(group.files)}
+    />
   );
 }
+
+/**
+ * The one kind a collection is, or `folder` where it is more than one.
+ *
+ * On this tab it is nearly always one — a shivir's recordings are all audio or
+ * all video — which is what lets the tile and the count pill agree on a
+ * colour. A mixed folder has no true glyph, and the folder mark is the honest
+ * answer rather than picking whichever kind happened to be first.
+ */
+function onlyKind(group: FolderGroup): TileKind {
+  const kinds = [...new Set(group.files.map((f) => f.kind))];
+  return kinds.length === 1 ? kinds[0] : "folder";
+}
+
+/** the pill beside the tile takes the tile's own tint, from the same tokens */
+const CHIP_TINT: Partial<Record<TileKind, string>> = {
+  audio: "bg-kind-audio text-kind-audio-ink",
+  video: "bg-kind-video text-kind-video-ink",
+};
 
 /** "21 hours", or minutes below one, or nothing where the BE has no durations.
  *  Both layouts print it, so both read it from here. */
@@ -552,13 +489,6 @@ function collectionLength(files: LibraryFile[]): string {
   if (hours >= 1) return `${Math.round(hours)} ${Math.round(hours) === 1 ? "hour" : "hours"}`;
   return seconds > 0 ? `${Math.max(1, Math.round(seconds / 60))} min` : "";
 }
-
-/** the two tints the Library shelf gives these kinds, so a card reads the same
- *  whichever shelf it is standing on (see `NodeCard`'s `KIND_TINT`) */
-const AV_TINT: Record<"audio" | "video", { bg: string; ink: string }> = {
-  audio: { bg: "#F8E7D6", ink: "#8A4110" },
-  video: { bg: "#DFE9F0", ink: "#255A6E" },
-};
 
 /** one folder's recordings, under a heading that says which folder and where */
 function FolderGroup({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {

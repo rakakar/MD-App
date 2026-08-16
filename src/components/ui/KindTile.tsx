@@ -72,6 +72,9 @@ const SIZE = {
   md: "h-11 w-11 rounded-tile [&>svg]:h-5 [&>svg]:w-5",
   /** file rows, where the tile is the row's anchor */
   lg: "h-14 w-14 rounded-tile [&>svg]:h-6 [&>svg]:w-6",
+  /** a collection row's tile, where it is the whole left third of the card and
+   *  the thing a reader scans down — see `CollectionListRow` */
+  xl: "h-[4.5rem] w-[4.5rem] rounded-tile [&>svg]:h-7 [&>svg]:w-7",
 } as const;
 
 export function KindTile({

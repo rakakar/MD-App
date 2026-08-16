@@ -3,7 +3,8 @@ import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
 import { shelfTotals } from "./format";
-import { NodeCardView } from "./NodeCard";
+import { CollectionViewport } from "./CollectionViewport";
+import { CollectionsHeading, DoorCard, DoorRow } from "./CollectionShell";
 import { PhotoStrip } from "./PhotoStrip";
 import { RailFacets } from "./RailFacets";
 import { RailSlot } from "@/components/shell/Rail";
@@ -16,6 +17,7 @@ import type {
   LibraryFindResponse,
   LibraryNode,
   LibraryRollup,
+  NodeCard,
   Topic,
 } from "@/lib/types";
 
@@ -244,25 +246,36 @@ export async function WorkspaceShelf({
 
       <div>
         {doors.length > 0 ? (
-          <>
-            <ShelfHeading doors={doors} rollup={rollup} />
-            {/* Two per row from the smallest phone up. A tile carries an icon,
-                a name and a weight — all of which survive half a screen — and
-                the shelf a reader came to browse fits on one screen instead of
-                scrolling past its own controls. */}
-            <ul className="mt-2 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
-              {doors.map((door) => (
-                <li key={door.id} className="contents">
-                  <NodeCardView
-                    card={door}
-                    variant="tile"
-                    shelves={shelves}
-                    rollup={rollup[String(door.id)]}
-                  />
-                </li>
-              ))}
-            </ul>
-          </>
+          /* The same switch the Audio/Video tab has, over the same two shapes.
+             These are shelves of the same object — a folder, its name and how
+             much is in it — and a reader crosses between the two tabs in one
+             tap; the grid is right when the tiles differ from one another, and
+             the list is right when the names are what is being scanned. */
+          <CollectionViewport
+            summary={<ShelfHeading doors={doors} rollup={rollup} />}
+            grid={
+              /* Two per row from the smallest phone up. A tile carries an icon,
+                 a name and a weight — all of which survive half a screen — and
+                 the shelf a reader came to browse fits on one screen instead of
+                 scrolling past its own controls. */
+              <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+                {doors.map((door) => (
+                  <li key={door.id} className="contents">
+                    <DoorCard door={door} rollup={rollup} shelves={shelves} />
+                  </li>
+                ))}
+              </ul>
+            }
+            list={
+              <ul className="flex flex-col gap-2.5">
+                {doors.map((door) => (
+                  <li key={door.id}>
+                    <DoorRow door={door} rollup={rollup} shelves={shelves} />
+                  </li>
+                ))}
+              </ul>
+            }
+          />
         ) : (
           <div className="mt-5">
             <EmptyState title={emptyTitle} hint={emptyHint} />
@@ -331,27 +344,41 @@ function ShelfHeading({
   doors,
   rollup,
 }: {
-  doors: { id: number }[];
+  doors: NodeCard[];
   rollup: LibraryRollup;
 }) {
   const total = shelfTotals(doors.map((d) => rollup[String(d.id)]));
   const hours = Math.round(total.duration / 3600);
-  // One line — "COLLECTIONS · 199 items" — as the finished comps draw it, not a
-  // label pushed left and a count pushed right. Split across the shelf's width
-  // the two read as two separate facts, and on a phone the count landed under
-  // the reader's thumb at the far edge where nothing else on the page sits.
   return (
-    <p className="mt-6 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-      Collections
+    <CollectionsHeading>
       {total.items > 0 && (
         <>
-          {" · "}
-          <span className="tabular-nums">
-            {total.items} {total.items === 1 ? "item" : "items"}
-          </span>
-          {hours > 0 && ` · ${hours} ${hours === 1 ? "hour" : "hours"}`}
+          <span className="tabular-nums">{total.items}</span>{" "}
+          {total.items === 1 ? "item" : "items"}
         </>
       )}
-    </p>
+      {total.items > 0 && doors.length > 0 && " · "}
+      {doors.length > 0 && (
+        <>
+          <span className="tabular-nums">{doors.length}</span> collections
+        </>
+      )}
+      {hours > 0 && ` · ${hours} ${hours === 1 ? "hour" : "hours"}`}
+    </CollectionsHeading>
   );
 }
+
+/**
+ * One door, in the two shapes the switch offers — the Audio/Video tab's card
+ * and row exactly, filled from what a library card knows.
+ *
+ * The **kind** decides the tile, and a folder holding more than one kind takes
+ * the folder mark: there is no true glyph for a mixed collection, and the
+ * folder icon on every tile is the folder icon on no tile. A cover a manager
+ * chose wins over the glyph either way.
+ *
+ * The **chip** is the shallow summary a card already carries — "10 PDFs", "15
+ * PDFs · 2 folders" — and the **note** beside it is the hours where the rollup
+ * knows them, which on this shelf is a shivir's recordings seen from the
+ * outside.
+ */
