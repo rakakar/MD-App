@@ -243,8 +243,15 @@ export function Chip({
   // across two lines inside its own pill and left the × floating at the height
   // of neither, because the chip is a flex item in a scrolling row and was
   // being squeezed rather than allowed to scroll out of view.
+  // The weight lives on the label rather than here, and that is doing two
+  // jobs at once. A selected chip reads as chosen at a glance — colour was
+  // carrying that alone and colour is the one signal a reader may not have.
+  // And weight is what picks the face: `.hi` is Tiro, the book serif, until it
+  // is asked for a weight, at which point globals hands it to Mukta — which is
+  // the sans these labels want. A topic or a place typed by a manager is a
+  // chrome label, not a line of scripture.
   const base =
-    "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors";
+    "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-sm transition-colors";
   const cls = !selected
     ? `${base} border-rule bg-card text-ink`
     : variant === "solid"
@@ -263,7 +270,7 @@ export function Chip({
   const body = (
     <>
       {selected && variant === "solid" && <CheckIcon className="h-3.5 w-3.5 shrink-0" />}
-      <span {...l} className={l.className}>
+      <span {...l} className={`${l.className} ${selected ? "font-semibold" : "font-medium"}`}>
         {label}
       </span>
       {onRemove && (
