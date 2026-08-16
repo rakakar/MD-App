@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { ctaPrimary } from "@/components/ui";
+import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
 import { getEvents } from "@/lib/api";
 import { eventStart, shortDate, upcomingEvents } from "@/lib/events";
@@ -320,16 +321,6 @@ function AvatarMenu() {
   const { user, loading, logout } = useAuth();
   const { open: openFeedback } = useFeedback();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener("mousedown", onClick);
-    return () => window.removeEventListener("mousedown", onClick);
-  }, [open]);
 
   if (loading) {
     return <div className="h-10 w-10 rounded-control bg-ink/5" aria-hidden />;
@@ -347,80 +338,83 @@ function AvatarMenu() {
     );
   }
 
+  const row =
+    "flex min-h-14 w-full items-center rounded-card px-3 text-start text-title font-medium transition-colors active:bg-ink/[.04]";
+
   return (
-    <div ref={ref} className="relative">
+    <>
       {/* 10A draws this as a bordered white square with a person glyph, not a
           coloured initial: the app bar already carries the workspace hue on
           the switcher tile, and a second hue-filled circle next to it read as
           a second piece of chrome competing for the same meaning. */}
       <button
         type="button"
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Account menu"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(true)}
         className="flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
         <UserIcon className="h-4.5 w-4.5" />
       </button>
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl border border-rule bg-card py-1 shadow-lg"
+
+      {/*
+        **A sheet, not a dropdown.**
+        
+        Everything else this app asks of a reader comes up from the floor —
+        Display, the filters, the contents, Audio Mode — and this one menu
+        dropped from the top right in a 48-unit panel, with rows a third the
+        height of the ones in every sheet. On a phone that is the corner a thumb
+        reaches least and the target it hits worst; on any screen it was the one
+        control that behaved unlike the rest of the app.
+      */}
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Account"
+        /* Under the title, not as the first row of the list: standing where a
+           row stands, in a column of things that open, an email address reads
+           as something to tap. */
+        subtitle={user.email as string}
+      >
+        <Link href="/me" onClick={() => setOpen(false)} className={row}>
+          My Journey
+        </Link>
+        <Link href="/me/settings" onClick={() => setOpen(false)} className={row}>
+          Settings
+        </Link>
+        {/* Feedback lives here rather than behind a floating button: this menu
+            is on every screen, and a bubble over the text is the one piece of
+            chrome a reading app cannot afford. */}
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            openFeedback({ source: "menu" });
+          }}
+          className={row}
         >
-          <p className="truncate px-4 py-2 text-xs text-ink-soft">{user.email as string}</p>
-          <Link
-            role="menuitem"
-            href="/me"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm hover:bg-ink/5"
-          >
-            My Journey
-          </Link>
-          <Link
-            role="menuitem"
-            href="/me/settings"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm hover:bg-ink/5"
-          >
-            Settings
-          </Link>
-          {/* Feedback lives here rather than behind a floating button: this
-              menu is on every screen, and a bubble over the text is the one
-              piece of chrome a reading app cannot afford. */}
-          <button
-            role="menuitem"
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              openFeedback({ source: "menu" });
-            }}
-            className="block w-full px-4 py-2 text-left text-sm hover:bg-ink/5"
-          >
-            Send feedback
-          </button>
-          <Link
-            role="menuitem"
-            href="/me/feedback"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm hover:bg-ink/5"
-          >
-            My feedback
-          </Link>
-          <button
-            role="menuitem"
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              void logout();
-            }}
-            className="block w-full px-4 py-2 text-left text-sm hover:bg-ink/5"
-          >
-            Sign out
-          </button>
-        </div>
-      )}
-    </div>
+          Send feedback
+        </button>
+        <Link href="/me/feedback" onClick={() => setOpen(false)} className={row}>
+          My feedback
+        </Link>
+        {/* In the softer ink rather than behind a rule: it is the one row here
+            that ends a session rather than opening a screen, and a hairline
+            across a five-row sheet was a division doing the work a shade
+            already does. */}
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            void logout();
+          }}
+          className={`${row} text-ink-soft`}
+        >
+          Sign out
+        </button>
+      </Sheet>
+    </>
   );
 }
 

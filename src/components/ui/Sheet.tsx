@@ -27,6 +27,7 @@ export function Sheet({
   open,
   onClose,
   title,
+  subtitle,
   actions,
   footer,
   surface = "app",
@@ -35,6 +36,12 @@ export function Sheet({
   open: boolean;
   onClose: () => void;
   title: string;
+  /**
+   * A line under the title, in the softer ink — whose account this is, which
+   * shelf is being filtered. It belongs to the heading rather than to the body:
+   * as the first row of the list it read as something to tap.
+   */
+  subtitle?: ReactNode;
   /** beside the title, before the close button — "Clear all", "Clear" */
   actions?: ReactNode;
   /** pinned to the floor of the sheet, above the home indicator */
@@ -96,9 +103,12 @@ export function Sheet({
         <div className="shrink-0 pt-2.5">
           <div className="mx-auto h-1 w-9 rounded-full bg-current opacity-20" aria-hidden />
           <div className={`flex items-center gap-2 border-b px-5 pb-3 pt-3.5 ${rule}`}>
-            <h2 className="min-w-0 flex-1 text-title font-semibold tracking-[-0.01em]">
-              {title}
-            </h2>
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-title font-semibold tracking-[-0.01em]">{title}</h2>
+              {subtitle && (
+                <p className="mt-0.5 truncate text-xs text-ink-soft">{subtitle}</p>
+              )}
+            </div>
             {actions}
             <button
               type="button"
