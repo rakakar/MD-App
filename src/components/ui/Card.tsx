@@ -152,6 +152,15 @@ export function StatTile({
  * lightness is the only difference a reader registers before reading anything.
  * It carries its own ink because the surface is fixed in every theme — the
  * same reason the workspace fills elsewhere do not follow the theme either.
+ *
+ * **And it is the player pill's own ground**, `player-pill` from globals: the
+ * same near-black, the same equaliser bars rising at its right shoulder, the
+ * same warm sweep across it. This card is the door into listening and the pill
+ * is what listening looks like once it has started — they were two dark
+ * surfaces a shade and a texture apart, which is the kind of difference nobody
+ * can name and everybody feels. Six gradient layers and a sweep are a
+ * stylesheet's job, not a class list's, which is why the ground lives there
+ * and this only asks for it.
  */
 export function PromoBand({
   href,
@@ -165,21 +174,8 @@ export function PromoBand({
   return (
     <Link
       href={href}
-      className="relative flex items-center gap-3.5 overflow-hidden rounded-card p-4 text-white shadow-card transition-opacity hover:opacity-95"
-      style={{ background: "linear-gradient(105deg, #241c16, #1b1512 60%, #171310)" }}
+      className="player-pill relative flex items-center gap-3.5 overflow-hidden rounded-card p-4 text-white shadow-card transition-opacity hover:opacity-95"
     >
-      {/* The waveform behind the text in the comp. Decorative and low-contrast
-          by design, so it is drawn as a gradient rather than as art nobody can
-          swap: bars would be a second asset to keep in three themes. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-1/2"
-        style={{
-          background:
-            "repeating-linear-gradient(90deg, rgb(255 255 255 / 0.055) 0 6px, transparent 6px 14px)",
-          maskImage: "linear-gradient(90deg, transparent, #000 70%)",
-        }}
-      />
       <span
         aria-hidden
         className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white"

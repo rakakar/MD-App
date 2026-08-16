@@ -1,14 +1,21 @@
+import { DoorCard } from "@/components/library/CollectionShell";
 import { hidesDoor } from "@/components/library/WorkspaceShelf";
-import { SectionHeading, SeeAll, StatTile } from "@/components/ui";
-import type { TileKind } from "@/components/ui/KindTile";
-import { nodeHref } from "@/lib/library";
+import { SectionHeading, SeeAll } from "@/components/ui";
 import { findLibrary, getNode, getWorkspaces, nodeChildren } from "@/lib/api";
 import { EMPTY_FIND } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
 import type { FileKind } from "@/lib/types";
 
-/** How many doors the home band shows before it defers to the shelf. */
-const SHOWN = 3;
+/**
+ * How many doors the home band shows before it defers to the shelf.
+ *
+ * Two, and they are the two the shelf itself leads with — the compilations and
+ * the recorded conversations, which between them are what a reader coming to
+ * this library is looking for. Three tiles filled the row and made the third
+ * one a decision nobody was asking to make on a home page; the band is a
+ * signpost, and "Open" beside the heading is where the rest is.
+ */
+const SHOWN = 2;
 
 /**
  * What the Audio/Video tab is showing instead, so this band does not offer it
@@ -66,54 +73,23 @@ export async function LibraryBand() {
         Library
       </SectionHeading>
       {/*
-        Three tiles across, as the finished comps draw them — a number and what
-        it counts, rather than the full folder cards this band used to show.
-        On Home the Library is a signpost: the reader is deciding whether to go
-        in, not choosing which folder, and three cards' worth of descriptions
-        was answering the second question at the cost of the first.
+        The shelf's own card, not a tile of this band's design. It was three
+        stat tiles — a picture, a name and a bare number — which meant the
+        first thing a reader ever saw of the library looked nothing like the
+        library they arrived in one tap later. Same card, same counts, same
+        two-up grid: crossing from here to `/originals` should feel like
+        scrolling, not like changing app.
 
-        The comps' first tile counts a *kind* ("PDFs 64") and the other two
-        count folders. We count folders only. A kind tile would have to promise
-        a filtered view of the whole shelf that nothing on this shelf opens, and
-        mixing the two units in one row of three is how a reader learns that
-        numbers here cannot be compared. The rule this band has always kept
-        holds: it draws folders that exist, so it can never promise an empty
-        shelf.
+        The rule this band has always kept holds either way: it draws folders
+        that exist, so it can never promise an empty shelf.
       */}
-      <ul className="grid grid-cols-3 gap-2.5">
+      <ul className="grid grid-cols-2 gap-2.5 sm:gap-3">
         {doors.slice(0, SHOWN).map((door) => (
-          <li key={door.id}>
-            <StatTile
-              href={nodeHref(door.id, shelves)}
-              kind={tileKind(door.kinds)}
-              // The comps' three tiles carry pictures, not glyphs — that is
-              // a cover the manager set on the folder, not a hue anyone chose.
-              cover={door.cover_url}
-              label={door.name}
-              // Deep, not shallow: the shallow count on a folder of folders is
-              // the number of folders, which is the one number nobody wants
-              // here. Falls back to what the card itself carries when the
-              // rollup did not arrive.
-              count={countLine(
-                rollup[String(door.id)]?.items ?? door.item_count,
-                door.child_count
-              )}
-            />
+          <li key={door.id} className="contents">
+            <DoorCard door={door} rollup={rollup} shelves={shelves} />
           </li>
         ))}
       </ul>
     </>
   );
-}
-
-/** A tile takes the kind of what is inside it, when that is one thing. A mixed
- *  folder is a folder — there is no one true glyph for it. */
-function tileKind(kinds: FileKind[]): TileKind {
-  return kinds.length === 1 ? kinds[0] : "folder";
-}
-
-/** "64" where a folder holds files, "2 folders" where it holds only folders. */
-function countLine(items: number, folders: number): string {
-  if (items > 0) return String(items);
-  return `${folders} ${folders === 1 ? "folder" : "folders"}`;
 }
