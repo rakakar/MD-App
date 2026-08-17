@@ -27,6 +27,8 @@ import type { LibraryFile } from "@/lib/types";
 const MAX_SCALE = 6;
 /** how far a flat drag must travel to count as a swipe rather than a tap */
 const SWIPE_PX = 48;
+/** how still a finger must be to have tapped rather than dragged */
+const TAP_SLOP_PX = 10;
 
 export function Lightbox({
   items,
@@ -61,6 +63,17 @@ export function Lightbox({
   const lastTap = useRef(0);
   /** where a single pointer went down, for telling a swipe from a tap */
   const swipeFrom = useRef<{ x: number; y: number } | null>(null);
+  /**
+   * Whether this gesture ever had two fingers on the glass.
+   *
+   * A pinch ends in two `pointerup`s a few milliseconds apart, which is exactly
+   * what the double-tap test below is looking for — so releasing a pinch used
+   * to zoom the picture straight back out to 1×, and the zoom appeared not to
+   * stick. Remembered until the last finger lifts, because the two releases
+   * are separate events and the second one has to know what the first was part
+   * of.
+   */
+  const wasPinch = useRef(false);
 
   // A new image starts unzoomed — carrying the previous one's transform over
   // lands the reader in the middle of a chart they have not seen yet.
@@ -148,6 +161,7 @@ export function Lightbox({
     swipeFrom.current =
       pointers.current.size === 1 ? { x: e.clientX, y: e.clientY } : null;
     if (pointers.current.size === 2) {
+      wasPinch.current = true;
       const [a, b] = [...pointers.current.values()];
       pinch.current = { distance: Math.hypot(a.x - b.x, a.y - b.y), scale: view.scale };
     }
@@ -185,13 +199,25 @@ export function Lightbox({
   const endPointer = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinch.current = null;
-    if (pointers.current.size === 0) swipeFrom.current = null;
+    if (pointers.current.size === 0) {
+      swipeFrom.current = null;
+      wasPinch.current = false;
+    }
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
     const from = swipeFrom.current;
     const wasSingle = pointers.current.size === 1;
+    const pinched = wasPinch.current;
     endPointer(e);
+
+    // Releasing a pinch is not a tap of any kind, and it must not leave a
+    // half-finished one behind either: the finger that lifts next would pair
+    // with it and undo the zoom the reader just set.
+    if (pinched) {
+      lastTap.current = 0;
+      return;
+    }
 
     // A swipe only when the picture is not zoomed — once it is, a sideways drag
     // is how you look at the left edge of a chart, and stealing that to change
@@ -207,6 +233,14 @@ export function Lightbox({
         lastTap.current = 0;
         return;
       }
+    }
+
+    // A finger that travelled was panning a zoomed chart or thinking about a
+    // swipe; either way it did not tap. Without this, two pans in quick
+    // succession read as a double tap and throw the zoom away mid-inspection.
+    if (from && Math.hypot(e.clientX - from.x, e.clientY - from.y) > TAP_SLOP_PX) {
+      lastTap.current = 0;
+      return;
     }
 
     /** double-tap toggles a readable zoom — the gesture people try first */
