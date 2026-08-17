@@ -224,7 +224,9 @@ export function Lightbox({
       role="dialog"
       aria-modal="true"
       aria-label={item.title}
-      className="fixed inset-0 z-50 flex flex-col bg-black/95"
+      // Padded for the notch like `VideoStage`: this overlay covers the app's
+      // own header, so without the inset the title sits under the status bar.
+      className="fixed inset-0 z-50 flex flex-col bg-black/95 pt-[env(safe-area-inset-top)]"
     >
       <div className="flex items-start gap-3 p-3 text-white">
         <div className="min-w-0 flex-1">
