@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Reader } from "@/components/reader/Reader";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { ApiError, getBook, getBooks, getChapter } from "@/lib/api";
+import { chapterEditions } from "@/lib/editions";
 import { offShelfHref } from "@/lib/routes";
 import type { BookDetail, ChapterPayload } from "@/lib/types";
 import { contentWorkspace } from "@/lib/workspaceConfig";
@@ -92,6 +93,11 @@ export default async function ChapterPage({
     if (e instanceof ApiError && e.status === 404) notFound();
   }
 
+  // This work in its other languages, when there are any. Costs one fetch per
+  // translation and none at all on a book without them, which exits before any
+  // request is made — see `chapterEditions`.
+  const editions = await chapterEditions(book);
+
   const ws = contentWorkspace(book.workspace);
 
   const jsonLd = {
@@ -127,6 +133,7 @@ export default async function ChapterPage({
         }}
         initialChapterNumber={chapterNumber}
         initialChapter={chapter}
+        editions={editions}
       />
     </>
   );

@@ -9,6 +9,8 @@ import {
   ShareIcon,
   TocIcon,
 } from "@/components/shell/icons";
+import { editionHref, type EditionRef } from "@/lib/editions";
+import { contentLang } from "@/lib/script";
 import { HIGHLIGHT_COLOURS, type HighlightColour } from "@/lib/storage";
 
 /**
@@ -52,6 +54,53 @@ function SquareBtn({
 }
 
 /**
+ * shared: a bordered pill with a word in it — the comps' "Pages", and now the
+ * edition switch beside it. Devanagari is likely in the label (a language names
+ * itself: "हिन्दी"), so the script is detected rather than assumed.
+ */
+function pillClass(text: string) {
+  const { lang, className } = contentLang(text);
+  return {
+    lang,
+    className: `${className} flex h-11 shrink-0 items-center rounded-control border border-(--reader-rule) px-3 text-xs font-semibold active:bg-current/10`,
+  };
+}
+
+function PillLink({
+  href,
+  hrefLang,
+  label,
+  children,
+}: {
+  href: string;
+  hrefLang?: string;
+  label: string;
+  children: string;
+}) {
+  return (
+    <Link href={href} hrefLang={hrefLang} title={label} aria-label={label} {...pillClass(children)}>
+      {children}
+    </Link>
+  );
+}
+
+function PillButton({
+  onClick,
+  label,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  children: string;
+}) {
+  return (
+    <button type="button" onClick={onClick} title={label} aria-label={label} {...pillClass(children)}>
+      {children}
+    </button>
+  );
+}
+
+/**
  * Top bar: back · what you are reading · Aa · Assistant.
  *
  * Left-aligned, not centred, as drawn — the chapter name is long Devanagari
@@ -78,6 +127,9 @@ export function ReaderTopBar({
   pagesHref,
   onType,
   assistantHref,
+  editions,
+  chapter,
+  onEditions,
 }: {
   hidden: boolean;
   backHref: string;
@@ -92,7 +144,19 @@ export function ReaderTopBar({
   pagesHref?: string;
   onType: () => void;
   assistantHref: string;
+  /** every language this work exists in, this one included; `[]` on most books */
+  editions?: EditionRef[];
+  /** where the reader has got to — the chapter the switch resolves against */
+  chapter: number;
+  /** opens the picker — only reached when there are three or more editions */
+  onEditions: () => void;
 }) {
+  // The switch, when there is one. With a single alternative it is that
+  // alternative, named and linked: a reader in the Hindi who wants the English
+  // presses "English" and is in it. With more than one there is nothing
+  // truthful to write on a one-tap control, so it opens the list instead.
+  const others = editions?.filter((e) => !e.current) ?? [];
+  const only = others.length === 1 ? others[0] : null;
   return (
     <div
       data-reader-chrome
@@ -122,6 +186,30 @@ export function ReaderTopBar({
           </p>
           <p className="hi-tight truncate text-xs text-(--reader-ink-soft)">{meta}</p>
         </div>
+
+        {/* Between the title and the type control, in the slot "Pages" uses —
+            the two never appear together, because a text edition is a library
+            file and a translation is a shelf book. Both answer the same kind of
+            question about the text on screen: which version of it is this. */}
+        {only ? (
+          <PillLink
+            href={editionHref(only, chapter)}
+            hrefLang={only.language}
+            label={
+              only.isOriginal
+                ? `Read the original in ${only.label}`
+                : `Read in ${only.label}${only.translator ? `, translated by ${only.translator}` : ""}`
+            }
+          >
+            {only.label}
+          </PillLink>
+        ) : others.length > 1 ? (
+          <PillButton onClick={onEditions} label="Choose an edition — this work in other languages">
+            {/* The count, not a language: there are several and the bar has
+                room for one word. */}
+            {`${others.length + 1} editions`}
+          </PillButton>
+        ) : null}
 
         {pagesHref && (
           <Link
