@@ -39,7 +39,6 @@ import {
   type HighlightColour,
   type HighlightRange,
 } from "@/lib/storage";
-import type { EditionRef } from "@/lib/editions";
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import type { Matcher } from "@/lib/paribhasha";
 import { Block } from "./blocks";
@@ -50,7 +49,6 @@ import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 import { DisplaySheet } from "@/components/shell/DisplaySheet";
 import { Sheet } from "./Sheet";
 import { SettingsSheet } from "./SettingsSheet";
-import { EditionsSheet } from "./EditionsSheet";
 import { TocSheet } from "./TocSheet";
 import { useReaderChrome } from "./useReaderChrome";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
@@ -118,19 +116,6 @@ interface ReaderProps {
   book: ReaderBook;
   initialChapterNumber: number;
   initialChapter: ChapterPayload | null;
-  /**
-   * This work in its other languages, resolved on the server for the chapter
-   * that was requested — `[]` or absent on a book that has no translations,
-   * which is nearly all of them.
-   *
-   * Resolved once for the chapter the reader *arrived* at, and deliberately not
-   * re-resolved as they move: the switch stays pointing at the chapter it was
-   * built for, which is wrong only for a reader who walks several chapters on
-   * and then changes language. `goToChapter` replaces the URL rather than
-   * re-rendering the server component, so keeping this live would mean a fetch
-   * per chapter turn to correct a link most readers never press.
-   */
-  editions?: EditionRef[];
   /** absent on the books shelf, which is every reader but the compilation one */
   home?: ReaderHome;
 }
@@ -180,13 +165,7 @@ export function Reader(props: ReaderProps) {
   );
 }
 
-function ReaderView({
-  book,
-  initialChapterNumber,
-  initialChapter,
-  home,
-  editions,
-}: ReaderProps) {
+function ReaderView({ book, initialChapterNumber, initialChapter, home }: ReaderProps) {
   const { user, loading: authLoading } = useAuth();
   const { open: openFeedback } = useFeedback();
   const { matcher } = useGlossary();
@@ -221,7 +200,6 @@ function ReaderView({
   const [resumeHint, setResumeHint] = useState<ResumeHint | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
-  const [editionsOpen, setEditionsOpen] = useState(false);
   const [hint, setHint] = useState(false);
   const [currentRef, setCurrentRef] = useState<string | null>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -232,8 +210,7 @@ function ReaderView({
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // any modal surface pins the chrome open
-  const modalOpen =
-    settingsOpen || tocOpen || editionsOpen || noteOpen || gotoOpen || defineWord !== null;
+  const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
   const chrome = useReaderChrome(mode, modalOpen);
 
   const pages: ReaderPage[] = useMemo(
@@ -1319,11 +1296,6 @@ function ReaderView({
         // to this book, because a global search from page 19 of a chapter is
         // almost never the question being asked.
         assistantHref={`/search?book=${encodeURIComponent(book.code)}`}
-        editions={editions}
-        // The live chapter, not the one this page was rendered for: chapters
-        // move by `pushState` and the server never sees it happen.
-        chapter={chapterNumber}
-        onEditions={() => setEditionsOpen(true)}
       />
 
       {/* ---- content ---- */}
@@ -1566,13 +1538,6 @@ function ReaderView({
           the trail included, so a word means the same thing wherever it is
           tapped. */}
       <ParibhashaTrailSheet word={defineWord} onClose={() => setDefineWord(null)} />
-
-      <EditionsSheet
-        open={editionsOpen}
-        onClose={() => setEditionsOpen(false)}
-        editions={editions ?? []}
-        chapter={chapterNumber}
-      />
 
       <TocSheet
         open={tocOpen}
