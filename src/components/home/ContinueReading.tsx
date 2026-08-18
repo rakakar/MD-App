@@ -77,16 +77,30 @@ export function ContinueReading({
     // cases that matter: the reader opened it here, or `pull()` recorded it
     // from the row's `source_item`. The detail pass below is the backstop for
     // the third case, and it teaches this device the answer for next time.
-    const rows = localProgress()
-      .filter((p) => readingHomeFor(p.book_code) === null)
-      .slice(0, limit);
+    const notLibraryDocs = localProgress().filter(
+      (p) => readingHomeFor(p.book_code) === null
+    );
+    if (notLibraryDocs.length === 0) {
+      setCards([]);
+      return;
+    }
+    // Originals only. The local store keeps one resume position per book
+    // across every workspace it has ever been asked to remember — a
+    // translation, a book filed under Resources, anything — and this rail is
+    // drawn on Home and the Originals "Read" shelf, both of them Originals'
+    // own pages. A translation's progress row surfacing there sent a reader
+    // who has never opened a Hindi original a resume card in a language that
+    // page has never offered.
+    //
+    // This same call also covers titles, covers and page counts for every
+    // surviving row.
+    const originals = await getBooks({ workspace: "originals" }).catch(() => []);
+    const byCode = new Map(originals.map((b) => [b.code, b]));
+    const rows = notLibraryDocs.filter((p) => byCode.has(p.book_code)).slice(0, limit);
     if (rows.length === 0) {
       setCards([]);
       return;
     }
-    // One books call covers titles, covers and page counts for every row.
-    const books = await getBooks().catch(() => []);
-    const byCode = new Map(books.map((b) => [b.code, b]));
 
     const card = (p: (typeof rows)[number], book?: BookSummary): ResumeCard => {
       const ref = parseRef(p.canonical_ref);
