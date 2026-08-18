@@ -108,7 +108,22 @@ interface ResumeRow extends Candidate {
   chapterCount: number;
 }
 
-export function ContinueDocument({ limit = 4 }: { limit?: number }) {
+export function ContinueDocument({
+  limit = 4,
+  workspace = "originals",
+}: {
+  limit?: number;
+  /**
+   * Which shelf's documents this rail names.
+   *
+   * The lookup below is one library call, and it is scoped — a place holds an
+   * item id and nothing else, so a row whose file is outside the scope is
+   * dropped for want of a title. That is why this is a prop rather than a
+   * constant: on Resources the same rail was silently empty, every saved place
+   * discarded against a listing of the wrong shelf.
+   */
+  workspace?: string;
+}) {
   const { user, loading } = useAuth();
   const [rows, setRows] = useState<ResumeRow[]>([]);
 
@@ -167,7 +182,7 @@ export function ContinueDocument({ limit = 4 }: { limit?: number }) {
     // only for the unnamed ones: a place carries no title even on the device
     // that made it, so unlike a playhead there is never a case this can skip.
     const found = await findLibrary({
-      workspace: "originals",
+      workspace,
       state: { ...EMPTY_FIND, selection: { kind: ["pdf"] } },
       limit: 100,
     }).catch(() => null);
@@ -220,7 +235,7 @@ export function ContinueDocument({ limit = 4 }: { limit?: number }) {
       })
     );
     setRows(named);
-  }, [limit]);
+  }, [limit, workspace]);
 
   useEffect(() => {
     if (loading) return;

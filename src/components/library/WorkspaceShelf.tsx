@@ -54,6 +54,7 @@ export async function WorkspaceShelf({
   emptyTitle,
   emptyHint,
   hideKinds = [],
+  searchScope = "library",
 }: {
   root: LibraryNode;
   state: FindState;
@@ -76,6 +77,16 @@ export async function WorkspaceShelf({
    * See `hidesDoor` for why a *mixed* folder is never hidden.
    */
   hideKinds?: FileKind[];
+  /**
+   * What the box says it is looking inside — "Search {this}…".
+   *
+   * "library" everywhere by default, which is the interface's word for the
+   * tree rather than the root folder's own name (see the note at the call
+   * site below). Resources overrides it with the shelf's name, because there
+   * the reader arrived by tapping a tab called Resources and a box offering to
+   * search "library" reads as a different, larger place.
+   */
+  searchScope?: string;
 }) {
   const files = [...root.items, ...root.linked_items];
   const scope = { workspace: root.workspace };
@@ -142,7 +153,7 @@ export async function WorkspaceShelf({
         <FindBar
           basePath={basePath}
           state={state}
-          scope="library"
+          scope={searchScope}
           dense
           filters={
             <FindFilters
@@ -213,11 +224,11 @@ export async function WorkspaceShelf({
           <FindBar
             basePath={basePath}
             state={state}
-            /* "library", not the root's own name. The box is scoped to this
-               shelf either way; what changed is that it says so in the
-               interface's language rather than printing मूल ग्रंथ at a reader
-               who is standing on a tab labelled Library. */
-            scope="library"
+            /* Not the root's own name. The box is scoped to this shelf either
+               way; what changed is that it says so in the interface's language
+               rather than printing मूल ग्रंथ at a reader who is standing on a
+               tab labelled Library. */
+            scope={searchScope}
             dense
             /* No facets, no filters: a failed find leaves the shelf standing and
                the browse needs nothing from it, but a button that opened onto an

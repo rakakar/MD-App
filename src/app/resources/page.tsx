@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ContinueDocument } from "@/components/library/ContinueDocument";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
 import { ShelfCard } from "@/components/shelf/BookShelf";
 import { PageContainer, SegmentedNav } from "@/components/ui";
@@ -13,7 +14,7 @@ export const revalidate = 900;
 export const metadata: Metadata = {
   title: "Resources",
   description:
-    "Discourses, shivir material, compilations, study and research, images and charts — purpose-wise.",
+    "Textbooks, study guides, shodh patra, shivir materials and other media — written and curated by students.",
 };
 
 /**
@@ -70,22 +71,28 @@ export default async function ResourcesPage({
 
   return (
     <PageContainer size="shelf">
-      {/* See the note on the same line in `/originals`. The title is the name
-          of this *screen*, not of the folder behind it: a reader here is on
-          the Resources shelf, not standing inside a folder. It used to be
-          `root.name` — which said "संसाधन" under an eyebrow already reading
-          "Library", the same word twice, and left the heading of a bottom-nav
-          destination editable in the admin. */}
-      <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+      {/* The title is the name of this *screen*, not of the folder behind it:
+          a reader here is on the Resources shelf, not standing inside a folder.
+          It used to be `root.name` — which said "संसाधन", and left the heading
+          of a bottom-nav destination editable in the admin.
+
+          No "Resources" eyebrow over a heading now reading Resources, and no
+          "Library" heading either: the app bar and its switcher both say which
+          shelf this is, so the eyebrow was the third telling on the way to a
+          page chosen from the tab bar. Same call as `/originals`. */}
+      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
         Resources
-      </p>
-      <h1 className="mt-0.5 font-display text-[1.625rem] font-medium tracking-[-0.015em] lg:text-4xl">
-        Library
       </h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        Shivir material, compilations, discourses, research papers, images and
-        charts — start from what you are looking for.
+      <p className="mt-0.5 text-sm text-ink-soft">
+        Contains Textbooks, Study guides, Shodh patra, shivir materials, and
+        other media. Written and curated by students.
       </p>
+
+      {/* The shortest path back to a half-read document, as on `/originals` —
+          scoped to this shelf, so it names Resources' own files and not the
+          originals a reader left off in. Drawn client-side from saved places,
+          so it is simply absent for anyone who has not started one. */}
+      <ContinueDocument workspace="resources" />
 
       {available.length > 1 && (
         <div className="mt-4">
@@ -115,6 +122,7 @@ export default async function ResourcesPage({
           topics={topics}
           shelves={shelves}
           basePath="/resources"
+          searchScope="Resources"
           emptyTitle="Resources are on their way"
           emptyHint="The library is being filled folder by folder; material appears here as it is published."
         />
