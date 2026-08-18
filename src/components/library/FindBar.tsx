@@ -136,9 +136,13 @@ export function FindBar({
             pending={pending}
           />
         }
-        /* The desktop keeps its filters as standing chrome in the left rail, so
-           the button is a phone control and would be a second copy there. */
-        filters={filters && <div className="lg:hidden">{filters}</div>}
+        /* On every width, beside the box — the designer's call, reversing a
+           `lg:hidden` that reasoned the left rail already carried the filters
+           on a desktop. It carries most of them: the rail and the sheet are
+           drawn from the same facets, but "Sort by" lives only in the sheet, so
+           on a desktop there was no way to reach it at all. Two doors onto one
+           set of filters is the smaller cost. */
+        filters={filters}
       />
       <p className={`mt-1.5 px-1 text-xs text-ink-soft ${dense ? "lg:hidden" : ""}`}>
         By name, topic, year or place
