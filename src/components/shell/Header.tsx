@@ -194,14 +194,9 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
       <div className="ws-sheet absolute inset-x-0 bottom-0 max-h-[calc(100dvh-2.5rem)] overflow-y-auto overscroll-contain rounded-t-[26px] border-t border-rule bg-surface px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-20px_44px_-20px_rgba(26,22,19,.4)]">
         <div className="mx-auto h-1 w-10 rounded-full bg-rule" aria-hidden />
         <div className="mt-4 flex items-start justify-between gap-3">
-          <div>
-            <p id="ws-sheet-title" className="text-title font-semibold tracking-[-0.01em]">
-              Choose a workspace
-            </p>
-            <p className="mt-1 text-xs leading-snug text-ink-soft">
-              Each workspace changes the home feed, colour and menu — the four tabs stay put.
-            </p>
-          </div>
+          <p id="ws-sheet-title" className="text-title font-semibold tracking-[-0.01em]">
+            Choose a workspace
+          </p>
           <button
             type="button"
             aria-label="Close"

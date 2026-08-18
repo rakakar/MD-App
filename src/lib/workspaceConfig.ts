@@ -65,7 +65,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     // designer palette (spec 10A), each hue deepened only as far as AA on the
     // sepia reading surface requires — terracotta uses the spec's own 700
     color: "#A64E12",
-    tagline: "Books · daily Sutra · discourses",
+    tagline: "All works of Shri A. Nagraj - Read, listen, watch.",
     home: "/",
     /**
      * Five slots, and the only workspace with five.
@@ -105,7 +105,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "translations",
     name: "Translations",
     color: "#4A7260",
-    tagline: "English · side-by-side with the original",
+    tagline: "Read translations by students",
     home: "/translations",
     nav: [
       { label: "Home", href: "/translations", icon: "home" },
@@ -117,7 +117,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "resources",
     name: "Resources",
     color: "#5E5A8C",
-    tagline: "Shivir notes · presentations · Yojana",
+    tagline: "Student Materials - Shodh patra, textbooks, etc.",
     home: "/resources",
     // Two slots, not four. Resources holds files rather than books, so the
     // old "Browse" — a books shelf filtered to this section — pointed at
@@ -138,7 +138,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "journey",
     name: "My Journey",
     color: "#89631F",
-    tagline: "Where you left off · bookmarks · notes",
+    tagline: "Study Roadmap - Reading history - Highlights & Notes",
     home: "/me",
     nav: [
       { label: "Overview", href: "/me", icon: "overview" },
@@ -151,7 +151,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "connect",
     name: "Connect",
     color: "#2F6E86",
-    tagline: "Shivir calendar · JV centres",
+    tagline: "Shivir Calendar - Contacts - Links",
     home: "/connect",
     // Three slots. The fourth was Connect's own library, and it is gone: the
     // four folders behind it ship published but empty (§13.3), so the tab
