@@ -33,6 +33,15 @@ const FORMAT_LABEL: Record<Format, string> = {
 };
 
 /**
+ * Off for now at the designer's request — a product decision, not a rule
+ * about the data. Flip it back on and the toggle returns exactly as it was:
+ * hidden below two formats, shown above them, "Books" reachable at
+ * `?format=books`. Nothing below this line needed to change to turn it off,
+ * which is the point of gating it here rather than deleting the branch.
+ */
+const SHOW_FORMAT_TOGGLE = false;
+
+/**
  * The Resources shelf — the workspace root, rendered as its contents.
  *
  * The root is a folder like any other and the seven purpose doors are now
@@ -61,13 +70,21 @@ export default async function ResourcesPage({
   const [root, topics, books, shelves] = await Promise.all([
     getNode(rootId).catch(() => null),
     getTopics().catch(() => [] as Topic[]),
-    getBooks({ workspace: "resources" }).catch(() => [] as BookSummary[]),
+    // Not fetched while the toggle is off — nothing on the page can show a
+    // book row, so a books listing here would just be a request nobody reads.
+    SHOW_FORMAT_TOGGLE
+      ? getBooks({ workspace: "resources" }).catch(() => [] as BookSummary[])
+      : Promise.resolve([] as BookSummary[]),
     shelfMap(),
   ]);
   if (!root) notFound();
 
-  const available: Format[] = ["library", ...(books.length > 0 ? (["books"] as const) : [])];
-  const active: Format = format === "books" && books.length > 0 ? "books" : "library";
+  const available: Format[] = [
+    "library",
+    ...(SHOW_FORMAT_TOGGLE && books.length > 0 ? (["books"] as const) : []),
+  ];
+  const active: Format =
+    SHOW_FORMAT_TOGGLE && format === "books" && books.length > 0 ? "books" : "library";
 
   return (
     <PageContainer size="shelf">
