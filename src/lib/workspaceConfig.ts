@@ -218,6 +218,20 @@ export function libraryTab(ws: WorkspaceId): string | null {
   return WORKSPACES[ws].nav.find((item) => item.icon === "browse")?.href ?? null;
 }
 
+/**
+ * The workspace's own Audio/Video door, when it has one — `null` otherwise.
+ *
+ * Only Originals does, and that is the point of asking rather than assuming:
+ * `/av` is scoped to Originals' tree, so sending a reader there from a
+ * Resources folder of recordings is not "back", it is a different shelf. The
+ * mirror of `libraryTab`, and kept beside it so the two answers about a folder
+ * — which tab it stands under, and where leaving it goes — are read off the
+ * same nav.
+ */
+export function avTab(ws: WorkspaceId): string | null {
+  return WORKSPACES[ws].nav.find((item) => item.icon === "av")?.href ?? null;
+}
+
 export function workspaceForPath(path: string): WorkspaceId | null {
   if (path === "/") return "originals";
   // `/av` is Originals' own door onto its recordings — the tree behind it is

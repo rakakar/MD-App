@@ -1,4 +1,4 @@
-import { bookHue, coverGradient } from "@/lib/bookHue";
+import { bookHue, coverGradient, type BookHue } from "@/lib/bookHue";
 import type { BookSummary } from "@/lib/types";
 
 /**
@@ -63,13 +63,20 @@ export function CoverTile({
   book,
   size = "rail",
   caption = "dash",
+  hue: given,
 }: {
   book: Pick<BookSummary, "title_hi" | "cover_image"> & { code?: string };
   size?: Size;
   /** what sits at the foot of the tile: the spine rule, or nothing */
   caption?: "dash" | "none";
+  /**
+   * A colour chosen by the caller, where the tile stands for something whose
+   * identity is not its own id — a library folder that should read as its
+   * shelf. Omitted everywhere else, and then it is the book's own hue.
+   */
+  hue?: BookHue;
 }) {
-  const hue = bookHue(book.code ?? book.title_hi);
+  const hue = given ?? bookHue(book.code ?? book.title_hi);
   const hasCover = Boolean(book.cover_image);
   const showDash = caption === "dash" && size !== "resume" && !hasCover;
 

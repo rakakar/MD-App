@@ -94,6 +94,18 @@ export function bookHue(code: string | null | undefined): BookHue {
   return PALETTE[Math.abs(h) % PALETTE.length];
 }
 
+/**
+ * A shelf's own colour as a cover hue — for a folder that should read as the
+ * workspace it belongs to rather than as itself.
+ *
+ * `to` is exactly the Resources colour in `workspaceConfig`, and the pair is
+ * the palette's iris, measured against white like every other pair here. A
+ * folder normally takes a hue from its id, so that one shivir does not feel
+ * like the next; a folder of songs on a shelf of textbooks is the case where
+ * belonging is the more useful thing to say.
+ */
+export const RESOURCES_HUE: BookHue = { from: "#7C77AD", to: "#5E5A8C" };
+
 /** The 150° cover gradient, as a CSS value. */
 export function coverGradient(hue: BookHue): string {
   return `linear-gradient(150deg, ${hue.from}, ${hue.to})`;

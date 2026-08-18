@@ -9,7 +9,7 @@ import { CoverTile } from "@/components/shelf/CoverTile";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { CollectionHero, EmptyState, HeroPill, ShareButton } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
-import { bookHue } from "@/lib/bookHue";
+import { RESOURCES_HUE, bookHue } from "@/lib/bookHue";
 import {
   EMPTY_FIND,
   FIND_MIN_ROWS,
@@ -19,10 +19,7 @@ import {
 } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import type { LibraryFindResponse, LibraryNode } from "@/lib/types";
-import { libraryTab, libraryWorkspace } from "@/lib/workspaceConfig";
-
-/** the A/V tab's address, which is both a back destination and a nav claim */
-const AV_TAB = "/av";
+import { avTab, libraryTab, libraryWorkspace } from "@/lib/workspaceConfig";
 
 /**
  * One folder — **the same component at every depth**.
@@ -91,7 +88,18 @@ export async function NodeView({
   // the same test it makes, read from the other side. It decides two things:
   // where back goes, and which tab is lit.
   const isRecordings = files.some((f) => f.kind === "audio" || f.kind === "video");
-  const tab = isRecordings ? AV_TAB : libraryTab(libraryWorkspace(node.workspace));
+  const ws = libraryWorkspace(node.workspace);
+  /**
+   * This shelf's own Audio/Video door, when it has one.
+   *
+   * Only Originals does. A folder of recordings used to send the reader to
+   * `/av` whatever shelf it was on — so backing out of Resources' MP3 folder
+   * landed them in Originals' recordings, a different workspace with a
+   * different accent, having pressed a button that said "Audio/Video" when
+   * they had arrived from Resources › Library.
+   */
+  const av = isRecordings ? avTab(ws) : null;
+  const tab = av ?? libraryTab(ws);
 
   return (
     <>
@@ -176,6 +184,10 @@ export async function NodeView({
             linked={node.linked_items}
             albumTitle={node.name}
             coverUrl={node.cover_url}
+            /* The shared portrait of Nagraj ji stands in for a still only where
+               the recording is him — see `AlbumAudio`. On any other shelf the
+               track wears the wave on that shelf's colour instead. */
+            audioArt={ws === "originals" ? "portrait" : "glyph"}
             folderProvenance={node.provenance}
           />
 
@@ -222,7 +234,15 @@ function Header({
   /** this folder is one of the collections the A/V tab lists — see `NodeView` */
   isRecordings: boolean;
 }) {
-  const hue = bookHue(`node-${node.id}`);
+  const ws = libraryWorkspace(node.workspace);
+  /** this shelf's own A/V door, when it has one — see `NodeView` */
+  const av = isRecordings ? avTab(ws) : null;
+  // A folder of recordings on Resources wears the shelf's purple rather than a
+  // hue of its own: among textbooks and workshop notes, what a folder of geet
+  // most needs to say is which shelf it is on. Everywhere else the id decides,
+  // so one shivir folder still does not feel like the next.
+  const hue =
+    isRecordings && ws === "resources" ? RESOURCES_HUE : bookHue(`node-${node.id}`);
   const parent = node.breadcrumb.at(-1);
   const files = [...node.items, ...node.linked_items];
   // The BE's count is over this folder's own files; a borrowed one is counted
@@ -259,8 +279,8 @@ function Header({
       back={
         isShelf
           ? undefined
-          : isRecordings
-            ? { href: AV_TAB, label: "Audio/Video" }
+          : av
+            ? { href: av, label: "Audio/Video" }
             : parent
               ? {
                   href: nodeHref(parent.id, shelves),
@@ -294,6 +314,9 @@ function Header({
                 code: `node-${node.id}`,
               }}
               size="grid"
+              /* The same colour the hero behind it took, so the tile and the
+                 panel are one object rather than two that happen to touch. */
+              hue={hue}
             />
           </div>
         ) : undefined

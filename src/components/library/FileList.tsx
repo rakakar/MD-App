@@ -26,6 +26,7 @@ export function FileList({
   linked = [],
   albumTitle,
   coverUrl = null,
+  audioArt,
   folderProvenance,
 }: {
   files: LibraryFile[];
@@ -33,6 +34,8 @@ export function FileList({
   /** the folder's name — what the lock screen calls the album */
   albumTitle?: string;
   coverUrl?: string | null;
+  /** what an audio track wears where it has no still — see `AlbumAudio` */
+  audioArt?: "portrait" | "glyph";
   /**
    * The folder's own provenance, so a row can stay silent when it agrees.
    * Passed down rather than looked up because a cross-posted file inherits
@@ -69,6 +72,7 @@ export function FileList({
             files={kindFiles}
             albumTitle={albumTitle}
             coverUrl={coverUrl}
+            audioArt={audioArt}
             folderProvenance={folderProvenance}
           />
         </section>
@@ -82,16 +86,25 @@ function KindGroup({
   files,
   albumTitle,
   coverUrl,
+  audioArt,
   folderProvenance,
 }: {
   kind: FileKind;
   files: (LibraryFile | LocatedFile)[];
   albumTitle?: string;
   coverUrl: string | null;
+  audioArt?: "portrait" | "glyph";
   folderProvenance?: Provenance;
 }) {
   if (kind === "audio") {
-    return <AlbumAudio items={files} albumTitle={albumTitle} coverUrl={coverUrl} />;
+    return (
+      <AlbumAudio
+        items={files}
+        albumTitle={albumTitle}
+        coverUrl={coverUrl}
+        art={audioArt}
+      />
+    );
   }
 
   if (kind === "image") return <ImageGallery items={files} />;

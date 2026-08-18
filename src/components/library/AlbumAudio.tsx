@@ -40,11 +40,23 @@ export function AlbumAudio({
   items,
   albumTitle,
   coverUrl = null,
+  art = "portrait",
 }: {
   items: LibraryFile[];
   /** what the player calls the album — the folder the files sit in */
   albumTitle?: string;
   coverUrl?: string | null;
+  /**
+   * What a track wears where it has no still of its own.
+   *
+   * `portrait` is the shared photograph of Shri A. Nagraj, and it is only
+   * honest on Originals: the note on `AUDIO_POSTER` says it is not
+   * identification "since every recording here is him", which stops being
+   * true the moment the shelf is Resources and the recording is a geet sung
+   * by students. `glyph` is the wave on the shelf's own colour — the same
+   * tile the portrait already falls back to when the file is missing.
+   */
+  art?: "portrait" | "glyph";
 }) {
   const entries = useMemo<QueueEntry[]>(
     () =>
@@ -70,6 +82,7 @@ export function AlbumAudio({
           <li key={item.id}>
             <TrackRow
               item={item}
+              art={art}
               active={activeId === key}
               resumeMs={resumes[key] ?? 0}
               onPlay={() => {
@@ -109,8 +122,10 @@ function TrackRow({
   active,
   resumeMs,
   onPlay,
+  art,
 }: {
   item: LibraryFile;
+  art: "portrait" | "glyph";
   /** this is the track the player is on — the one thing a list of fourteen
    *  must be able to say without being read */
   active: boolean;
@@ -128,6 +143,7 @@ function TrackRow({
   // have tried and failed before React ever attached a handler — hence the
   // check on mount for an image that is `complete` with no pixels in it.
   const [posterFailed, setPosterFailed] = useState(false);
+  const glyph = art === "glyph" || posterFailed;
   const posterRef = useRef<HTMLImageElement>(null);
   useEffect(() => {
     const el = posterRef.current;
@@ -142,13 +158,21 @@ function TrackRow({
       className="group flex w-full items-start gap-3 rounded-card p-1 text-start transition-colors hover:bg-ink/[.04]"
     >
       <span className="relative aspect-video w-[38%] max-w-[10.5rem] shrink-0 overflow-hidden rounded-lg bg-black">
-        {posterFailed ? (
+        {glyph ? (
           // Not `KindTile` with a size override: two Tailwind size utilities on
           // one element are resolved by their order in the stylesheet, not in
           // the class list, so `h-full` beside `h-14` is a coin toss.
+          //
+          // The shelf's colour when the glyph was *asked* for, and the audio
+          // tint when it is standing in for a portrait that would not load —
+          // the second is a fallback and should keep looking like every other
+          // audio tile in the app.
           <span
             aria-hidden
-            className="flex h-full w-full items-center justify-center bg-kind-audio text-kind-audio-ink"
+            className={`flex h-full w-full items-center justify-center ${
+              art === "glyph" ? "text-white" : "bg-kind-audio text-kind-audio-ink"
+            }`}
+            style={art === "glyph" ? { background: "var(--ws-color)" } : undefined}
           >
             <WaveformIcon className="h-6 w-6" />
           </span>
