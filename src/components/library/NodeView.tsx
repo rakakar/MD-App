@@ -19,7 +19,7 @@ import {
 } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import type { LibraryFindResponse, LibraryNode } from "@/lib/types";
-import { avTab, libraryTab, libraryWorkspace } from "@/lib/workspaceConfig";
+import { avTab, libraryTab, libraryTabLabel, libraryWorkspace } from "@/lib/workspaceConfig";
 
 /**
  * One folder — **the same component at every depth**.
@@ -286,11 +286,12 @@ function Header({
                   href: nodeHref(parent.id, shelves),
                   /* A shelf root is named for the tab it is, not for the folder
                      it happens to be: "मूल ग्रंथ" is what a manager called the
-                     top of the tree, and a reader who tapped Library and then a
-                     collection expects Library to be what takes them back. Any
-                     other parent is a folder the reader has actually seen, so
-                     it keeps its own name. */
-                  label: shelves[parent.id] ? "Library" : parent.name,
+                     top of the tree, and a reader who tapped the workspace's
+                     browse tab and then a collection expects that tab's own
+                     name to be what takes them back — "Library" on Originals,
+                     "Student Materials" here. Any other parent is a folder the
+                     reader has actually seen, so it keeps its own name. */
+                  label: shelves[parent.id] ? libraryTabLabel(ws) : parent.name,
                 }
               : undefined
       }

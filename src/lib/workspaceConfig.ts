@@ -33,6 +33,7 @@ export type NavIcon =
   | "assistant"
   | "av"
   | "browse"
+  | "materials"
   | "saved"
   | "overview"
   | "notes"
@@ -118,12 +119,18 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     color: "#5E5A8C",
     tagline: "Shivir notes · presentations · Yojana",
     home: "/resources",
-    // Three slots, not four. Resources holds files rather than books, so the
+    // Two slots, not four. Resources holds files rather than books, so the
     // old "Browse" — a books shelf filtered to this section — pointed at
-    // nothing; the library itself is the browse surface.
+    // nothing; the library itself is the browse surface, renamed "Student
+    // Materials" because "Library" repeated what the app bar already said and
+    // "Resources" already names the shelf a folder of PDFs sits on.
+    //
+    // No "Saved" here. Saving is `/me/bookmarks/` — a painted paragraph in a
+    // book (contract §6.0) — and this workspace has no paragraphs, only files.
+    // The tab pointed at a screen that could never hold anything reached from
+    // here; the honest fix is not to offer it.
     nav: [
-      { label: "Library", href: "/resources", icon: "browse" },
-      { label: "Saved", href: "/me/bookmarks", icon: "saved" },
+      { label: "Student Materials", href: "/resources", icon: "materials" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
@@ -214,8 +221,23 @@ export function libraryWorkspace(code: string | null | undefined): WorkspaceId {
  * folders ship empty and Translations has no folders yet, so there is
  * genuinely no tab to light, and inventing one would be worse than none.
  */
+/** icons that mark "the browse tab" — see `libraryTab` */
+const BROWSE_ICONS: NavIcon[] = ["browse", "materials"];
+
 export function libraryTab(ws: WorkspaceId): string | null {
-  return WORKSPACES[ws].nav.find((item) => item.icon === "browse")?.href ?? null;
+  return WORKSPACES[ws].nav.find((item) => BROWSE_ICONS.includes(item.icon))?.href ?? null;
+}
+
+/**
+ * What the browse tab is *called* — "Library" on Originals, "Student
+ * Materials" on Resources — for the one place outside the nav bar that names
+ * it: a collection's back pill, which has to say what the reader actually
+ * tapped to get here rather than a word this workspace no longer uses.
+ * "Library" if a workspace somehow has no browse tab at all, which is not a
+ * case that occurs today but is a safer default than an empty pill.
+ */
+export function libraryTabLabel(ws: WorkspaceId): string {
+  return WORKSPACES[ws].nav.find((item) => BROWSE_ICONS.includes(item.icon))?.label ?? "Library";
 }
 
 /**

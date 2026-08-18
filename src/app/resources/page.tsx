@@ -12,7 +12,7 @@ import type { BookSummary, Topic } from "@/lib/types";
 export const revalidate = 900;
 
 export const metadata: Metadata = {
-  title: "Resources",
+  title: "Student Materials",
   description:
     "Textbooks, study guides, shodh patra, shivir materials and other media — written and curated by students.",
 };
@@ -71,17 +71,14 @@ export default async function ResourcesPage({
 
   return (
     <PageContainer size="shelf">
-      {/* The title is the name of this *screen*, not of the folder behind it:
-          a reader here is on the Resources shelf, not standing inside a folder.
-          It used to be `root.name` — which said "संसाधन", and left the heading
-          of a bottom-nav destination editable in the admin.
-
-          No "Resources" eyebrow over a heading now reading Resources, and no
-          "Library" heading either: the app bar and its switcher both say which
-          shelf this is, so the eyebrow was the third telling on the way to a
-          page chosen from the tab bar. Same call as `/originals`. */}
+      {/* The title is the name of this *screen*, not of the workspace it sits
+          in — the app bar and the switcher already say "Resources"; this is
+          the answer to "what is this particular page for", the same way the
+          nav item that opens it is now named "Student Materials" and not
+          "Library". It used to be `root.name`, which said "संसाधन" and left
+          the heading of a bottom-nav destination editable in the admin. */}
       <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        Resources
+        Student Materials
       </h1>
       <p className="mt-0.5 text-sm text-ink-soft">
         Contains Textbooks, Study guides, Shodh patra, shivir materials, and
@@ -122,7 +119,7 @@ export default async function ResourcesPage({
           topics={topics}
           shelves={shelves}
           basePath="/resources"
-          searchScope="Resources"
+          searchScope="Student Materials"
           emptyTitle="Resources are on their way"
           emptyHint="The library is being filled folder by folder; material appears here as it is published."
         />

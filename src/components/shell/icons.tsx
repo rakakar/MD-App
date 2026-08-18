@@ -78,6 +78,20 @@ export function Icon({ name, ...props }: IconProps & { name: NavIcon }) {
           <rect x="13" y="13" width="8" height="8" rx="1.5" />
         </Svg>
       );
+    // Resources' own browse tab (§workspaceConfig — "materials"). A
+    // graduation cap rather than the four-square grid every other shelf's
+    // Library uses: this shelf is a folder of coursework a student put
+    // together, not the reading tree the grid stands for elsewhere, and the
+    // nav renamed itself to say so — the glyph should not still say "grid of
+    // folders" underneath a label that no longer does.
+    case "materials":
+      return (
+        <Svg {...props}>
+          <path d="m12 4 9 4.5-9 4.5-9-4.5L12 4Z" />
+          <path d="M7 11v4.5c0 1.4 2.24 2.5 5 2.5s5-1.1 5-2.5V11" />
+          <path d="M21 8.5V14" />
+        </Svg>
+      );
     case "saved":
       return (
         <Svg {...props}>
