@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
 import { PageContainer } from "@/components/ui";
 
@@ -23,6 +24,14 @@ export default async function TranslationsHome({
         The same works in other languages, read in the same reader. Each edition
         names its translator.
       </p>
+
+      {/* Home's own reason to exist beside Read: picking up where a reader
+          left off. Scoped to this workspace — see `ContinueReading` — so a
+          Hindi original mid-read on the Originals shelf does not surface
+          here, in a rail whose cards this page has no way to explain. Simply
+          absent for a reader who has not opened a translation yet, which is
+          most readers today: there is one published. */}
+      <ContinueReading workspace="translations" />
 
       {/*
         Language, not genre: this shelf is one body of writing rendered many

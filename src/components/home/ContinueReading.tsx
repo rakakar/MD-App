@@ -8,6 +8,7 @@ import { getBook, getBooks } from "@/lib/api";
 import { chapterLine } from "@/lib/chapter";
 import { localProgress, syncPersonal } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
+import { contentLang } from "@/lib/script";
 import { readingHomeFor, rememberReadingHome } from "@/lib/storage";
 import type { BookSummary } from "@/lib/types";
 
@@ -44,6 +45,7 @@ export function ContinueReading({
   heading = "Continue Reading",
   tier = "title",
   layout = "rail",
+  workspace = "originals",
 }: {
   limit?: number;
   heading?: string;
@@ -61,6 +63,14 @@ export function ContinueReading({
    * scroller inside it would be a scrollbar nobody finds).
    */
   layout?: "rail" | "stack";
+  /**
+   * Which shelf's books this rail resumes into — see `ContinueDocument`, the
+   * same idea for library documents. Originals by default, since that is
+   * where this rail first lived; Translations passes its own code so a
+   * reader resuming a Hindi original on the Originals Home does not also see
+   * an English one it has never offered, and the other way round.
+   */
+  workspace?: "originals" | "translations";
 }) {
   const { user, loading } = useAuth();
   const [cards, setCards] = useState<ResumeCard[]>([]);
@@ -84,18 +94,20 @@ export function ContinueReading({
       setCards([]);
       return;
     }
-    // Originals only. The local store keeps one resume position per book
-    // across every workspace it has ever been asked to remember — a
-    // translation, a book filed under Resources, anything — and this rail is
-    // drawn on Home and the Originals "Read" shelf, both of them Originals'
-    // own pages. A translation's progress row surfacing there sent a reader
-    // who has never opened a Hindi original a resume card in a language that
-    // page has never offered.
+    // Scoped to one shelf. The local store keeps one resume position per book
+    // across every workspace it has ever been asked to remember — an
+    // original, a translation, a book filed under Resources, anything — and
+    // this rail is drawn on more than one workspace's own pages. A
+    // translation's progress row surfacing on the Originals Home sent a
+    // reader who has never opened a Hindi original a resume card in a
+    // language that page has never offered — and the same wrong turn the
+    // other way round, on Translations' Home, before this took a `workspace`
+    // of its own.
     //
     // This same call also covers titles, covers and page counts for every
     // surviving row.
-    const originals = await getBooks({ workspace: "originals" }).catch(() => []);
-    const byCode = new Map(originals.map((b) => [b.code, b]));
+    const shelf = await getBooks({ workspace }).catch(() => []);
+    const byCode = new Map(shelf.map((b) => [b.code, b]));
     const rows = notLibraryDocs.filter((p) => byCode.has(p.book_code)).slice(0, limit);
     if (rows.length === 0) {
       setCards([]);
@@ -149,7 +161,7 @@ export function ContinueReading({
       })
     );
     setCards(named.filter((c): c is ResumeCard => c !== null));
-  }, [limit]);
+  }, [limit, workspace]);
 
   useEffect(() => {
     if (loading) return;
@@ -192,7 +204,11 @@ export function ContinueReading({
           layout === "stack" ? "lg:flex-col lg:overflow-visible" : ""
         }`}
       >
-        {cards.map((c) => (
+        {cards.map((c) => {
+          const chapterText = chapterLine(c.chapter, c.chapterTitle);
+          const titleLang = contentLang(c.title);
+          const chapterLang = contentLang(chapterText);
+          return (
           <li
             key={c.key}
             className={`w-[17.5rem] shrink-0 snap-start sm:w-[340px] ${
@@ -211,24 +227,33 @@ export function ContinueReading({
                 book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}
                 size="resume"
               />
-              {/* Both Devanagari lines are `hi-tight`, and between them that is
-                  what squares this column with the cover beside it. At the
-                  `.hi` body leading of 1.85 the title and the chapter line were
+              {/* Both lines are `hi-tight`, and between them that is what
+                  squares this column with the cover beside it. At the `.hi`
+                  body leading of 1.85 a Devanagari title and chapter line were
                   31 and 24 tall — 15px of half-leading nobody asked for, on two
                   single lines that are truncated anyway — and the column came
                   out 101.5 against an 86px cover, so it overhung the artwork by
                   7.5 at the head and the foot. Tight, it is 86.5: the title
                   starts at the top of the cover and the page figures end at its
-                  foot. Change either leading and that alignment goes. */}
+                  foot. Change either leading and that alignment goes.
+
+                  `hi-tight` stays on regardless of script — it is the leading
+                  fix, not the font. `lang`/`.hi` are decided per line instead:
+                  a translation's title is English, and setting "Jeevan Vidya —
+                  An Introduction" in the Devanagari face announced it to a
+                  screen reader as Hindi and rendered it in the wrong type. */}
               <span className="min-w-0 flex-1">
-                <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
+                <span
+                  {...titleLang}
+                  className={`${titleLang.className} hi-tight block truncate text-title font-semibold`}
+                >
                   {c.title}
                 </span>
                 <span
-                  lang="hi"
-                  className="hi hi-tight mt-1 block truncate text-xs font-medium text-ink-soft"
+                  {...chapterLang}
+                  className={`${chapterLang.className} hi-tight mt-1 block truncate text-xs font-medium text-ink-soft`}
                 >
-                  {chapterLine(c.chapter, c.chapterTitle)}
+                  {chapterText}
                 </span>
                 {c.percent !== null ? (
                   <>
@@ -262,7 +287,8 @@ export function ContinueReading({
               </span>
             </Link>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
   );
