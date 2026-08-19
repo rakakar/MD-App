@@ -24,12 +24,17 @@ export default async function TranslationsHome({
       {/* Two sentences became one. "read in the same reader" was an
           implementation fact wearing a reader's clothes — nobody arrives here
           wondering which component renders the page — and "each edition names
-          its translator" is now said better by the note below, which says who
-          rendered these *and* what that means for trusting them. What is left
-          is the only thing the line has to establish: whose works these are
-          and what has been done to them. */}
+          its translator" is said better by the note below, which names who
+          rendered these *and* what that means for trusting them.
+
+          "original" and "by students" are the designer's, and they earn their
+          width: the first is what a translation is a translation *of*, which
+          on a shelf where every card is itself a book is not obvious, and the
+          second puts the provenance in the first line a reader meets rather
+          than holding it back for the note. The note is then free to be about
+          consequence — which text wins — instead of introducing the fact. */}
       <p className="mt-1 text-sm text-ink-soft">
-        The published works, rendered into other languages.
+        The published original works, rendered into other languages by students.
       </p>
 
       {/*
