@@ -71,11 +71,12 @@ function deepenTo(h, s, l, target) {
   return lo;
 }
 
-// Every workspace that carries its own book covers — not Resources, which
-// does not shelve books today (the format toggle for it is off; see
-// `SHOW_FORMAT_TOGGLE` in `app/resources/page.tsx`). Add it here the day
-// that changes.
-const WORKSPACES = ["originals", "translations"];
+// Every workspace that can shelve a book. Resources holds none today — its
+// Books tab is off (`SHOW_FORMAT_TOGGLE` in `app/resources/page.tsx`) and the
+// API answers `?workspace=resources` with an empty list — so it costs one
+// wasted request and picks its covers up by itself on the day it has any,
+// which is cheaper than remembering to add it then.
+const WORKSPACES = ["originals", "translations", "resources"];
 const responses = await Promise.all(
   WORKSPACES.map((ws) => fetch(`${API}books/?workspace=${ws}`).then((r) => r.json()))
 );

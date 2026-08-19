@@ -20,7 +20,12 @@ import { offShelfHref } from "@/lib/routes";
 import { bookHue } from "@/lib/bookHue";
 import { genreLabel } from "@/lib/labels";
 import { contentLang } from "@/lib/script";
-import { WORKSPACES, contentWorkspace } from "@/lib/workspaceConfig";
+import {
+  WORKSPACES,
+  contentWorkspace,
+  libraryTabLabel,
+  type ContentWorkspaceId,
+} from "@/lib/workspaceConfig";
 
 export const revalidate = 900;
 export const dynamicParams = true;
@@ -51,6 +56,35 @@ export async function generateMetadata({
   } catch {
     return { title: "Book" };
   }
+}
+
+/**
+ * Where a book's back pill goes, and what it says.
+ *
+ * Every workspace sends the reader to the page they could actually have
+ * picked this book from, named the way that page names itself — which is
+ * three different answers, because the three shelves are three different
+ * shapes:
+ *
+ * - **Originals** keeps the shared Read shelf. That is where a reader chose
+ *   this book, and it holds twelve more of the same in one grid.
+ * - **Translations** has a Home of its own, and its own workspace name on it.
+ * - **Resources** is a file library whose books have no shelf of their own —
+ *   `/books?ws=resources` is a 307 to `/resources`, and that page's Books tab
+ *   is off (`SHOW_FORMAT_TOGGLE`). So it goes to the library itself, under
+ *   the name its own nav gives it: "Student Materials", not "Resources",
+ *   because that is the heading the reader lands on.
+ *
+ * Written as a lookup rather than a ternary chain: the wrong answer here is
+ * silent — a pill that reads "Books" and lands the reader on a shelf that has
+ * never listed the book they were just holding.
+ */
+function backLink(ws: ContentWorkspaceId): { href: string; label: string } {
+  if (ws === "originals") return { href: "/books", label: "Books" };
+  if (ws === "translations") {
+    return { href: WORKSPACES.translations.home, label: WORKSPACES.translations.name };
+  }
+  return { href: WORKSPACES.resources.home, label: libraryTabLabel("resources") };
 }
 
 export default async function BookDetailPage({
@@ -159,19 +193,7 @@ export default async function BookDetailPage({
           when they are otherwise identical rows of Devanagari on one paper. */}
       <CollectionHero
         tone={hue.to}
-        /* "Books" → `/books` everywhere except Translations, which gets its
-           own workspace named and its own Home rather than the shared Read
-           shelf — the same door its own nav's Home tab opens, and named the
-           same as the workspace switcher names it, since both are answering
-           "where does this take me back to". Originals' book stays pointed at
-           the Read shelf: that page is where a reader picked this book from,
-           the shelf holds more of the same in one place, and there is no
-           comparable ambiguity there to resolve. */
-        back={
-          ws === "translations"
-            ? { href: WORKSPACES.translations.home, label: WORKSPACES.translations.name }
-            : { href: "/books", label: "Books" }
-        }
+        back={backLink(ws)}
         /* Every way out of this page in one place, as on a collection's hero:
            the other language, and the link to here.
 
