@@ -21,9 +21,15 @@ export default async function TranslationsHome({
   return (
     <PageContainer>
       <h1 className="font-display text-2xl font-medium">Translations</h1>
+      {/* Two sentences became one. "read in the same reader" was an
+          implementation fact wearing a reader's clothes — nobody arrives here
+          wondering which component renders the page — and "each edition names
+          its translator" is now said better by the note below, which says who
+          rendered these *and* what that means for trusting them. What is left
+          is the only thing the line has to establish: whose works these are
+          and what has been done to them. */}
       <p className="mt-1 text-sm text-ink-soft">
-        The same works in other languages, read in the same reader. Each edition
-        names its translator.
+        The published works, rendered into other languages.
       </p>
 
       {/*
@@ -43,21 +49,26 @@ export default async function TranslationsHome({
         which is a fixed warm hue and would put an Originals-orange card on a
         green shelf.
       */}
+      {/* Label at `text-sm`, body at `text-xs leading-snug` — the same pairing
+          the workspace switcher's own rows use for a bold name over a line of
+          supporting copy, which is exactly this shape. The body was `text-sm
+          leading-relaxed`, four lines of it on a phone, which spent more of the
+          screen on the caveat than on the shelf it qualifies. */}
       <div
-        className="mt-4 flex items-start gap-3 rounded-card border border-rule p-4"
+        className="mt-4 flex items-start gap-2.5 rounded-card border border-rule p-3.5"
         style={{ background: "color-mix(in srgb, var(--ws-color) 6%, var(--color-card))" }}
       >
-        <span aria-hidden className="mt-0.5 shrink-0" style={{ color: "var(--ws-ink)" }}>
-          <InfoIcon className="h-5 w-5" />
+        <span aria-hidden className="mt-px shrink-0" style={{ color: "var(--ws-ink)" }}>
+          <InfoIcon className="h-4.5 w-4.5" />
         </span>
-        <p className="min-w-0 text-sm leading-relaxed">
-          <span className="block font-semibold">Important note</span>
-          <span className="mt-0.5 block text-ink-soft">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold leading-tight">Important note</p>
+          <p className="mt-1 text-xs leading-snug text-ink-soft">
             Each of these is a student&rsquo;s interpretation of Shri A. Nagraj&rsquo;s
             Hindi. Where a translation and the original differ, the original is
             the authority.
-          </span>
-        </p>
+          </p>
+        </div>
       </div>
 
       {/* Home's own reason to exist beside Read: picking up where a reader
