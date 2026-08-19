@@ -12,10 +12,11 @@
  * `sharp` comes with Next and is not a direct dependency, which is fine for a
  * script that is run by hand and never imported by the app.
  *
- * This reads the **production** API and the cover CDN. It is thirteen images
- * once, not the per-chapter storm `AGENTS.md` warns about — but it is the
- * reason the sampling lives here rather than in the page: a build must not do
- * this per book, per deploy.
+ * This reads the **production** API and the cover CDN, across every
+ * book-bearing workspace — a few dozen images once, not the per-chapter
+ * storm `AGENTS.md` warns about — but it is the reason the sampling lives
+ * here rather than in the page: a build must not do this per book, per
+ * deploy.
  */
 import sharp from "sharp";
 
@@ -70,8 +71,16 @@ function deepenTo(h, s, l, target) {
   return lo;
 }
 
-const books = await fetch(`${API}books/?workspace=originals`).then((r) => r.json());
-const list = (books.results || books).filter((b) => b.cover_image);
+// Every workspace that carries its own book covers — not Resources, which
+// does not shelve books today (the format toggle for it is off; see
+// `SHOW_FORMAT_TOGGLE` in `app/resources/page.tsx`). Add it here the day
+// that changes.
+const WORKSPACES = ["originals", "translations"];
+const responses = await Promise.all(
+  WORKSPACES.map((ws) => fetch(`${API}books/?workspace=${ws}`).then((r) => r.json()))
+);
+const books = responses.flatMap((data) => data.results || data);
+const list = books.filter((b) => b.cover_image);
 
 const out = [];
 for (const b of list) {

@@ -72,6 +72,23 @@ const COVER_HUES: Record<string, BookHue> = {
   MVD: { from: "#9c9025", to: "#82781f" },
   // ultramarine — 5.19:1 / 6.49:1
   MSSV: { from: "#2c6eba", to: "#265fa1" },
+
+  // Translations. Sampled the same way, from the same script run against
+  // `?workspace=translations` — the printed cover is the translator's own
+  // choice, not inherited from the original it renders, so JVE-ENG earning
+  // the same terracotta as JVEP is a real coincidence of two covers using the
+  // same ink, not a rule that a translation shares its original's hue.
+  //
+  // terracotta — 3.01:1 / 4.51:1
+  "JVE-ENG": { from: "#d08339", to: "#a96728" },
+  "MAND-ENG-RG": { from: "#d08339", to: "#a96728" },
+  // sage — 3.00:1 / 4.53:1. Low confidence: both covers are almost entirely
+  // unsaturated cream, so the sampler is reading a faint watermark rather
+  // than a printed band — the fallback hash palette would have been an
+  // equally defensible answer here. Re-sample if either cover is redrawn with
+  // real ink in it.
+  "JVEP-KND-GS": { from: "#9d9752", to: "#7d7841" },
+  "MVD-KND-GS": { from: "#9b984f", to: "#7b793f" },
 };
 
 /**
