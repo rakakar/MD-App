@@ -521,6 +521,24 @@ export function ExternalLinkIcon({ className }: { className?: string }) {
 
 /** a triangle with a bang in it — a warning, not a note. Used where a line of
  *  text has to be read as a caution before it is read as a sentence. */
+/**
+ * A circled "i" — a standing note, not a warning.
+ *
+ * Distinct from `AlertIcon`'s triangle on purpose: a triangle says something
+ * has gone wrong or is about to, and the one place this is used says only
+ * that a translation is somebody's reading of the original. That is context
+ * a reader should have, not a problem they should act on.
+ */
+export function InfoIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <path d="M12 8h.01" />
+    </Svg>
+  );
+}
+
 export function AlertIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>
