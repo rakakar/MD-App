@@ -149,7 +149,7 @@ export function PdfCard({
                   // rather than a start — and the exact page is spelled out
                   // under it, so nothing here is doing the lying.
                   width: `${Math.max(percent, 4)}%`,
-                  background: "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
+                  background: "var(--progress-fill)",
                 }}
               />
             </span>

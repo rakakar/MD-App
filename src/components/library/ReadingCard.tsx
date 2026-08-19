@@ -270,7 +270,7 @@ export function ReadingCard({
                 // dot — the exact page is spelled out underneath, so nothing
                 // here is doing the lying. Same reasoning as `PdfCard`.
                 width: `${Math.max(percent, 4)}%`,
-                background: "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
+                background: "var(--progress-fill)",
               }}
             />
           </span>

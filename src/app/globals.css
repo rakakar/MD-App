@@ -605,6 +605,31 @@ html[data-reader-theme="quiet"][data-reading="1"] body {
    default saffron for every workspace. */
 [data-ws] {
   --ws-ink: var(--ws-color);
+
+  /* The filled half of a progress bar — every one in the app: the resume
+     cards on Home and Read, the library's documents and recordings, the PDF
+     reader's own footer.
+
+     Five components had this written out as
+     `linear-gradient(90deg, var(--color-accent), var(--ws-color))`, and that
+     left stop is the bug: --color-accent is a fixed saffron on :root that no
+     workspace ever changes, so a bar on Translations ran orange into green
+     and one on Resources orange into purple. Both stops come from the
+     workspace now.
+
+     Declared here rather than on :root for the same reason --ws-ink is: a
+     custom property substitutes at the element it is declared on, so a :root
+     copy would bake in the default hue and inherit *that* everywhere.
+
+     The light stop is a modest 18% white — enough to keep the sweep the
+     designer drew, not so pale that a bar at 3% reads as empty. It measures
+     ~3.8:1 against the canvas it sits on, clearing the 3:1 that WCAG 1.4.11
+     asks of a graphical object. */
+  --progress-fill: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ws-color) 82%, #fff),
+    var(--ws-color)
+  );
 }
 
 /* Dark, everywhere — not just the reader.

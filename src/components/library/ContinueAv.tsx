@@ -388,7 +388,7 @@ function ResumeCard({
               style={{
                 width: `${Math.round(percent)}%`,
                 background:
-                  "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
+                  "var(--progress-fill)",
               }}
             />
           </span>

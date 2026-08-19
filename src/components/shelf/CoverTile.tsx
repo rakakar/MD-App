@@ -166,7 +166,7 @@ export function ProgressBar({
           style={{
             width: `${pct}%`,
             background:
-              "linear-gradient(90deg, var(--color-accent), var(--ws-color))",
+              "var(--progress-fill)",
           }}
         />
       </span>
