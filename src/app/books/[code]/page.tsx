@@ -21,7 +21,7 @@ import { offShelfHref } from "@/lib/routes";
 import { bookHue } from "@/lib/bookHue";
 import { genreLabel } from "@/lib/labels";
 import { contentLang } from "@/lib/script";
-import { contentWorkspace } from "@/lib/workspaceConfig";
+import { WORKSPACES, contentWorkspace } from "@/lib/workspaceConfig";
 
 export const revalidate = 900;
 export const dynamicParams = true;
@@ -160,7 +160,19 @@ export default async function BookDetailPage({
           when they are otherwise identical rows of Devanagari on one paper. */}
       <CollectionHero
         tone={hue.to}
-        back={{ href: "/books", label: "Books" }}
+        /* "Books" → `/books` everywhere except Translations, which gets its
+           own workspace named and its own Home rather than the shared Read
+           shelf — the same door its own nav's Home tab opens, and named the
+           same as the workspace switcher names it, since both are answering
+           "where does this take me back to". Originals' book stays pointed at
+           the Read shelf: that page is where a reader picked this book from,
+           the shelf holds more of the same in one place, and there is no
+           comparable ambiguity there to resolve. */
+        back={
+          ws === "translations"
+            ? { href: WORKSPACES.translations.home, label: WORKSPACES.translations.name }
+            : { href: "/books", label: "Books" }
+        }
         /* Both ways out of this page in one place, as on a collection's hero:
            the translation, and the link to here. */
         topRight={
