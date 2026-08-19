@@ -9,7 +9,7 @@ import { CoverTile } from "@/components/shelf/CoverTile";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { CollectionHero, EmptyState, HeroPill, ShareButton } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
-import { RESOURCES_HUE, bookHue } from "@/lib/bookHue";
+import { workspaceHue } from "@/lib/bookHue";
 import {
   EMPTY_FIND,
   FIND_MIN_ROWS,
@@ -19,7 +19,13 @@ import {
 } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import type { LibraryFindResponse, LibraryNode } from "@/lib/types";
-import { avTab, libraryTab, libraryTabLabel, libraryWorkspace } from "@/lib/workspaceConfig";
+import {
+  WORKSPACES,
+  avTab,
+  libraryTab,
+  libraryTabLabel,
+  libraryWorkspace,
+} from "@/lib/workspaceConfig";
 
 /**
  * One folder — **the same component at every depth**.
@@ -215,10 +221,11 @@ export async function NodeView({
  * folder of folders does not. Everything else is the same slots, so
  * `ui/CollectionHero` draws it and this file only decides what goes in them.
  *
- * **The colour is the collection's own, never the workspace accent.** The comps
- * put a purple album and an orange one in the same set, which is `bookHue`'s
- * whole rule: a hue per thing, so one shivir folder does not feel like the next
- * when both are rows of Devanagari on one paper.
+ * **The colour is the workspace's, not the folder's own.** It was hashed from
+ * the node id on the theory that the comps' one purple album against three
+ * orange ones meant "a hue per thing" — but three identical panels are the
+ * opposite of that, and what the hash actually produced was a colour that
+ * changed at every step down the tree with nothing to say. See `workspaceHue`.
  */
 function Header({
   node,
@@ -237,12 +244,12 @@ function Header({
   const ws = libraryWorkspace(node.workspace);
   /** this shelf's own A/V door, when it has one — see `NodeView` */
   const av = isRecordings ? avTab(ws) : null;
-  // A folder of recordings on Resources wears the shelf's purple rather than a
-  // hue of its own: among textbooks and workshop notes, what a folder of geet
-  // most needs to say is which shelf it is on. Everywhere else the id decides,
-  // so one shivir folder still does not feel like the next.
-  const hue =
-    isRecordings && ws === "resources" ? RESOURCES_HUE : bookHue(`node-${node.id}`);
+  // Every folder on a shelf wears that shelf's colour — so descending a tree
+  // holds one colour steady instead of dealing a new one at each level, and
+  // the panel says the one true thing a folder's colour can: which library
+  // you are standing in. Subsumes the Resources-recordings case this used to
+  // special-case; that request was for this rule, applied to one folder.
+  const hue = workspaceHue(WORKSPACES[ws].color);
   const parent = node.breadcrumb.at(-1);
   const files = [...node.items, ...node.linked_items];
   // The BE's count is over this folder's own files; a borrowed one is counted

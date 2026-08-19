@@ -112,16 +112,28 @@ export function bookHue(code: string | null | undefined): BookHue {
 }
 
 /**
- * A shelf's own colour as a cover hue — for a folder that should read as the
- * workspace it belongs to rather than as itself.
+ * A shelf's own colour as a cover hue — what every **library folder** wears.
  *
- * `to` is exactly the Resources colour in `workspaceConfig`, and the pair is
- * the palette's iris, measured against white like every other pair here. A
- * folder normally takes a hue from its id, so that one shivir does not feel
- * like the next; a folder of songs on a shelf of textbooks is the case where
- * belonging is the more useful thing to say.
+ * A folder is not a book. A book's hue is sampled from the artwork actually
+ * printed on its cover, so it means something; a folder has no cover, and
+ * hashing its database id into the palette above produced a colour that meant
+ * nothing and — worse — changed at every step down the tree. Opening ऑडियो
+ * (olive), then a shivir inside it (iris), then a folder inside that (pine)
+ * read as the app shuffling colours at random, because it was.
+ *
+ * The comps are the authority and they are near-unanimous: of the four
+ * collection screens the designer drew, three are exactly the Originals
+ * accent. `NodeView` used to cite the fourth — a purple Audio Album — as
+ * evidence for "a hue per thing", which is the wrong way round; three
+ * identical panels are not what a per-thing hash produces.
+ *
+ * 78% against white for the light end, the same mix `Header`'s workspace
+ * tiles already use, so a folder's panel and the switcher's own glyph for
+ * that workspace read as one colour rather than two near-misses.
  */
-export const RESOURCES_HUE: BookHue = { from: "#7C77AD", to: "#5E5A8C" };
+export function workspaceHue(color: string): BookHue {
+  return { from: `color-mix(in srgb, ${color} 78%, #fff)`, to: color };
+}
 
 /** The 150° cover gradient, as a CSS value. */
 export function coverGradient(hue: BookHue): string {
