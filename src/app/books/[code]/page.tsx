@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { BookHeroActions } from "@/components/books/BookHeroActions";
 import { BookTabs } from "@/components/books/BookTabs";
@@ -173,11 +172,26 @@ export default async function BookDetailPage({
             ? { href: WORKSPACES.translations.home, label: WORKSPACES.translations.name }
             : { href: "/books", label: "Books" }
         }
-        /* Both ways out of this page in one place, as on a collection's hero:
-           the translation, and the link to here. */
+        /* Every way out of this page in one place, as on a collection's hero:
+           the other language, and the link to here.
+
+           The two are mutually exclusive and always have been — §12's "no
+           chains" means an original may have translations and a translation
+           never does — so this row holds at most one of them and the pair
+           never competes for the width.
+
+           "See original" was a link in a bordered band under the description,
+           which put the one control a reader of a translation reaches for
+           below the fold on a phone, behind a sentence telling them something
+           the workspace chrome had already said twice. */
         topRight={
           <div className="flex items-center gap-2">
             {translationsHref && <HeroPill href={translationsHref}>Translations</HeroPill>}
+            {book.translation_of && (
+              <HeroPill href={`/books/${encodeURIComponent(book.translation_of)}`}>
+                See original
+              </HeroPill>
+            )}
             <ShareButton title={book.title_hi} />
           </div>
         }
@@ -263,25 +277,6 @@ export default async function BookDetailPage({
       {book.description && (
         <p lang="hi" className="hi mt-6 text-sm leading-relaxed text-ink-soft">
           {book.description}
-        </p>
-      )}
-
-      {/*
-        Back to the original — the whole book, never a paragraph. MVD-EN 3.42.5
-        is not the same passage as MVD 3.42.5: the printed pages differ, so a
-        canonical ref does not survive being carried across languages. The book
-        is the largest unit that does.
-      */}
-      {book.translation_of && (
-        <p className="mt-6 rounded-2xl border border-rule bg-card p-4 text-sm">
-          <span className="text-ink-soft">This is a translation ·</span>{" "}
-          <Link
-            href={`/books/${encodeURIComponent(book.translation_of)}`}
-            className="font-semibold underline underline-offset-2"
-            style={{ color: "var(--ws-ink)" }}
-          >
-            See the original book
-          </Link>
         </p>
       )}
 
