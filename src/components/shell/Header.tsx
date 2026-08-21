@@ -434,7 +434,7 @@ function AvatarMenu() {
           </span>
           Send feedback
         </button>
-        <Link href="/me/feedback" onClick={() => setOpen(false)} className={row}>
+        <Link href="/feedback" onClick={() => setOpen(false)} className={row}>
           <span aria-hidden className={glyph}>
             <FeedbackListIcon className="h-5 w-5" />
           </span>
