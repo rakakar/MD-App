@@ -3,6 +3,7 @@ import { CoverTile } from "@/components/shelf/CoverTile";
 import { EmptyState, FilterChips } from "@/components/ui";
 import { getBookGenres, getBooks } from "@/lib/api";
 import { genreLabel } from "@/lib/labels";
+import { contentLang } from "@/lib/script";
 import type { BookGenre, BookSummary } from "@/lib/types";
 
 /**
@@ -127,9 +128,27 @@ export function ShelfCard({ book }: { book: BookSummary }) {
           PDF
         </span>
       )}
+      {/* The language was hardcoded `lang="hi"` with the Devanagari class on
+          it, which set the word "English" in Tiro Devanagari Hindi — a book
+          face with no business rendering Latin — and carried that face's 1.85
+          leading with it. On a 13px line whose own leading is 18px, one inline
+          span at 24px pushes the whole line box out by six, which is where the
+          gap under this row came from: not the flex gap, but a Devanagari
+          measure applied to an English word.
+
+          Script-detected now, like every other content string in the app. The
+          Kannada labels resolve the same way — `scriptOf` tests for Devanagari
+          specifically, and Tiro has no Kannada glyphs to offer them anyway.
+          `hi-tight` rides along for the day a label really is Devanagari, so
+          that one cannot reinflate the row either. */}
       <span className="mt-auto block text-xs font-medium text-ink-soft">
         {book.translation_of && book.language_label ? (
-          <span lang="hi" className="hi">{book.language_label} · </span>
+          <span
+            {...contentLang(book.language_label)}
+            className={`${contentLang(book.language_label).className} hi-tight`}
+          >
+            {book.language_label} ·{" "}
+          </span>
         ) : null}
         {book.page_count ? `${book.page_count} pages` : book.author}
       </span>
