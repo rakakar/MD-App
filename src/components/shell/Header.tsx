@@ -20,7 +20,11 @@ import {
   CheckIcon,
   ChevronDown,
   CloseIcon,
+  FeedbackIcon,
+  FeedbackListIcon,
   PaletteIcon,
+  SettingsIcon,
+  SignOutIcon,
   SwitcherIcon,
   UserIcon,
   WorkspaceIcon,
@@ -316,6 +320,7 @@ function AvatarMenu() {
   const { user, loading, logout } = useAuth();
   const { open: openFeedback } = useFeedback();
   const [open, setOpen] = useState(false);
+  const [displayOpen, setDisplayOpen] = useState(false);
 
   if (loading) {
     return <div className="h-10 w-10 rounded-control bg-ink/5" aria-hidden />;
@@ -333,8 +338,12 @@ function AvatarMenu() {
     );
   }
 
+  /* Gap and a fixed icon column, so five glyphs of different widths still put
+     five labels on one line. `text-ink-soft` on the glyph and full ink on the
+     label: the icon is there to be found at a glance, not to be read. */
   const row =
-    "flex min-h-14 w-full items-center rounded-card px-3 text-start text-title font-medium transition-colors active:bg-ink/[.04]";
+    "flex min-h-14 w-full items-center gap-3 rounded-card px-3 text-start text-title font-medium transition-colors active:bg-ink/[.04]";
+  const glyph = "flex h-5 w-5 shrink-0 items-center justify-center text-ink-soft";
 
   return (
     <>
@@ -373,11 +382,43 @@ function AvatarMenu() {
         subtitle={user.email as string}
       >
         <Link href="/me" onClick={() => setOpen(false)} className={row}>
+          {/* The workspace's own glyph, so the row and the switcher entry it
+              leads to are recognisably the same destination. */}
+          <span aria-hidden className={glyph}>
+            <WorkspaceIcon id="journey" />
+          </span>
           My Journey
         </Link>
         <Link href="/me/settings" onClick={() => setOpen(false)} className={row}>
+          <span aria-hidden className={glyph}>
+            <SettingsIcon className="h-5 w-5" />
+          </span>
           Settings
         </Link>
+        {/* Theme, text size and weight — moved here from its own button in the
+            app bar, which is where the designer wanted it: one row in the menu
+            that already holds Settings rather than a second icon competing
+            with the workspace tile beside it.
+
+            It keeps the palette it had, so the control a reader has been
+            tapping is the same mark in its new home. The sheet it opens is
+            unchanged, and `/me/settings` still lays the same controls out
+            flat — this is a third door onto them, not a fourth copy.
+
+            `DisplayButton` survives for signed-out readers; see its own note. */}
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            setDisplayOpen(true);
+          }}
+          className={row}
+        >
+          <span aria-hidden className={glyph}>
+            <PaletteIcon className="h-5 w-5" />
+          </span>
+          Display
+        </button>
         {/* Feedback lives here rather than behind a floating button: this menu
             is on every screen, and a bubble over the text is the one piece of
             chrome a reading app cannot afford. */}
@@ -389,9 +430,15 @@ function AvatarMenu() {
           }}
           className={row}
         >
+          <span aria-hidden className={glyph}>
+            <FeedbackIcon className="h-5 w-5" />
+          </span>
           Send feedback
         </button>
         <Link href="/me/feedback" onClick={() => setOpen(false)} className={row}>
+          <span aria-hidden className={glyph}>
+            <FeedbackListIcon className="h-5 w-5" />
+          </span>
           My feedback
         </Link>
         {/* In the softer ink rather than behind a rule: it is the one row here
@@ -406,20 +453,36 @@ function AvatarMenu() {
           }}
           className={`${row} text-ink-soft`}
         >
+          <span aria-hidden className={glyph}>
+            <SignOutIcon className="h-5 w-5" />
+          </span>
           Sign out
         </button>
       </Sheet>
+
+      {/* Sibling of the account sheet, not a child of it: the account sheet
+          closes on the way here, and a sheet unmounting its own replacement
+          mid-transition leaves nothing on screen. */}
+      <DisplaySheet open={displayOpen} onClose={() => setDisplayOpen(false)} />
     </>
   );
 }
 
 /**
- * Theme, text size and weight — one tap from any screen.
+ * Theme, text size and weight — for a reader who has no account menu to find
+ * them in.
  *
- * In the header rather than inside the account menu, because that menu only
- * exists for signed-in readers and most of this audience reads signed out.
- * Buried behind My Journey → Settings → Appearance it would be three taps
- * deep, which is where accessibility settings go to die.
+ * Display now lives as a row inside the account sheet, at the designer's
+ * request, and for a signed-in reader that is the only place it is. **This
+ * button is what stops that from stranding everyone else.** The account menu
+ * exists only once you are signed in, and most of this audience reads signed
+ * out; text size and bold text are accessibility settings, and the alternative
+ * route — the workspace switcher, My Journey, Settings, Appearance — is four
+ * taps and no reader in need of larger text will find it.
+ *
+ * So: absent where the sheet can carry it, present where nothing else can. The
+ * app bar a signed-in reader sees is the decluttered one; the signed-out bar
+ * keeps its palette next to Sign in.
  *
  * A palette rather than "Aa", as the designer draws it. "Aa" is the convention
  * every reading app uses and needed no learning, which is why it was here — but
@@ -428,7 +491,11 @@ function AvatarMenu() {
  * reader's own type button, inside a book, keeps its "Aa".
  */
 export function DisplayButton() {
+  const { user, loading } = useAuth();
   const [open, setOpen] = useState(false);
+  // Nothing while auth is resolving, so the button cannot appear and then be
+  // taken away again a beat later on a signed-in reader's first paint.
+  if (loading || user) return null;
   return (
     <>
       <button
