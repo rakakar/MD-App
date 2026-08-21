@@ -381,15 +381,14 @@ function AvatarMenu() {
            as something to tap. */
         subtitle={user.email as string}
       >
-        <Link href="/me" onClick={() => setOpen(false)} className={row}>
-          {/* The workspace's own glyph, so the row and the switcher entry it
-              leads to are recognisably the same destination. */}
-          <span aria-hidden className={glyph}>
-            <WorkspaceIcon id="journey" />
-          </span>
-          My Journey
-        </Link>
-        <Link href="/me/settings" onClick={() => setOpen(false)} className={row}>
+        {/* No "My Journey" row. It is a *workspace* — one tap away in the
+            switcher that sits in this same bar, with its own tab bar and its
+            own colour — and a second door to it from the account menu said
+            that reading history and the password field are the same kind of
+            thing. They are not: the journey is content, this menu is the app.
+            That conflation is also why Settings used to live at `/me/settings`
+            and hijacked the chrome; see the redirect left at that path. */}
+        <Link href="/settings" onClick={() => setOpen(false)} className={row}>
           <span aria-hidden className={glyph}>
             <SettingsIcon className="h-5 w-5" />
           </span>
