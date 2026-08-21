@@ -175,7 +175,14 @@ function FeedbackSheet({
 
   return (
     <Sheet open onClose={onClose} title={title}>
-      <div className="px-5 pb-5">
+      {/* `pt-3` because the sheet's own body wrapper has no top padding — it
+          leaves that to whatever it is given, and this was giving none, so the
+          Correction/Bug/Idea/Other chips sat flat against the header's rule at
+          a measured 0px. The same 12px the reader's Contents sheet puts above
+          its tab row, which is the same shape: a row of controls directly
+          under a sheet header. (Display gets away with `pt-1` because it opens
+          on a heading, and a heading brings its own leading with it.) */}
+      <div className="px-5 pb-5 pt-3">
         {!user ? (
           <div className="py-2">
             <p className="text-sm text-(--reader-ink-soft)">
@@ -191,7 +198,7 @@ function FeedbackSheet({
             </Link>
           </div>
         ) : phase === "sent" || phase === "queued" ? (
-          <p className="py-6 text-center text-sm">
+          <p className="pb-6 pt-3 text-center text-sm">
             {phase === "sent"
               ? "Thank you — we've got it."
               : "Saved. It'll send itself when you're back online."}
