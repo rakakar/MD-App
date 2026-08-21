@@ -224,6 +224,18 @@ export function libraryWorkspace(code: string | null | undefined): WorkspaceId {
 /** icons that mark "the browse tab" — see `libraryTab` */
 const BROWSE_ICONS: NavIcon[] = ["browse", "materials"];
 
+/**
+ * The app's own accent — the terracotta the brand mark is drawn in.
+ *
+ * Shared with Originals by design rather than by accident: that shelf carries
+ * the house colour, and this is a second name for it so a screen belonging to
+ * no workspace can say "the app's colour" instead of borrowing one shelf's
+ * identity. Read by `AppAccent`, which is how Settings and My feedback hold a
+ * fixed colour while the chrome around them still names the workspace a reader
+ * will go back to.
+ */
+export const APP_ACCENT = WORKSPACES.originals.color;
+
 export function libraryTab(ws: WorkspaceId): string | null {
   return WORKSPACES[ws].nav.find((item) => BROWSE_ICONS.includes(item.icon))?.href ?? null;
 }

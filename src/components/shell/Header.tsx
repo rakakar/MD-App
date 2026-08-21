@@ -24,7 +24,6 @@ import {
   FeedbackListIcon,
   PaletteIcon,
   SettingsIcon,
-  SignOutIcon,
   SwitcherIcon,
   UserIcon,
   WorkspaceIcon,
@@ -317,7 +316,7 @@ function EventChip() {
 }
 
 function AvatarMenu() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const { open: openFeedback } = useFeedback();
   const [open, setOpen] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(false);
@@ -440,23 +439,12 @@ function AvatarMenu() {
           </span>
           My feedback
         </Link>
-        {/* In the softer ink rather than behind a rule: it is the one row here
-            that ends a session rather than opening a screen, and a hairline
-            across a five-row sheet was a division doing the work a shade
-            already does. */}
-        <button
-          type="button"
-          onClick={() => {
-            setOpen(false);
-            void logout();
-          }}
-          className={`${row} text-ink-soft`}
-        >
-          <span aria-hidden className={glyph}>
-            <SignOutIcon className="h-5 w-5" />
-          </span>
-          Sign out
-        </button>
+        {/* No "Sign out" row. Signing out is not a thing to be one careless
+            tap from a menu a reader opens for the theme: it costs them their
+            synced bookmarks and notes on this device, and it is the one action
+            here that cannot be undone by tapping again. It lives on the
+            Settings screen instead, in the Account card beside the address it
+            would be signing out of — a deliberate walk rather than a slip. */}
       </Sheet>
 
       {/* Sibling of the account sheet, not a child of it: the account sheet

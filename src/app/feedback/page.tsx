@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
+import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { EmptyState, PageContainer, ctaPrimary } from "@/components/ui";
 import { getMyFeedback, queuedFeedbackCount, type MyFeedback } from "@/lib/feedback";
 import { refToHref } from "@/lib/refs";
@@ -47,6 +48,7 @@ export default function MyFeedbackPage() {
 
   if (!loading && !user) {
     return (
+      <AppAccent>
       <PageContainer>
         <h1 className="font-display text-2xl font-medium">My feedback</h1>
         <div className="mt-4 rounded-2xl border border-rule bg-card p-4">
@@ -60,11 +62,13 @@ export default function MyFeedbackPage() {
           </Link>
         </div>
       </PageContainer>
+      </AppAccent>
     );
   }
 
   return (
-    <PageContainer>
+    <AppAccent>
+      <PageContainer>
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="font-display text-2xl font-medium">My feedback</h1>
         <button
@@ -135,5 +139,6 @@ export default function MyFeedbackPage() {
         ))}
       </ul>
     </PageContainer>
+      </AppAccent>
   );
 }

@@ -13,6 +13,7 @@ import {
 import { track } from "@/lib/analytics";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import {
+  APP_ACCENT,
   WORKSPACES,
   workspaceForPath,
   type Workspace,
@@ -130,6 +131,37 @@ export function WorkspaceScope({ ws }: { ws: WorkspaceId }) {
  * a collection of recordings); the nav cannot work it out from the path. This
  * is how the one tells the other.
  */
+/**
+ * Holds its subtree at the app's own accent, whatever workspace is active.
+ *
+ * For the screens that belong to no shelf — Settings, My feedback. They used to
+ * sit under `/me`, which made them wear My Journey's gold; now that they are
+ * global they would otherwise take the colour of whichever workspace the reader
+ * came from, so a password field turned green on the way in from Translations
+ * and purple from Resources. A screen about the account should look the same
+ * every time it is opened.
+ *
+ * **`data-ws` is what makes this work**, and it has to be here rather than a
+ * bare style: `--ws-ink` is declared on `[data-ws]` in globals.css and a custom
+ * property substitutes at the element it is declared on, so without a fresh
+ * `[data-ws]` the ink would stay frozen at the outer workspace's hue while the
+ * fills changed underneath it. The attribute is matched on presence and never
+ * on value, so nesting one inside the provider's own costs nothing and the
+ * dark-mode and reading-surface rules keep applying.
+ *
+ * Deliberately *not* `WorkspaceScope`: that would switch the whole app —
+ * switcher label, tab bar, the lot — and send a reader leaving Settings into
+ * Originals rather than back where they were. Only the colour is pinned; the
+ * chrome still names where they will return to.
+ */
+export function AppAccent({ children }: { children: ReactNode }) {
+  return (
+    <div data-ws="app" style={{ "--ws-color": APP_ACCENT } as React.CSSProperties}>
+      {children}
+    </div>
+  );
+}
+
 export function NavScope({ href }: { href: string }) {
   const { claimTab } = useWorkspace();
   const path = usePathname() ?? "/";

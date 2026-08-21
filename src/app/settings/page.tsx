@@ -6,6 +6,7 @@ import { AccountSecurity } from "@/components/auth/AccountSecurity";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationSetting } from "@/components/push/NotificationSetting";
 import { DisplayControls } from "@/components/shell/DisplaySheet";
+import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import { PageContainer, SectionHeading, ctaPrimary } from "@/components/ui";
 import { applyConsent } from "@/lib/analytics";
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   return (
     // The one screen on the recessed canvas (design 3B): the darker warm
     // ground makes the white grouped cards read as raised inset lists.
+    <AppAccent>
     <div className="min-h-full bg-canvas">
     <PageContainer>
       <h1 className="font-display text-2xl font-medium">Settings</h1>
@@ -242,5 +244,6 @@ export default function SettingsPage() {
       </div>
     </PageContainer>
     </div>
+    </AppAccent>
   );
 }

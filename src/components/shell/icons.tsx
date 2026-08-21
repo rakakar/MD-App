@@ -562,17 +562,6 @@ export function FeedbackListIcon({ className }: { className?: string }) {
   );
 }
 
-/** the one row in the account sheet that ends something rather than opening it */
-export function SignOutIcon({ className }: { className?: string }) {
-  return (
-    <Svg className={className ?? "h-5 w-5"}>
-      <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
-      <path d="M10 16l-4-4 4-4" />
-      <path d="M6 12h11" />
-    </Svg>
-  );
-}
-
 export function InfoIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>
