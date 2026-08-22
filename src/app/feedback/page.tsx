@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
+import { PlusIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { EmptyState, PageContainer, ctaPrimary } from "@/components/ui";
 import { getMyFeedback, queuedFeedbackCount, type MyFeedback } from "@/lib/feedback";
@@ -69,14 +70,27 @@ export default function MyFeedbackPage() {
   return (
     <AppAccent>
       <PageContainer>
-      <div className="flex items-baseline justify-between gap-3">
+      {/* `items-center`, not `items-baseline`: a bare text button could sit on
+          the heading's baseline, but a 44px filled one hung below the line it
+          was aligned to. */}
+      <div className="flex items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-medium">My feedback</h1>
+        {/* The app's own primary button rather than accent-coloured text. This
+            is the one action the page offers — the empty state below it can
+            only tell a reader to go and find the account menu — and it was
+            drawn as a link, which reads as navigation rather than as the thing
+            that opens the composer.
+
+            `ctaPrimary` carries the `gap-1.5` the plus needs; the fill stays
+            with the caller by design, and `--ws-color` here is the terracotta
+            `AppAccent` pins this page to. */}
         <button
           type="button"
           onClick={() => open({ source: "my_feedback" })}
-          className="min-h-11 text-sm font-semibold"
-          style={{ color: "var(--ws-color)" }}
+          className={ctaPrimary}
+          style={{ background: "var(--ws-color)" }}
         >
+          <PlusIcon className="h-4 w-4" />
           Send new
         </button>
       </div>

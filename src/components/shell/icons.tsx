@@ -346,6 +346,15 @@ export function UserIcon({ className }: { className?: string }) {
   );
 }
 
+/** "one more of these" — the plus on a button that opens a blank composer */
+export function PlusIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M12 5v14M5 12h14" />
+    </Svg>
+  );
+}
+
 export function CheckIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"} strokeWidth={2.2}>
