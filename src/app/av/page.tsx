@@ -10,7 +10,7 @@ import type { LibraryFindResponse, Topic } from "@/lib/types";
 export const revalidate = 900;
 
 export const metadata: Metadata = {
-  title: "Audio/Video · Originals",
+  title: "Media · Originals",
   description:
     "A. Nagraj ji's recorded discourses, satsangs and shivir sessions — every recording in Originals, in one place.",
 };
@@ -74,7 +74,7 @@ export default async function AvPage({
           naming above the title was answering a question the reader had not
           asked on the way to a page they chose from the tab bar. */}
       <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        Audio/Video
+        Media
       </h1>
       <p className="mt-0.5 text-sm text-ink-soft">
         Discourses, satsangs and shivir sessions of Shri A. Nagraj.

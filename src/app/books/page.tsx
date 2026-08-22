@@ -59,8 +59,14 @@ export default async function BooksPage({
           title's own subtitle, not the next thing on the page, so it sits
           against it. The air goes below the pair instead — see the resume
           rail's own `mt-5`. */}
+      {/* "Books" on Originals, matching the tab that opens it. It read "Read"
+          because that was the tab's name; the tab is "Books" now and a page
+          whose heading disagrees with the control the reader just pressed is
+          a page they have to check they arrived at. Translations keeps its
+          own name — its tab still reads "Read", and renaming one shelf's is
+          not licence to rename another's. */}
       <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        {isTranslations ? "Translations" : "Read"}
+        {isTranslations ? "Translations" : "Books"}
       </h1>
       {all.length > 0 && (
         <p className="mt-0.5 text-sm text-ink-soft">

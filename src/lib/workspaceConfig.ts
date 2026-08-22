@@ -95,8 +95,12 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
      */
     nav: [
       { label: "Home", href: "/", icon: "home" },
-      { label: "Read", href: "/books", icon: "read" },
-      { label: "Audio/Video", href: "/av", icon: "av" },
+      { label: "Books", href: "/books", icon: "read" },
+      // "Media" here, on the page it opens, and on the pill that leads back to
+      // it out of a folder. The `av` icon key and the `/av` address are
+      // unchanged — the route is an address, not a label, and moving it would
+      // break every link anyone has to a recording.
+      { label: "Media", href: "/av", icon: "av" },
       { label: "Library", href: "/originals", icon: "browse" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
@@ -107,9 +111,15 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     color: "#4A7260",
     tagline: "Read translations by students",
     home: "/translations",
+    // Two slots. "Read" pointed at `/books?ws=translations`, which was the
+    // same four books under the same language chips as the home it sat beside
+    // — one shelf reachable two ways, and a tab bar asking a reader to choose
+    // between them. The home absorbed its summary line and the tab is gone; it
+    // is named for the workspace now rather than "Home", since it is the only
+    // content tab here and "Translations" is what the reader pressed to arrive.
+    // `/books?ws=translations` still resolves for anyone holding the link.
     nav: [
-      { label: "Home", href: "/translations", icon: "home" },
-      { label: "Read", href: "/books?ws=translations", icon: "read" },
+      { label: "Translations", href: "/translations", icon: "home" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },

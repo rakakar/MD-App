@@ -3,6 +3,8 @@ import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
 import { InfoIcon } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
+import { getBooks } from "@/lib/api";
+import type { BookSummary } from "@/lib/types";
 
 export const revalidate = 900;
 
@@ -17,6 +19,16 @@ export default async function TranslationsHome({
   searchParams: Promise<{ language?: string }>;
 }) {
   const { language } = await searchParams;
+
+  // The shelf's own dimensions, inherited from the "Read" tab this page
+  // absorbed. Counted rather than written down: it read "4 books · 740 pages"
+  // the day it was asked for, and a figure typed into the markup is one that
+  // goes wrong the first time a translator finishes something. Unfiltered on
+  // purpose — it describes the shelf, not the language chip in force.
+  const all = await getBooks({ workspace: "translations" }).catch(
+    () => [] as BookSummary[]
+  );
+  const pages = all.reduce((n, b) => n + (b.page_count ?? 0), 0);
 
   return (
     <PageContainer>
@@ -36,6 +48,14 @@ export default async function TranslationsHome({
       <p className="mt-1 text-sm text-ink-soft">
         The published original works, rendered into other languages by students.
       </p>
+      {all.length > 0 && (
+        <p className="mt-1 text-sm text-ink-soft">
+          <span>
+            {all.length} {all.length === 1 ? "book" : "books"}
+          </span>
+          {pages > 0 && ` · ${pages} pages`}
+        </p>
+      )}
 
       {/*
         Under the subtext rather than in place of it, because the two answer

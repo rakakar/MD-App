@@ -101,7 +101,7 @@ export async function NodeView({
    * Only Originals does. A folder of recordings used to send the reader to
    * `/av` whatever shelf it was on — so backing out of Resources' MP3 folder
    * landed them in Originals' recordings, a different workspace with a
-   * different accent, having pressed a button that said "Audio/Video" when
+   * different accent, having pressed a button that said "Media" when
    * they had arrived from Resources › Library.
    */
   const av = isRecordings ? avTab(ws) : null;
@@ -287,7 +287,7 @@ function Header({
         isShelf
           ? undefined
           : av
-            ? { href: av, label: "Audio/Video" }
+            ? { href: av, label: "Media" }
             : parent
               ? {
                   href: nodeHref(parent.id, shelves),

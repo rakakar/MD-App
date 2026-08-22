@@ -148,10 +148,13 @@ export default async function BookDetailPage({
    * shorter and left them somewhere they had not asked to be, with no sense of
    * what else was there.
    *
-   * The shelf is `/books?ws=translations` — the same address the Translations
-   * workspace's own Read tab points at.
+   * The shelf is `/translations` — the workspace's own home, which is now its
+   * only content tab. It used to be `/books?ws=translations`, chosen because
+   * that was where the Read tab pointed; that tab is gone, and a pill landing
+   * on a page no longer in the nav would drop the reader somewhere with no lit
+   * tab and no obvious way onward.
    */
-  const translationsHref = book.translations.length > 0 ? "/books?ws=translations" : null;
+  const translationsHref = book.translations.length > 0 ? "/translations" : null;
 
   const jsonLd = {
     "@context": "https://schema.org",

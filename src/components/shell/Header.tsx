@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
-import { ctaPrimary } from "@/components/ui";
+import { ctaPrimaryBar } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
 import { getEvents } from "@/lib/api";
@@ -256,10 +256,14 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
             it is bigger now that the bar has the room. */}
         <span
           aria-hidden
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control transition-colors duration-[180ms]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-white transition-colors duration-[180ms]"
+          /* The filled tile the picker sheet gives every workspace, rather than
+             the 12% wash this carried — so the trigger and the row it opens are
+             the same object seen twice, and the bar's one piece of workspace
+             colour actually reads as colour. Same 150° mix as `sheetRow`; if
+             one changes they both should. */
           style={{
-            background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
-            color: "var(--ws-ink)",
+            background: `linear-gradient(150deg, color-mix(in srgb, var(--ws-color) 78%, #fff), var(--ws-color))`,
           }}
         >
           <WorkspaceIcon id={workspace.id} className="h-4.5 w-4.5" />
@@ -352,14 +356,14 @@ function AvatarMenu() {
   const [displayOpen, setDisplayOpen] = useState(false);
 
   if (loading) {
-    return <div className="h-10 w-10 rounded-control bg-ink/5" aria-hidden />;
+    return <div className="h-12 w-12 rounded-control bg-ink/5" aria-hidden />;
   }
 
   if (!user) {
     return (
       <Link
         href="/login"
-        className={ctaPrimary}
+        className={ctaPrimaryBar}
         style={{ background: "var(--ws-color)" }}
       >
         Sign in
@@ -386,9 +390,13 @@ function AvatarMenu() {
         aria-expanded={open}
         aria-label="Account menu"
         onClick={() => setOpen(true)}
-        className="flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+        /* 48px, squaring up with the switcher beside it — the two are the only
+           things in the bar and one standing 8px shorter than the other read as
+           a misalignment rather than a hierarchy. The glyph steps up with the
+           box so it keeps its proportion. */
+        className="flex h-12 w-12 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
-        <UserIcon className="h-4.5 w-4.5" />
+        <UserIcon className="h-5 w-5" />
       </button>
 
       {/*
@@ -520,7 +528,10 @@ export function DisplayButton() {
         onClick={() => setOpen(true)}
         aria-label="Display settings"
         aria-haspopup="dialog"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+        /* Matches the account button and the switcher — see the note there. It
+           is the signed-out bar's second control and would otherwise be the one
+           thing in the row standing short. */
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
         <PaletteIcon />
       </button>

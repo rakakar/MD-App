@@ -51,6 +51,18 @@ const CTA_BASE =
   "font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60";
 export const ctaPrimary = `${CTA_BASE} min-h-11 px-5 text-sm`;
 export const ctaPrimaryCompact = `${CTA_BASE} min-h-11 px-3.5 text-xs`;
+/**
+ * The app bar's own height, for the one CTA that stands in that row: Sign in,
+ * beside a 48px switcher and a 48px account button. 44px is the touch floor and
+ * right everywhere else; here it is the only control in the row standing short.
+ *
+ * A third name rather than `${ctaPrimary} min-h-12` at the call site: two
+ * `min-h` utilities on one element are resolved by their order in the
+ * stylesheet, not in the class list, so which one wins is a coin toss. The
+ * padding tightens with the height because the bar is the one place this button
+ * competes for width.
+ */
+export const ctaPrimaryBar = `${CTA_BASE} min-h-12 px-4 text-sm`;
 
 /**
  * Page gutters and measure.
