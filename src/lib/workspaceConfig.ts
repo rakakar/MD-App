@@ -65,7 +65,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     // designer palette (spec 10A), each hue deepened only as far as AA on the
     // sepia reading surface requires — terracotta uses the spec's own 700
     color: "#A64E12",
-    tagline: "All works of Shri A. Nagraj - Read, listen, watch.",
+    tagline: "All works of Shri A. Nagraj",
     home: "/",
     /**
      * Five slots, and the only workspace with five.
@@ -117,7 +117,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "resources",
     name: "Resources",
     color: "#5E5A8C",
-    tagline: "Student Materials - Shodh patra, textbooks, etc.",
+    tagline: "Student Materials: Shodh patra, textbooks, etc.",
     home: "/resources",
     // Two slots, not four. Resources holds files rather than books, so the
     // old "Browse" — a books shelf filtered to this section — pointed at
@@ -138,7 +138,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "journey",
     name: "My Journey",
     color: "#89631F",
-    tagline: "Study Roadmap - Reading history - Highlights & Notes",
+    tagline: "Study Roadmap - History - Highlights & Notes",
     home: "/me",
     nav: [
       { label: "Overview", href: "/me", icon: "overview" },

@@ -15,7 +15,6 @@ import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceCo
 import { DisplaySheet } from "./DisplaySheet";
 import { useWorkspace } from "./WorkspaceProvider";
 import {
-  BrandMark,
   CalendarChipIcon,
   CheckIcon,
   ChevronDown,
@@ -24,7 +23,6 @@ import {
   FeedbackListIcon,
   PaletteIcon,
   SettingsIcon,
-  SwitcherIcon,
   UserIcon,
   WorkspaceIcon,
 } from "./icons";
@@ -222,14 +220,23 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
   const rest = WORKSPACE_ORDER.filter((id) => id !== workspace.id);
 
   return (
-    <div ref={rootRef} className="relative min-w-0">
+    <div
+      ref={rootRef}
+      /* `flex-1` on the phone: with the brand mark gone this is the only thing
+         on the left of the bar, and a control sized to its own label left a
+         third of the row empty. It now runs from the gutter to the account
+         button, which is both the most prominent it can be without changing
+         how it is drawn and a far bigger target than a content-width chip.
+         The rail's copy is already `w-full` inside a 256px column. */
+      className={`relative min-w-0 ${variant === "sheet" ? "flex-1" : ""}`}
+    >
       <button
         type="button"
         aria-haspopup={variant === "sheet" ? "dialog" : "listbox"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex min-h-10 items-center gap-2 rounded-control border bg-card pl-1.5 pr-2.5 text-left shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors ${
-          variant === "popover" ? "w-full" : "max-w-full"
+        className={`flex min-h-12 items-center gap-2.5 rounded-control border bg-card pl-2 pr-3 text-left shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors ${
+          variant === "popover" ? "w-full" : "w-full max-w-full"
         } ${open ? "" : "hover:bg-accent-tint"}`}
         style={
           open
@@ -240,25 +247,48 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
             : { borderColor: "var(--color-rule)" }
         }
       >
+        {/* **The workspace's own glyph, not a generic one.** The comps draw an
+            open book in this tile on Originals; the code had `SwitcherIcon`,
+            three flat lines that said "this is a menu" and — worse — were the
+            same three lines `WorkspaceIcon` gives Resources, so one workspace's
+            mark was standing in for all five. The tile keeps the comp's light
+            tint and accent-coloured glyph; only what is inside it changes, and
+            it is bigger now that the bar has the room. */}
         <span
           aria-hidden
-          className="flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-[7px] transition-colors duration-[180ms]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control transition-colors duration-[180ms]"
           style={{
             background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
             color: "var(--ws-ink)",
           }}
         >
-          <SwitcherIcon className="h-3.5 w-3.5" />
+          <WorkspaceIcon id={workspace.id} className="h-4.5 w-4.5" />
         </span>
         {/* min-w, not just min-w-0: at the largest text size the actions beside
             this pushed the label to zero width, so the bar showed a tinted
             square and a chevron and the reader could no longer tell which
             workspace they were in. It may truncate; it may not vanish. */}
-        <span className="min-w-[4.5ch] flex-1 truncate text-sm font-semibold tracking-[-0.01em]">
-          {workspace.name}
+        {/* Name over what is inside the workspace. The tagline was already
+            written for the picker sheet, and putting it here too means a reader
+            does not have to open the sheet to learn what a shelf holds — the
+            one line that was missing from the bar. `text-xs` is 13px, which
+            globals.css calls "the floor"; going under it to fit a longer line
+            would be trading legibility for copy nobody asked to be longer.
+            It truncates rather than wraps: two lines of supporting copy in an
+            app bar is a paragraph, and the sheet says it in full. */}
+        <span className="flex min-w-[4.5ch] flex-1 flex-col justify-center">
+          <span className="truncate text-title font-semibold leading-tight tracking-[-0.01em]">
+            {workspace.name}
+          </span>
+          <span className="truncate text-xs leading-snug text-ink-soft">
+            {workspace.tagline}
+          </span>
         </span>
+        {/* Bigger than the 12px it was: against a 32px tile and a two-line
+            label, a 12px chevron read as a speck rather than as the thing
+            saying this control opens. */}
         <ChevronDown
-          className={`h-3 w-3 shrink-0 text-ink-soft/70 transition-transform ${
+          className={`h-4.5 w-4.5 shrink-0 text-ink-soft transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -500,24 +530,31 @@ export function DisplayButton() {
 }
 
 export function Header() {
-  const { workspace } = useWorkspace();
-
   return (
     // pt-safe: installed as a PWA the viewport is viewport-fit=cover, so
     // without it the bar sits under the status bar / notch.
-    <header className="sticky top-0 z-40 border-b border-rule bg-surface/85 pt-[env(safe-area-inset-top)] backdrop-blur-lg lg:hidden">
-      {/* Four items, and they fit one row at every text size — which is why the
-          wrap this used to need is gone with the fifth. */}
+    <header
+      /* The bar takes a trace of the workspace so the chrome belongs to the
+         shelf under it — see `--ws-chrome`. Still translucent, because the
+         blur behind it is what makes content scrolling under the bar read as
+         *under* it: the mix is taken to 85% against transparent rather than
+         being written as a `/85` utility, which cannot reach inside a
+         `color-mix`. */
+      className="sticky top-0 z-40 border-b border-rule pt-[env(safe-area-inset-top)] backdrop-blur-lg lg:hidden"
+      style={{ background: "color-mix(in srgb, var(--ws-chrome) 85%, transparent)" }}
+    >
+      {/* Two or three items now, and they fit one row at every text size. */}
       <div className="flex flex-wrap items-center gap-2.5 px-4 py-2">
-        {/* the mark is a way home as well as identity — from four levels deep
-            in a book list, the tab bar's Home is the only other route back */}
-        <Link
-          href={workspace.home}
-          aria-label={`${workspace.name} home`}
-          className="shrink-0 rounded-control transition-opacity active:opacity-80"
-        >
-          <BrandMark className="h-8 w-8" />
-        </Link>
+        {/* No brand mark. It was identity *and* a way home — "from four levels
+            deep in a book list, the tab bar's Home is the only other route
+            back" — and the second half of that is what made it worth its width.
+            It is not the only route: every workspace's tab bar carries a tab
+            pointing at that workspace's own home (Originals' Home, Resources'
+            Student Materials, Connect's Events), so the way back survives the
+            mark. The identity half is still said twice over by the switcher
+            beside it and by the app icon on the home screen. The rail keeps
+            its mark, where it heads a sidebar rather than competing for a
+            phone's one row. */}
         <WorkspaceSwitcher />
         {/*
           The next-shivir date chip used to sit here and no longer does, as the

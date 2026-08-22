@@ -606,6 +606,15 @@ html[data-reader-theme="quiet"][data-reading="1"] body {
 [data-ws] {
   --ws-ink: var(--ws-color);
 
+  /* The app bar's ground: the surface, carrying a trace of the workspace.
+     8% is deliberately near the floor of what reads as a colour at all — the
+     bar has to look like chrome that belongs to a shelf, not like a coloured
+     banner, and the switcher tile beside it is already saying the hue louder.
+     Declared here rather than on :root for the reason --ws-ink is: a custom
+     property substitutes at the element it is declared on, so a :root copy
+     would bake in the default terracotta for every workspace. */
+  --ws-chrome: color-mix(in srgb, var(--ws-color) 8%, var(--color-surface));
+
   /* The filled half of a progress bar — every one in the app: the resume
      cards on Home and Read, the library's documents and recordings, the PDF
      reader's own footer.
