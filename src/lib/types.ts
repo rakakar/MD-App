@@ -592,35 +592,19 @@ export interface LibraryFindResponse {
   rollup: LibraryRollup;
 }
 
-export type EventType = "shivir" | "workshop" | "satsang" | "other";
-
-export interface CenterItem {
-  id: number;
-  name_hi: string;
-  country?: string;
-  state?: string;
-  city?: string;
-  address?: string;
-  contact_name?: string;
-  contact_phone?: string;
-  contact_email?: string;
-  map_url?: string;
-  activities?: string;
-  [key: string]: unknown;
-}
-
-export interface EventItem {
-  id: number;
-  title_hi: string;
-  event_type?: EventType;
-  start_date?: string;
-  end_date?: string;
-  center?: CenterItem | null;
-  location_text?: string;
-  description?: string;
-  registration_open?: boolean;
-  [key: string]: unknown;
-}
+/**
+ * **Events do not live here.** `EventItem` and `CenterItem` were open-ended
+ * bags — `[key: string]: unknown`, every field optional — written against an
+ * API that had not been designed yet, and the screens built on them guessed:
+ * a title from `title_hi`, a location from a nested centre, a bucket from
+ * client-side date arithmetic.
+ *
+ * Events_API_v1 replaced all of that with a contract that sends every derived
+ * value finished, so the shapes are exact and they live beside the code that
+ * reads them, in `lib/events.ts`. Centres are a separate model with their own
+ * screens, still to be designed; they get their types when they get an
+ * endpoint.
+ */
 
 // ---- Paribhasha — the glossary (§14) ----
 

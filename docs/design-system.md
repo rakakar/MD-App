@@ -53,6 +53,34 @@ into the code at the point it happens, the way `globals.css` already does.
 | Chips inside the filter sheet carry no counts | Adopted — the comp is followed | The panels this replaced printed a count on every chip. The sheet's footer counts the whole find live instead, and it re-counts on every tap, which is the number the reader is actually deciding with. |
 | Six themes in the reader sheet | Six *reading surfaces*; the app keeps Auto/Light/Sepia/Dark | Auto is what lets a phone that darkens at sunset take the app with it. A book chosen on cream should not turn grey because the sun went down. |
 
+## Deviations from the Connect → Events comps, 24 Aug 2026
+
+Five screens, drawn separately from the 11 Aug Originals set: the Upcoming list, the
+filter sheet, the Past list, and the two halves of the event detail. Built as drawn
+except for the rows below. The contract behind them is **`docs/Events_API_v1.md`**, and
+its §0 outranks anything here: every derived value — bucket, badge, the prabodhak's
+"Multiple" line, the card's location string, the category's colour — arrives finished and
+is never recomputed in the app.
+
+| Comp | Shipped | Reason |
+|---|---|---|
+| Every accent on all five screens in the app's terracotta | Connect's own `#2F6E86` | The five-workspace hue model (PRD §2) is app-wide and predates these screens; the comps read as drawn on the generic template. A workspace whose tab bar, switcher tile and app bar are blue must not open a terracotta screen. **Open with the designer** if Connect's identity colour is meant to change — that is a workspace decision, not an Events one. |
+| Category chip text in the category's raw accent | The accent mixed 55% toward the page's own ink | The seven category colours are a **panel table**, not a tuned palette: `#D9A441` measures 1.9:1 as text on its own tint. The five workspace hues were each tuned to clear AA, which is why `--ws-ink` is the raw hue in a light theme; these cannot be. 55% is the same constant `globals.css` already uses to rescue the workspace hues in dark, and it works in both directions — deepening on a light theme, lifting on a dark one. Measured across all seven: 4.9–12:1 light, 7.6–9:1 dark. The **fill** stays raw wherever the accent is the background (the card's edge stripe), because no theme can change that pairing. See `categoryStyle` in `lib/events.ts`. |
+| Bottom bar: Events · Centres · Links · Assistant | Events · Assistant | Centres and Links have **no endpoints** — Events_API_v1 §5 is explicit that they are separate models with their own screens, still to be designed, and that Connect's Links page is not an event's `links`. The Centres tab shipped for a while pointing at a `centers/` call the BE rebuild removed; it rendered "No centers listed yet" over a 404. Same rule that took Connect's library tab out: a tab advertising an empty room is worse than no tab, worst of all in the workspace whose job is telling a reader where to go. Both return the day they have something behind them. |
+| Detail header: back · "Event" · bookmark · share | back · "Event" · share | `me/bookmarks/` covers book paragraphs and nothing else; an event cannot be saved yet (Events_API_v1 §5 asks that we ask before building against it). A dead control is worse here than a gap — it is the one thing a reader would press to keep a date. |
+| Social link tile in green | The document family (violet) | There is no green in the kind palette, and inventing one for a single row is how a palette stops being one. `link` already maps to the document family everywhere else in the app: a link is a document you do not hold. The meeting tile (blue) and the playlist tile (terracotta) are as drawn. |
+| Registration reachable only as a URL inside the invitation note | That, **and** a "Register for this shivir" button under the info rows | `registration_url` is its own field in the contract and the note is free text a manager typed — an organiser who forgets to paste the link into their prose would otherwise have no way in at all. The note's own URLs are linkified too, as drawn. Hidden entirely when the field is empty; **there is no in-app registration form**, by design, and no endpoint accepts a reader's details. |
+| The filter sheet's chips at the comp's exact wrap | As drawn, plus a **Location** section that disappears when there is nowhere to choose between | `filters/` lists only cities that actually have events in the bucket, so an empty list means a dropdown offering nothing but "All". |
+| `Intl` short months | A written-down three-letter table | `en-IN` and `en-GB` abbreviate September to "Sept" — four letters where the other eleven have three — and the comps print "5 Sep'26". On the card, date and location share a line at the largest text size, and the odd month out is the one that wraps. |
+
+One thing the comps could not show, and it is a contract rule rather than a taste call:
+**the A–G categories and the five languages are data.** They are panel tables that can be
+renamed, recoloured, retired or added to without a deploy, so the filter sheet builds its
+chips from `events/filters/` every time it opens and there are no seven chips written down
+anywhere in this app.
+
+---
+
 ## Revisions after the comps — Home and Read, 13 Aug 2026
 
 Not deviations. The 2026-08-11 comps are the source of truth for every screen *except*

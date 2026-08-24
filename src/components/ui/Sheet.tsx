@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/shell/icons";
+import { AccentScope } from "@/components/shell/WorkspaceProvider";
 
 /**
  * The bottom sheet — every one of them, in the app and in the book.
@@ -31,6 +32,7 @@ export function Sheet({
   actions,
   footer,
   surface = "app",
+  accent,
   children,
 }: {
   open: boolean;
@@ -48,6 +50,22 @@ export function Sheet({
   footer?: ReactNode;
   /** `reader` paints the sheet in the book's own paper; see above */
   surface?: "app" | "reader";
+  /**
+   * The workspace colour to paint the sheet's own accents in — its footer
+   * button, its chips, anything reading `var(--ws-color)`.
+   *
+   * **A sheet portals to `document.body`, which is outside the provider's
+   * `[data-ws]` wrapper**, so `--ws-color` inside one resolves to the `:root`
+   * default rather than to the workspace the reader is standing in. On
+   * Originals that is invisible, because the default *is* Originals' hue; on
+   * Connect it means a blue screen opening a terracotta panel.
+   *
+   * Opt-in rather than read from the workspace context, and deliberately so:
+   * the reader's sheets sit under `--reader-*` rules keyed on the book's own
+   * surface, and putting a `[data-ws]` node inside those portals would move
+   * the accent in a place nobody asked for it to move.
+   */
+  accent?: string;
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -85,7 +103,7 @@ export function Sheet({
       : "bg-surface text-ink";
   const rule = surface === "reader" ? "border-(--reader-rule)" : "border-rule";
 
-  return createPortal(
+  const panel = (
     <div className="fixed inset-0 z-60" role="dialog" aria-modal="true" aria-label={title}>
       <button
         type="button"
@@ -137,7 +155,11 @@ export function Sheet({
           </div>
         )}
       </div>
-    </div>,
+    </div>
+  );
+
+  return createPortal(
+    accent ? <AccentScope color={accent}>{panel}</AccentScope> : panel,
     document.body
   );
 }

@@ -1,13 +1,20 @@
 import { recordApiFailure } from "./clientErrors";
+import {
+  EMPTY_EVENT_FILTERS,
+  eventQuery,
+  type EventBucket,
+  type EventDetail,
+  type EventFilterOptions,
+  type EventFilterState,
+  type EventListResponse,
+} from "./events";
 import { EMPTY_FIND, effectiveOrdering, findQuery, type FindState } from "./find";
 import type {
   ApiWorkspace,
   BookDetail,
   BookGenre,
   BookSummary,
-  CenterItem,
   ChapterPayload,
-  EventItem,
   LibraryFindResponse,
   LibraryNode,
   LibrarySearchRow,
@@ -404,26 +411,78 @@ export function bookPdfUrl(code: string): string {
   return new URL(`books/${encodeURIComponent(code)}/pdf/`, apiBase()).toString();
 }
 
-export async function getEvents(): Promise<EventItem[]> {
-  return unwrapList(
-    await apiFetch<EventItem[] | { results: EventItem[] }>("events/", {
-      revalidate: 300, // Connect home wants a short revalidate (PRD §4)
-    })
-  );
+// ---- Connect → Events (Events_API_v1) ----
+
+/**
+ * The list screen, in one call: the three tab counts and the cards for the
+ * bucket asked for.
+ *
+ * **No pagination, and that is the contract's word rather than an oversight**
+ * — the three tabs hold single or low-double digits between them, and the
+ * counts want the whole set anyway. If it ever grows, cursor pagination
+ * arrives with a note in the API doc, not as a silent cap here.
+ *
+ * `counts` is counted under the *same* filters as the list, so tabs rendered
+ * from it can never disagree with what tapping one returns.
+ *
+ * Called from both sides: the page prerenders `upcoming` and the screen
+ * refetches as the reader changes tab, types or filters — hence `signal`,
+ * and hence the short revalidate, which the server render is the only one to
+ * read.
+ */
+export async function getEvents(
+  opts: {
+    bucket?: EventBucket;
+    q?: string;
+    filters?: EventFilterState;
+    signal?: AbortSignal;
+  } = {}
+): Promise<EventListResponse> {
+  const { bucket = "upcoming", q = "", filters = EMPTY_EVENT_FILTERS, signal } = opts;
+  return apiFetch<EventListResponse>(`events/${eventQuery(bucket, q, filters)}`, {
+    revalidate: 300, // a shivir list is the one thing on this app that expires
+    signal,
+  });
 }
 
-export async function getCenters(): Promise<CenterItem[]> {
-  return unwrapList(await apiFetch<CenterItem[] | { results: CenterItem[] }>("centers/"));
+/**
+ * One event, by slug — both halves of the detail design in a single call.
+ *
+ * The slug is the id everywhere, Share included. It is ASCII by construction
+ * on the BE: a Hindi title becomes `{category}-{start_date}`, because Django's
+ * Unicode slugifier strips Devanagari matras and produces a link misspelt in
+ * the only script that could read it.
+ *
+ * Draft events 404 here, exactly as an unknown slug does.
+ */
+export async function getEvent(slug: string, signal?: AbortSignal): Promise<EventDetail> {
+  return apiFetch<EventDetail>(`events/${encodeURIComponent(slug)}/`, {
+    revalidate: 300,
+    signal,
+  });
 }
 
-export async function registerForEvent(
-  eventId: number,
-  payload: Record<string, string>
-): Promise<unknown> {
-  return apiFetch(`events/${eventId}/register/`, {
-    method: "POST",
-    body: payload,
-    credentials: true,
+/**
+ * The filter sheet's own options, each counted with **its own filter dropped**
+ * under whatever else is applied — which is what lets an unselected category
+ * chip read 3 while the category filter sits on something else.
+ *
+ * Read fresh every time the sheet opens rather than cached across sessions: a
+ * retired category keeps working for events already filed under it but stops
+ * appearing here, and a cached copy would keep offering it.
+ */
+export async function getEventFilters(
+  opts: {
+    bucket?: EventBucket;
+    q?: string;
+    filters?: EventFilterState;
+    signal?: AbortSignal;
+  } = {}
+): Promise<EventFilterOptions> {
+  const { bucket = "upcoming", q = "", filters = EMPTY_EVENT_FILTERS, signal } = opts;
+  return apiFetch<EventFilterOptions>(`events/filters/${eventQuery(bucket, q, filters)}`, {
+    revalidate: 300,
+    signal,
   });
 }
 

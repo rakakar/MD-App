@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ConnectNav } from "@/components/connect/ConnectNav";
 import { FileList } from "@/components/library/FileList";
 import { NodeCardView } from "@/components/library/NodeCard";
 import { EmptyState, PageContainer } from "@/components/ui";
@@ -52,9 +51,17 @@ export default async function ConnectLibraryPage() {
       <p className="mt-1 text-sm text-ink-soft">
         Material that belongs to the centres and the work around them.
       </p>
-      <div className="mt-3">
-        <ConnectNav active="library" />
-      </div>
+      {/* The way back, as a link rather than as a segmented nav.
+          `ConnectNav` was Events | Centres, and Centres has no endpoint any
+          more (Events_API_v1 §5) — a two-segment control with one segment left
+          is a link that has to explain itself. */}
+      <Link
+        href="/connect"
+        className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold"
+        style={{ color: "var(--ws-ink)" }}
+      >
+        ← Events
+      </Link>
 
       {doors.length > 0 ? (
         <ul className="mt-5 grid gap-3 sm:grid-cols-2">

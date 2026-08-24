@@ -163,14 +163,29 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     color: "#2F6E86",
     tagline: "Shivir Calendar - Contacts - Links",
     home: "/connect",
-    // Three slots. The fourth was Connect's own library, and it is gone: the
-    // four folders behind it ship published but empty (§13.3), so the tab
-    // promised a room with nothing in it — in the one workspace whose whole
-    // job is telling a reader where to go. The shelf still exists at
-    // `/connect/library`; see ConnectNav for when the tab comes back.
+    /**
+     * Two slots, and the designer's Events comps draw four — Events, Centres,
+     * Links, Assistant. The two missing ones are missing on purpose.
+     *
+     * **Centres and Links have no endpoints.** Events_API_v1 §5 is explicit
+     * that they are separate models with their own screens, still to be
+     * designed, and that Connect's Links page is *not* the same thing as an
+     * event's links — so there is nothing to reuse and nothing to show. The
+     * Centres tab shipped anyway for a while, pointing at a page that called a
+     * `centers/` endpoint the BE rebuild removed; it rendered "No centers
+     * listed yet" over a 404.
+     *
+     * A tab advertising an empty room is worse than no tab, and worst of all
+     * here: a reader who takes it learns the app has nothing, in the one
+     * workspace whose whole job is telling them where to go. Same reasoning
+     * that took Connect's own library tab out (§13.3, its folders ship
+     * published and empty; the shelf still lives at `/connect/library`).
+     *
+     * Both come back the day they have something behind them. Nothing else in
+     * this file has to change when they do.
+     */
     nav: [
       { label: "Events", href: "/connect", icon: "events" },
-      { label: "Centers", href: "/connect/centers", icon: "centers" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },

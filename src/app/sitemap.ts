@@ -51,7 +51,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/resources",
     "/paribhasha",
     "/connect",
-    "/connect/centers",
     "/connect/library",
   ].map((p) => ({ url: `${SITE_URL}${p}`, changeFrequency: "daily" as const }));
 
@@ -65,7 +64,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  const events = await getEvents().catch(() => []);
+  // Every bucket, because a past shivir is exactly the page someone searching
+  // for last year's sammelan is looking for — and Past is where the recording
+  // playlist lives.
+  const events = (
+    await Promise.all(
+      (["upcoming", "ongoing", "past"] as const).map((bucket) =>
+        getEvents({ bucket })
+          .then((r) => r.results)
+          .catch(() => [])
+      )
+    )
+  ).flat();
   // Every glossary word gets a URL. It costs one request — the underlining
   // index already carries all ~2,800 ids — and these are the pages someone
   // searching a Madhyasth Darshan term in Hindi is actually looking for.
@@ -87,7 +97,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     urls.push({ url: `${SITE_URL}/library/${id}`, changeFrequency: "weekly" });
   }
 
-  for (const e of events) urls.push({ url: `${SITE_URL}/connect/events/${e.id}` });
+  for (const e of events) {
+    urls.push({ url: `${SITE_URL}/connect/events/${e.slug}` });
+  }
 
   return urls;
 }

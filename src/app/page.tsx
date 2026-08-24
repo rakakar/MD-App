@@ -15,18 +15,19 @@ import {
   SeeAll,
 } from "@/components/ui";
 import { getBooks, getEvents } from "@/lib/api";
-import { eventLocation, eventStart, eventTitle, shortDate, upcomingEvents } from "@/lib/events";
+import { cardDateRange, type EventCard } from "@/lib/events";
 import { SHIVIRS, byGenre } from "@/lib/labels";
+import { contentLang } from "@/lib/script";
 import { getShorts, type Short } from "@/lib/shorts";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
-import type { BookSummary, EventItem, SutraOfTheDay } from "@/lib/types";
+import type { BookSummary, SutraOfTheDay } from "@/lib/types";
 
 export const revalidate = 900;
 
 async function loadHome(): Promise<{
   books: BookSummary[];
   sutra: SutraOfTheDay | null;
-  events: EventItem[];
+  events: EventCard[];
   shorts: Short[];
 }> {
   const [books, sutra, events, shorts] = await Promise.all([
@@ -37,7 +38,12 @@ async function loadHome(): Promise<{
       .then(byGenre)
       .catch(() => [] as BookSummary[]),
     ACTIVE_SUTRA_SOURCE.getToday().catch(() => null),
-    getEvents().catch(() => [] as EventItem[]),
+    getEvents({ bucket: "upcoming" })
+      // Soonest first, straight from the API — the bucket and the order are
+      // the server's, so this strip and Connect's own list can never
+      // disagree about which shivir is next.
+      .then((r) => r.results)
+      .catch(() => [] as EventCard[]),
     getShorts().catch(() => [] as Short[]),
   ]);
   return { books, sutra, events, shorts };
@@ -58,7 +64,7 @@ export default async function OriginalsHome() {
   // finished header, and this is where its job landed — a date in the corner
   // could only ever say *when*, and the reason a reader looks is to find out
   // where and whether they can get to it.
-  const shivirs = upcomingEvents(events).slice(0, 3);
+  const shivirs = events.slice(0, 3);
 
   return (
     <PageContainer size="shelf">
@@ -159,24 +165,28 @@ export default async function OriginalsHome() {
               </SectionHeading>
               <ul className="flex flex-col gap-2">
                 {shivirs.map((e) => {
-                  const d = eventStart(e);
+                  const l = contentLang(e.title);
+                  const dates = cardDateRange(e);
                   return (
-                    <li key={e.id}>
+                    <li key={e.slug}>
                       <Link
-                        href={`/connect/events/${e.id}`}
+                        href={`/connect/events/${e.slug}`}
                         className="flex items-center gap-3 rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
                       >
                         <span className="min-w-0 flex-1">
-                          <span lang="hi" className="hi block truncate text-sm font-semibold">
-                            {eventTitle(e)}
+                          <span {...l} className={`${l.className} block truncate text-sm font-semibold`}>
+                            {e.title}
                           </span>
                           <span className="mt-1 flex items-center gap-1 text-xs text-ink-soft">
                             <span aria-hidden className="shrink-0">
                               <PinIcon />
                             </span>
                             <span className="truncate">
-                              {eventLocation(e) || "—"}
-                              {d ? ` · ${shortDate(d)}` : ""}
+                              {/* `location` is the card's one line, assembled
+                                  by the API — "Online" for an online shivir,
+                                  "Hapud, NCR Delhi" for one you travel to. */}
+                              {e.location || "—"}
+                              {dates ? ` · ${dates}` : ""}
                             </span>
                           </span>
                         </span>

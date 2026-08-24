@@ -329,6 +329,33 @@ export function CalendarChipIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * A letter and a glyph, crossing — "which language is this in".
+ *
+ * The event detail's Language row and nothing else, for now. Drawn as a
+ * Devanagari अ meeting a Latin A rather than as a globe: a globe is where
+ * something is, and this row is what it is *said* in — the two rows sit one
+ * above the other on that screen and cannot both be a place.
+ */
+export function LanguageIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M3 6h8M7 4v2M9.5 6c0 4-2.5 7-6 8" />
+      <path d="M5 10.5c1.5 2.5 3.5 4 5.5 4.5" />
+      <path d="m13 20 4-9 4 9M14.4 17h5.2" />
+    </Svg>
+  );
+}
+
+/** A phone handset — the tap-to-call chips under an invitation note. */
+export function PhoneIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-4 w-4"}>
+      <path d="M7.5 3.5 9.8 8 8 9.8a11 11 0 0 0 5.9 5.9L15.7 14l4.5 2.3-.6 3a1.6 1.6 0 0 1-1.8 1.3C10.4 19.6 4.3 13.5 3.2 6.1A1.6 1.6 0 0 1 4.5 4.3l3-.8Z" />
+    </Svg>
+  );
+}
+
 export function ChevronDown({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-4 w-4"}>
