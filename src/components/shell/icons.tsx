@@ -347,6 +347,33 @@ export function UserIcon({ className }: { className?: string }) {
 }
 
 /** "one more of these" — the plus on a button that opens a blank composer */
+/** the arrow on a button that leads out of the screen it sits on */
+export function ArrowRightIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M5 12h13" />
+      <path d="m12 6 6 6-6 6" />
+    </Svg>
+  );
+}
+
+/**
+ * A winding way with a mark on it — the journey's own path.
+ *
+ * The same figure the empty state's illustration is built around: a track
+ * bending into the distance with waypoints set along it.
+ */
+export function PathIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M6 20c0-4 3-4 3-8s-3-4-3-8" />
+      <path d="M18 4c0 4-3 4-3 8s3 4 3 8" />
+      <circle cx="6" cy="20" r="1.4" />
+      <circle cx="18" cy="4" r="1.4" />
+    </Svg>
+  );
+}
+
 export function PlusIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

@@ -156,6 +156,22 @@ export interface Prefs {
   syncNudgeShown: boolean;
   /** one-time "tap the middle for controls" coach mark */
   immersiveHintShown: boolean;
+  /**
+   * Which stage of the study path the reader says they are in — 1–9, or null
+   * before they have been asked.
+   *
+   * **Declared, never inferred.** Nothing the app observes moves it; only the
+   * onboarding answer and the reader's own "move me on" do. That is the whole
+   * premise of the 19A screens — a stage is somewhere you say you are, not a
+   * score — and it is why this sits in prefs beside the reading settings
+   * rather than anywhere that syncs progress.
+   *
+   * Local for the same reason the onboarding says "no account needed": a
+   * reader who never signs in still gets a journey. Moving it to `/me/` later
+   * would make it follow them between devices, which is the only thing local
+   * costs.
+   */
+  journeyStage: number | null;
 }
 
 export const PREFS_KEY = "md.prefs.v1";
@@ -185,6 +201,7 @@ export const DEFAULT_PREFS: Prefs = {
   playbackRate: 1,
   syncNudgeShown: false,
   immersiveHintShown: false,
+  journeyStage: null,
 };
 
 /** Resolve `system` against the OS setting. SSR-safe (assumes light). */

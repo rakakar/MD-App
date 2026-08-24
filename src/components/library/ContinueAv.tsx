@@ -78,6 +78,7 @@ interface ResumeRow {
 export function ContinueAv({
   sources,
   limit = 4,
+  heading = "Resume",
 }: {
   /**
    * The page's collections — every A/V file on screen, still under the folder
@@ -87,6 +88,12 @@ export function ContinueAv({
    */
   sources: { name: string; files: LibraryFile[] }[];
   limit?: number;
+  /**
+   * What the rail calls itself. "Resume" on a shelf, where it sits above the
+   * thing it resumes into; My Journey names it श्रवण so it pairs with the
+   * पठन rail beside it and the two read as one pair of histories.
+   */
+  heading?: string;
 }) {
   const { user, loading } = useAuth();
   const player = usePlayer();
@@ -228,7 +235,6 @@ export function ContinueAv({
   // with a waveform or a play glyph, and one short word does not have to carry
   // a distinction the artwork is making anyway. The accessible name keeps the
   // longer phrase, where there is no artwork to read.
-  const heading = "Resume";
   const label = rows.every((row) => row.kind === "audio")
     ? "Continue listening"
     : "Continue watching";

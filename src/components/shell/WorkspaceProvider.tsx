@@ -155,8 +155,33 @@ export function WorkspaceScope({ ws }: { ws: WorkspaceId }) {
  * chrome still names where they will return to.
  */
 export function AppAccent({ children }: { children: ReactNode }) {
+  return <AccentScope color={APP_ACCENT}>{children}</AccentScope>;
+}
+
+/**
+ * The same trick as `AppAccent`, for a caller that knows its own colour.
+ *
+ * **What this is really for is portals.** Anything rendered through
+ * `createPortal(…, document.body)` — a sheet, a full-screen layover — lands
+ * *outside* the provider's `[data-ws]` wrapper, so `var(--ws-color)` there
+ * resolves to the `:root` default rather than to the workspace the reader is
+ * actually in. The symptom is quiet and easy to miss: a My Journey overlay
+ * paints its buttons in Originals terracotta and simply looks like someone
+ * chose the wrong colour.
+ *
+ * Wrapping the portal's own content puts a workspace back in scope for it.
+ * `data-ws` is what does the work — see `AppAccent` for why a bare style is
+ * not enough.
+ */
+export function AccentScope({
+  color,
+  children,
+}: {
+  color: string;
+  children: ReactNode;
+}) {
   return (
-    <div data-ws="app" style={{ "--ws-color": APP_ACCENT } as React.CSSProperties}>
+    <div data-ws="scope" style={{ "--ws-color": color } as React.CSSProperties}>
       {children}
     </div>
   );

@@ -70,7 +70,7 @@ export function ContinueReading({
    * reader resuming a Hindi original on the Originals Home does not also see
    * an English one it has never offered, and the other way round.
    */
-  workspace?: "originals" | "translations";
+  workspace?: "originals" | "translations" | "all";
 }) {
   const { user, loading } = useAuth();
   const [cards, setCards] = useState<ResumeCard[]>([]);
@@ -106,7 +106,9 @@ export function ContinueReading({
     //
     // This same call also covers titles, covers and page counts for every
     // surviving row.
-    const shelf = await getBooks({ workspace }).catch(() => []);
+    const shelf = await getBooks(
+      workspace === "all" ? undefined : { workspace }
+    ).catch(() => []);
     const byCode = new Map(shelf.map((b) => [b.code, b]));
     const rows = notLibraryDocs.filter((p) => byCode.has(p.book_code)).slice(0, limit);
     if (rows.length === 0) {

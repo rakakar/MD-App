@@ -151,7 +151,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     tagline: "Study Roadmap - History - Highlights & Notes",
     home: "/me",
     nav: [
-      { label: "Overview", href: "/me", icon: "overview" },
+      { label: "Dashboard", href: "/me", icon: "overview" },
       { label: "Saved", href: "/me/bookmarks", icon: "saved" },
       { label: "Notes", href: "/me/notes", icon: "notes" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
