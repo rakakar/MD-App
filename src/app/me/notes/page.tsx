@@ -1,24 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { EmptyState, PageContainer } from "@/components/ui";
-import { localNotes, syncPersonal, unsaveNote } from "@/lib/personal";
+import { unsaveNote } from "@/lib/personal";
 import { refToHref } from "@/lib/refs";
-import type { LocalNote } from "@/lib/storage";
 
+/**
+ * **Notes — the other half of My Journey's Highlights & Notes.**
+ *
+ * Its own route, under the shared heading and tab bar the Highlights list
+ * wears; `PersonalTabs` carries the reasoning, including why this is two
+ * routes rather than one page holding a tab in state.
+ */
 export default function NotesPage() {
-  const { user, loading } = useAuth();
-  const [rows, setRows] = useState<LocalNote[] | null>(null);
-
-  const reload = useCallback(() => setRows(localNotes()), []);
-
-  useEffect(() => {
-    if (loading) return;
-    reload();
-    if (user) void syncPersonal().then(reload);
-  }, [user, loading, reload]);
+  const { user } = useAuth();
+  const { rows, reload } = usePersonalRows();
+  const notes = rows?.notes ?? null;
 
   const remove = (ref: string) => {
     unsaveNote(ref, !!user);
@@ -27,25 +26,17 @@ export default function NotesPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-medium">Notes</h1>
-      {!loading && !user && rows !== null && rows.length > 0 && (
-        <p className="mt-1 text-xs text-ink-soft">
-          Saved on this device ·{" "}
-          <Link href="/login?next=/me/notes" className="underline">
-            Sign in to sync
-          </Link>
-        </p>
-      )}
+      <PersonalHeader active="notes" rows={rows} />
 
       <div className="mt-5">
-        {rows === null ? null : rows.length === 0 ? (
+        {notes === null ? null : notes.length === 0 ? (
           <EmptyState
             title="No notes yet"
             hint="Select any passage in the reader and choose Note."
           />
         ) : (
           <ul className="flex flex-col gap-3">
-            {rows.map((n) => (
+            {notes.map((n) => (
               <li key={n.canonical_ref} className="rounded-2xl border border-rule bg-card p-4">
                 {/* the passage first, then what you said about it — a note
                     without its subject is hard to place months later */}

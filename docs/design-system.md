@@ -257,7 +257,7 @@ search.
 | `StatTile`, `PromoBand` | Home |
 | `ListRow` (+ `RowNumber`, `RowGroup`, `RowCard`, `RowAction`) | chapters, files, tracks |
 | `CountedSegmented` | Audio/Video's All / Audios / Videos |
-| `CountTabs` | Chapters / Highlights & Notes |
+| `CountTabs` | Chapters / Highlights & Notes (book), Highlights / Notes (My Journey) |
 | `Chip`, `ChipRow` | genre row, filter chips, active filters |
 | `FilterButton`, `FindRow`, `ActiveFilters`, `FilterSection`, `RadioList`, `CheckRow` | Library, Audio/Video, Highlights |
 | `Sheet` (+ `SheetAction`, `SheetTextAction`) | every bottom sheet in the app |
@@ -300,9 +300,12 @@ cost the cover the width — which on a two-up phone grid is the only thing bein
 - **`CountedSegmented`** splits one set into parts that add up — All 73 / Audios 35 /
   Videos 38. The counts are the point.
 - **`CountTabs`** switches between two different things about the same object — a book's
-  chapters and a book's highlights. Nothing adds up. Its active tab is a raised white card
-  rather than an accent fill, because the panel below it is white too and the tab has to
-  read as the front edge of it.
+  chapters and a book's highlights, My Journey's highlights and notes. Nothing adds up.
+  Its `surface` prop picks the active look and is not a preference: on `card` (the book
+  page) the active tab is a raised white card, because the panel below it is white too and
+  the tab has to read as the front edge of it; on `page` (`/me`) that pill has nothing to
+  be lighter than, so it wears the app's ordinary accent fill like every other bar on a
+  page.
 - **`Chip`** turns one filter on or off, and many can be on at once. Two selected looks:
   `solid` for a filter positively applied, `tint` for a selected position in a set where
   something is always selected — a row of solid fills there reads as four active filters.
@@ -502,6 +505,7 @@ Answers the designer gave, and what they became:
 | The accent-filled ✦ in the top bar | The **Assistant**. It searches Paribhasha and the books today and becomes chat later; it is in the reader now so the habit forms first. Scoped to the current book — a global search from page 19 is not the question being asked. |
 | `Page 19 : 3 / 19` | Printed page, then where that page sits in this chapter. Two different numbers, both wanted: the first is what a reader checks against paper and what every `canonical_ref` is built on. |
 | The bookmark button | **Gone.** A position saved with no words is what nobody came back for. Selecting a passage offers the two things they do. `/me/bookmarks` is **Highlights** now — no migration, because a highlight is a bookmark with a colour, and rows saved before the colours simply show unpainted. |
+| Where the two land in My Journey | **One tab, not two.** The bar had "Saved" and "Notes" side by side — the reader's single act (keep this passage) split by which of our two tables it went into. They are now one **Highlights & Notes** slot over two routes, `/me/bookmarks` and `/me/notes`, sharing a heading and a `CountTabs` bar with the counts on it. Both URLs still resolve, so nothing anyone linked to is broken. |
 | The three highlight colours | No meaning — free choice. So they are announced by the only thing true about them ("Highlight in amber"). |
 | `Bold` | A heavy weight over Original's paper, confirmed. |
 | `Quiet` deepened to 12.4:1 | Accepted. |
@@ -509,7 +513,9 @@ Answers the designer gave, and what they became:
 Not drawn by the designer at all, and therefore deliberately untouched: **Translations,
 Connect, Resources, My Journey**, search/assistant, auth and settings. They keep today's
 chrome and inherit these primitives for free when their comps arrive — which is the whole
-reason the primitives came first.
+reason the primitives came first. (My Journey's tab bar is the one exception since, and
+only because the reader's highlight went one way: taking the bookmark button off the
+reader is what left "Saved" and "Notes" naming the same act twice.)
 
 ---
 

@@ -171,18 +171,30 @@ export function CountedSegmented<T extends string>({
  * Chapters 4 | Highlights & Notes 2.
  *
  * Two different things about one object, where `CountedSegmented` splits one
- * set into parts that add up. Same track, and the one different selected look
- * in the app — see `SEGMENT_ON_RAISED`.
+ * set into parts that add up. Same track, and — on a card — the one different
+ * selected look in the app; see `SEGMENT_ON_RAISED`.
+ *
+ * **`surface` picks which selected look applies, and it is not a preference.**
+ * The raised pill only means anything where the panel below the bar is `card`:
+ * there the tab reads as the front edge of what it opens. `/me`'s Highlights
+ * and Notes are the same two-things-about-one-object question, but the panel
+ * under them is the page — where a raised white pill has nothing to be lighter
+ * than and simply goes quiet. Those pass `surface="page"` and get the app's
+ * ordinary filled accent, which is what every other bar on a page wears.
  */
 export function CountTabs<T extends string>({
   label,
   tabs,
   value,
+  surface = "card",
 }: {
   label: string;
   tabs: { value: T; label: string; count?: number; href: string }[];
   value: T;
+  /** what sits directly below the bar — see above; defaults to the book page */
+  surface?: "card" | "page";
 }) {
+  const raised = surface === "card";
   return (
     <nav aria-label={label} className={SEGMENT_TRACK}>
       {tabs.map((t) => {
@@ -195,11 +207,14 @@ export function CountTabs<T extends string>({
             /* min-h-12 rather than the shared 11: "Highlights & Notes" is the
                longest label in the app, and this is the one bar that carries
                two of them. */
-            className={`${SEGMENT} min-h-12 ${active ? SEGMENT_ON_RAISED : SEGMENT_OFF}`}
+            className={`${SEGMENT} min-h-12 ${
+              active ? (raised ? SEGMENT_ON_RAISED : SEGMENT_ON) : SEGMENT_OFF
+            }`}
+            style={active && !raised ? SEGMENT_ON_STYLE : undefined}
           >
             <span className="truncate">{t.label}</span>
             {t.count !== undefined && (
-              <SegmentCount active={active} value={t.count} raised />
+              <SegmentCount active={active} value={t.count} raised={raised} />
             )}
           </Link>
         );

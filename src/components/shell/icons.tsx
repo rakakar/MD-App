@@ -92,10 +92,16 @@ export function Icon({ name, ...props }: IconProps & { name: NavIcon }) {
           <path d="M21 8.5V14" />
         </Svg>
       );
-    case "saved":
+    case "highlights":
+      // A marker held over the line it has painted. It was a bookmark pennant
+      // while this tab was "Saved", and the pennant outlived the button: the
+      // reader's bottom bar has no bookmark on it any more, and what this tab
+      // opens is passages painted and written against.
       return (
         <Svg {...props}>
-          <path d="M6 3h12v18l-6-4.5L6 21V3Z" />
+          <path d="M14.5 3.5 20.5 9.5 11 19H5v-6l9.5-9.5Z" />
+          <path d="M12.5 5.5 18.5 11.5" />
+          <path d="M3 22h18" />
         </Svg>
       );
     case "overview":
@@ -103,13 +109,6 @@ export function Icon({ name, ...props }: IconProps & { name: NavIcon }) {
         <Svg {...props}>
           <circle cx="12" cy="12" r="9" />
           <path d="M12 7v5l3.5 2" />
-        </Svg>
-      );
-    case "notes":
-      return (
-        <Svg {...props}>
-          <path d="M5 3h14v18H5V3Z" />
-          <path d="M9 8h6M9 12h6M9 16h4" />
         </Svg>
       );
     case "events":

@@ -52,7 +52,9 @@ export function BottomNav() {
           style={{ color: active ? "var(--ws-ink)" : "var(--color-ink-soft)" }}
         >
           <Icon name={nav.icon} className="h-6 w-6" strokeWidth={active ? 2.1 : 1.7} />
-          <span className="max-w-full truncate">{nav.label}</span>
+          {/* `short` where a tab has one — the bottom bar is the one place a
+              label has to survive being a third of a 390px screen. */}
+          <span className="max-w-full truncate">{nav.short ?? nav.label}</span>
         </Link>
       </li>
     );

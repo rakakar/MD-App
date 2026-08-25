@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { EmptyState, PageContainer } from "@/components/ui";
-import { localBookmarks, syncPersonal, unsaveBookmark } from "@/lib/personal";
+import { unsaveBookmark } from "@/lib/personal";
 import { refToHref } from "@/lib/refs";
 import type { HighlightColour, LocalBookmark } from "@/lib/storage";
 
@@ -30,8 +30,9 @@ const FILL: Record<HighlightColour, string> = {
  * they are: a passage somebody kept.
  *
  * Per-book highlights, with their notes and grouped by chapter, live on the
- * book's own Highlights & Notes tab. This is the cross-book list — the one
- * the Journey and Resources workspaces link to as "Saved".
+ * book's own Highlights & Notes tab. This is the cross-book list — the
+ * Highlights half of My Journey's own Highlights & Notes, whose other tab is
+ * `/me/notes`. See `PersonalTabs` for why the two are one heading now.
  */
 /**
  * What one saved row shows: the words the reader painted, and in which colour.
@@ -49,19 +50,9 @@ function saved(b: LocalBookmark): { text?: string; colour?: HighlightColour } {
 }
 
 export default function BookmarksPage() {
-  const { user, loading } = useAuth();
-  const [rows, setRows] = useState<LocalBookmark[] | null>(null);
-
-  const reload = useCallback(() => setRows(localBookmarks()), []);
-
-  // The local store answers immediately in both states — it holds this
-  // reader's own saves whether or not there is an account behind them. When
-  // there is, a sync folds in anything saved on another device and we redraw.
-  useEffect(() => {
-    if (loading) return;
-    reload();
-    if (user) void syncPersonal().then(reload);
-  }, [user, loading, reload]);
+  const { user } = useAuth();
+  const { rows, reload } = usePersonalRows();
+  const highlights = rows?.bookmarks ?? null;
 
   const remove = (ref: string) => {
     unsaveBookmark(ref, !!user);
@@ -70,25 +61,17 @@ export default function BookmarksPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-medium">Highlights</h1>
-      {!loading && !user && rows !== null && rows.length > 0 && (
-        <p className="mt-1 text-xs text-ink-soft">
-          Saved on this device ·{" "}
-          <Link href="/login?next=/me/bookmarks" className="underline">
-            Sign in to sync
-          </Link>
-        </p>
-      )}
+      <PersonalHeader active="highlights" rows={rows} />
 
       <div className="mt-5">
-        {rows === null ? null : rows.length === 0 ? (
+        {highlights === null ? null : highlights.length === 0 ? (
           <EmptyState
             title="Nothing highlighted yet"
             hint="Press and hold any line while reading, then pick a colour."
           />
         ) : (
           <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
-            {rows.map((b) => (
+            {highlights.map((b) => (
               <li key={b.canonical_ref} className="flex items-center gap-3 px-4 py-3">
                 <Link href={refToHref(b.canonical_ref)} className="min-w-0 flex-1">
                   {/* the saved words, not the reference they were filed under */}

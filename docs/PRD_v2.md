@@ -186,7 +186,7 @@ The app has five workspaces, selected from a **header dropdown** (bottom-sheet o
 | `/connect/events/{id}` | Event detail + registration | Connect | ISR + client action |
 | `/connect/centers` | Centers directory | Connect | ISR |
 | `/me` | My Journey overview (logged-in: BE data; guest: local view + sync CTA) | My Journey | client |
-| `/me/bookmarks` · `/me/notes` | Saved / Notes lists | My Journey | client |
+| `/me/bookmarks` · `/me/notes` | Highlights & Notes — one tab, two routes | My Journey | client |
 | `/me/settings` | Profile & preferences | My Journey | client |
 | `/login` · `/signup` | Allauth headless flows | neutral | client |
 
@@ -315,7 +315,7 @@ something is broken when it is in fact still working.
 - Headless allauth flows (email/password + Google); session cookies; same-parent-domain (§1).
 - **Public users never see panel** — no admin affordances anywhere.
 - Preferences (font size, typeface, theme, reading mode, workspace last-used): localStorage always; mirrored to server when logged in.
-- **My Journey:** overview (resume cards, counts), `/me/bookmarks`, `/me/notes` — all `canonical_ref`-anchored, each item deep-links into the reader, each row showing the saved passage rather than the reference it is filed under.
+- **My Journey:** overview (resume cards, counts), then **Highlights & Notes** — one tab in the bar over two routes, `/me/bookmarks` and `/me/notes`, sharing a heading and a counted tab bar. All `canonical_ref`-anchored, each item deep-links into the reader, each row showing the saved passage rather than the reference it is filed under.
 - Login prompts appear **only at first benefit** (first bookmark/note, sync attempt, or My Journey visit) — never a gate on reading.
 
 ### One reading experience `[REVISED 28 Jul — supersedes the guest/logged-in split above]`
