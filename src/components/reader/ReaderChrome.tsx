@@ -79,7 +79,6 @@ export function ReaderTopBar({
   pagesHref,
   onType,
   assistantHref,
-  languages,
 }: {
   hidden: boolean;
   backHref: string;
@@ -94,8 +93,6 @@ export function ReaderTopBar({
   pagesHref?: string;
   onType: () => void;
   assistantHref: string;
-  /** the two sides of a bilingual edition; absent on every other book */
-  languages?: LanguageToggle;
 }) {
   return (
     <div
@@ -159,8 +156,6 @@ export function ReaderTopBar({
         </Link>
       </div>
 
-      {languages && <ReaderLanguageBar {...languages} />}
-
       {/* The hairline sits under the bar in the comps rather than at the foot
           of the screen, which is also where it belongs: it measures the
           chapter, and the chapter's name is the thing directly above it. */}
@@ -201,9 +196,12 @@ export interface LanguageToggle {
  * reader comparing a passage against its Hindi will ask it repeatedly. Behind
  * the palette button it would have been three taps each time.
  *
- * It rides inside the top bar's own fixed block, so it hides and returns with
- * the rest of the chrome instead of being a second thing floating over the
- * page.
+ * It rides inside the bottom bar's own fixed block, directly above the row
+ * that holds the page number, so it hides and returns with the rest of the
+ * chrome instead of being a second thing floating over the page. Down here
+ * rather than up top because it is a control rather than a label: the thumb
+ * is already at this end of the phone, holding the two other things a reader
+ * reaches for mid-chapter — the contents, and the page they want.
  *
  * The selected side is the accent filled with white on it, which is how every
  * other "which of these am I looking at" control in the app reads — see
@@ -221,7 +219,11 @@ function ReaderLanguageBar({
   const seg =
     "flex min-h-9 flex-1 items-center justify-center rounded-control px-3 text-sm transition-colors";
   return (
-    <div className="px-4 pb-2">
+    /* Even padding top and bottom. It was `pb-2` alone while this hung under
+       the top bar, where the bar's own row supplied the space above; sitting
+       on the bottom bar it has a hairline above it instead and has to make
+       its own. */
+    <div className="px-4 py-2">
       <div
         role="radiogroup"
         aria-label="Reading language"
@@ -280,6 +282,7 @@ export function ReaderBottomBar({
   canListen,
   listening,
   deviceFallback,
+  languages,
 }: {
   hidden: boolean;
   bottom: string;
@@ -297,6 +300,8 @@ export function ReaderBottomBar({
   listening: boolean;
   /** no recorded audio — this device's own voice would read it */
   deviceFallback: boolean;
+  /** the two sides of a bilingual edition; absent on every other book */
+  languages?: LanguageToggle;
 }) {
   return (
     <div
@@ -314,6 +319,15 @@ export function ReaderBottomBar({
       className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg)/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
       style={{ bottom }}
     >
+      {/* Above the row with the page number in it, and under its own hairline
+          — the two are different questions and the rule is what says so. This
+          one chooses the edition; the row below moves about inside it. */}
+      {languages && (
+        <div className="border-b border-(--reader-rule)">
+          <ReaderLanguageBar {...languages} />
+        </div>
+      )}
+
       {/* The same fixed 16px gutter as the top bar, and for the same reason —
           see `ReaderTopBar`. The two bars frame the page between them, so a
           reader who widens the margins would otherwise watch the bottom row

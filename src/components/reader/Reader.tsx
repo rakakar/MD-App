@@ -1374,16 +1374,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         // start is always page 1 and would send a reader forty pages back.
         pagesHref={home ? documentHref(home.at.node, home.at.item, pagesAt) : undefined}
         onType={() => setSettingsOpen(true)}
-        languages={
-          sides
-            ? {
-                side: readingSide,
-                originalLabel: SCRIPT_LABEL[sides.original],
-                translatedLabel: SCRIPT_LABEL[sides.translated],
-                onChange: chooseSide,
-              }
-            : undefined
-        }
         // Search is the assistant until there is an assistant. The designer put
         // this button here so the habit forms before the chat arrives; scoped
         // to this book, because a global search from page 19 of a chapter is
@@ -1570,6 +1560,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         canListen={canListen}
         listening={listening}
         deviceFallback={deviceFallback}
+        languages={
+          sides
+            ? {
+                side: readingSide,
+                originalLabel: SCRIPT_LABEL[sides.original],
+                translatedLabel: SCRIPT_LABEL[sides.translated],
+                onChange: chooseSide,
+              }
+            : undefined
+        }
       />
 
       {/* one-time coach mark */}
