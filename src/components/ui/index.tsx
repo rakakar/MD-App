@@ -79,15 +79,26 @@ export const ctaPrimaryBar = `${CTA_BASE} min-h-12 px-4 text-sm`;
 export function PageContainer({
   children,
   size = "text",
+  flushTop = false,
 }: {
   children: React.ReactNode;
   size?: "text" | "shelf";
+  /**
+   * Drop most of the space above the first element.
+   *
+   * For a page whose first thing is a *control* rather than a heading —
+   * Connect opens on its three tabs. The standard `py-5` is measured for a
+   * page that starts with a title, where the air is what separates the title
+   * from the app bar; above a tab bar the same gap reads as the bar floating
+   * loose, because the tabs already carry their own track and padding.
+   */
+  flushTop?: boolean;
 }) {
   return (
     <div
       className={`mx-auto w-full ${
         size === "shelf" ? "max-w-[1088px]" : "max-w-3xl"
-      } px-4 py-5 sm:px-6 lg:px-8`}
+      } px-4 pb-5 sm:px-6 lg:px-8 ${flushTop ? "pt-2" : "pt-5"}`}
     >
       {children}
     </div>

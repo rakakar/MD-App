@@ -30,7 +30,7 @@ export default async function ConnectPage() {
   const initial = await getEvents({ bucket: "upcoming" }).catch(() => null);
 
   return (
-    <PageContainer>
+    <PageContainer flushTop>
       <h1 className="sr-only">Events</h1>
       {initial ? (
         <EventsScreen initial={initial as EventListResponse} />

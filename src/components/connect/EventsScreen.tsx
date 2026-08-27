@@ -103,7 +103,22 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
         }))}
       />
 
-      <div className="mt-3">
+      {/* **Search and filters pin under the app bar.**
+
+          The list they narrow is the only thing on this screen, and it runs
+          long — so the two controls that decide what is in it were scrolling
+          away from the results they govern, and changing your mind about a
+          filter meant scrolling back to the top to reach the button. The tabs
+          above are deliberately *not* sticky: they are three fixed buckets a
+          reader picks once on arrival, not something they adjust while reading
+          down a list.
+
+          Full-bleed on a phone and inline from sm, and opaque `bg-surface`
+          rather than the app bar's translucency — this row stops directly
+          under that bar, and two blurred layers over one another is a smear
+          rather than a material. `z-30` keeps it under the bar (z-40) and over
+          the cards. The same arrangement as the book's Highlights filters. */}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 sm:mx-0 sm:px-0 lg:top-0">
         <FindRow
           search={
             <SearchField
