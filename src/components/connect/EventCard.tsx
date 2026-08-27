@@ -65,15 +65,25 @@ function CardPill({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The prabodhak's initials, or "M" when the API has resolved the line to
- *  "Multiple". Decoration beside a name that is always printed in full. */
-function Avatar({ initials }: { initials: string }) {
+/**
+ * The disc that fronts the two lines under the title — the prabodhak's
+ * initials, and the location's pin.
+ *
+ * One component rather than two so they cannot drift apart: they sit directly
+ * above one another, and a pin that is a few pixels off the avatar's width
+ * puts the two lines of text beside them out of alignment, which is visible on
+ * a card even when the discs themselves are not being compared.
+ *
+ * `aria-hidden` on both — the initials repeat a name printed in full beside
+ * them, and the pin labels a place that says it is a place.
+ */
+function RowDisc({ children }: { children: React.ReactNode }) {
   return (
     <span
       aria-hidden
       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-inset text-xs font-semibold text-ink-soft"
     >
-      {initials}
+      {children}
     </span>
   );
 }
@@ -117,7 +127,7 @@ function DateColumn({ event }: { event: EventCardData }) {
   );
   return (
     <div
-      className="flex min-w-20 shrink-0 flex-col items-center justify-center gap-0.5 self-stretch rounded-tile px-3 py-4 text-center"
+      className="flex min-w-20 shrink-0 flex-col items-center justify-center gap-0.5 self-stretch rounded-tile px-3 py-3 text-center"
       style={{ background: "var(--cat-tint)", color: "var(--cat-ink)" }}
     >
       <CalendarChipIcon className="mb-1 h-4 w-4 opacity-70" />
@@ -162,7 +172,7 @@ export function EventCardView({ event }: { event: EventCardData }) {
   return (
     <article
       style={categoryStyle(event.category.accent)}
-      className="relative flex items-stretch gap-3.5 rounded-card border border-rule bg-card p-3.5 shadow-card"
+      className="relative flex items-stretch gap-3 rounded-card border border-rule bg-card p-3 shadow-card"
     >
       <DateColumn event={event} />
 
@@ -203,7 +213,7 @@ export function EventCardView({ event }: { event: EventCardData }) {
           {...t}
           className={`${t.className} ${
             t.lang === "hi" ? "hi-tight" : "font-display leading-snug"
-          } mt-1.5 text-[1.3125rem] font-semibold`}
+          } mt-0.5 text-[1.3125rem] font-semibold`}
         >
           <Link href={href} className="after:absolute after:inset-0 hover:underline">
             {event.title}
@@ -211,8 +221,8 @@ export function EventCardView({ event }: { event: EventCardData }) {
         </h3>
 
         {event.prabodhak && (
-          <div className="mt-2.5 flex items-center gap-2.5">
-            <Avatar initials={event.prabodhak_initials} />
+          <div className="mt-1.5 flex items-center gap-2.5">
+            <RowDisc>{event.prabodhak_initials}</RowDisc>
             <span
               {...contentLang(event.prabodhak)}
               className={`${contentLang(event.prabodhak).className} min-w-0 flex-1 truncate text-sm font-semibold`}
@@ -223,10 +233,16 @@ export function EventCardView({ event }: { event: EventCardData }) {
         )}
 
         {event.location && (
-          <p className="mt-2 flex min-w-0 items-center gap-1.5 text-sm text-ink-soft">
-            <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
-              <PinIcon />
-            </span>
+          <p className="mt-1 flex min-w-0 items-center gap-2.5 text-sm text-ink-soft">
+            {/* The pin in the same disc the initials wear, so this line and the
+                prabodhak's start at one x. `h-4.5` rather than `PinIcon`'s own
+                14px default: inside a 32px disc the small glyph read as a
+                speck, and it is the only thing in this row carrying "place". */}
+            <RowDisc>
+              <span style={{ color: "var(--ws-ink)" }}>
+                <PinIcon className="h-4.5 w-4.5" />
+              </span>
+            </RowDisc>
             <span className="truncate">{event.location}</span>
           </p>
         )}
@@ -252,7 +268,7 @@ export function EventCardView({ event }: { event: EventCardData }) {
           Share is a real button and has to sit above the stretched link to be
           pressable at all, which is what the `relative` here is for.
         */}
-        <div className="relative z-10 mt-auto flex items-center justify-between gap-2 pt-3">
+        <div className="relative z-10 mt-auto flex items-center justify-between gap-2 pt-1.5">
           <span
             aria-hidden
             className="pointer-events-none inline-flex items-center gap-0.5 text-sm font-semibold"
@@ -261,7 +277,7 @@ export function EventCardView({ event }: { event: EventCardData }) {
             View details
             <ChevronRight />
           </span>
-          <EventShare title={event.title} path={href} variant="round" />
+          <EventShare title={event.title} path={href} variant="icon" />
         </div>
       </div>
     </article>
