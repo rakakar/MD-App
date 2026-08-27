@@ -60,6 +60,14 @@ export default async function ResourcesPage({
   const format = typeof params.format === "string" ? params.format : undefined;
   const state = readFind(params);
 
+  // Started before the workspace list is awaited — see the same hoist in
+  // `originals/page.tsx`. Only `getNode` needs the root id.
+  const topicsPromise = getTopics().catch(() => [] as Topic[]);
+  const booksPromise = SHOW_FORMAT_TOGGLE
+    ? getBooks({ workspace: "resources" }).catch(() => [] as BookSummary[])
+    : Promise.resolve([] as BookSummary[]);
+  const shelvesPromise = shelfMap();
+
   const workspaces = await getWorkspaces().catch(() => []);
   const rootId = workspaces.find((w) => w.code === "resources")?.root_node_id ?? null;
   // `root_node_id` is null when the root is unpublished — the whole shelf is
@@ -69,13 +77,11 @@ export default async function ResourcesPage({
 
   const [root, topics, books, shelves] = await Promise.all([
     getNode(rootId).catch(() => null),
-    getTopics().catch(() => [] as Topic[]),
+    topicsPromise,
     // Not fetched while the toggle is off — nothing on the page can show a
     // book row, so a books listing here would just be a request nobody reads.
-    SHOW_FORMAT_TOGGLE
-      ? getBooks({ workspace: "resources" }).catch(() => [] as BookSummary[])
-      : Promise.resolve([] as BookSummary[]),
-    shelfMap(),
+    booksPromise,
+    shelvesPromise,
   ]);
   if (!root) notFound();
 

@@ -42,6 +42,15 @@ export default async function OriginalsLibraryPage({
 }) {
   const state = readFind(await searchParams);
 
+  // Started before the workspace list is awaited, not inside the Promise.all
+  // below. Only `getNode` needs the root id; topics do not, and topics is the
+  // slowest call the API has — so awaiting the workspace list first put its
+  // whole round trip in front of the one request that was going to decide when
+  // this page could render. `shelfMap()` asks for the workspace list again and
+  // Next memoizes that within a render, so it costs nothing to start here too.
+  const topicsPromise = getTopics().catch(() => [] as Topic[]);
+  const shelvesPromise = shelfMap();
+
   const workspaces = await getWorkspaces().catch(() => []);
   const rootId = workspaces.find((w) => w.code === "originals")?.root_node_id ?? null;
   // Null while the root is unpublished, and then the whole shelf is hidden by
@@ -50,8 +59,8 @@ export default async function OriginalsLibraryPage({
 
   const [root, topics, shelves] = await Promise.all([
     getNode(rootId).catch(() => null),
-    getTopics().catch(() => [] as Topic[]),
-    shelfMap(),
+    topicsPromise,
+    shelvesPromise,
   ]);
   if (!root) notFound();
 
