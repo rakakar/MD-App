@@ -66,6 +66,31 @@ function Avatar({ initials }: { initials: string }) {
 }
 
 /**
+ * The 36px column the three marks under the title stand in — the prabodhak's
+ * initials, the calendar, the pin.
+ *
+ * They were each as wide as they happened to be (36, 16, 14) and all flush
+ * left, so no two of them shared a centre and the three lines of text beside
+ * them started at three different places. Centring each mark in a column the
+ * width of the widest fixes both at once: the marks line up down the card, and
+ * so does everything written after them.
+ *
+ * 36px because that is the avatar, which is the one mark here that cannot
+ * shrink — it holds two letters.
+ */
+function Glyph({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      aria-hidden
+      className="flex w-9 shrink-0 items-center justify-center"
+      style={{ color: "var(--ws-ink)" }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/**
  * One shivir on the list screen.
  *
  * Everything printed on it arrives printable. The date range is the one thing
@@ -133,24 +158,32 @@ export function EventCardView({ event }: { event: EventCardData }) {
           </div>
         )}
 
-        <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-soft">
+        {/* A row each, rather than both on one wrapping line. They wrapped
+            anyway at these lengths, and sharing a line meant the pin sat
+            wherever the date happened to end — so the two glyphs could not be
+            in a column with the avatar above them. `gap-2.5` is the avatar
+            row's own, so all three lines of text start at one x. */}
+        <div className="mt-2 flex flex-col gap-1 text-sm text-ink-soft">
           {dates && (
-            <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden style={{ color: "var(--ws-ink)" }}>
+            <p className="flex items-center gap-2.5">
+              <Glyph>
                 <CalendarChipIcon className="h-4 w-4" />
-              </span>
+              </Glyph>
               {dates}
-            </span>
+            </p>
           )}
           {event.location && (
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
-                <PinIcon />
-              </span>
+            <p className="flex min-w-0 items-center gap-2.5">
+              {/* `h-4 w-4`, the calendar's size. `PinIcon`'s own default is
+                  14px, which sat visibly smaller than the glyph directly
+                  above it. */}
+              <Glyph>
+                <PinIcon className="h-4 w-4" />
+              </Glyph>
               <span className="truncate">{event.location}</span>
-            </span>
+            </p>
           )}
-        </p>
+        </div>
 
         {/*
           "View Details" is a styled span, not a second link. The title's

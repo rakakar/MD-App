@@ -141,7 +141,11 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
       </div>
 
       <div
-        className={`mt-4 transition-opacity ${pending ? "opacity-60" : ""}`}
+        /* `mt-2`, not `mt-4`: the row above is sticky and already carries its
+           own `pb-2`, so the two paddings stacked into a gap wider than any
+           other on the screen — and the first card is what the search box is
+           for, which is an odd thing to hold at arm's length. */
+        className={`mt-2 transition-opacity ${pending ? "opacity-60" : ""}`}
         aria-busy={pending}
       >
         {failed ? (
