@@ -1402,64 +1402,66 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             rather than inventing a second look for the only other thing that
             does it.
 
-            **At the top rather than the bottom**, which is where a floating
-            pill would normally go. The bottom corner is already coordinating
-            three things — the bar, the selection pill and the audio pill, which
-            pass `--player-float-h` between them to stay off each other — and
-            this one has no business joining that arrangement for a notice that
-            is gone on the first tap.
+            **In the flow of the page rather than floating over it** — tried
+            both ways round. Floating cost the chapter's first line, which it
+            covered until dismissed, and on a chapter that opens with a list
+            that meant hiding the first item. In flow it costs a shift instead,
+            and a shift at the top of a page nobody has begun reading is the
+            cheaper of the two.
 
-            `data-reader-chrome` so that tapping it is not read as a tap on the
-            page, which would toggle the chrome out from under it. It does not
-            hide with the chrome, though: it is a one-time offer, not furniture,
-            and it stays until it is taken or dismissed. */}
+            What made floating tempting was that the old banner's shift was
+            ugly — but most of that was its size, not the shifting. A
+            full-width box moved the text by its whole height; a 48px pill that
+            centres itself moves it by less and reads as one object arriving
+            rather than a bar unrolling across the page.
+
+            `data-reader-chrome` so a tap on it is not read as a tap on the
+            page, and so the reading surfaces leave its ink alone. It is a
+            one-time offer rather than furniture: it stays until it is taken or
+            dismissed, and it does not hide with the chrome. */}
         {resumeHint && (
-          <div
-            data-reader-chrome
-            className="fixed inset-x-2 z-30 mx-auto flex w-fit max-w-[calc(100vw-1rem)] items-center rounded-full bg-overlay py-1 pe-1 ps-1 text-white shadow-raised"
-            style={{ top: "calc(4rem + env(safe-area-inset-top) + 0.5rem)" }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                const m = resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\.([^.]+)$/);
-                void goToChapter(resumeHint.chapter, { targetPage: m?.[1] });
-                setResumeHint(null);
-              }}
-              className="flex min-h-10 min-w-0 items-center gap-1.5 rounded-full px-3 text-sm transition-colors active:bg-white/10"
-            >
-              {/* "Resume · chapter 1", not "Resume where you left off —
-                  chapter 1". The long sentence was written for a full-width
-                  banner and it is what stopped this being a pill: at 14px it
-                  wanted 355 of a 375px screen, so the thing read as a bar with
-                  round ends. It also says twice over what the reader can see —
-                  they are holding the book, so *where* they left off is the
-                  only question, and the chapter answers it.
+          <div data-reader-chrome className="reader-content flex justify-center pt-2">
+            <div className="flex w-fit max-w-full items-center rounded-full bg-overlay p-1 text-white shadow-raised">
+              <button
+                type="button"
+                onClick={() => {
+                  const m = resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\.([^.]+)$/);
+                  void goToChapter(resumeHint.chapter, { targetPage: m?.[1] });
+                  setResumeHint(null);
+                }}
+                className="flex min-h-10 min-w-0 items-center gap-1.5 rounded-full px-3 text-sm transition-colors active:bg-white/10"
+              >
+                {/* "Resume · chapter 1", not "Resume where you left off —
+                    chapter 1". The long sentence was written for a full-width
+                    banner and it is what stopped this being a pill: at 14px it
+                    wanted 355 of a 375px screen, so the thing read as a bar
+                    with round ends. It also says twice over what the reader can
+                    see — they are holding the book, so *where* they left off is
+                    the only question, and the chapter answers it.
 
-                  `Resume · page N` is the wording the book hero's own button
-                  uses for the same offer; the separator matches it too. The
-                  other-device case keeps its own words because it is telling
-                  the reader something they could not otherwise know. */}
-              <span className="truncate">
-                {resumeHint.kind === "other-device"
-                  ? "Other device"
-                  : "Resume"}
-                {" · chapter "}
-                {resumeHint.chapter}
-              </span>
-              <span aria-hidden className="shrink-0">
-                →
-              </span>
-            </button>
-            <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-white/20" />
-            <button
-              type="button"
-              onClick={() => setResumeHint(null)}
-              aria-label="Dismiss resume suggestion"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors active:bg-white/10"
-            >
-              ✕
-            </button>
+                    `Resume · page N` is the wording the book hero's own button
+                    uses for the same offer; the separator matches it too. The
+                    other-device case keeps its own words because it is telling
+                    the reader something they could not otherwise know. */}
+                <span className="truncate">
+                  {resumeHint.kind === "other-device" ? "Other device" : "Resume"}
+                  {" · chapter "}
+                  {resumeHint.chapter}
+                </span>
+                <span aria-hidden className="shrink-0">
+                  →
+                </span>
+              </button>
+              <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-white/20" />
+              <button
+                type="button"
+                onClick={() => setResumeHint(null)}
+                aria-label="Dismiss resume suggestion"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors active:bg-white/10"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
 
