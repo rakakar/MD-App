@@ -8,18 +8,18 @@ import {
   EventPanel,
   InfoRow,
 } from "@/components/connect/EventDetail";
+import { EventDetailHeader } from "@/components/connect/EventDetailHeader";
 import { EventNote } from "@/components/connect/EventNote";
 import { EventPoster } from "@/components/connect/EventPoster";
 import { EventShare } from "@/components/connect/EventShare";
 import { EventTracker } from "@/components/connect/EventTracker";
 import {
-  BackIcon,
   CalendarChipIcon,
   LanguageIcon,
   PinIcon,
   UserIcon,
 } from "@/components/shell/icons";
-import { ctaPrimary, PageContainer } from "@/components/ui";
+import { ctaPrimaryBar, PageContainer } from "@/components/ui";
 import { ApiError, getEvent } from "@/lib/api";
 import { fullDateRange, type EventDetail } from "@/lib/events";
 import { contentLang } from "@/lib/script";
@@ -90,26 +90,11 @@ export default async function EventDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/*
-        The comps' own header row: back, "Event", a bookmark and a share.
-
-        The bookmark is not drawn. `me/bookmarks/` covers book paragraphs and
-        nothing else today — an event cannot be saved — and a control that does
-        nothing is worse on this screen than a gap, because it is the one thing
-        a reader would press to keep a date they might otherwise miss. It comes
-        back when the endpoint does; nothing else here changes when it lands.
-      */}
-      <div className="mb-4 flex items-center gap-2.5">
-        <Link
-          href="/connect"
-          aria-label="Back to events"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule bg-card text-ink transition-colors active:bg-ink/[.04]"
-        >
-          <BackIcon className="h-4.5 w-4.5" />
-        </Link>
-        <p className="min-w-0 flex-1 truncate text-title font-semibold">Event</p>
-        <EventShare title={event.title} path={`/connect/events/${event.slug}`} variant="icon" />
-      </div>
+      <EventDetailHeader
+        title={event.title}
+        path={`/connect/events/${event.slug}`}
+        watch="event-title"
+      />
 
       <EventPoster src={event.poster} title={event.title} />
 
@@ -135,6 +120,7 @@ export default async function EventDetailPage({
       </div>
 
       <h1
+        id="event-title"
         {...t}
         className={`${t.className} ${
           t.lang === "hi" ? "hi-tight" : "font-display leading-snug"
@@ -182,27 +168,13 @@ export default async function EventDetailPage({
             )}
           </InfoRow>
         )}
-        <InfoRow icon={<PinIcon />} label="Mode">
-          {event.mode}
-        </InfoRow>
+        {/* No Mode row. The comps draw four facts here — prabodhak, date,
+            language, location — and mode was ours. It is not a fifth fact of
+            the same kind: "Online" is already the whole of the location line
+            on an online shivir, and on an in-person one it repeats the address
+            directly above it. It stays a filter, which is where it answers a
+            question nobody can read off the page. */}
       </div>
-
-      {/*
-        Registration is the organiser's own form and nothing else: no endpoint
-        accepts a reader's details, by design, so there is no in-app form to
-        fall back to. The button is simply absent when the field is empty.
-      */}
-      {event.registration_url && (
-        <a
-          href={event.registration_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${ctaPrimary} mt-5 w-full`}
-          style={{ background: "var(--ws-color)" }}
-        >
-          Register for this shivir ↗
-        </a>
-      )}
 
       <div className="mt-5 flex flex-col gap-4">
         {(event.invitation_note || event.contacts.length > 0) && (
@@ -253,6 +225,54 @@ export default async function EventDetailPage({
           </EventPanel>
         )}
       </div>
+
+      {/*
+        **The Register bar, pinned to the foot.**
+
+        Registration is the organiser's own form and nothing else: no endpoint
+        accepts a reader's details, by design (Events_API §5), so this opens
+        theirs in a new tab and there is no in-app form to fall back to.
+
+        Pinned because it is the one thing this screen is asking the reader to
+        do, and the page it sits under is long — the poster, four facts, the
+        invitation note and the links can run to three or four screens, so a
+        button in the flow was reachable only by whoever scrolled to the exact
+        right place. The comps draw it docked.
+
+        **Absent, not disabled, when there is no `registration_url`.** Plenty
+        of shivirs take no registration at all, and on those the honest screen
+        is the one that ends — a permanently dead bar across the foot of every
+        such event would cost them a strip of the page to say nothing. Same
+        rule the bookmark and the Centres tab follow.
+
+        The spacer below the content is what keeps the last link row off the
+        bar; `pb-24` on the scroller would not survive the bar being absent.
+      */}
+      {event.registration_url && (
+        <>
+          <div aria-hidden className="h-20" />
+          <div
+            className="fixed inset-x-0 z-30 border-t border-rule bg-surface/95 px-4 py-3 backdrop-blur sm:px-6 lg:bottom-0 lg:ps-72 lg:pe-8"
+            /* Clears the tab bar and the home indicator — the same number the
+               player pill uses for the same job. On a desktop there is no tab
+               bar, so `lg:bottom-0` puts it on the floor and the sidebar's
+               width is padded off the start edge instead. */
+            style={{ bottom: "calc(env(safe-area-inset-bottom) + 3.9rem)" }}
+          >
+            <div className="mx-auto w-full max-w-3xl">
+              <a
+                href={event.registration_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${ctaPrimaryBar} w-full`}
+                style={{ background: "var(--ws-color)" }}
+              >
+                Register
+              </a>
+            </div>
+          </div>
+        </>
+      )}
     </PageContainer>
   );
 }

@@ -27,8 +27,13 @@ export function EventShare({
   title: string;
   /** the event's own route — `/connect/events/{slug}` */
   path: string;
-  /** `icon` is the square in the detail screen's header row */
-  variant?: "button" | "icon";
+  /**
+   * `icon` is the rounded square in the detail screen's header row, beside the
+   * back button it has to match. `round` is the card's — a circle, because
+   * there it stands alone beside a text link rather than in a row of square
+   * controls, and the comps draw the difference.
+   */
+  variant?: "button" | "icon" | "round";
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -49,13 +54,15 @@ export function EventShare({
 
   const label = copied ? "Link copied" : `Share ${title}`;
 
-  if (variant === "icon") {
+  if (variant === "icon" || variant === "round") {
     return (
       <button
         type="button"
         onClick={share}
         aria-label={label}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule bg-card text-ink transition-colors active:bg-ink/[.04]"
+        className={`flex h-11 w-11 shrink-0 items-center justify-center border border-rule bg-card text-ink transition-colors active:bg-ink/[.04] ${
+          variant === "round" ? "rounded-full" : "rounded-control"
+        }`}
       >
         {copied ? (
           <span className="text-xs font-semibold">✓</span>
