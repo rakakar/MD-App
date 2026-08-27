@@ -261,44 +261,34 @@ function range(start: string, end: string | null, fmt: (d: Date) => string): str
   return `${fmt(a)} – ${fmt(b)}`;
 }
 
+/**
+ * "21–27 Sep'26" — the card's range, folded where the two ends agree.
+ *
+ * The long form is "21 Sep'26 – 27 Sep'26", which is 21 characters and does
+ * not fit the card's grid column on a 375px phone: it truncated to
+ * "21 Sep'26 – 27 …", losing the end of the shivir, which is not a fact a
+ * range may drop. Folding the parts the two dates share gets it to 12 and
+ * reads better besides — a shivir inside one month is one month, and saying
+ * the month twice was the long form's own noise.
+ *
+ * It only folds what is genuinely shared: same month and year gives
+ * "21–27 Sep'26", same year alone gives "28 Sep – 3 Oct'26", and a range
+ * across new year stays long, because there nothing repeats.
+ */
 export function cardDateRange(e: Pick<EventCard, "start_date" | "end_date">): string {
-  return range(e.start_date, e.end_date, cardDay);
+  const a = parseDay(e.start_date);
+  if (!a) return "";
+  const b = parseDay(e.end_date);
+  if (!b || b.getTime() === a.getTime()) return cardDay(a);
+  if (a.getFullYear() !== b.getFullYear()) return `${cardDay(a)} – ${cardDay(b)}`;
+  if (a.getMonth() !== b.getMonth()) {
+    return `${a.getDate()} ${MONTH_SHORT[a.getMonth()]} – ${cardDay(b)}`;
+  }
+  return `${a.getDate()}–${cardDay(b)}`;
 }
 
 export function fullDateRange(e: Pick<EventCard, "start_date" | "end_date">): string {
   return range(e.start_date, e.end_date, fullDay);
-}
-
-/** "13 Nov" — the card's date column, which has the width to itself and so
- *  drops the year the inline step had to carry. */
-function blockDay(d: Date): string {
-  return `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`;
-}
-
-/**
- * The card's date column, taken apart: one date or two, and how long it runs.
- *
- * The comps stack a shivir's dates in a tinted column with "to" between them
- * and a "7 days" pill under, and draw a single-day shivir as one date alone
- * with neither. So this returns the pieces rather than a string — the card
- * lays them out, it does not print them.
- *
- * **The duration counts both end days.** 13–19 Nov is a seven-day shivir,
- * which is what somebody attending it would say, and it is what the API's two
- * dates mean: `end_date` is the last day, not the morning everyone leaves.
- */
-export function eventDates(e: Pick<EventCard, "start_date" | "end_date">): {
-  from: string;
-  to: string | null;
-  days: number | null;
-} | null {
-  const a = parseDay(e.start_date);
-  if (!a) return null;
-  const b = parseDay(e.end_date);
-  // Same rule as `range`: no end date, or an end equal to the start, is one day.
-  if (!b || b.getTime() === a.getTime()) return { from: blockDay(a), to: null, days: null };
-  const days = Math.round((b.getTime() - a.getTime()) / 86_400_000) + 1;
-  return { from: blockDay(a), to: blockDay(b), days: days > 1 ? days : null };
 }
 
 // ---- the category's colour ----
