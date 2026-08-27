@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { CalendarChipIcon, PinIcon } from "@/components/shell/icons";
-import { ctaPrimary } from "@/components/ui";
 import {
   badgeLabel,
   cardDateRange,
@@ -34,7 +33,7 @@ export function CategoryChip({
         background: "var(--cat-tint)",
         color: "var(--cat-ink)",
       }}
-      className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${className}`}
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${className}`}
     >
       {category.display}
     </span>
@@ -58,7 +57,7 @@ function Avatar({ initials }: { initials: string }) {
   return (
     <span
       aria-hidden
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-inset text-xs font-semibold text-ink-soft"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-inset text-xs font-semibold text-ink-soft"
     >
       {initials}
     </span>
@@ -75,14 +74,14 @@ function Avatar({ initials }: { initials: string }) {
  * width of the widest fixes both at once: the marks line up down the card, and
  * so does everything written after them.
  *
- * 36px because that is the avatar, which is the one mark here that cannot
+ * 32px because that is the avatar, which is the one mark here that cannot
  * shrink — it holds two letters.
  */
 function Glyph({ children }: { children: React.ReactNode }) {
   return (
     <span
       aria-hidden
-      className="flex w-9 shrink-0 items-center justify-center"
+      className="flex w-8 shrink-0 items-center justify-center"
       style={{ color: "var(--ws-ink)" }}
     >
       {children}
@@ -116,7 +115,7 @@ export function EventCardView({ event }: { event: EventCardData }) {
         className="absolute inset-y-0 start-0 w-1"
         style={{ background: "var(--cat)" }}
       />
-      <div className="ps-5 pe-4 py-4">
+      <div className="ps-5 pe-4 py-3.5">
         <div className="flex flex-wrap items-center gap-2">
           <CategoryChip category={event.category} />
           <EventBadge badge={event.badge} />
@@ -130,7 +129,7 @@ export function EventCardView({ event }: { event: EventCardData }) {
           {...t}
           className={`${t.className} ${
             t.lang === "hi" ? "hi-tight" : "font-display leading-snug"
-          } mt-3 text-[1.3125rem] font-semibold`}
+          } mt-2 text-[1.3125rem] font-semibold`}
         >
           <Link href={href} className="after:absolute after:inset-0 hover:underline">
             {event.title}
@@ -138,7 +137,7 @@ export function EventCardView({ event }: { event: EventCardData }) {
         </h3>
 
         {(event.prabodhak || event.language?.name) && (
-          <div className="mt-3 flex items-center gap-2.5">
+          <div className="mt-2.5 flex items-center gap-2.5">
             {event.prabodhak && (
               <>
                 <Avatar initials={event.prabodhak_initials} />
@@ -196,11 +195,28 @@ export function EventCardView({ event }: { event: EventCardData }) {
           Share is a real button and has to sit above the stretched link to be
           pressable at all, which is what the `relative` on this row is for.
         */}
-        <div className="relative z-10 mt-4 flex items-stretch gap-2.5">
+        <div className="relative z-10 mt-3 flex items-stretch gap-2.5">
+          {/* Outlined, not filled.
+
+              A solid accent slab is the loudest thing the app can put on a
+              card, and this one is not carrying its weight: the whole card is
+              already the link to the event, so the fill was shouting an
+              invitation that tapping anywhere accepts. Down a list of shivirs
+              it was also most of what the screen was made of.
+
+              Accent border, accent ink, and the faintest wash of the accent
+              behind — the app's own idiom for an outlined control that is
+              still the primary one (`Chip` variant `tint`, and the filter
+              sheet's mode buttons). That keeps it distinct from Share beside
+              it, which is a neutral outline in `rule` and ink. */}
           <span
             aria-hidden
-            className={`${ctaPrimary} pointer-events-none flex-1`}
-            style={{ background: "var(--ws-color)" }}
+            className="pointer-events-none inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-control border px-5 text-sm font-semibold"
+            style={{
+              borderColor: "var(--ws-ink)",
+              background: "color-mix(in srgb, var(--ws-color) 8%, var(--color-card))",
+              color: "var(--ws-ink)",
+            }}
           >
             View Details
           </span>
