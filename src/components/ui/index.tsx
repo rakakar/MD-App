@@ -21,6 +21,7 @@ export * from "./Filters";
 export * from "./KindTile";
 export * from "./ListRow";
 export * from "./Segmented";
+export * from "./Skeleton";
 export * from "./ShareButton";
 export * from "./Sheet";
 

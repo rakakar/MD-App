@@ -311,8 +311,19 @@ export function avTab(ws: WorkspaceId): string | null {
 
 export function workspaceForPath(path: string): WorkspaceId | null {
   if (path === "/") return "originals";
-  // `/av` is Originals' own door onto its recordings — the tree behind it is
-  // scoped to that workspace, so the chrome must be too.
+  // `/originals` and `/av` are both Originals' own doors — onto its shelf and
+  // onto its recordings — and the tree behind each is scoped to that
+  // workspace, so the chrome must be too.
+  //
+  // `/originals` answered `null` here until the shelves grew a `loading.tsx`,
+  // and got its chrome from the `<WorkspaceScope>` the page renders instead.
+  // That was invisible while a navigation held the old page on screen until
+  // the new one was ready — chrome and content went stale together and
+  // arrived together. With a loading state the two came apart: the skeleton
+  // is the new page, so the bar above it sat in the *previous* workspace's
+  // name and colour until the real page landed. The path knew the answer all
+  // along; only the page was being asked.
+  if (path.startsWith("/originals")) return "originals";
   if (path.startsWith("/av")) return "originals";
   if (path.startsWith("/translations")) return "translations";
   if (path.startsWith("/resources")) return "resources";

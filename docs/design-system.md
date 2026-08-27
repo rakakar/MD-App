@@ -262,6 +262,7 @@ search.
 | `FilterButton`, `FindRow`, `ActiveFilters`, `FilterSection`, `RadioList`, `CheckRow` | Library, Audio/Video, Highlights |
 | `Sheet` (+ `SheetAction`, `SheetTextAction`) | every bottom sheet in the app |
 | `ShareButton` | every hero that can be shared |
+| `Skeleton` (+ `ShelfControlsSkeleton`, `ShelfGridSkeleton`) | the shelves' `loading.tsx` |
 
 `CollectionHero`'s `actions` is a **block** slot, not a flex row. The book's actions arrive
 as one client component that owns its own progress bar as well as its buttons — it reads
@@ -309,6 +310,32 @@ cost the cover the width — which on a two-up phone grid is the only thing bein
 - **`Chip`** turns one filter on or off, and many can be on at once. Two selected looks:
   `solid` for a filter positively applied, `tint` for a selected position in a set where
   something is always selected — a row of solid fills there reads as four active filters.
+
+### Loading states, and what is *not* skeletonised
+
+The four shelves — `/originals`, `/av`, `/resources`, `/translations` — each have a
+`loading.tsx`. They are not decoration: all four read `searchParams`, which opts a page
+into dynamic rendering, and **Next skips prefetching a dynamic route entirely unless it
+has a `loading.tsx`**. Without them, tapping a workspace started a server round trip from
+cold and left the reader on the old screen until it came back.
+
+The rule these follow: **a heading that is written is drawn, not greyed.** "Library",
+"Media", "Student Materials", "Translations" and their standfirsts are in the markup, not
+the API, so the loading state renders them for real, at their real size. Only what the API
+owns becomes a shape. A reader who taps Media should see the word Media.
+
+The placeholders hold the page's *frame* — same container width, same grid, same gaps —
+rather than chasing a pixel match, so nothing jumps sideways when the real cards land.
+`.skeleton` (globals.css) is `--color-inset` with a shallow, slow pulse that stops under
+`prefers-reduced-motion`; it follows every theme for free because it is a token.
+
+**A loading state pulls the chrome forward with it.** While a navigation held the old page
+on screen, chrome and content went stale together and arrived together, so `/originals`
+could get its workspace from the `<WorkspaceScope>` its page rendered. A skeleton *is* the
+new page, so that lag became visible — the bar sat in the previous workspace's name and
+colour above the new page's skeleton. `workspaceForPath` answers for `/originals` now, as
+it already did for its four siblings. Any future `loading.tsx` on a route whose workspace
+is only declared by its page will want the same.
 
 ### `Sheet` and the `surface` prop
 
