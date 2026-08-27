@@ -269,9 +269,18 @@
      40px of control, 8px of padding above and below, and the hairline — 57 —
      plus whatever the notch takes, because the bar is `viewport-fit=cover` and
      pads itself by the same inset. The bar is `lg:hidden`, so a sticky element
-     pairs this with `lg:top-0`. Measured rather than guessed: a sticky row that
-     is a few pixels out hides its own top edge behind the bar, which reads as
-     a clipping bug rather than as a wrong number. */
+     pairs this with `lg:top-0`.
+
+     **This value is the first paint's, not the truth.** `Header` overwrites it
+     on mount with what the bar actually measures — see `useHeaderHeight`. It
+     has to: the bar's row is `flex-wrap`, it carries two items or three
+     depending on whether a shivir is running, its labels scale with the app
+     text-size setting, and the notch differs per device. This literal was 8px
+     short of the real bar, so every sticky row in the app pinned 8px too high
+     and hid its own top edge behind it — which reads as a clipping bug rather
+     than as a wrong number, which is exactly what the previous version of this
+     comment warned about and could not prevent. Keep it close, and do not
+     treat it as the number. */
   --app-header-h: calc(env(safe-area-inset-top) + 3.5625rem);
 
   /* active workspace identity colour — set inline by the shell */

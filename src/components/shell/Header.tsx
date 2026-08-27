@@ -546,11 +546,58 @@ export function DisplayButton() {
   );
 }
 
+/**
+ * **The bar publishes its own height, and nothing guesses it.**
+ *
+ * `--app-header-h` is what every sticky row in the app pins itself under —
+ * the shelves' search-and-filter row, the book's Highlights filters, the event
+ * detail's header. It was a literal in globals.css, `3.5625rem`, and it was
+ * 8px short of the truth: the bar measured 65px and rows pinned at 57, so the
+ * top 8px of each of them sat behind the bar. Which reads as a clipping bug
+ * rather than as a wrong number — exactly what the token's own comment warned
+ * about, and it went wrong anyway, because a literal cannot track a bar that
+ * moves.
+ *
+ * And this one moves. The row is `flex-wrap`; it carries two items or three
+ * depending on whether a shivir is running; every label in it scales with the
+ * app text-size setting; and `pt-[env(safe-area-inset-top)]` adds a notch that
+ * differs per device and is 0 in a desktop browser. There is no number that is
+ * right for all of those at once.
+ *
+ * So it is measured, with a `ResizeObserver` — the same trick `PlayerBar` uses
+ * to keep `--player-float-h` honest for the pills that dock above it. The
+ * literal stays in globals.css as the value for the first paint and for
+ * anything that never runs this effect; from mount on, this overrides it with
+ * what the bar actually is.
+ */
+function useHeaderHeight(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const write = () => root.style.setProperty("--app-header-h", `${el.offsetHeight}px`);
+    write();
+    const ro = new ResizeObserver(write);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      // Handed back to the stylesheet rather than left frozen at the last
+      // measurement: the bar is `lg:hidden`, so on a desktop it unmounts and a
+      // stale height would keep pushing rows down for a bar that is not there.
+      root.style.removeProperty("--app-header-h");
+    };
+  }, [ref]);
+}
+
 export function Header() {
+  const ref = useRef<HTMLElement>(null);
+  useHeaderHeight(ref);
+
   return (
     // pt-safe: installed as a PWA the viewport is viewport-fit=cover, so
     // without it the bar sits under the status bar / notch.
     <header
+      ref={ref}
       /* The bar takes a trace of the workspace so the chrome belongs to the
          shelf under it — see `--ws-chrome`. Still translucent, because the
          blur behind it is what makes content scrolling under the bar read as
