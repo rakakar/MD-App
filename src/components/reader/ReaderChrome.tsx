@@ -227,10 +227,16 @@ function ReaderLanguageBar({
         aria-label="Reading language"
         className="flex items-stretch gap-1 rounded-control border border-(--reader-rule) p-1"
       >
+        {/* The original on the left, always, whichever side is selected and
+            whatever the translation happens to be. It is the fixed point: the
+            Hindi is the same book behind all of these, so a reader moving
+            between the English JVEP and the Kannada one finds it in the same
+            place both times. Ordering by which side is currently being read
+            would have moved it. */}
         {(
           [
-            ["translated", translatedLabel],
             ["original", originalLabel],
+            ["translated", translatedLabel],
           ] as const
         ).map(([value, label]) => {
           const on = side === value;
