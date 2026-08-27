@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { getChapter } from "@/lib/api";
+import { pageScript, type BookScript } from "@/lib/bookLanguage";
 import { getCachedChapter, putCachedChapter } from "@/lib/idb";
 import type { ChapterPayload, Paragraph } from "@/lib/types";
 
@@ -10,6 +11,13 @@ export interface ReaderPage {
   key: string;
   label: string;
   paragraphs: Paragraph[];
+  /**
+   * Which language this page is in, on the two facing-page bilingual editions
+   * — `null` on a page that belongs to both (front matter, the term glossary)
+   * and on every page of an ordinary single-language book, where nothing is
+   * being told apart. See `lib/bookLanguage.ts`.
+   */
+  script: BookScript | null;
 }
 
 /** Group a chapter's paragraphs into display pages (contract §0). */
@@ -19,11 +27,20 @@ export function groupPages(paragraphs: Paragraph[]): ReaderPage[] {
   for (const p of paragraphs) {
     const key = p.page_label || String(p.page_number);
     if (!current || current.key !== key) {
-      current = { key, label: p.page_label || String(p.page_number), paragraphs: [] };
+      current = {
+        key,
+        label: p.page_label || String(p.page_number),
+        paragraphs: [],
+        script: null,
+      };
       pages.push(current);
     }
     current.paragraphs.push(p);
   }
+  // Judged once the page is whole: a page is classified on all its lettering
+  // at once, and the first paragraph of an English page is often a Devanagari
+  // heading carried over from the facing side.
+  for (const page of pages) page.script = pageScript(page.paragraphs);
   return pages;
 }
 

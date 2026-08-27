@@ -9,6 +9,7 @@ import {
   ShareIcon,
   TocIcon,
 } from "@/components/shell/icons";
+import type { ReadingSide } from "@/lib/bookLanguage";
 import { HIGHLIGHT_COLOURS, type HighlightColour } from "@/lib/storage";
 
 /**
@@ -78,6 +79,7 @@ export function ReaderTopBar({
   pagesHref,
   onType,
   assistantHref,
+  languages,
 }: {
   hidden: boolean;
   backHref: string;
@@ -92,6 +94,8 @@ export function ReaderTopBar({
   pagesHref?: string;
   onType: () => void;
   assistantHref: string;
+  /** the two sides of a bilingual edition; absent on every other book */
+  languages?: LanguageToggle;
 }) {
   return (
     <div
@@ -155,6 +159,8 @@ export function ReaderTopBar({
         </Link>
       </div>
 
+      {languages && <ReaderLanguageBar {...languages} />}
+
       {/* The hairline sits under the bar in the comps rather than at the foot
           of the screen, which is also where it belongs: it measures the
           chapter, and the chapter's name is the thing directly above it. */}
@@ -166,6 +172,84 @@ export function ReaderTopBar({
             background: "var(--ws-ink)",
           }}
         />
+      </div>
+    </div>
+  );
+}
+
+export interface LanguageToggle {
+  side: ReadingSide;
+  /** native names — "हिन्दी", "English", "ಕನ್ನಡ" */
+  originalLabel: string;
+  translatedLabel: string;
+  onChange: (side: ReadingSide) => void;
+}
+
+/**
+ * **हिन्दी | English — which side of a bilingual edition you are reading.**
+ *
+ * Two of the translations are facing-page print editions: a page of Hindi,
+ * then the same page again in English or Kannada, for two hundred pages. On
+ * paper that is the whole point and you simply look at the page you want. In a
+ * reader that scrolls one page after another it means reading everything
+ * twice, and this is the control that stops it.
+ *
+ * **In the chrome rather than in the settings sheet**, unlike every other
+ * reading preference. The sheet holds the things a reader sets once — the
+ * paper, the face, the margins. Which language you are reading is not that: it
+ * is the same question the shelf's own tabs answer, asked of one book, and a
+ * reader comparing a passage against its Hindi will ask it repeatedly. Behind
+ * the palette button it would have been three taps each time.
+ *
+ * It rides inside the top bar's own fixed block, so it hides and returns with
+ * the rest of the chrome instead of being a second thing floating over the
+ * page.
+ *
+ * The selected side is the accent filled with white on it, which is how every
+ * other "which of these am I looking at" control in the app reads — see
+ * `SEGMENT_ON` in `ui/Segmented.tsx`. It cannot use that component: this one
+ * sits on the book's paper rather than on the app's surface, so its track and
+ * its unselected ink are the reader's tokens, which change with the chosen
+ * surface while the app's do not.
+ */
+function ReaderLanguageBar({
+  side,
+  originalLabel,
+  translatedLabel,
+  onChange,
+}: LanguageToggle) {
+  const seg =
+    "flex min-h-9 flex-1 items-center justify-center rounded-control px-3 text-sm transition-colors";
+  return (
+    <div className="px-4 pb-2">
+      <div
+        role="radiogroup"
+        aria-label="Reading language"
+        className="flex items-stretch gap-1 rounded-control border border-(--reader-rule) p-1"
+      >
+        {(
+          [
+            ["translated", translatedLabel],
+            ["original", originalLabel],
+          ] as const
+        ).map(([value, label]) => {
+          const on = side === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onChange(value)}
+              className={`${seg} ${on ? "font-semibold text-white" : "text-(--reader-ink-soft)"}`}
+              style={on ? { background: "var(--ws-color)" } : undefined}
+            >
+              {/* the label is the language, so it is set in that language's
+                  own script — `hi` carries the Devanagari face */}
+              <span lang={label === "हिन्दी" ? "hi" : undefined}>{label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

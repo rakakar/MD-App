@@ -52,6 +52,11 @@ import { SettingsSheet } from "./SettingsSheet";
 import { TocSheet } from "./TocSheet";
 import { useReaderChrome } from "./useReaderChrome";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
+import {
+  SCRIPT_LABEL,
+  type BookScript,
+  type ReadingSide,
+} from "@/lib/bookLanguage";
 import { ctaPrimary } from "@/components/ui";
 
 export interface ReaderBook {
@@ -63,6 +68,15 @@ export interface ReaderBook {
   /** the printed book's last page — the denominator the bottom bar counts to */
   page_count?: number | null;
   chapters: ChapterTocEntry[];
+  /**
+   * The original's code when this book is a translation of it.
+   *
+   * Carried only so the language toggle knows it may look: two of the
+   * translations are facing-page bilingual editions holding their own Hindi
+   * alongside, and this is what keeps the toggle off every book that is not a
+   * translation at all. See `lib/bookLanguage.ts`.
+   */
+  translation_of?: string | null;
 }
 
 /**
@@ -188,6 +202,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [readingSide, setReadingSide] = useState<ReadingSide>("translated");
   const [selection, setSelection] = useState<Selection | null>(null);
   // snapshot taken when the note sheet opens: focusing the textarea drops the
   // document selection, which would otherwise close the sheet mid-typing
@@ -213,10 +228,77 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
   const chrome = useReaderChrome(mode, modalOpen);
 
-  const pages: ReaderPage[] = useMemo(
+  const allPages: ReaderPage[] = useMemo(
     () => (chapter ? groupPages(chapter.paragraphs) : []),
     [chapter]
   );
+
+  /**
+   * The two sides of a facing-page bilingual edition, or `null` on every other
+   * book — which is every book but two. See `lib/bookLanguage.ts`.
+   *
+   * Read off the chapter that is loaded rather than declared anywhere: the API
+   * has no field that says "this edition contains its own original", and a
+   * book that is one day split in two upstream should lose this toggle by
+   * itself rather than keep pointing at a side that is no longer there.
+   *
+   * Both sides have to be a real presence before this is called bilingual. A
+   * Hindi book with an English title page is not a bilingual edition, and a
+   * toggle offering to hide 98% of it would be a trap.
+   */
+  const sides = useMemo(() => {
+    if (!book.translation_of) return null;
+    const counts = new Map<BookScript, number>();
+    for (const pg of allPages) {
+      if (pg.script) counts.set(pg.script, (counts.get(pg.script) ?? 0) + 1);
+    }
+    const original = counts.get("hi") ?? 0;
+    const others = [...counts].filter(([sc]) => sc !== "hi");
+    if (original === 0 || others.length === 0) return null;
+    const [translatedScript, translated] = others.reduce((a, b) => (a[1] >= b[1] ? a : b));
+    const total = original + translated;
+    const MIN_SHARE = 0.2;
+    if (original / total < MIN_SHARE || translated / total < MIN_SHARE) return null;
+    return { original: "hi" as BookScript, translated: translatedScript };
+  }, [allPages, book.translation_of]);
+
+  /**
+   * What is actually on screen.
+   *
+   * Filtering here, at the page list, rather than at the paragraph: the two
+   * languages of these editions alternate by printed page, so a page is the
+   * unit that is wholly one or the other — and everything downstream of this
+   * memo (paging, the progress hairline, "30 / 178") then counts the side
+   * being read instead of counting both and reporting a book twice as long as
+   * the one in the reader's hands.
+   *
+   * A page with no dominant script belongs to both sides and is never hidden:
+   * the front matter, and the bilingual term glossary where "अस्तित्व
+   * Existence" is the whole point of the row.
+   *
+   * The index survives the switch, and that is not luck — the sides are paired
+   * page for page, so the nth Hindi page and the nth English page are the same
+   * passage. Switching mid-chapter lands on the facing page, which is the one
+   * thing a reader doing this actually wants.
+   */
+  const pages: ReaderPage[] = useMemo(() => {
+    if (!sides) return allPages;
+    const want = readingSide === "original" ? sides.original : sides.translated;
+    return allPages.filter((pg) => pg.script === null || pg.script === want);
+  }, [allPages, sides, readingSide]);
+
+  // The sides are paired page for page but not always to the same count — a
+  // chapter can carry one more Hindi page than English. Without this, choosing
+  // the shorter side while near the end of the longer one leaves `pageIndex`
+  // past the end and `pages[pageIndex]` undefined.
+  useEffect(() => {
+    setPageIndex((i) => (i > 0 && i >= pages.length ? Math.max(0, pages.length - 1) : i));
+  }, [pages.length]);
+
+  const chooseSide = useCallback((next: ReadingSide) => {
+    setReadingSide(next);
+    setPrefs({ readingSide: next });
+  }, []);
   const paraByRef = useMemo(() => {
     const m = new Map<string, Paragraph>();
     for (const p of chapter?.paragraphs ?? []) m.set(p.canonical_ref, p);
@@ -278,6 +360,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     setMargin(p.margin);
     setTapZones(p.tapZones);
     setGlossaryUnderline(p.glossaryUnderline);
+    setReadingSide(p.readingSide === "original" ? "original" : "translated");
     if (p.readingMode) setMode(p.readingMode);
     setPrefsLoaded(true);
     if (!p.immersiveHintShown) {
@@ -1291,6 +1374,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         // start is always page 1 and would send a reader forty pages back.
         pagesHref={home ? documentHref(home.at.node, home.at.item, pagesAt) : undefined}
         onType={() => setSettingsOpen(true)}
+        languages={
+          sides
+            ? {
+                side: readingSide,
+                originalLabel: SCRIPT_LABEL[sides.original],
+                translatedLabel: SCRIPT_LABEL[sides.translated],
+                onChange: chooseSide,
+              }
+            : undefined
+        }
         // Search is the assistant until there is an assistant. The designer put
         // this button here so the habit forms before the chat arrives; scoped
         // to this book, because a global search from page 19 of a chapter is

@@ -124,6 +124,7 @@ export default async function ChapterPage({
           cover_image: book.cover_image,
           page_count: book.page_count,
           chapters: book.chapters,
+          translation_of: book.translation_of,
         }}
         initialChapterNumber={chapterNumber}
         initialChapter={chapter}

@@ -10,6 +10,7 @@
 //
 // Pure and synchronous by design: no network in this file.
 
+import type { ReadingSide } from "./bookLanguage";
 import type { WorkspaceId } from "./workspaceConfig";
 
 const isBrowser = typeof window !== "undefined";
@@ -140,6 +141,16 @@ export interface Prefs {
   /** tapping the left/right edge turns the page (Pages mode only) */
   tapZones: boolean;
   /**
+   * Which side of a facing-page bilingual edition to read — see
+   * `lib/bookLanguage.ts`. Stored as the role rather than a language code so
+   * one choice carries across books: a reader who wants the English of
+   * JVE-ENG wants the Kannada of JVEP-KND-GS, and neither of those is "en".
+   *
+   * Ignored entirely by every book that is not bilingual, which is all but two
+   * of them — there the toggle never appears and nothing is ever hidden.
+   */
+  readingSide: ReadingSide;
+  /**
    * Underline the words Paribhasha can define. Off by default and sticky once
    * turned on, like every other reading preference here.
    *
@@ -195,6 +206,11 @@ export const DEFAULT_PREFS: Prefs = {
   boldText: false,
   readingMode: null,
   tapZones: true,
+  // The edition the reader deliberately opened. Someone who taps the English
+  // JVEP on the Translations shelf came for the English; giving them the Hindi
+  // page first and the English second is the print book's constraint, not
+  // theirs. The Hindi is one tap away and the toggle says so.
+  readingSide: "translated",
   glossaryUnderline: false,
   lastWorkspace: "originals",
   consent: null,
