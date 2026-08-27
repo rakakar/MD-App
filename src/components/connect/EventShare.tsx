@@ -27,9 +27,7 @@ export function EventShare({
   title: string;
   /** the event's own route — `/connect/events/{slug}` */
   path: string;
-  /** `icon` is the rounded square — the detail screen's header row, and the
-   *  card's own share, both wearing the shape every icon button in this app
-   *  wears. */
+  /** `icon` is the square in the detail screen's header row */
   variant?: "button" | "icon";
 }) {
   const [copied, setCopied] = useState(false);

@@ -261,30 +261,8 @@ function range(start: string, end: string | null, fmt: (d: Date) => string): str
   return `${fmt(a)} – ${fmt(b)}`;
 }
 
-/**
- * "21–27 Sep'26" — the card's range, folded where the two ends agree.
- *
- * The long form is "21 Sep'26 – 27 Sep'26", which is 21 characters and does
- * not fit the card's grid column on a 375px phone: it truncated to
- * "21 Sep'26 – 27 …", losing the end of the shivir, which is not a fact a
- * range may drop. Folding the parts the two dates share gets it to 12 and
- * reads better besides — a shivir inside one month is one month, and saying
- * the month twice was the long form's own noise.
- *
- * It only folds what is genuinely shared: same month and year gives
- * "21–27 Sep'26", same year alone gives "28 Sep – 3 Oct'26", and a range
- * across new year stays long, because there nothing repeats.
- */
 export function cardDateRange(e: Pick<EventCard, "start_date" | "end_date">): string {
-  const a = parseDay(e.start_date);
-  if (!a) return "";
-  const b = parseDay(e.end_date);
-  if (!b || b.getTime() === a.getTime()) return cardDay(a);
-  if (a.getFullYear() !== b.getFullYear()) return `${cardDay(a)} – ${cardDay(b)}`;
-  if (a.getMonth() !== b.getMonth()) {
-    return `${a.getDate()} ${MONTH_SHORT[a.getMonth()]} – ${cardDay(b)}`;
-  }
-  return `${a.getDate()}–${cardDay(b)}`;
+  return range(e.start_date, e.end_date, cardDay);
 }
 
 export function fullDateRange(e: Pick<EventCard, "start_date" | "end_date">): string {
