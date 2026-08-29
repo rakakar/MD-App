@@ -201,9 +201,16 @@ export function EventCardView({
             {event.prabodhak && (
               <>
                 <Avatar initials={event.prabodhak_initials} />
+                {/* 15px in the rail, 17px in the list. On a 280px card the
+                    larger step sat above the date and place directly under it
+                    and read as a second title competing with the real one;
+                    level with them it reads as what it is, the first of three
+                    facts about the shivir. */}
                 <span
                   {...contentLang(event.prabodhak)}
-                  className={`${contentLang(event.prabodhak).className} min-w-0 flex-1 truncate text-title font-semibold`}
+                  className={`${contentLang(event.prabodhak).className} min-w-0 flex-1 truncate font-semibold ${
+                    compact ? "text-sm" : "text-title"
+                  }`}
                 >
                   {event.prabodhak}
                 </span>
