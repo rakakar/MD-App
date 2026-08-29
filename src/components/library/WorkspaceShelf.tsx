@@ -10,7 +10,7 @@ import { RailFacets } from "./RailFacets";
 import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
-import { isAsked, scopeSize, type FindState } from "@/lib/find";
+import { isAsked, scopeSize, type FindState, type FindAxis } from "@/lib/find";
 import type {
   FileKind,
   LibraryFacets,
@@ -55,6 +55,7 @@ export async function WorkspaceShelf({
   emptyHint,
   hideKinds = [],
   searchScope = "library",
+  hideAxes = [],
 }: {
   root: LibraryNode;
   state: FindState;
@@ -87,6 +88,23 @@ export async function WorkspaceShelf({
    * search "library" reads as a different, larger place.
    */
   searchScope?: string;
+  /**
+   * Axes this shelf does not offer at all.
+   *
+   * Unlike `hideKinds`, which hides *content* another tab is already showing,
+   * this hides a way of cutting it. Originals passes `topic`: the axis is a
+   * tagging scheme the panel maintains, and on this shelf it was a filter
+   * group the reader had to read past to reach Type, Year and Place — three
+   * axes that describe what a document *is* rather than what somebody filed it
+   * under.
+   *
+   * Hidden on this shelf only, so it is a shelf's decision and not the app's.
+   * `topics/` still supplies the row everywhere else, and the endpoint still
+   * counts `topic` as an ordinary axis — nothing about the contract changes.
+   * The three surfaces that draw filters each take this, so an axis cannot go
+   * missing from one and linger in another.
+   */
+  hideAxes?: FindAxis[];
 }) {
   const files = [...root.items, ...root.linked_items];
   const scope = { workspace: root.workspace };
@@ -162,6 +180,7 @@ export async function WorkspaceShelf({
               state={state}
               basePath={basePath}
               itemCount={itemCount}
+              hideAxes={hideAxes}
             />
           }
         />
@@ -171,6 +190,7 @@ export async function WorkspaceShelf({
             facets={facets}
             state={state}
             basePath={basePath}
+            hideAxes={hideAxes}
           />
         </div>
         <RailSlot>
@@ -179,6 +199,7 @@ export async function WorkspaceShelf({
             topics={topics}
             state={state}
             basePath={basePath}
+            hideAxes={hideAxes}
           />
         </RailSlot>
         <FindResults
@@ -241,6 +262,7 @@ export async function WorkspaceShelf({
                   state={state}
                   basePath={basePath}
                   itemCount={itemCount}
+                  hideAxes={hideAxes}
                 />
               )
             }
@@ -255,6 +277,7 @@ export async function WorkspaceShelf({
             facets={facets}
             state={state}
             basePath={basePath}
+            hideAxes={hideAxes}
           />
         )}
       </div>
@@ -321,6 +344,7 @@ export async function WorkspaceShelf({
             topics={topics}
             state={state}
             basePath={basePath}
+            hideAxes={hideAxes}
           />
         </RailSlot>
       )}

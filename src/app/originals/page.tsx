@@ -96,6 +96,12 @@ export default async function OriginalsLibraryPage({
         shelves={shelves}
         basePath="/originals"
         hideKinds={["audio", "video"]}
+        /* No Topic filter on this shelf. Type, Year and Place describe what a
+           document *is*; topic is what somebody filed it under, and on a shelf
+           of A. Nagraj's own papers it was a group the reader had to read past
+           to reach the three that answer their question. It stays an axis the
+           endpoint counts and a row every other shelf still draws. */
+        hideAxes={["topic"]}
         emptyTitle="The library is on its way"
         emptyHint="Photographs, letters and documents appear here as they are published."
       />
