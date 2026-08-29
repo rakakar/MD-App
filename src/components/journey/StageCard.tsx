@@ -141,14 +141,18 @@ export function StageCard({
           line, and it reads where it belongs: the note says what the stage is,
           and how long it usually runs is part of that.
 
-          `ink-soft` and its own sentence, so it is a coda rather than another
-          clause of the description. `durationSentence` does the capital and
-          the full stop — the source stores these as bare phrases, since the
-          full path screen sets them in a column where a sentence would be
-          wrong. */}
+          Set in the description's own ink rather than a softer one: it is not
+          an aside about the stage, it is one of the two things this paragraph
+          says. Its own sentence is enough to keep it distinct — it carried a
+          `text-ink-soft` span for a moment, which made it read as a footnote
+          to the line it is part of, and the span is gone rather than left
+          styling nothing.
+
+          `durationSentence` does the capital and the full stop — the source
+          stores these as bare phrases, since the full path screen sets them in
+          a column where a sentence would be wrong. */}
       <p className="mt-1.5 text-sm leading-relaxed">
-        {stage.note}{" "}
-        <span className="text-ink-soft">{durationSentence(stage.duration)}</span>
+        {stage.note} {durationSentence(stage.duration)}
       </p>
 
       {target && href ? (
