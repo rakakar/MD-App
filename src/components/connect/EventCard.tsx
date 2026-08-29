@@ -16,11 +16,34 @@ import { EventShare } from "./EventShare";
  * the tags. Both read `--cat-ink` / `--cat-tint` off `categoryStyle`, so
  * neither knows what the seven colours are.
  */
+/**
+ * The size every pill in a chip row shares.
+ *
+ * The rows are mixed — a category, sometimes a badge, sometimes the manager's
+ * own tags and the language — and they are read as one row, so one of them
+ * sitting a step above the others reads as a mistake rather than as emphasis.
+ * Both screens draw such a row, and they want different steps: the card's
+ * title is 21px and its chips are labels under it, while the detail screen has
+ * a 26px title, a poster above it and the width to carry 15px.
+ *
+ * So it is a prop rather than a constant, and `CategoryChip` and `EventBadge`
+ * take the same one. They were 13px and 15px side by side on the card until
+ * now, which is the bug this exists to make hard to reintroduce.
+ */
+export type ChipSize = "sm" | "md";
+
+const CHIP_SIZE: Record<ChipSize, string> = {
+  sm: "px-3 py-1 text-xs",
+  md: "px-3 py-1.5 text-sm",
+};
+
 export function CategoryChip({
   category,
+  size = "md",
   className = "",
 }: {
   category: EventCardData["category"];
+  size?: ChipSize;
   className?: string;
 }) {
   return (
@@ -33,7 +56,7 @@ export function CategoryChip({
         background: "var(--cat-tint)",
         color: "var(--cat-ink)",
       }}
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${className}`}
+      className={`inline-flex items-center rounded-full font-semibold ${CHIP_SIZE[size]} ${className}`}
     >
       {category.display}
     </span>
@@ -42,10 +65,18 @@ export function CategoryChip({
 
 /** "Completed" / "Recording available" — the grey pill beside the chip once an
  *  event is over. Never derived here: the API says which, or says nothing. */
-export function EventBadge({ badge }: { badge: string }) {
+export function EventBadge({
+  badge,
+  size = "md",
+}: {
+  badge: string;
+  size?: ChipSize;
+}) {
   if (!badge) return null;
   return (
-    <span className="inline-flex items-center rounded-full bg-inset px-3 py-1.5 text-sm font-medium text-ink-soft">
+    <span
+      className={`inline-flex items-center rounded-full bg-inset font-medium text-ink-soft ${CHIP_SIZE[size]}`}
+    >
       {badgeLabel(badge)}
     </span>
   );
@@ -116,9 +147,12 @@ export function EventCardView({ event }: { event: EventCardData }) {
         style={{ background: "var(--cat)" }}
       />
       <div className="ps-5 pe-4 py-3.5">
+        {/* `sm` on both, so the badge and the category are one row rather
+            than two sizes. The card's chips are labels under a 21px title;
+            the detail screen's row keeps `md`. */}
         <div className="flex flex-wrap items-center gap-2">
-          <CategoryChip category={event.category} />
-          <EventBadge badge={event.badge} />
+          <CategoryChip category={event.category} size="sm" />
+          <EventBadge badge={event.badge} size="sm" />
         </div>
 
         {/* `hi-tight` because `.hi` is unlayered and beats every leading

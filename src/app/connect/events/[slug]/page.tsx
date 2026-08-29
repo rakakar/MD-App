@@ -149,8 +149,12 @@ export default async function EventDetailPage({
             {event.language.name}
           </InfoRow>
         )}
+        {/* `h-5 w-5` on the pin, like the three rows above it. `PinIcon`'s own
+            default is 14px, which left the one glyph in this stack that was not
+            20px — and in a column of tinted tiles the odd one reads as a
+            smaller tile rather than as a smaller icon. */}
         {location && (
-          <InfoRow icon={<PinIcon />} label="Location">
+          <InfoRow icon={<PinIcon className="h-5 w-5" />} label="Location">
             {event.map_url ? (
               <a
                 href={event.map_url}
