@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { CoverTile } from "@/components/shelf/CoverTile";
 import { ChevronRight, PathIcon } from "@/components/shell/icons";
-import { ctaPrimary } from "@/components/ui";
 import { chapterLine } from "@/lib/chapter";
-import { levelOf, stageBooks, type Stage } from "@/lib/journey";
-import { refToHref } from "@/lib/refs";
+import { LEVELS, STAGES, levelOf, stageBooks, type Stage } from "@/lib/journey";
+import { parseRef, refToHref } from "@/lib/refs";
 import { contentLang } from "@/lib/script";
 import type { BookSummary } from "@/lib/types";
 import type { LocalProgress } from "@/lib/storage";
@@ -19,21 +19,33 @@ import type { LocalProgress } from "@/lib/storage";
  * opt-in, because a reader who opens this app in year one should not be shown
  * eight things they are not doing.
  *
- * **No progress figure anywhere here.** Not "stage 3 of 9", not a percentage,
- * not a bar. Progress in this app exists inside a book — chapters read of that
- * book — and nowhere else; a number over the whole journey would be the app
- * scoring a life, which is exactly what the comps refuse.
+ * **The card now says which stage of nine, and draws the nine.** That reverses
+ * what this file and `lib/journey.ts` both used to argue — that a figure over
+ * the whole journey would be the app scoring a life — and the reversal is the
+ * designer's, on their own redraw of this card. What the drawing does with it
+ * is the reason it works: the nine segments are grouped into their four
+ * levels, and they are not a fill that climbs. The stage you are in is the
+ * accent, the rest of its level is a wash, and the other levels are fainter
+ * still. It answers *where in the shape am I*, which is the question the path
+ * screen exists for, rather than *how much have you done*.
+ *
+ * Nothing is ticked off and no stage is ever marked complete — a reader who
+ * declares stage 6 lights stage 6, and the five before it stay as pale as the
+ * three after. That is what keeps this a position rather than a score.
  */
 export function StageCard({
   stage,
   books,
   progress,
+  onChangeStage,
 }: {
   stage: Stage;
   /** every published book, for resolving this stage's reading */
   books: BookSummary[];
   /** saved places, newest first — what turns "start" into "continue" */
   progress: LocalProgress[];
+  /** reopens the stage picker — the card's own way to correct itself */
+  onChangeStage: () => void;
 }) {
   const level = levelOf(stage);
   const reading = stageBooks(stage, books);
@@ -54,6 +66,22 @@ export function StageCard({
   const target = resumed ?? reading[0];
   const href = resumable ? refToHref(resumable.canonical_ref) : target ? `/books/${encodeURIComponent(target.code)}` : null;
 
+  /**
+   * How far into the book the next step sits, as a fraction.
+   *
+   * The printed page against the book's page count, which is the only progress
+   * signal that exists — the same one the book hero's resume button draws, and
+   * it means "how far into the book this page is", not "how much has been
+   * read". `null` before anything has been opened, where a bar at zero would
+   * be a promise the reader has not made.
+   */
+  const percent = (() => {
+    if (!resumable || !target?.page_count) return null;
+    const page = Number(parseRef(resumable.canonical_ref)?.page);
+    if (!Number.isFinite(page) || page <= 0) return null;
+    return Math.min(100, (page / target.page_count) * 100);
+  })();
+
   return (
     /* Lifted off the page rather than sitting flush with the rails below it:
        this is the one card the screen exists for, and at plain `bg-card` it
@@ -70,51 +98,81 @@ export function StageCard({
       }}
     >
       {/* One language. The interface is English throughout and only *content*
-          carries the Devanagari — the stage's own name below is content, this
-          label is not, and doubling it said the same thing twice in a card
-          that has three lines to make its point. */}
-      <p className="text-xs font-bold uppercase tracking-[0.09em]" style={{ color: "var(--ws-ink)" }}>
-        You are here
-      </p>
+          carries the Devanagari — the stage's own name below is content, these
+          labels are not. */}
+      <div className="flex items-baseline justify-between gap-3">
+        <p
+          className="text-xs font-bold uppercase tracking-[0.09em]"
+          style={{ color: "var(--ws-ink)" }}
+        >
+          Level {LEVEL_WORD[level.id]}
+        </p>
+        <p className="shrink-0 text-sm text-ink-soft">
+          Stage {stage.id} of {STAGES.length}
+        </p>
+      </div>
 
-      <h2 lang="hi" className="hi hi-tight mt-2 text-title font-semibold">
+      <StageBar stage={stage} />
+
+      <h2 lang="hi" className="hi hi-tight mt-3 text-2xl font-semibold">
         {stage.hi}
       </h2>
-      <p className="mt-0.5 text-xs text-ink-soft">
+      {/* The level is named in the row above now, so this line carries what it
+          does not: the English gloss the source gives the stage, and how long
+          the stage unfolds over. */}
+      <p className="mt-1 text-sm text-ink-soft">
         {stage.en ? `${stage.en} · ` : ""}
-        {level.hi} — {level.en}
+        {stage.duration}
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-ink-soft">{stage.note}</p>
+      <p className="mt-2 text-sm leading-relaxed">{stage.note}</p>
 
       {target && href ? (
-        <div className="mt-4 border-t border-rule pt-4">
-          <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+        <>
+          <p className="mt-4 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
             Your next step
           </p>
-          <p className="mt-1.5 text-sm leading-relaxed">
-            {resumable ? "Carry on with " : "Begin with "}
-            <span {...contentLang(target.title_hi)} className={`${contentLang(target.title_hi).className} font-semibold`}>
-              {target.title_hi}
-            </span>
-            {resumable ? (
-              <span className="text-ink-soft">
-                {" — "}
-                {chapterLine(String(resumable.chapter_number), null)}
-              </span>
-            ) : (
-              <span className="text-ink-soft">
-                {target.page_count ? ` — ${target.page_count} pages` : ""}
-              </span>
-            )}
-          </p>
+          {/* The step is a card with the book's own cover on it rather than a
+              sentence and a button. A reader who is mid-way through something
+              recognises it by its artwork before they read a word, and the bar
+              underneath says how far in they are — which is the one progress
+              figure this app has ever had, and it belongs to the book. */}
           <Link
             href={href}
-            className={`${ctaPrimary} mt-3 w-full`}
-            style={{ background: "var(--ws-color)" }}
+            className="mt-2 flex items-center gap-3 rounded-card border border-rule bg-card p-3 transition-shadow hover:shadow-md"
           >
-            {resumable ? "Continue reading" : "Start reading"}
+            <CoverTile book={target} size="resume" caption="none" />
+            <span className="min-w-0 flex-1">
+              <span
+                {...contentLang(target.title_hi)}
+                className={`${contentLang(target.title_hi).className} block truncate text-title font-semibold`}
+              >
+                {target.title_hi}
+              </span>
+              <span className="mt-0.5 block truncate text-xs text-ink-soft">
+                {resumable
+                  ? chapterLine(String(resumable.chapter_number), null)
+                  : `${stage.en ?? stage.hi} reading`}
+                {resumable && parseRef(resumable.canonical_ref)?.page
+                  ? ` · page ${parseRef(resumable.canonical_ref)?.page}`
+                  : target.page_count
+                    ? ` · ${target.page_count} pages`
+                    : ""}
+              </span>
+              {percent !== null && (
+                <span
+                  aria-hidden
+                  className="mt-2 block h-1.5 w-full overflow-hidden rounded-full bg-inset"
+                >
+                  <span
+                    className="block h-full rounded-full"
+                    style={{ width: `${percent}%`, background: "var(--ws-color)" }}
+                  />
+                </span>
+              )}
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-ink-soft" />
           </Link>
-        </div>
+        </>
       ) : (
         /* Said plainly rather than left blank. Three of the nine stages have
            no reading of their own — a camp, the years of मनन where the whole
@@ -128,7 +186,65 @@ export function StageCard({
         </p>
       )}
 
+      {/* The card's own way to correct itself. A stage is declared, never
+          detected, so the reader is the only one who can say it has changed —
+          and until now the only way to was to clear the app's storage. */}
+      <button
+        type="button"
+        onClick={onChangeStage}
+        className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold"
+        style={{ color: "var(--ws-ink)" }}
+      >
+        Change my stage
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </section>
+  );
+}
+
+/** "Level One" — the level's number said as a word, as the design draws it. */
+const LEVEL_WORD: Record<number, string> = { 1: "One", 2: "Two", 3: "Three", 4: "Four" };
+
+/**
+ * The nine stages, grouped into their four levels.
+ *
+ * Grouped rather than run as one strip of nine: the gaps are what say the path
+ * has a shape, and which of the four you are standing in is the thing this
+ * answers at a glance. The groups are `LEVELS`' own — three, two, one, three —
+ * so a level that gains a stage regroups itself here with no change.
+ *
+ * Three tones, and none of them means "done". The stage you declared is the
+ * accent; the rest of its level is a wash of the same; every other level is
+ * fainter still. A reader at stage 6 lights stage 6 — the five before it stay
+ * exactly as pale as the three after, because this is a position and not a
+ * score.
+ */
+function StageBar({ stage }: { stage: Stage }) {
+  return (
+    <div
+      className="mt-2.5 flex items-center gap-2"
+      role="img"
+      aria-label={`Stage ${stage.id} of ${STAGES.length}, level ${stage.level} of ${LEVELS.length}`}
+    >
+      {LEVELS.map((l) => (
+        <div key={l.id} className="flex flex-1 gap-1">
+          {l.stages.map((id) => (
+            <span
+              key={id}
+              className="h-1.5 flex-1 rounded-full"
+              style={{
+                background:
+                  id === stage.id
+                    ? "var(--ws-color)"
+                    : l.id === stage.level
+                      ? "color-mix(in srgb, var(--ws-color) 35%, var(--color-card))"
+                      : "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+              }}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
 

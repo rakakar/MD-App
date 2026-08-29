@@ -97,6 +97,9 @@ function SignInGate() {
 export default function MyJourneyPage() {
   const { user, loading } = useAuth();
   const [stageId, setStageId] = useState<number | null | undefined>(undefined);
+  /** the picker reopened from the card, rather than shown because nothing
+   *  has been declared yet */
+  const [changing, setChanging] = useState(false);
   const [books, setBooks] = useState<BookSummary[]>([]);
   const [progress, setProgress] = useState<LocalProgress[]>([]);
 
@@ -133,14 +136,17 @@ export default function MyJourneyPage() {
 
   const stage = stageById(stageId);
 
-  // Signed in but not yet asked. The layover covers the app until answered —
-  // there is no dashboard to show behind it, so nothing is rendered under it.
-  if (!stage) {
+  // Not yet asked, or asked again from the card. The layover covers the app
+  // until answered — on a first run there is no dashboard to show behind it,
+  // so nothing is rendered under it either way, and the same component serves
+  // both because it is the same question.
+  if (!stage || changing) {
     return (
       <Onboarding
         onDone={(next) => {
           setPrefs({ journeyStage: next });
           setStageId(next);
+          setChanging(false);
         }}
       />
     );
@@ -151,7 +157,12 @@ export default function MyJourneyPage() {
       <h1 className="font-display text-2xl font-medium">My Journey</h1>
 
       <div className="mt-4 flex flex-col gap-3">
-        <StageCard stage={stage} books={books} progress={progress} />
+        <StageCard
+          stage={stage}
+          books={books}
+          progress={progress}
+          onChangeStage={() => setChanging(true)}
+        />
         <FullPathCard />
       </div>
 

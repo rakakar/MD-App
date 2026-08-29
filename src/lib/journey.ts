@@ -9,8 +9,15 @@
  *
  * Two rules from the comps that everything below is built to keep:
  *
- * 1. **No global progress.** No "3 of 9", no percentage, no streak. A stage is
- *    somewhere you say you are, never something the app scores you on.
+ * 1. **A position, never a score.** The dashboard card says "Stage 1 of 9" and
+ *    draws the nine — the designer's own redraw of it — but nothing is ever
+ *    ticked off and no stage is marked complete. The stage you declared is
+ *    lit; the ones before it stay exactly as pale as the ones after, because
+ *    a stage is somewhere you say you are and the app has no way to know you
+ *    have left it. (This rule read "no 3 of 9, no percentage" until that
+ *    redraw. What changed is the drawing, not the principle underneath it —
+ *    the count answers *where in the shape am I*, and still refuses to answer
+ *    *how much have you done*.)
  * 2. **Signals, not verdicts.** The path is opt-in, the durations say "unfolds
  *    over" rather than naming a deadline, and the source's own caveat — that
  *    this is one student's estimate — is quoted where the path is shown.
