@@ -91,7 +91,7 @@ export function StageCard({
        here would read as one. */
     <section
       aria-label="Where you are"
-      className="rounded-card border p-4 shadow-[0_1px_2px_rgba(26,22,19,.04)]"
+      className="rounded-card border p-3.5 shadow-[0_1px_2px_rgba(26,22,19,.04)]"
       style={{
         borderColor: "color-mix(in srgb, var(--ws-color) 35%, var(--color-rule))",
         background: "color-mix(in srgb, var(--ws-color) 5%, var(--color-card))",
@@ -114,21 +114,29 @@ export function StageCard({
 
       <StageBar stage={stage} />
 
-      <h2 lang="hi" className="hi hi-tight mt-3 text-2xl font-semibold">
+      <h2 lang="hi" className="hi hi-tight mt-2.5 text-2xl font-semibold">
         {stage.hi}
       </h2>
       {/* The level is named in the row above now, so this line carries what it
           does not: the English gloss the source gives the stage, and how long
           the stage unfolds over. */}
-      <p className="mt-1 text-sm text-ink-soft">
-        {stage.en ? `${stage.en} · ` : ""}
-        {stage.duration}
-      </p>
-      <p className="mt-2 text-sm leading-relaxed">{stage.note}</p>
+      {/* The stage's English gloss, and only that.
+
+          `text-xs`, a step under the note below it: this is the title's label
+          while the note is what the stage actually is, and at one size the two
+          read as a single paragraph broken in half.
+
+          It carried the duration too, and that is what made it two lines —
+          "1–2 camps over 6 months to 1 year" is a sentence, not a label, and
+          it cost the card 18px to say something the full path screen already
+          gives every stage. The drawing's own version of this line is three
+          short facts; one true short fact is nearer that than one long one. */}
+      {stage.en && <p className="mt-1 text-xs text-ink-soft">{stage.en}</p>}
+      <p className="mt-1.5 text-sm leading-relaxed">{stage.note}</p>
 
       {target && href ? (
         <>
-          <p className="mt-4 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
             Your next step
           </p>
           {/* The step is a card with the book's own cover on it rather than a
@@ -138,7 +146,7 @@ export function StageCard({
               figure this app has ever had, and it belongs to the book. */}
           <Link
             href={href}
-            className="mt-2 flex items-center gap-3 rounded-card border border-rule bg-card p-3 transition-shadow hover:shadow-md"
+            className="mt-1.5 flex items-center gap-3 rounded-card border border-rule bg-card p-3 transition-shadow hover:shadow-md"
           >
             <CoverTile book={target} size="resume" caption="none" />
             <span className="min-w-0 flex-1">
@@ -189,10 +197,16 @@ export function StageCard({
       {/* The card's own way to correct itself. A stage is declared, never
           detected, so the reader is the only one who can say it has changed —
           and until now the only way to was to clear the app's storage. */}
+      {/* `min-h-11` is the tap target and stays, but it was reading as a
+          slab of padding under the step card — 44px of box around 20px of
+          text, plus a 12px margin over it. The margin comes off the top and
+          the negative one at the foot lets the box overlap the card's own
+          padding, so the target is untouched and the air around it is not
+          counted twice. */}
       <button
         type="button"
         onClick={onChangeStage}
-        className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold"
+        className="-mb-1.5 mt-0.5 inline-flex min-h-11 items-center gap-1 text-sm font-semibold"
         style={{ color: "var(--ws-ink)" }}
       >
         Change my stage
