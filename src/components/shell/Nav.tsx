@@ -48,13 +48,29 @@ export function BottomNav() {
         <Link
           href={nav.href}
           aria-current={active ? "page" : undefined}
-          className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 text-xs font-medium transition-colors active:bg-ink/5"
+          /* `h-full` so every tab fills the row rather than sizing to its own
+             label. At the largest app text size "Highlights & Notes" takes two
+             lines while its neighbours take one, and without this the row grew
+             to the tallest tab while the short ones stayed their own height —
+             leaving their icons sitting above the wrapped one's instead of on
+             a line with it.
+
+             `justify-start` rather than `center` for the same reason: centred,
+             a tab whose label takes two lines is a taller block, and centring
+             a taller block lifts its icon 13px above its neighbours'. The
+             icons are a row the eye reads across before it reads any label, so
+             they are what has to line up; the second line hangs below. */
+          className="flex h-full min-h-14 flex-col items-center justify-start gap-1 px-1 pb-1.5 pt-2 text-xs font-medium transition-colors active:bg-ink/5"
           style={{ color: active ? "var(--ws-ink)" : "var(--color-ink-soft)" }}
         >
           <Icon name={nav.icon} className="h-6 w-6" strokeWidth={active ? 2.1 : 1.7} />
-          {/* `short` where a tab has one — the bottom bar is the one place a
-              label has to survive being a third of a 390px screen. */}
-          <span className="max-w-full truncate">{nav.short ?? nav.label}</span>
+          {/* The tab's full name, on both bars. "Highlights & Notes" carried a
+              shorter alias for this row for a while, on the argument that it
+              would not survive a third of a 390px screen — it wraps to two
+              lines here instead of truncating, which costs the row a few pixels
+              of height and says both halves. Naming a tab one thing in the rail
+              and another in the bar was the worse trade. */}
+          <span className="max-w-full text-balance">{nav.label}</span>
         </Link>
       </li>
     );

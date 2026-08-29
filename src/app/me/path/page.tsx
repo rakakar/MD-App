@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronDown } from "@/components/shell/icons";
+import { BackIcon, ChevronDown } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
 import { LEVELS, PATH_CAVEAT, STAGES, stageById } from "@/lib/journey";
 import { getPrefs } from "@/lib/storage";
@@ -37,7 +38,27 @@ export default function FullPathPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-medium">The full path</h1>
+      {/* **The way back.**
+
+          This screen is opt-in and reached from one place — the dashboard's
+          own stage card — so the tab bar cannot return anyone to it: My
+          Journey's Dashboard tab is lit the whole time they are here, because
+          `/me/path` sits under `/me`, and tapping a tab that is already lit is
+          the one gesture a reader will not try. Without this the only way out
+          was the browser's own back, which a reader who arrived by tapping a
+          card inside the app has no reason to reach for.
+
+          Named rather than a bare arrow: it goes somewhere specific, and
+          "Dashboard" is the word the tab bar uses for it. */}
+      <Link
+        href="/me"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-rule bg-card pe-3.5 ps-2.5 text-sm font-semibold text-ink transition-colors active:bg-ink/[.04]"
+      >
+        <BackIcon className="h-4 w-4 shrink-0" />
+        Dashboard
+      </Link>
+
+      <h1 className="mt-4 font-display text-2xl font-medium">The full path</h1>
       <p className="mt-1 text-sm leading-relaxed text-ink-soft">
         Four levels, nine stages. Durations say how long this usually{" "}
         <em>unfolds over</em> — they are not deadlines, and nothing here is

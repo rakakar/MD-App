@@ -18,15 +18,6 @@ export interface NavItem {
   href: string;
   icon: NavIcon;
   /**
-   * A shorter label for the phone's bottom bar, where the full one will not
-   * fit. Only "Highlights & Notes" needs it: the sidebar has the width to say
-   * what the tab is, and a three-slot bottom bar at the largest text size has
-   * about eleven characters per slot — the full label truncated there to
-   * "Highlight…", which names neither half. The bar says "Highlights", which
-   * is the tab it opens on; the heading on the page says both.
-   */
-  short?: string;
-  /**
    * The assistant slot (PRD §7). Search *is* the assistant until there is an
    * assistant, so the slot is labelled for what it will be and points at what
    * exists — nothing about the flag changes when that endpoint arrives, only
@@ -166,12 +157,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     // and claims this slot with `NavScope` so the bar stays lit there.
     nav: [
       { label: "Dashboard", href: "/me", icon: "overview" },
-      {
-        label: "Highlights & Notes",
-        short: "Highlights",
-        href: "/me/bookmarks",
-        icon: "highlights",
-      },
+      { label: "Highlights & Notes", href: "/me/bookmarks", icon: "highlights" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },
