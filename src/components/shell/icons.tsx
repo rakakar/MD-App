@@ -270,9 +270,22 @@ export function ShareIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * `h-5 w-5` by default, like every other glyph in this file.
+ *
+ * It shipped at 14px while its neighbours defaulted to 20, which made it the
+ * one icon that came out wrong unless the caller happened to name a size — and
+ * it caught the event card and then the event detail's Location row, in both
+ * cases sitting visibly smaller than the calendar directly above it. A default
+ * that has to be overridden to look right at most of its call sites is the
+ * wrong default.
+ *
+ * The one place that genuinely wants it small says so now: Home's event row
+ * sets it beside 13px text, where 20px would dominate the line it labels.
+ */
 export function PinIcon({ className }: { className?: string }) {
   return (
-    <Svg className={className ?? "h-3.5 w-3.5"}>
+    <Svg className={className ?? "h-5 w-5"}>
       <path d="M12 21s6-5.3 6-9.5a6 6 0 1 0-12 0C6 15.7 12 21 12 21Z" />
       <circle cx="12" cy="11" r="2" />
     </Svg>

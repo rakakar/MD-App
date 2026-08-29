@@ -178,8 +178,11 @@ export default async function OriginalsHome() {
                             {e.title}
                           </span>
                           <span className="mt-1 flex items-center gap-1 text-xs text-ink-soft">
+                            {/* Explicitly small: this pin labels a 13px line
+                                in a compact row, where the 20px default would
+                                outweigh the text beside it. */}
                             <span aria-hidden className="shrink-0">
-                              <PinIcon />
+                              <PinIcon className="h-3.5 w-3.5" />
                             </span>
                             <span className="truncate">
                               {/* `location` is the card's one line, assembled
