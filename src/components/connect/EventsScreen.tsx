@@ -117,8 +117,20 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
           rather than the app bar's translucency — this row stops directly
           under that bar, and two blurred layers over one another is a smear
           rather than a material. `z-30` keeps it under the bar (z-40) and over
-          the cards. The same arrangement as the book's Highlights filters. */}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 sm:mx-0 sm:px-0 lg:top-0">
+          the cards. The same arrangement as the book's Highlights filters.
+
+          **The air above the box is padding, not a bigger `top`.** Pinned
+          flush, the box sat on the app bar's edge with the two borders
+          touching. Pushing the sticky offset down instead would have opened a
+          band between the bar and this row that belongs to neither, and the
+          cards would scroll up through it in the clear. The padding is inside
+          the sticky box, so the same `bg-surface` that hides the cards behind
+          the row also fills the gap above it.
+
+          `mt-1` rather than `mt-3` to pay for it: unstuck, the padding and the
+          margin stack, and the tabs would otherwise sit further from the box
+          than they did before it gained any room. */}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-1 bg-surface px-4 pb-2 pt-2 sm:mx-0 sm:px-0 lg:top-0">
         <FindRow
           search={
             <SearchField
