@@ -132,7 +132,24 @@ export function StageCard({
           gives every stage. The drawing's own version of this line is three
           short facts; one true short fact is nearer that than one long one. */}
       {stage.en && <p className="mt-1 text-xs text-ink-soft">{stage.en}</p>}
-      <p className="mt-1.5 text-sm leading-relaxed">{stage.note}</p>
+      {/* The duration rides at the end of the description rather than on a
+          line of its own.
+
+          It was its own line and cost 36px — a 13px label wrapping to two,
+          because "1–2 camps over 6 months to 1 year" is a sentence and not a
+          label. Here it costs only whatever it pushes past the end of the last
+          line, and it reads where it belongs: the note says what the stage is,
+          and how long it usually runs is part of that.
+
+          `ink-soft` and its own sentence, so it is a coda rather than another
+          clause of the description. `durationSentence` does the capital and
+          the full stop — the source stores these as bare phrases, since the
+          full path screen sets them in a column where a sentence would be
+          wrong. */}
+      <p className="mt-1.5 text-sm leading-relaxed">
+        {stage.note}{" "}
+        <span className="text-ink-soft">{durationSentence(stage.duration)}</span>
+      </p>
 
       {target && href ? (
         <>
@@ -214,6 +231,18 @@ export function StageCard({
       </button>
     </section>
   );
+}
+
+/**
+ * A stage's duration as a sentence — "1–2 camps over 6 months to 1 year."
+ *
+ * The source stores these bare, because the full path screen sets them in a
+ * column beside a stage count where a capital and a full stop would be wrong.
+ * The card puts them at the end of a paragraph, where the opposite is true.
+ */
+function durationSentence(duration: string): string {
+  const text = duration.charAt(0).toUpperCase() + duration.slice(1);
+  return /[.!?]$/.test(text) ? text : `${text}.`;
 }
 
 /** "Level One" — the level's number said as a word, as the design draws it. */
