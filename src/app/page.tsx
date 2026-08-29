@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { BookRail } from "@/components/home/BookRail";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
@@ -6,7 +5,6 @@ import { LibraryBand } from "@/components/home/LibraryBand";
 import { ShortsRail } from "@/components/home/ShortsRail";
 import { SutraCard } from "@/components/home/SutraCard";
 import { NotificationBanner } from "@/components/push/NotificationBanner";
-import { ChevronRight, PinIcon } from "@/components/shell/icons";
 import {
   EmptyState,
   PageContainer,
@@ -14,10 +12,10 @@ import {
   SectionHeading,
   SeeAll,
 } from "@/components/ui";
+import { EventCardView } from "@/components/connect/EventCard";
 import { getBooks, getEvents } from "@/lib/api";
-import { cardDateRange, type EventCard } from "@/lib/events";
+import type { EventCard } from "@/lib/events";
 import { SHIVIRS, byGenre } from "@/lib/labels";
-import { contentLang } from "@/lib/script";
 import { getShorts, type Short } from "@/lib/shorts";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { BookSummary, SutraOfTheDay } from "@/lib/types";
@@ -163,43 +161,26 @@ export default async function OriginalsHome() {
               <SectionHeading tier="title" action={<SeeAll href="/connect">See all</SeeAll>}>
                 Upcoming {SHIVIRS}
               </SectionHeading>
-              <ul className="flex flex-col gap-2">
-                {shivirs.map((e) => {
-                  const l = contentLang(e.title);
-                  const dates = cardDateRange(e);
-                  return (
-                    <li key={e.slug}>
-                      <Link
-                        href={`/connect/events/${e.slug}`}
-                        className="flex items-center gap-3 rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span {...l} className={`${l.className} block truncate text-sm font-semibold`}>
-                            {e.title}
-                          </span>
-                          <span className="mt-1 flex items-center gap-1 text-xs text-ink-soft">
-                            {/* Explicitly small: this pin labels a 13px line
-                                in a compact row, where the 20px default would
-                                outweigh the text beside it. */}
-                            <span aria-hidden className="shrink-0">
-                              <PinIcon className="h-3.5 w-3.5" />
-                            </span>
-                            <span className="truncate">
-                              {/* `location` is the card's one line, assembled
-                                  by the API — "Online" for an online shivir,
-                                  "Hapud, NCR Delhi" for one you travel to. */}
-                              {e.location || "—"}
-                              {dates ? ` · ${dates}` : ""}
-                            </span>
-                          </span>
-                        </span>
-                        <span aria-hidden className="shrink-0 text-muted">
-                          <ChevronRight />
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
+              {/* A rail, not a stack — the same one the books and the shorts
+                  ride in, down to the full-bleed and the snap. Three cards is
+                  what `shivirs` slices to, and three is the number the app bar
+                  used to promise before the chip moved here: enough that the
+                  next one is visibly not the only one, few enough that the
+                  home page does not turn into the Connect list.
+
+                  `items-stretch` and `h-full` on the card, so three cards of
+                  different title lengths are one height rather than three —
+                  in a row you scroll sideways, ragged bottoms read as a
+                  rendering fault. */}
+              <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
+                {shivirs.map((e) => (
+                  <li
+                    key={e.slug}
+                    className="w-[17.5rem] shrink-0 snap-start sm:w-[20rem]"
+                  >
+                    <EventCardView event={e} compact />
+                  </li>
+                ))}
               </ul>
             </>
           )}

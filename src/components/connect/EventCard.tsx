@@ -131,7 +131,29 @@ function Glyph({ children }: { children: React.ReactNode }) {
  * It is decoration standing beside the chip that names the same category in
  * words, so it is never the only thing carrying that fact.
  */
-export function EventCardView({ event }: { event: EventCardData }) {
+export function EventCardView({
+  event,
+  compact = false,
+}: {
+  event: EventCardData;
+  /**
+   * The Originals home rail's copy of this card.
+   *
+   * Same card — same stripe, same chip, same three lines of who, when and
+   * where — with the action row taken off and the title a step down. Both of
+   * those are because of where it sits rather than to save space for its own
+   * sake: in a rail the whole card is already one tap to the event, so "View
+   * details" beside a Share was a second and a third control for a thing a
+   * reader is browsing past, and at 21px in a 280px column the title took
+   * three lines where the list's 343px gives it two.
+   *
+   * A variant rather than a second component, so the day the list card
+   * changes, the rail's copy changes with it. That is the whole reason it is
+   * here: these two drifting apart is what "make it match Connect" is asking
+   * not to happen again.
+   */
+  compact?: boolean;
+}) {
   const href = `/connect/events/${event.slug}`;
   const t = contentLang(event.title);
   const dates = cardDateRange(event);
@@ -139,7 +161,11 @@ export function EventCardView({ event }: { event: EventCardData }) {
   return (
     <article
       style={categoryStyle(event.category.accent)}
-      className="relative overflow-hidden rounded-card border border-rule bg-card shadow-card"
+      className={`relative overflow-hidden rounded-card border border-rule bg-card shadow-card ${
+        // fills its slot in the rail, so three cards with titles of different
+        // lengths come out one height instead of three
+        compact ? "h-full" : ""
+      }`}
     >
       <span
         aria-hidden
@@ -163,7 +189,7 @@ export function EventCardView({ event }: { event: EventCardData }) {
           {...t}
           className={`${t.className} ${
             t.lang === "hi" ? "hi-tight" : "font-display leading-snug"
-          } mt-2 text-[1.3125rem] font-semibold`}
+          } mt-2 font-semibold ${compact ? "text-title" : "text-[1.3125rem]"}`}
         >
           <Link href={href} className="after:absolute after:inset-0 hover:underline">
             {event.title}
@@ -228,34 +254,27 @@ export function EventCardView({ event }: { event: EventCardData }) {
 
           Share is a real button and has to sit above the stretched link to be
           pressable at all, which is what the `relative` on this row is for.
+
+          Neither is drawn in the rail. There the card is one of three a reader
+          is scrolling past, and a row of controls on each is three invitations
+          to stop — the card itself is already the one that matters.
         */}
-        <div className="relative z-10 mt-3 flex items-stretch gap-2.5">
-          {/* Outlined, not filled.
-
-              A solid accent slab is the loudest thing the app can put on a
-              card, and this one is not carrying its weight: the whole card is
-              already the link to the event, so the fill was shouting an
-              invitation that tapping anywhere accepts. Down a list of shivirs
-              it was also most of what the screen was made of.
-
-              Accent border, accent ink, and the faintest wash of the accent
-              behind — the app's own idiom for an outlined control that is
-              still the primary one (`Chip` variant `tint`, and the filter
-              sheet's mode buttons). That keeps it distinct from Share beside
-              it, which is a neutral outline in `rule` and ink. */}
-          <span
-            aria-hidden
-            className="pointer-events-none inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-control border px-5 text-sm font-semibold"
-            style={{
-              borderColor: "var(--ws-ink)",
-              background: "color-mix(in srgb, var(--ws-color) 8%, var(--color-card))",
-              color: "var(--ws-ink)",
-            }}
-          >
-            View Details
-          </span>
-          <EventShare title={event.title} path={href} />
-        </div>
+        {!compact && (
+          <div className="relative z-10 mt-3 flex items-stretch gap-2.5">
+            <span
+              aria-hidden
+              className="pointer-events-none inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-control border px-5 text-sm font-semibold"
+              style={{
+                borderColor: "var(--ws-ink)",
+                background: "color-mix(in srgb, var(--ws-color) 8%, var(--color-card))",
+                color: "var(--ws-ink)",
+              }}
+            >
+              View Details
+            </span>
+            <EventShare title={event.title} path={href} variant="icon" />
+          </div>
+        )}
       </div>
     </article>
   );
