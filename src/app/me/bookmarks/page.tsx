@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { EmptyState, PageContainer } from "@/components/ui";
@@ -51,8 +52,11 @@ function saved(b: LocalBookmark): { text?: string; colour?: HighlightColour } {
 
 export default function BookmarksPage() {
   const { user } = useAuth();
-  const { rows, reload } = usePersonalRows();
-  const highlights = rows?.bookmarks ?? null;
+  const { rows, reload, titles } = usePersonalRows();
+  /** the book the list is narrowed to, or null for all of them */
+  const [book, setBook] = useState<string | null>(null);
+  const all = rows?.bookmarks ?? null;
+  const highlights = all && book ? all.filter((b) => b.book_code === book) : all;
 
   const remove = (ref: string) => {
     unsaveBookmark(ref, !!user);
@@ -61,7 +65,13 @@ export default function BookmarksPage() {
 
   return (
     <PageContainer>
-      <PersonalHeader active="highlights" rows={rows} />
+      <PersonalHeader
+        active="highlights"
+        rows={rows}
+        titles={titles}
+        book={book}
+        onBook={setBook}
+      />
 
       <div className="mt-5">
         {highlights === null ? null : highlights.length === 0 ? (

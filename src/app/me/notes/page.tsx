@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { EmptyState, PageContainer } from "@/components/ui";
@@ -16,8 +17,11 @@ import { refToHref } from "@/lib/refs";
  */
 export default function NotesPage() {
   const { user } = useAuth();
-  const { rows, reload } = usePersonalRows();
-  const notes = rows?.notes ?? null;
+  const { rows, reload, titles } = usePersonalRows();
+  /** the book the list is narrowed to, or null for all of them */
+  const [book, setBook] = useState<string | null>(null);
+  const all = rows?.notes ?? null;
+  const notes = all && book ? all.filter((n) => n.book_code === book) : all;
 
   const remove = (ref: string) => {
     unsaveNote(ref, !!user);
@@ -26,7 +30,13 @@ export default function NotesPage() {
 
   return (
     <PageContainer>
-      <PersonalHeader active="notes" rows={rows} />
+      <PersonalHeader
+        active="notes"
+        rows={rows}
+        titles={titles}
+        book={book}
+        onBook={setBook}
+      />
 
       <div className="mt-5">
         {notes === null ? null : notes.length === 0 ? (

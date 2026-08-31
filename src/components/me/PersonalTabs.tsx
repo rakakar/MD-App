@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
-import { CountTabs } from "@/components/ui";
+import { Chip, ChipRow, CountTabs } from "@/components/ui";
+import { getBooks } from "@/lib/api";
 import { PERSONAL_SYNCED, localBookmarks, localNotes, syncPersonal } from "@/lib/personal";
 import type { LocalBookmark, LocalNote } from "@/lib/storage";
+import type { BookSummary } from "@/lib/types";
 
 /**
  * **Highlights and Notes, under one heading.**
@@ -36,6 +38,9 @@ export interface PersonalRows {
   notes: LocalNote[];
 }
 
+/** `book_code` → the book's own title, for the filter's chips. */
+export type BookTitles = Map<string, string>;
+
 /**
  * Both lists, loaded once.
  *
@@ -53,9 +58,12 @@ export function usePersonalRows(): {
   reload: () => void;
   signedIn: boolean;
   loading: boolean;
+  /** what the filter chips are named after; empty until the shelf answers */
+  titles: BookTitles;
 } {
   const { user, loading } = useAuth();
   const [rows, setRows] = useState<PersonalRows | null>(null);
+  const [titles, setTitles] = useState<BookTitles>(new Map());
 
   const reload = useCallback(
     () => setRows({ bookmarks: localBookmarks(), notes: localNotes() }),
@@ -76,7 +84,52 @@ export function usePersonalRows(): {
     return () => window.removeEventListener(PERSONAL_SYNCED, reload);
   }, [reload]);
 
-  return { rows, reload, signedIn: !!user, loading };
+  /**
+   * The shelf, for names to put on the filter's chips.
+   *
+   * A saved row carries a `book_code` and nothing else about the book, so the
+   * chips would otherwise read "JVEP" and "MAND". Asked for once, across every
+   * workspace — a reader's highlights are their own and pay no attention to
+   * which shelf a book sits on, which is the same reason the Reading rail on
+   * this screen asks for "all".
+   *
+   * Failing is not fatal: `bookTitle` falls back to the code, so an offline
+   * reader gets a filter that works and is merely less well labelled. The same
+   * call `ContinueReading` makes, and the browser will have cached it.
+   */
+  useEffect(() => {
+    let live = true;
+    getBooks()
+      .then((books: BookSummary[]) => {
+        if (live) setTitles(new Map(books.map((b) => [b.code, b.title_hi])));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return { rows, reload, signedIn: !!user, loading, titles };
+}
+
+/** The book's own name where the shelf has been read, its code until then. */
+export function bookTitle(code: string, titles: BookTitles): string {
+  return titles.get(code) ?? code;
+}
+
+/**
+ * The books a reader actually has something saved in, in the order the rows
+ * put them — newest first, because that is the order the store keeps and the
+ * book someone just marked is the one they are most likely to want.
+ *
+ * Built from the rows rather than from the shelf: a filter offering all
+ * thirteen books when eleven of them hold nothing is a control that mostly
+ * does nothing when pressed.
+ */
+export function booksInRows(rows: (LocalBookmark | LocalNote)[]): string[] {
+  const seen: string[] = [];
+  for (const r of rows) if (r.book_code && !seen.includes(r.book_code)) seen.push(r.book_code);
+  return seen;
 }
 
 /**
@@ -89,9 +142,16 @@ export function usePersonalRows(): {
 export function PersonalHeader({
   active,
   rows,
+  titles,
+  book,
+  onBook,
 }: {
   active: PersonalTab;
   rows: PersonalRows | null;
+  titles: BookTitles;
+  /** the book being filtered to, or `null` for all of them */
+  book: string | null;
+  onBook: (code: string | null) => void;
 }) {
   const { user, loading } = useAuth();
   const anything = rows !== null && rows.bookmarks.length + rows.notes.length > 0;
@@ -115,7 +175,20 @@ export function PersonalHeader({
         </p>
       )}
 
-      <div className="mt-4">
+      {/* **The tabs pin under the app bar.**
+
+          Both lists run long — a reader with a year of highlights scrolls a
+          long way — and the tabs are how you get from one to the other. They
+          were at the top of the page, which meant scrolling back up to cross
+          between two lists of the same things.
+
+          The air above the bar is padding inside the sticky box rather than a
+          larger `top`, for the reason Connect's search row gives: pushing the
+          offset down opens a band that belongs to neither the app bar nor this
+          row, and the list scrolls up through it in the clear. Opaque
+          `bg-surface`, because this stops directly under a bar that is already
+          blurring what passes behind it. */}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-2 bg-surface px-4 pb-2 pt-2 sm:mx-0 sm:px-0 lg:top-0">
         <CountTabs
           label="Highlights and notes"
           surface="page"
@@ -136,6 +209,64 @@ export function PersonalHeader({
           ]}
         />
       </div>
+
+      <BookFilter
+        rows={active === "notes" ? rows?.notes : rows?.bookmarks}
+        titles={titles}
+        book={book}
+        onBook={onBook}
+      />
     </>
+  );
+}
+
+/**
+ * **Which book — the one axis a list of saved passages has.**
+ *
+ * A highlight's own screen already answers *where in this book*: the book's
+ * Highlights & Notes tab groups them by chapter, with a sheet for narrowing to
+ * one. What this cross-book list cannot answer without a control is the
+ * question it exists to raise — *which of my books is this from* — and a
+ * reader who wants what they marked in one book was reading past everything
+ * they marked in the other twelve.
+ *
+ * **Chips, not a sheet.** The book page uses a sheet for its chapters because
+ * there are dozens; here there are only ever as many books as the reader has
+ * actually marked something in, which is a handful. `tint` rather than `solid`
+ * is the row's own rule — something is always selected here, and a row of
+ * solid fills would read as several filters at once rather than one position.
+ *
+ * Drawn from the rows, so it never offers a book with nothing behind it, and
+ * absent entirely below two books: a filter that can only say "all" or "the
+ * only one there is" is furniture.
+ */
+function BookFilter({
+  rows,
+  titles,
+  book,
+  onBook,
+}: {
+  rows: (LocalBookmark | LocalNote)[] | undefined;
+  titles: BookTitles;
+  book: string | null;
+  onBook: (code: string | null) => void;
+}) {
+  const codes = booksInRows(rows ?? []);
+  if (codes.length < 2) return null;
+  return (
+    <div className="mt-3">
+      <ChipRow label="Filter by book">
+        <Chip label="All books" selected={book === null} variant="tint" onClick={() => onBook(null)} />
+        {codes.map((code) => (
+          <Chip
+            key={code}
+            label={bookTitle(code, titles)}
+            selected={book === code}
+            variant="tint"
+            onClick={() => onBook(book === code ? null : code)}
+          />
+        ))}
+      </ChipRow>
+    </div>
   );
 }
