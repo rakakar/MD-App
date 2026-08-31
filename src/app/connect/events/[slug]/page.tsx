@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CategoryChip, EventBadge } from "@/components/connect/EventCard";
 import {
@@ -7,17 +6,16 @@ import {
   EventLinkRow,
   EventPanel,
   InfoRow,
+  PrabodhakAvatar,
 } from "@/components/connect/EventDetail";
 import { EventDetailHeader } from "@/components/connect/EventDetailHeader";
 import { EventNote } from "@/components/connect/EventNote";
 import { EventPoster } from "@/components/connect/EventPoster";
-import { EventShare } from "@/components/connect/EventShare";
 import { EventTracker } from "@/components/connect/EventTracker";
 import {
   CalendarChipIcon,
   LanguageIcon,
   PinIcon,
-  UserIcon,
 } from "@/components/shell/icons";
 import { ctaPrimaryBar, PageContainer } from "@/components/ui";
 import { ApiError, getEvent } from "@/lib/api";
@@ -131,7 +129,15 @@ export default async function EventDetailPage({
 
       <div className="mt-5 flex flex-col gap-2.5">
         {event.prabodhak && (
-          <InfoRow icon={<UserIcon className="h-5 w-5" />} label="Prabodhak">
+          <InfoRow
+            icon={
+              <PrabodhakAvatar
+                prabodhaks={event.prabodhaks}
+                initials={event.prabodhak_initials}
+              />
+            }
+            label="Prabodhak"
+          >
             {/* Already resolved to one name, "Multiple", or nothing — this
                 screen never counts the prabodhaks array to decide. */}
             <span {...contentLang(event.prabodhak)} className={contentLang(event.prabodhak).className}>

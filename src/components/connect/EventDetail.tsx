@@ -6,7 +6,7 @@ import {
   VideoIcon,
 } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
-import type { EventContact, EventLink } from "@/lib/events";
+import type { EventContact, EventLink, EventPrabodhak } from "@/lib/events";
 
 /**
  * The furniture of the event detail screen — the panels the comps draw below
@@ -40,6 +40,51 @@ export function InfoRow({
       </span>
     </div>
   );
+}
+
+/**
+ * The prabodhak's own face in the Prabodhak row, where there is one.
+ *
+ * Only the detail payload carries these — `prabodhaks[].photo` — so this is
+ * the one screen in the app that can draw them. The card's payload resolves
+ * the whole line to a name and a pair of initials and sends no picture, which
+ * is why the list and the home rail still wear initials.
+ *
+ * **A photo only for a single, named prabodhak.** Where a shivir is led by
+ * several the line already reads "Multiple", and one of their faces standing
+ * for all of them would be worse than none; where the panel has not uploaded
+ * one there is nothing to draw. Both fall back to the initials the API sends
+ * for exactly this purpose, which is more than the generic figure that used
+ * to sit here — "SP" is a person, the glyph was a placeholder.
+ *
+ * `<img>` rather than `next/image`, for the reason `EventPoster` gives: the
+ * host is a media bucket whose domain is configuration, and an optimiser that
+ * has not been told about it fails the whole render rather than the one
+ * picture. `object-cover` because these are screenshots and portraits at
+ * whatever aspect the uploader had.
+ */
+export function PrabodhakAvatar({
+  prabodhaks,
+  initials,
+}: {
+  prabodhaks: EventPrabodhak[];
+  /** the API's own, already "M" where the line reads "Multiple" */
+  initials: string;
+}) {
+  const only = prabodhaks.length === 1 ? prabodhaks[0] : null;
+  if (only?.photo) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={only.photo}
+        alt=""
+        className="h-full w-full rounded-tile object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+    );
+  }
+  return <span className="text-sm font-semibold">{initials}</span>;
 }
 
 /** A panel with a heading and a hairline under it — Invitation Note, Links,
