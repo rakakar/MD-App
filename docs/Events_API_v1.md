@@ -177,12 +177,13 @@ rather than caching it across sessions.
 
 ---
 
-## 5. Not built yet
+## 5. The rest of Connect
 
-**Centres** and **Links**, the other two pages of the Connect workspace, have no
-endpoints. They are separate models with their own screens, still to be
-designed. Connect's **Links** page is not the same thing as an event's `links` —
-do not build one expecting to reuse the other.
+**Centres**, **City-wise contacts** and **Links** — the other two pages of the
+Connect workspace — are built and have their own contract:
+**docs/api/Connect_Directory_v1.md**. Connect's **Links** page is not the same
+thing as an event's `links`: different models, different endpoints, different
+shape. Do not build one expecting to reuse the other.
 
 Bookmarking an event (the ⌘ in the detail header) is not wired: `me/bookmarks/`
 covers book paragraphs today. It needs a small BE change; ask before building

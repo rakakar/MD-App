@@ -125,6 +125,18 @@ export function Icon({ name, ...props }: IconProps & { name: NavIcon }) {
           <circle cx="12" cy="10" r="2.5" />
         </Svg>
       );
+    // Two links of a chain, as the comps draw the tab. Not the app's
+    // `ExternalLinkIcon` — that one is a box with an arrow leaving it, which
+    // says "this opens elsewhere" and is right on every row *inside* this page.
+    // The tab is not one of those rows; it is the page they live on.
+    case "links":
+      return (
+        <Svg {...props}>
+          <path d="M9.5 14.5 14.5 9.5" />
+          <path d="M11 7.5l1.8-1.8a3.7 3.7 0 0 1 5.3 5.3L16.3 12.8" />
+          <path d="M13 16.5l-1.8 1.8a3.7 3.7 0 0 1-5.3-5.3L7.7 11.2" />
+        </Svg>
+      );
   }
 }
 

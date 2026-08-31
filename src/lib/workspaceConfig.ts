@@ -37,7 +37,8 @@ export type NavIcon =
   | "highlights"
   | "overview"
   | "events"
-  | "centers";
+  | "centers"
+  | "links";
 
 export interface Workspace {
   id: WorkspaceId;
@@ -168,28 +169,28 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     tagline: "Shivir Calendar - Contacts - Links",
     home: "/connect",
     /**
-     * Two slots, and the designer's Events comps draw four — Events, Centres,
-     * Links, Assistant. The two missing ones are missing on purpose.
+     * Four slots, as the designer's comps draw them — Events, Centres, Links,
+     * Assistant.
      *
-     * **Centres and Links have no endpoints.** Events_API_v1 §5 is explicit
-     * that they are separate models with their own screens, still to be
-     * designed, and that Connect's Links page is *not* the same thing as an
-     * event's links — so there is nothing to reuse and nothing to show. The
-     * Centres tab shipped anyway for a while, pointing at a page that called a
-     * `centers/` endpoint the BE rebuild removed; it rendered "No centers
-     * listed yet" over a 404.
+     * Centres and Links were absent for a while and the note here said why:
+     * they had no endpoints, and a tab advertising an empty room is worse than
+     * no tab — worst of all in the one workspace whose job is telling a reader
+     * where to go. They have endpoints now
+     * (`docs/Connect_Directory_v1.md`), so they are back, and the empty room is
+     * gone: `centres/` and `links/` answer with real cards, and a group with
+     * nothing in it is dropped by the API rather than drawn here.
      *
-     * A tab advertising an empty room is worse than no tab, and worst of all
-     * here: a reader who takes it learns the app has nothing, in the one
-     * workspace whose whole job is telling them where to go. Same reasoning
-     * that took Connect's own library tab out (§13.3, its folders ship
-     * published and empty; the shelf still lives at `/connect/library`).
+     * The city-wise contacts page sits one level under Centres
+     * (`/connect/centres/contacts`) and claims this tab with `NavScope`, so the
+     * bar stays lit there.
      *
-     * Both come back the day they have something behind them. Nothing else in
-     * this file has to change when they do.
+     * Still absent: Connect's own library tab (§13.3 — its folders ship
+     * published and empty; the shelf itself lives at `/connect/library`).
      */
     nav: [
       { label: "Events", href: "/connect", icon: "events" },
+      { label: "Centres", href: "/connect/centres", icon: "centers" },
+      { label: "Links", href: "/connect/links", icon: "links" },
       { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
     ],
   },

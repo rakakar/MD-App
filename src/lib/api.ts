@@ -10,6 +10,12 @@ import {
 } from "./events";
 import { EMPTY_FIND, effectiveOrdering, findQuery, type FindState } from "./find";
 import type {
+  Centre,
+  ContactStates,
+  DirectoryContact,
+  LinkGroup,
+} from "./directory";
+import type {
   ApiWorkspace,
   BookDetail,
   BookGenre,
@@ -484,6 +490,74 @@ export async function getEventFilters(
     revalidate: 300,
     signal,
   });
+}
+
+// ---- Connect → Centres, Contacts, Links (Connect_Directory_v1) ----
+
+/**
+ * Every published centre, in the manager's order (contract §1).
+ *
+ * **One call renders the screen, expanded cards included** — programmes and
+ * contact people ride along, because the card expands in place and there is no
+ * detail screen to fetch. Unpaginated, and that is the contract's word: this is
+ * a directory of a few dozen rows.
+ *
+ * Nothing about a centre expires on its own, unlike an events list, so it keeps
+ * the app's ordinary revalidate window rather than the shivir list's five
+ * minutes.
+ */
+export async function getCentres(signal?: AbortSignal): Promise<Centre[]> {
+  return unwrapList(
+    await apiFetch<Centre[] | { results: Centre[] }>("centres/", { signal })
+  );
+}
+
+/**
+ * The city-wise contacts (contract §2), for one state or for all of them.
+ *
+ * An empty `state` is not "no state" — it is the sheet's **All states**, which
+ * the API expresses by the parameter being absent. `lib/directory`'s
+ * `ALL_STATES` is that same empty string, so the screen's value and the wire
+ * format are one thing.
+ *
+ * Some of these people are also a centre's contact and appear in `getCentres`
+ * as well, carrying the same `id`: one person, one record.
+ */
+export async function getContacts(
+  opts: { state?: string; signal?: AbortSignal } = {}
+): Promise<DirectoryContact[]> {
+  return unwrapList(
+    await apiFetch<DirectoryContact[] | { results: DirectoryContact[] }>(
+      `contacts/${qs({ state: opts.state })}`,
+      { signal: opts.signal }
+    )
+  );
+}
+
+/**
+ * The "Choose a state" sheet (contract §3) — **the whole list to draw.**
+ *
+ * Only states that actually have somebody are returned, so this app holds no
+ * list of Indian states of its own and a sheet can never offer a choice that
+ * opens an empty screen. Fetched rather than cached across sessions for the
+ * same reason the event filters are: the list is a panel table.
+ */
+export async function getContactStates(signal?: AbortSignal): Promise<ContactStates> {
+  return apiFetch<ContactStates>("contacts/states/", { signal });
+}
+
+/**
+ * The Links page (contract §4) — every group and every row, in one call.
+ *
+ * Groups with nothing visible in them are not returned at all, so an accordion
+ * on this screen always opens onto something. The `number` on each row is the
+ * server's: it comes from the row's position, so inserting a link renumbers the
+ * rest without this app counting anything.
+ */
+export async function getLinkGroups(signal?: AbortSignal): Promise<LinkGroup[]> {
+  return unwrapList(
+    await apiFetch<LinkGroup[] | { results: LinkGroup[] }>("links/", { signal })
+  );
 }
 
 // ---- Paribhasha — the glossary (§14) ----

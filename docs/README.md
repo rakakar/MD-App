@@ -15,13 +15,14 @@
 | Shelf, folder या find-bar पर काम है | [library.md](library.md) |
 | कोई payload चाहिए | [API_Contract_v1.md](API_Contract_v1.md) — §13 library |
 | Connect के Events पर काम है | [Events_API_v1.md](Events_API_v1.md) — **यही authority है** |
+| Connect के Centres, Contacts या Links पर काम है | [Connect_Directory_v1.md](Connect_Directory_v1.md) — **यही authority है** |
 | Feedback वाला हिस्सा | [feedback.md](feedback.md) |
 | Notifications वाला हिस्सा | [push-notifications.md](push-notifications.md) |
 | APK या iOS build बनानी है | [mobile-apps.md](mobile-apps.md) |
 | Product का इरादा जानना है | [PRD_v2.md](PRD_v2.md) — banners ज़रूर पढ़ें |
 | Code लिखने जा रहे हैं | `../AGENTS.md` — **पहले** |
 
-## आठ फ़ाइलें, एक-एक पंक्ति में
+## नौ फ़ाइलें, एक-एक पंक्ति में
 
 **[API_Contract_v1.md](API_Contract_v1.md)** — हर payload पर authority.
 यह **BE की copy है** (`MDApp/docs/api/API_Contract_v1.md`). यहाँ कभी edit मत
@@ -35,8 +36,14 @@ diff "MDApp/docs/api/API_Contract_v1.md" "MD-App-FE/docs/API_Contract_v1.md"
 यह भी **BE की copy है** (`MDApp/docs/api/Events_API_v1.md`) — यहाँ कभी edit मत
 कीजिए। इसका §0 पूरे module को आकार देता है: **bucket, badge, prabodhak की
 "Multiple" पंक्ति, card की location, category का रंग — सब server से बना-बनाया
-आता है, FE इनमें से कुछ भी दोबारा compute नहीं करता।** §5 बताता है कि Centres
-और Links अभी बने ही नहीं।
+आता है, FE इनमें से कुछ भी दोबारा compute नहीं करता।**
+
+**[Connect_Directory_v1.md](Connect_Directory_v1.md)** — Connect के बाक़ी दो
+पन्नों (Centres + city-wise Contacts, और Links) का contract. यह भी **BE की copy
+है** (`MDApp/docs/api/Connect_Directory_v1.md`) — यहाँ कभी edit मत कीजिए। वही
+§0 नियम यहाँ भी चलता है, और सबसे ज़रूरी बात यह: **Links पन्ने की `1.` `6.` `a.`
+गिनती server row के क्रम से बनाती है — FE कुछ नहीं गिनता।** §1 की table बताती
+है कि कौन-सा field खाली होने पर card का कौन-सा हिस्सा नहीं बनता।
 
 **[design-system.md](design-system.md)** — designer की 11 अगस्त 2026 वाली finished
 Originals screens से बना token layer और साझा components, comps से किए गए हर
