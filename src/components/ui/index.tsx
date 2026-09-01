@@ -205,7 +205,26 @@ export function FilterChips({
   // the selected chip is a solid accent fill reads as one active filter among
   // four available ones, which is the opposite of what it means.
   return (
-    <div className="mt-3">
+    /* **Pinned under the app bar.**
+
+       The shelf below runs to seven rows of covers on a phone, and this is the
+       row that decides which of them are there — so it was scrolling away from
+       the grid it governs, and changing genre meant scrolling back to the top
+       to reach it. The same arrangement as the book's own Highlights filters
+       and Connect's search: `top-(--app-header-h)` with `lg:top-0`, since the
+       bar is `lg:hidden`.
+
+       The air above the chips is padding inside the sticky box rather than a
+       larger `top` — push the offset down instead and a band opens between the
+       bar and this row that belongs to neither, with covers scrolling up
+       through it in the clear. Opaque `bg-surface` for the same reason: this
+       stops directly under a bar that is already blurring what passes behind
+       it, and two blurred layers over one another is a smear.
+
+       The `-mx-4 px-4` here and the one inside `ChipRow` are both wanted and
+       do different jobs: this one takes the background to the screen edge, and
+       that one lets the chips scroll to it. */
+    <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 pt-2 sm:mx-0 sm:px-0 lg:top-0">
       <ChipRow label={label}>
         <Chip label="All" href={allHref} selected={!active} variant="tint" />
         {options.map((o) => (
