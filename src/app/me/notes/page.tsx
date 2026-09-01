@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
+import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
+import { SavedCardFooter } from "@/components/me/SavedCard";
 import { EmptyState, PageContainer } from "@/components/ui";
 import { unsaveNote } from "@/lib/personal";
-import { refToHref } from "@/lib/refs";
+import { parseRef, refToHref } from "@/lib/refs";
 
 /**
  * **Notes — the other half of My Journey's Highlights & Notes.**
@@ -46,39 +47,48 @@ export default function NotesPage() {
           />
         ) : (
           <ul className="flex flex-col gap-3">
-            {notes.map((n) => (
-              <li key={n.canonical_ref} className="rounded-2xl border border-rule bg-card p-4">
-                {/* the passage first, then what you said about it — a note
-                    without its subject is hard to place months later */}
-                {n.text_hi && (
-                  <p
-                    lang="hi"
-                    className="hi mb-3 line-clamp-2 border-s-2 ps-3 text-sm leading-relaxed text-ink-soft"
-                    style={{ borderColor: "var(--ws-color)" }}
-                  >
-                    {n.text_hi}
-                  </p>
-                )}
-                <p className="whitespace-pre-wrap text-sm">{n.text}</p>
-                <div className="mt-3 flex items-center justify-between">
-                  <Link
-                    href={refToHref(n.canonical_ref)}
-                    className="text-xs font-medium underline-offset-2 hover:underline"
-                    style={{ color: "var(--ws-ink)" }}
-                  >
-                    {n.canonical_ref} →
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => remove(n.canonical_ref)}
-                    aria-label={`Delete note on ${n.canonical_ref}`}
-                    className="rounded-full px-2 py-1 text-xs text-ink-soft hover:bg-ink/5"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
+            {notes.map((n) => {
+              const ref = parseRef(n.canonical_ref);
+              const href = refToHref(n.canonical_ref);
+              return (
+                <li key={n.canonical_ref}>
+                  <article className="relative rounded-card border border-rule bg-card p-4 shadow-card">
+                    {/* The passage first, then what you said about it — a note
+                        without its subject is hard to place months later. The
+                        rule down its start is what marks it as quoted rather
+                        than written, which is the one distinction this card
+                        has to make. */}
+                    {n.text_hi && (
+                      <p
+                        lang="hi"
+                        className="hi line-clamp-2 border-s-2 ps-3 text-sm leading-relaxed text-ink-soft"
+                        style={{ borderColor: "var(--ws-color)" }}
+                      >
+                        {n.text_hi}
+                      </p>
+                    )}
+                    {/* A step up from the quote above it: the reader's own
+                        words are what this card is for, and at one size the
+                        two read as a single block of grey. */}
+                    <p className={`whitespace-pre-wrap text-title leading-relaxed ${n.text_hi ? "mt-3" : ""}`}>
+                      <Link href={href} className="after:absolute after:inset-0">
+                        {n.text}
+                      </Link>
+                    </p>
+
+                    <SavedCardFooter
+                      bookTitle={bookTitle(n.book_code, titles)}
+                      page={ref?.page ?? ""}
+                      date=""
+                      shareTitle={n.text}
+                      href={href}
+                      onDelete={() => remove(n.canonical_ref)}
+                      deleteLabel={`Delete note on ${n.canonical_ref}`}
+                    />
+                  </article>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

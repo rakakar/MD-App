@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
+import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
+import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
 import { EmptyState, PageContainer } from "@/components/ui";
 import { unsaveBookmark } from "@/lib/personal";
-import { refToHref } from "@/lib/refs";
+import { parseRef, refToHref } from "@/lib/refs";
 import type { HighlightColour, LocalBookmark } from "@/lib/storage";
 
 /** Tailwind cannot build a class name at runtime; the three are written out. */
@@ -80,45 +81,63 @@ export default function BookmarksPage() {
             hint="Press and hold any line while reading, then pick a colour."
           />
         ) : (
-          <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
-            {highlights.map((b) => (
-              <li key={b.canonical_ref} className="flex items-center gap-3 px-4 py-3">
-                <Link href={refToHref(b.canonical_ref)} className="min-w-0 flex-1">
-                  {/* the saved words, not the reference they were filed under */}
-                  {saved(b).text ? (
-                    <p lang="hi" className="hi line-clamp-2 text-sm leading-relaxed">
-                      {/* Painted in the colour it was saved in, so this list
-                          reads the way the page did. A row from before the
-                          colours existed gets none and reads as a quotation. */}
-                      <span
-                        className={
-                          saved(b).colour
-                            ? `box-decoration-clone rounded-md px-1 ${FILL[saved(b).colour!]}`
-                            : ""
-                        }
-                      >
-                        {saved(b).text}
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="truncate text-sm font-medium">{b.canonical_ref}</p>
-                  )}
-                  <p className="mt-1 text-xs text-ink-soft">
-                    {b.canonical_ref}
-                    {b.created_at &&
-                      ` · ${new Date(b.created_at).toLocaleDateString("en-IN")}`}
-                  </p>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => remove(b.canonical_ref)}
-                  aria-label={`Remove highlight ${b.canonical_ref}`}
-                  className="rounded-full px-2 py-1 text-xs text-ink-soft hover:bg-ink/5"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
+          <ul className="flex flex-col gap-3">
+            {highlights.map((b) => {
+              const painted = saved(b);
+              const ref = parseRef(b.canonical_ref);
+              const href = refToHref(b.canonical_ref);
+              return (
+                <li key={b.canonical_ref}>
+                  {/* A card each, not rows in one bordered list. A highlight is
+                      a thing somebody kept, and the passage is the whole of it
+                      — down a divided list the words were a line of a table.
+                      `relative`, because the footer's two controls have to sit
+                      above the link the title stretches over it. */}
+                  <article className="relative rounded-card border border-rule bg-card p-4 shadow-card">
+                    {painted.text ? (
+                      /* Clamped, because a highlight is often a whole
+                         paragraph: unbounded, one card came out 681px and a
+                         list of them is a list of one. Four lines rather than
+                         the two this had as a row — the card can afford them
+                         and a passage cut at two is a fragment — and the whole
+                         of it is one tap away in the reader. */
+                      <p lang="hi" className="hi line-clamp-4 text-title leading-relaxed">
+                        {/* Painted in the colour it was saved in, so this list
+                            reads the way the page did. A row from before the
+                            colours existed gets none and reads as a quotation. */}
+                        <span
+                          className={
+                            painted.colour
+                              ? `box-decoration-clone rounded-md px-1 ${FILL[painted.colour]}`
+                              : ""
+                          }
+                        >
+                          <Link href={href} className="after:absolute after:inset-0">
+                            {painted.text}
+                          </Link>
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-title font-medium">
+                        <Link href={href} className="after:absolute after:inset-0">
+                          {b.canonical_ref}
+                        </Link>
+                      </p>
+                    )}
+
+                    <SavedCardFooter
+                      bookTitle={bookTitle(b.book_code, titles)}
+                      page={ref?.page ?? ""}
+                      date={savedDate(b.created_at)}
+                      shareTitle={painted.text ?? b.canonical_ref}
+                      href={href}
+                      onDelete={() => remove(b.canonical_ref)}
+                      deleteLabel={`Remove highlight ${b.canonical_ref}`}
+                    />
+                  </article>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

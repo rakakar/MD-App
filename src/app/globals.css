@@ -70,6 +70,15 @@
   --color-muted: #9c9187;
   --color-rule: #e4dbd1;
 
+  /* The one destructive colour, for the one destructive control: the bin on a
+     saved highlight or note. Declared per theme like every other colour here
+     rather than reached for as `text-red-700`, which is what it was for an
+     afternoon — that measured 1.61:1 on the dark card, so the bin all but
+     vanished in the theme where a reader is most likely to be reading. These
+     three are measured against their own `--color-card`: 6.5:1 light, 6.3:1
+     sepia, 7.1:1 dark, all well past the 3:1 an icon needs. */
+  --color-danger: #b3261e;
+
   /* A sunk panel *inside* a card — the note block under a highlight, the track
      a segmented control's pill slides along, the counter strip on a filter
      sheet. `canvas` cannot do this job: canvas is the ground a card sits on,
@@ -406,6 +415,7 @@
   --color-ink-soft: #756449;
   --color-muted: #a1937c;
   --color-rule: #ddcdb0;
+  --color-danger: #a83027;
 
   --color-inset: #f2eadb;
 
@@ -435,6 +445,9 @@
   --color-ink-soft: #a39a8c;
   --color-muted: #6e655a;
   --color-rule: #2e2921;
+  /* Lifted well off the light value — a 5:1 red on white is a 1.6:1 red on a
+     near-black card, and the bin has to be findable in both. */
+  --color-danger: #f08a80;
 
   --color-inset: #262220;
 

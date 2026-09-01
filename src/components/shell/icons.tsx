@@ -273,6 +273,17 @@ export function PaletteIcon({ className }: { className?: string }) {
   );
 }
 
+/** The bin on a saved row — the one destructive control in the app. */
+export function TrashIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M4 7h16" />
+      <path d="M10 4h4M9 7v12M15 7v12" />
+      <path d="M6 7l1 13h10l1-13" />
+    </Svg>
+  );
+}
+
 export function ShareIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-4 w-4"}>
