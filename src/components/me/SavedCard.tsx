@@ -46,10 +46,21 @@ export function SavedCardFooter({
   return (
     <div className="mt-3.5 flex items-end justify-between gap-3 border-t border-rule pt-3">
       <div className="min-w-0">
-        <p {...t} className={`${t.className} truncate text-sm font-semibold`}>
+        {/* `hi-tight`, not a `leading-*` utility: `.hi` is unlayered, so a
+            leading class on it is inert whatever the source order — the app
+            keeps `.hi-tight` for exactly this. Without it the title carries
+            1.85 of line box, which was most of the gap under it. One line
+            only, since the title truncates. */}
+        <p {...t} className={`${t.className} hi-tight truncate text-sm font-semibold`}>
           {bookTitle}
         </p>
-        <p lang="hi" className="hi mt-0.5 truncate text-xs text-ink-soft">
+        {/* `ui-hi`, not `hi`. This line interleaves both scripts — "पृष्ठ 40 ·
+            12 Aug 2026" — which is the case that class exists for: Latin from
+            the UI sans, Devanagari from Mukta, switched per glyph. `.hi` gave
+            it Tiro, the book serif, which is the face for a passage and not
+            for a caption under one; it also fixes line-height at 1.85, and
+            that was most of the gap between this line and the title. */}
+        <p lang="hi" className="ui-hi truncate text-xs leading-snug text-ink-soft">
           {page ? `पृष्ठ ${page}` : ""}
           {page && date ? " · " : ""}
           {date}
