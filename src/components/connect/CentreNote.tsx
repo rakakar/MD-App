@@ -100,7 +100,12 @@ export function CentreNoteBody({ note }: { note: CentreNote }) {
         {note.eyebrow}
       </p>
       {/* Both scripts in one title — `ui-hi` switches the stack per glyph. */}
-      <h1 className="ui-hi mt-2 font-display text-2xl font-medium leading-tight">
+      {/* These two pages are documents rather than screens — nine paragraphs
+          across two languages on one of them — so they are set a step up from
+          the app's list-and-card sizes throughout: 30px title, 24px section
+          headings, and 17px body against the 15px a card uses. That is the
+          difference between a page you scan and one you read. */}
+      <h1 className="ui-hi mt-2 font-display text-3xl font-medium leading-tight">
         {note.title}
       </h1>
 
@@ -115,14 +120,14 @@ export function CentreNoteBody({ note }: { note: CentreNote }) {
           }
           if (b.kind === "h") {
             return (
-              <h2 key={i} className="mt-2 font-display text-xl font-medium leading-snug">
+              <h2 key={i} className="mt-3 font-display text-2xl font-medium leading-snug">
                 {b.text}
               </h2>
             );
           }
           if (b.kind === "strong") {
             return (
-              <p key={i} className="text-sm font-semibold leading-relaxed">
+              <p key={i} className="text-title font-semibold leading-relaxed">
                 {b.text}
               </p>
             );
@@ -134,11 +139,11 @@ export function CentreNoteBody({ note }: { note: CentreNote }) {
                 className="rounded-card p-4"
                 style={{ background: tone.tint }}
               >
-                <p className="text-sm font-semibold leading-relaxed" style={{ color: tone.ink }}>
+                <p className="text-title font-semibold leading-relaxed" style={{ color: tone.ink }}>
                   {b.text}
                 </p>
                 {b.sub && (
-                  <p className="mt-2 text-sm leading-relaxed" style={{ color: tone.ink, opacity: 0.85 }}>
+                  <p className="mt-2 text-title leading-relaxed" style={{ color: tone.ink, opacity: 0.85 }}>
                     {b.sub}
                   </p>
                 )}
@@ -149,7 +154,7 @@ export function CentreNoteBody({ note }: { note: CentreNote }) {
             <p
               key={i}
               {...(b.lang === "hi" ? { lang: "hi" } : {})}
-              className={`text-sm leading-relaxed text-ink-soft ${b.lang === "hi" ? "hi" : ""}`}
+              className={`text-title leading-relaxed text-ink-soft ${b.lang === "hi" ? "hi" : ""}`}
             >
               {withHereLink(b.text)}
             </p>
