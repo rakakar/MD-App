@@ -660,6 +660,17 @@ export function FeedbackListIcon({ className }: { className?: string }) {
   );
 }
 
+/** The triangle on a caution note — the one warning mark in the app. */
+export function WarningIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M12 4.5 21 19.5H3L12 4.5Z" />
+      <path d="M12 10v4" />
+      <path d="M12 17h.01" />
+    </Svg>
+  );
+}
+
 export function InfoIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

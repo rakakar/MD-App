@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CentreCard } from "@/components/connect/CentreCard";
+import { CentreNoteCard } from "@/components/connect/CentreNote";
 import { ChevronRight, PinIcon } from "@/components/shell/icons";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui";
 import { getCentres } from "@/lib/api";
+import { CENTRE_NOTES } from "@/lib/centreNotes";
 
 export const revalidate = 900;
 
@@ -56,6 +58,17 @@ export default async function CentresPage() {
           />
         </div>
       )}
+
+      {/* The two standing notes, above the way out and below the list — the
+          order the comps put them in and the order they should be read in:
+          here is where you could go, here is what to know before you go, and
+          here is who to ask. A caution printed under the contacts banner would
+          be a caution nobody reached. */}
+      <div className="mt-4 flex flex-col gap-3">
+        {CENTRE_NOTES.map((note) => (
+          <CentreNoteCard key={note.slug} note={note} />
+        ))}
+      </div>
 
       {/* Not `PromoBand`: that one is the player's dark pill with a play glyph
           on it, and this is the comps' flat teal card with a pin. Same idea,
