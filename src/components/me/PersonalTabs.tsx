@@ -175,12 +175,18 @@ export function PersonalHeader({
         </p>
       )}
 
-      {/* **The tabs pin under the app bar.**
+      {/* **The tabs and the book filter pin under the app bar, as one box.**
 
           Both lists run long — a reader with a year of highlights scrolls a
-          long way — and the tabs are how you get from one to the other. They
-          were at the top of the page, which meant scrolling back up to cross
-          between two lists of the same things.
+          long way — and these are the two controls that decide what is in
+          front of them: which list, and which book. Either one scrolling away
+          from the rows it governs is the same complaint, so they pin together.
+
+          **One sticky box holding both, not two stacked ones.** A second
+          sticky element would have to be offset by the first one's height, and
+          that height is not a constant — the tabs grow with the app text-size
+          setting, and the filter row is absent entirely below two books. One
+          box measures itself.
 
           The air above the bar is padding inside the sticky box rather than a
           larger `top`, for the reason Connect's search row gives: pushing the
@@ -208,14 +214,13 @@ export function PersonalHeader({
             },
           ]}
         />
+        <BookFilter
+          rows={active === "notes" ? rows?.notes : rows?.bookmarks}
+          titles={titles}
+          book={book}
+          onBook={onBook}
+        />
       </div>
-
-      <BookFilter
-        rows={active === "notes" ? rows?.notes : rows?.bookmarks}
-        titles={titles}
-        book={book}
-        onBook={onBook}
-      />
     </>
   );
 }
@@ -254,7 +259,10 @@ function BookFilter({
   const codes = booksInRows(rows ?? []);
   if (codes.length < 2) return null;
   return (
-    <div className="mt-3">
+    /* `mt-2` rather than `mt-3`: this sits inside the pinned box now, and the
+       gap between the tabs and the chips is height the reader pays for on
+       every screen of the list rather than once at the top of the page. */
+    <div className="mt-2">
       <ChipRow label="Filter by book">
         <Chip label="All books" selected={book === null} variant="tint" onClick={() => onBook(null)} />
         {codes.map((code) => (
