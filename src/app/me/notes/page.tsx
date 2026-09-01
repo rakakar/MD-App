@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
-import { SavedCardFooter } from "@/components/me/SavedCard";
+import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
 import { EmptyState, PageContainer } from "@/components/ui";
 import { unsaveNote } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
@@ -79,7 +79,12 @@ export default function NotesPage() {
                     <SavedCardFooter
                       bookTitle={bookTitle(n.book_code, titles)}
                       page={ref?.page ?? ""}
-                      date=""
+                      /* `created_at`, not `updated_at` — the same field the
+                         highlight card dates by. It answers "when did I mark
+                         this", which is how a reader finds their way back to a
+                         sitting; editing a note's wording months later does not
+                         move when the passage caught them. */
+                      date={savedDate(n.created_at)}
                       shareTitle={n.text}
                       href={href}
                       onDelete={() => remove(n.canonical_ref)}
