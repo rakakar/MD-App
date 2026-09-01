@@ -57,10 +57,22 @@ function Initials({ initials }: { initials: string }) {
 function ReachRow({
   icon,
   href,
+  gutter,
   children,
 }: {
   icon: React.ReactNode;
   href: string;
+  /**
+   * The width of the disc these rows sit under, so the glyph lands on its
+   * centre line and the text under the name.
+   *
+   * It has to be told, because the two callers draw different discs: 44px on
+   * the city-wise card, 32px in a centre's own contact row. The glyph was
+   * previously as wide as itself — 16px — so it aligned with neither, and in a
+   * centre's card the phone sat half a disc to the left of the name it belongs
+   * to.
+   */
+  gutter: "w-8" | "w-11";
   children: React.ReactNode;
 }) {
   return (
@@ -68,7 +80,7 @@ function ReachRow({
       href={href}
       className="flex min-h-11 items-center gap-2.5 text-title transition-colors active:bg-ink/[.03]"
     >
-      <span aria-hidden className="shrink-0 text-muted">
+      <span aria-hidden className={`flex shrink-0 justify-center text-muted ${gutter}`}>
         {icon}
       </span>
       {/* `dir="ltr"` and tabular figures so a number or an address stays
@@ -119,12 +131,16 @@ export function ContactCard({ contact }: { contact: DirectoryContact }) {
       {reachable && (
         <div className="mt-2.5 border-t border-rule pt-1">
           {contact.phone && (
-            <ReachRow icon={<PhoneIcon className="h-4 w-4" />} href={`tel:${contact.phone_href}`}>
+            <ReachRow
+              icon={<PhoneIcon className="h-4 w-4" />}
+              href={`tel:${contact.phone_href}`}
+              gutter="w-11"
+            >
               {contact.phone}
             </ReachRow>
           )}
           {contact.email && (
-            <ReachRow icon={<MailIcon />} href={`mailto:${contact.email}`}>
+            <ReachRow icon={<MailIcon />} href={`mailto:${contact.email}`} gutter="w-11">
               {contact.email}
             </ReachRow>
           )}
@@ -159,12 +175,16 @@ export function ContactRow({ contact }: { contact: DirectoryContact }) {
         )}
       </div>
       {contact.phone && (
-        <ReachRow icon={<PhoneIcon className="h-4 w-4" />} href={`tel:${contact.phone_href}`}>
+        <ReachRow
+          icon={<PhoneIcon className="h-4 w-4" />}
+          href={`tel:${contact.phone_href}`}
+          gutter="w-8"
+        >
           {contact.phone}
         </ReachRow>
       )}
       {contact.email && (
-        <ReachRow icon={<MailIcon />} href={`mailto:${contact.email}`}>
+        <ReachRow icon={<MailIcon />} href={`mailto:${contact.email}`} gutter="w-8">
           {contact.email}
         </ReachRow>
       )}

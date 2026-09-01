@@ -260,14 +260,20 @@ export function EventCardView({
           is what says the card opens something.
 
           Share is a real button and has to sit above the stretched link to be
-          pressable at all, which is what the `relative` on this row is for.
+          pressable at all — but *only* Share. The `relative z-10` was on this
+          whole row for a while and that is what stopped "View Details"
+          working: the row rose above the title's `after:inset-0`, the span's
+          `pointer-events-none` passed the tap through itself, and the row div
+          underneath caught it and did nothing, because a div is not a link.
+          Lifting the one control that needs lifting puts the span back under
+          the overlay, where a tap on it is a tap on the card.
 
           Neither is drawn in the rail. There the card is one of three a reader
           is scrolling past, and a row of controls on each is three invitations
           to stop — the card itself is already the one that matters.
         */}
         {!compact && (
-          <div className="relative z-10 mt-3 flex items-stretch gap-2.5">
+          <div className="mt-3 flex items-stretch gap-2.5">
             <span
               aria-hidden
               className="pointer-events-none inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-control border px-5 text-sm font-semibold"
@@ -279,7 +285,9 @@ export function EventCardView({
             >
               View Details
             </span>
-            <EventShare title={event.title} path={href} variant="icon" />
+            <span className="relative z-10 flex">
+              <EventShare title={event.title} path={href} variant="icon" />
+            </span>
           </div>
         )}
       </div>

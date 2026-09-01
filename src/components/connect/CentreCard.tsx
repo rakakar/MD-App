@@ -42,12 +42,18 @@ export function CentreCard({ centre }: { centre: Centre }) {
         className="block h-1 w-full"
         style={{ background: "var(--ws-color)" }}
       />
-      <div className="p-4">
+      <div className="p-3.5">
         <div className="flex items-start gap-3">
+          {/* The UI sans, not `font-display`. Newsreader is the app's face for
+              a *page* title — the shelves, Translations, My Journey — and a
+              centre's name is a card heading inside a list of them. The
+              Devanagari case was already sans: `.hi` with a weight resolves to
+              Mukta, since Tiro ships no bold. So the two scripts were coming
+              out of different families on the same row of cards. */}
           <h3
             {...n}
             className={`${n.className} ${
-              n.lang === "hi" ? "hi-tight" : "font-display leading-snug"
+              n.lang === "hi" ? "hi-tight" : "leading-snug"
             } min-w-0 flex-1 text-[1.3125rem] font-semibold`}
           >
             {centre.name}
@@ -70,17 +76,17 @@ export function CentreCard({ centre }: { centre: Centre }) {
         {centre.org_name && (
           <p
             {...contentLang(centre.org_name)}
-            className={`${contentLang(centre.org_name).className} mt-1 text-title text-ink-soft`}
+            className={`${contentLang(centre.org_name).className} mt-0.5 text-sm text-ink-soft`}
           >
             {centre.org_name}
           </p>
         )}
 
         {centre.address && (
-          <div className="mt-3.5 flex gap-3 border-t border-rule pt-3.5">
+          <div className="mt-3 flex gap-3 border-t border-rule pt-3">
             <span
               aria-hidden
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
               style={{
                 background: "color-mix(in srgb, var(--ws-color) 10%, var(--color-card))",
                 color: "var(--ws-ink)",
@@ -91,7 +97,7 @@ export function CentreCard({ centre }: { centre: Centre }) {
             <div className="min-w-0 flex-1">
               <p
                 {...contentLang(centre.address)}
-                className={`${contentLang(centre.address).className} text-title`}
+                className={`${contentLang(centre.address).className} text-sm`}
               >
                 {centre.address}
                 {/* The pincode is its own field so it can be printed in the
@@ -178,7 +184,7 @@ export function CentreCard({ centre }: { centre: Centre }) {
                 )}
 
                 {centre.contacts.length > 0 && (
-                  <section className="mt-4 border-t border-rule pt-3.5">
+                  <section className="mt-3.5 border-t border-rule pt-3">
                     <h4 className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
                       Contact
                     </h4>
@@ -195,7 +201,7 @@ export function CentreCard({ centre }: { centre: Centre }) {
                 {centre.note.trim() && (
                   <p
                     {...contentLang(centre.note)}
-                    className={`${contentLang(centre.note).className} mt-4 whitespace-pre-line border-t border-rule pt-3.5 text-sm text-ink-soft`}
+                    className={`${contentLang(centre.note).className} mt-3.5 whitespace-pre-line border-t border-rule pt-3 text-sm text-ink-soft`}
                   >
                     {centre.note}
                   </p>
@@ -215,7 +221,7 @@ export function CentreCard({ centre }: { centre: Centre }) {
         {(centre.phone || centre.website) && (
           <div
             className={`flex flex-wrap items-stretch gap-2.5 ${
-              expandable || centre.address ? "mt-3.5 border-t border-rule pt-3.5" : "mt-4"
+              expandable || centre.address ? "mt-3 border-t border-rule pt-3" : "mt-3.5"
             }`}
           >
             {centre.phone && (
