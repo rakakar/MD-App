@@ -28,7 +28,7 @@ export default async function ConnectLinksPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-semibold">Links</h1>
+      <h1 className="font-display text-2xl font-medium">Links</h1>
       <p className="mt-1 text-sm text-ink-soft">Groups, channels and pages, by kind.</p>
 
       {groups === null ? (

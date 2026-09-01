@@ -46,7 +46,7 @@ export default async function CityContactsPage() {
         Centres
       </Link>
 
-      <h1 className="mt-4 font-display text-2xl font-semibold">City-wise contacts</h1>
+      <h1 className="mt-4 font-display text-2xl font-medium">City-wise contacts</h1>
       <p className="mt-1 text-sm text-ink-soft">Someone to meet in your city.</p>
 
       {states && initial ? (
