@@ -56,6 +56,7 @@ export async function WorkspaceShelf({
   hideKinds = [],
   searchScope = "library",
   hideAxes = [],
+  photoStrip = true,
 }: {
   root: LibraryNode;
   state: FindState;
@@ -105,6 +106,17 @@ export async function WorkspaceShelf({
    * missing from one and linger in another.
    */
   hideAxes?: FindAxis[];
+  /**
+   * Whether the shelf ends with a strip of its photographs.
+   *
+   * On Originals the photographs are of the shivirs the documents came out
+   * of, so the strip is part of what the shelf is for. Resources is written
+   * and curated *by students* — its photographs are incidental to the
+   * textbooks and shodh patra above them, and a gallery under a study shelf
+   * ends the page on the least useful thing on it. Opt-out rather than
+   * opt-in, so a new workspace gets the strip unless it says otherwise.
+   */
+  photoStrip?: boolean;
 }) {
   const files = [...root.items, ...root.linked_items];
   const scope = { workspace: root.workspace };
@@ -330,10 +342,7 @@ export async function WorkspaceShelf({
       {/* Below the grid, where the design puts it: a shelf's photographs are
           worth *seeing* rather than counting, and a folder named for them says
           nothing about what is in it. */}
-      <PhotoStrip
-        scope={scope}
-        facets={find?.facets}
-      />
+      {photoStrip && <PhotoStrip scope={scope} facets={find?.facets} />}
 
       {/* The desktop's copy of the filters, drawn for a 232px column and living
           in the rail. */}

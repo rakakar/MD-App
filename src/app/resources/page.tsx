@@ -143,6 +143,7 @@ export default async function ResourcesPage({
           shelves={shelves}
           basePath="/resources"
           searchScope="Student Materials"
+          photoStrip={false}
           emptyTitle="Resources are on their way"
           emptyHint="The library is being filled folder by folder; material appears here as it is published."
         />
