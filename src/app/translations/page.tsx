@@ -90,8 +90,7 @@ export default async function TranslationsHome({
           <p className="text-sm font-semibold leading-tight">Important note</p>
           <p className="mt-1 text-xs leading-snug text-ink-soft">
             Each of these is a student&rsquo;s interpretation of Shri A. Nagraj&rsquo;s
-            Hindi. Where a translation and the original differ, the original is
-            the authority.
+            Hindi. Always use originals (Hindi) for your Adhyayan.
           </p>
         </div>
       </div>
