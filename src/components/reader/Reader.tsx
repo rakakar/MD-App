@@ -1694,6 +1694,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         current={chapterNumber}
         bookType={book.book_type}
         onSelect={(n) => void goToChapter(n)}
+        /* Only when the passage is in the chapter already open: anywhere else
+           the link is a real navigation and the reader remounts, which runs
+           the hash restore below on its own. */
+        onSelectRef={(ref) => {
+          const p = parseRef(ref);
+          if (!p) return;
+          const here = p.chapter === "fm" ? isFrontMatter : Number(p.chapter) === chapterNumber;
+          if (here) jumpToPage(p.page, Number(p.para) || undefined);
+        }}
       />
 
       <SettingsSheet

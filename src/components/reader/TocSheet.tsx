@@ -42,6 +42,7 @@ export function TocSheet({
   current,
   bookType,
   onSelect,
+  onSelectRef,
 }: {
   open: boolean;
   onClose: () => void;
@@ -52,6 +53,11 @@ export function TocSheet({
   current: number;
   bookType: "print" | "digital";
   onSelect: (n: number) => void;
+  /**
+   * A marked passage was picked — told to the reader *as well as* followed as
+   * a link. See `highlightRow` for why the link alone is not enough.
+   */
+  onSelectRef?: (ref: string) => void;
 }) {
   const { user, loading } = useAuth();
   const activeRef = useRef<HTMLAnchorElement | HTMLButtonElement>(null);
@@ -137,6 +143,14 @@ export function TocSheet({
    * already resolves `/books/{code}/{chapter}#p-…` — which is the same door the
    * book page's own list opens, so a highlight lands in the same place from
    * either side.
+   *
+   * The link is not *sufficient*, though, and `onSelectRef` is why. A highlight
+   * in the chapter already open changes nothing but the hash, and an App Router
+   * navigation is a `pushState`: no remount, and no `hashchange` or `popstate`
+   * for anyone to listen for. Measured — the URL became `#p-97-2` while the
+   * reader sat on page 93. So the reader is told directly, and the link is left
+   * to do what it is genuinely for: the address bar, Back, and opening a
+   * passage in a new tab.
    */
   const highlightRow = (h: Highlight, i: number) => {
     const ref = parseRef(h.canonical_ref);
@@ -145,7 +159,10 @@ export function TocSheet({
       <li key={`${h.canonical_ref}-${i}`}>
         <Link
           href={refToHref(h.canonical_ref)}
-          onClick={onClose}
+          onClick={() => {
+            onSelectRef?.(h.canonical_ref);
+            onClose();
+          }}
           className="flex gap-3 px-5 py-3 transition-colors active:bg-current/5"
         >
           {/* The colour carries nothing on its own — the designer was explicit —
