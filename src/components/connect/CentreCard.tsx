@@ -7,7 +7,6 @@ import {
   PhoneIcon,
   PinIcon,
 } from "@/components/shell/icons";
-import { ctaPrimary } from "@/components/ui";
 import { hasMoreDetails, type Centre } from "@/lib/directory";
 import { contentLang } from "@/lib/script";
 import { ContactRow } from "./ContactCard";
@@ -234,23 +233,32 @@ export function CentreCard({ centre }: { centre: Centre }) {
           >
             {centre.phone && (
               /*
-                The comps' black Call button, which is the card's primary
-                action — stronger than the teal, because a centre is a place
-                you telephone.
+                Outlined, in the workspace's own ink — the same treatment as the
+                event card's View Details, and the same three custom properties
+                in the same order, so the two primary actions in Connect read as
+                one thing rather than two.
 
-                **`--color-surface` as the label, not `text-white`.** `ctaPrimary`
-                is white-on-workspace-colour, and it is white because every other
-                CTA in the app sits on a saturated hue. This one sits on the ink,
-                and the ink inverts with the theme: in dark it is near-white, so a
-                white label on it was invisible — the bug this comment exists to
-                keep fixed. Painting the label in the page's own ground inverts
-                with it, which keeps the comp's high-contrast pairing in both
-                themes rather than only in the one it was drawn in.
+                It used to be the comps' solid black, which was drawn to be the
+                card's strongest mark and, in a list of cards, ended up being
+                the only mark: a column of black bars down a screen of quiet
+                white cards. Outlined it still leads — the neutral Visit Website
+                beside it is bordered in `--color-rule`, this one in `--ws-ink`
+                over a wash of the workspace colour — without shouting.
+
+                That also retires a theme bug worth not reintroducing: the solid
+                version painted its label `--color-surface` rather than
+                `text-white`, because it sat on `--color-ink`, which inverts to
+                near-white in dark and swallowed a white label whole. Nothing
+                here sits on the ink any more, so the trap is gone with it.
               */
               <a
                 href={`tel:${centre.phone_href}`}
-                className={`${ctaPrimary} flex-1`}
-                style={{ background: "var(--color-ink)", color: "var(--color-surface)" }}
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-control border px-5 text-sm font-semibold transition-colors"
+                style={{
+                  borderColor: "var(--ws-ink)",
+                  background: "color-mix(in srgb, var(--ws-color) 8%, var(--color-card))",
+                  color: "var(--ws-ink)",
+                }}
               >
                 <PhoneIcon className="h-4 w-4" />
                 Call
