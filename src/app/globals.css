@@ -1195,6 +1195,37 @@ html[data-reading="1"] body {
   }
 }
 
+/* An accordion that opens by degrees rather than all at once — a centre's
+   More details, a Links group.
+
+   `grid-template-rows` from `0fr` to `1fr` is the one way to animate to a
+   height nobody has measured, and these panels are exactly that: a list of
+   links, a block of contacts, however tall the content turns out to be. The
+   child needs `min-height: 0` or a grid item refuses to shrink below its
+   content, and `overflow: hidden` so the part that has not been revealed yet
+   is actually clipped.
+
+   Put nothing but a plain wrapper in `> *`. A border there is painted even at
+   `0fr`, since a border is not part of the height being animated — a stray
+   hairline under a closed card is what that mistake looks like. Borders go on
+   something inside it.
+
+   The panel is still there while closed, so `inert` on it is not optional: it
+   is what keeps a collapsed group's links out of the tab order and off the
+   accessibility tree, which is the job the old unmount was doing. */
+.disclosure {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.disclosure[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.disclosure > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :target,
   .ws-sheet,
@@ -1211,6 +1242,10 @@ html[data-reading="1"] body {
   }
   /* chrome still hides, it just stops sliding */
   .reader-chrome {
+    transition: none;
+  }
+  /* the panel still opens, it just arrives at full height at once */
+  .disclosure {
     transition: none;
   }
   * {

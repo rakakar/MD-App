@@ -166,12 +166,17 @@ export function CentreCard({ centre }: { centre: Centre }) {
               </span>
             </button>
 
-            {/* Unmounted while closed rather than hidden with a class: the
-                panel holds tappable phone numbers and mail links, and a
-                `hidden` subtree that still answers to Tab is the accessibility
-                bug this pattern usually ships with. */}
-            {open && (
-              <div id={panelId} className="mt-1">
+            {/* Rendered while closed now, so the panel has a height to animate
+                from — `.disclosure` opens it from `0fr` to `1fr` rather than
+                snapping. What kept it unmounted before was a real concern and
+                not a style one: the panel holds tappable phone numbers and mail
+                links, and a subtree that still answers to Tab while hidden is
+                the accessibility bug this pattern usually ships with. `inert`
+                is what answers that now — it takes the whole panel out of the
+                tab order and the accessibility tree while it is closed. */}
+            <div className="disclosure" data-open={open}>
+              <div id={panelId} inert={!open}>
+                <div className="mt-1">
                 {centre.programmes.length > 0 && (
                   <section>
                     <h4 className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
@@ -213,8 +218,9 @@ export function CentreCard({ centre }: { centre: Centre }) {
                     {centre.note}
                   </p>
                 )}
+                </div>
               </div>
-            )}
+            </div>
           </>
         )}
 

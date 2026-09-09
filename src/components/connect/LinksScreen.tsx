@@ -3,7 +3,6 @@
 import { useId, useState } from "react";
 import {
   ChevronDown,
-  ChevronRight,
   ExternalLinkIcon,
   UserIcon,
   VideoIcon,
@@ -162,19 +161,31 @@ function Group({
           <span className="min-w-0 flex-1 text-title font-semibold">{group.title}</span>
           <span
             aria-hidden
-            className="shrink-0"
+            className={`shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
             style={{ color: open ? "var(--ws-ink)" : "var(--color-muted)" }}
           >
-            {open ? <ChevronDown /> : <ChevronRight />}
+            {/* One chevron that turns, not two that swap. The panel below now
+                opens gradually, and an icon that changes in a single frame
+                above it is the one part of the gesture that still snaps —
+                which is exactly the same reason a centre's card draws it this
+                way. */}
+            <ChevronDown />
           </span>
         </button>
       </h3>
 
-      {/* Unmounted while closed rather than hidden: a `hidden` subtree that
-          still answers to Tab would put every link of every group in the tab
-          order of a screen showing four rows. */}
-      {open && (
-        <ul id={panelId} className="border-t border-rule">
+      {/* Rendered while closed, so `.disclosure` has a height to animate from,
+          with `inert` doing what the unmount used to: a subtree that still
+          answers to Tab while hidden would put every link of every group in the
+          tab order of a screen showing four rows.
+
+          The plain `div` between the two is load-bearing. `.disclosure > *` is
+          what gets clipped, and the `ul` carries a top border — on the grid
+          child that border would paint at `0fr` too, as a hairline under a
+          closed group. */}
+      <div className="disclosure" data-open={open}>
+        <div>
+          <ul id={panelId} inert={!open} className="border-t border-rule">
           {group.items.map((row) => (
             <li key={row.id} className="border-b border-rule last:border-b-0">
               {row.is_heading ? <HeadingRow row={row} /> : <LinkRowView row={row} />}
@@ -193,8 +204,9 @@ function Group({
               )}
             </li>
           ))}
-        </ul>
-      )}
+          </ul>
+        </div>
+      </div>
     </article>
   );
 }
