@@ -49,12 +49,20 @@ export function CentreCard({ centre }: { centre: Centre }) {
               centre's name is a card heading inside a list of them. The
               Devanagari case was already sans: `.hi` with a weight resolves to
               Mukta, since Tiro ships no bold. So the two scripts were coming
-              out of different families on the same row of cards. */}
+              out of different families on the same row of cards.
+
+              20px, where the event card's title is 21px, and that is the two
+              of them *matching* rather than drifting. Sans is what makes the
+              difference: measured at 21px, Instrument Sans caps at 15.12px
+              against Newsreader's 14.20 and Mukta's 13.23, so a centre's name
+              set to the same number came out visibly the larger heading of the
+              two cards. At 20px it caps at 14.40 — within 1.4% of the event
+              title beside it, which is the size the eye actually compares. */}
           <h3
             {...n}
             className={`${n.className} ${
               n.lang === "hi" ? "hi-tight" : "leading-snug"
-            } min-w-0 flex-1 text-[1.3125rem] font-semibold`}
+            } min-w-0 flex-1 text-[1.25rem] font-semibold`}
           >
             {centre.name}
           </h3>
