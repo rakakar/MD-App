@@ -182,11 +182,22 @@ export function CentreCard({ centre }: { centre: Centre }) {
                     <h4 className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
                       Programmes
                     </h4>
+                    {/* The workspace tint, the same pair the Est. pill above
+                        already uses: 12% of `--ws-color` over the card, with
+                        `--ws-ink` on it. `bg-inset` made these read as disabled
+                        chips — grey is the app's word for a control that is off
+                        — where a programme is a fact about the centre. Both
+                        halves move together, since the tint alone under
+                        `--color-ink` is a wash with no reason. */}
                     <ul className="mt-2 flex flex-wrap gap-2">
                       {centre.programmes.map((p) => (
                         <li
                           key={p.code}
-                          className="rounded-full bg-inset px-3.5 py-1.5 text-sm font-medium"
+                          className="rounded-full px-3.5 py-1.5 text-sm font-medium"
+                          style={{
+                            background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+                            color: "var(--ws-ink)",
+                          }}
                         >
                           {p.name}
                         </li>

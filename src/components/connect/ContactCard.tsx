@@ -161,9 +161,17 @@ export function ContactRow({ contact }: { contact: DirectoryContact }) {
   return (
     <div className="py-1">
       <div className="flex min-h-11 items-center gap-2.5">
+        {/* The same tint as `Initials` on the city-wise card, at 32px rather
+            than 44: one person, two screens, one disc. It was grey here alone,
+            which made the smaller of the two look like a placeholder for an
+            avatar that had not loaded. */}
         <span
           aria-hidden
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-inset text-xs font-semibold text-ink-soft"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+          style={{
+            background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+            color: "var(--ws-ink)",
+          }}
         >
           {contact.initials}
         </span>
