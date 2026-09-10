@@ -39,6 +39,27 @@ import { EventFiltersSheet } from "./EventFiltersSheet";
  * A bare four-digit number is read by the API as a **year** rather than as
  * text — "2026" means that year's shivirs — so the placeholder says "year".
  *
+ * **And it says "prabodhak", because `q=` matches one.** Measured against the
+ * live API: "Shriram", "Narasimhan" and the full name each return that
+ * prabodhak's shivirs, as do title words, the city, the state and the year.
+ * The placeholder used to say "Search by name, topic, year…", which does not
+ * fit: the box shares its row with Filters and measures 172px on a 390pt
+ * phone, where that string wants 208 and the version naming the prabodhak
+ * wants 250 — it truncated mid-word, at "prabo…", which advertises the one
+ * thing it was changed to advertise and then hides it. Three words and no
+ * "Search by", measured at 169px. "Topic" went rather than "year", because
+ * the box does no better at a topic than "name" already promises, while the
+ * year is a real behaviour nothing else says.
+ *
+ * It is not a *filter*, and cannot be one yet. `events/filters/` offers
+ * categories, languages, modes and cities and no prabodhaks, so the sheet has
+ * nothing to build chips from; and `events/?prabodhak=` answers **HTTP 500**
+ * today, where a genuinely unknown parameter (`teacher=`) is ignored with a
+ * 200 — so that name is half-wired on the server rather than absent. Both are
+ * BE asks. Filtering the fetched page here instead would be the one thing
+ * `Events_API_v1` §0 rules out: a count the app worked out for itself, wrong
+ * the moment the list is longer than a page.
+ *
  * The page hands over the prerendered `upcoming` payload and this screen takes
  * over from there; the first render costs no request.
  */
@@ -142,7 +163,7 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
                 setQuery("");
                 setAsked("");
               }}
-              placeholder="Search by name, topic, year…"
+              placeholder="Name, prabodhak, year"
               label="Search events"
               unasked={query.trim() !== asked.trim()}
               pending={pending}
