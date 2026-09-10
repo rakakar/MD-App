@@ -2,9 +2,11 @@
 
 import { CoverTile, ProgressBar } from "@/components/shelf/CoverTile";
 import {
+  CheckIcon,
   ChevronRight,
   LanguageIcon,
   PathIcon,
+  VideoIcon,
   WaveformIcon,
   WorkspaceIcon,
 } from "@/components/shell/icons";
@@ -64,8 +66,17 @@ function Stage({
 /* ---- 1. the switcher ------------------------------------------------- */
 
 /**
- * The switcher's five rows, in the order the sheet lists them, with Originals
- * standing as the one you are in.
+ * The switcher's five rows, exactly as the bottom sheet draws them.
+ *
+ * `Header`'s `sheetRow` is the original and this follows it line for line: the
+ * gradient tile in the workspace's own hue with a white glyph on it, the name
+ * over its tagline, and the row you are standing in marked the way the sheet
+ * marks it — its own accent as a border, a 7% wash of that accent behind, and
+ * a check at the end.
+ *
+ * It was a filled dark row before, which was a shape the app does not have.
+ * Selection is never colour alone here either: the check carries it for anyone
+ * who cannot separate the wash from the paper.
  *
  * The comps draw a different five — Explore, Originals, Resources, Community,
  * My Journey — which is an earlier naming this app has not had for some time.
@@ -86,29 +97,37 @@ function Switcher() {
           return (
             <li
               key={id}
-              className={`flex items-center gap-3 rounded-card px-3 py-2.5 ${
-                here ? "bg-ink text-surface" : "border border-rule bg-card"
-              }`}
+              className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3"
+              style={
+                here
+                  ? {
+                      borderColor: ws.color,
+                      boxShadow: `inset 0 0 0 1px ${ws.color}`,
+                      background: `color-mix(in srgb, ${ws.color} 7%, var(--color-card))`,
+                    }
+                  : { borderColor: "var(--color-rule)" }
+              }
             >
               <span
-                className="shrink-0"
-                style={{ color: here ? ws.color : "var(--color-muted)" }}
+                className="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-control text-white"
+                style={{
+                  background: `linear-gradient(150deg, color-mix(in srgb, ${ws.color} 78%, #fff), ${ws.color})`,
+                }}
               >
-                <WorkspaceIcon id={id} className="h-5 w-5" />
+                <WorkspaceIcon id={id} />
               </span>
+
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">{ws.name}</span>
-                <span
-                  className={`block truncate text-xs ${here ? "opacity-70" : "text-ink-soft"}`}
-                >
+                <span className="block text-sm font-semibold leading-tight">{ws.name}</span>
+                <span className="mt-0.5 block truncate text-xs leading-snug text-ink-soft">
                   {ws.tagline}
                 </span>
               </span>
+
               {here && (
-                <span
-                  className="h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ background: ws.color }}
-                />
+                <span className="shrink-0" style={{ color: ws.color }}>
+                  <CheckIcon className="h-4.5 w-4.5" />
+                </span>
               )}
             </li>
           );
@@ -136,83 +155,134 @@ function Switcher() {
 const RESUMING = { code: "MKD", title_hi: "मानव कर्म दर्शन", cover_image: null };
 const FIRST_READ = { code: "JVEP", title_hi: "जीवन विद्या एक परिचय", cover_image: null };
 
+/** A second book, so the reading rail is a rail rather than a card. */
+const ALSO_READING = { code: "MABD", title_hi: "मानव अभ्यास दर्शन", cover_image: null };
+
 /**
- * Where a reader left off, twice: in a book, and in a recording.
+ * Where a reader left off — in a book, in a recording, in a talk.
  *
  * This was a dark stage of six cover tiles under Books / Audio / Video tabs —
- * the shelf as an object. The designer's change is to show what the shelf is
- * *for* instead: Originals holds books and it holds forty hours of his own
- * voice, and the honest picture of "in one place" is the two resume cards a
- * reader actually meets on Home, one under the other.
+ * the shelf as an object. It shows what the shelf is *for* instead: Originals
+ * holds books and it holds forty hours of his own voice, and the honest
+ * picture of "in one place" is the resume rails a reader actually meets on
+ * Home.
  *
- * Both are the real cards. The book row is `ContinueReading`'s — cover,
- * title, chapter, `ProgressBar`, printed page against percentage — and the
- * recording row is `ContinueAv`'s, down to the kind tile it falls back to when
- * a video has no still of its own.
+ * **Two rails, drawn as rails.** The real ones bleed past the gutter and snap,
+ * with the next card peeking — that peek is what says there are more without a
+ * control saying so, and a fragment that squared the cards off inside the
+ * stage would have been showing a different component.
+ *
+ * The card is 15.5rem where the real one is 17.5. Copying the number gave the
+ * wrong picture: the real rail bleeds to the edge of the screen and shows
+ * 51px of the next card, while this one is inside a stage that is inside the
+ * page gutters, and the same 280px left a 30px sliver that read as a clipped
+ * card rather than as a rail. What has to match here is the proportion, not
+ * the measurement.
+ *
+ * Everything here is a picture and none of it scrolls — the deck owns
+ * horizontal drag on this screen, so a rail that really scrolled would be
+ * fighting the card it sits on. Nothing in this file is interactive for
+ * exactly that kind of reason; see the note at the top.
  */
 function Resuming() {
   const label = "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft";
-  const row = "flex items-center gap-4 rounded-card border border-rule bg-card px-4 py-3";
+  /* `-mx-4` against the stage's `p-4`, so the rail starts at the text above it
+     and runs out under the stage's clipped edge. */
+  const rail = "-mx-4 mt-2.5 flex gap-3 px-4";
+  const card = "w-[15.5rem] shrink-0 rounded-card border border-rule bg-card px-4 py-3";
+
   return (
     <Stage>
       <p className={label}>Continue reading</p>
-      <div className={`mt-2.5 ${row}`}>
-        <CoverTile book={RESUMING} size="resume" />
-        <span className="min-w-0 flex-1">
-          <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
-            मानव कर्म दर्शन
-          </span>
-          <span lang="hi" className="hi hi-tight mt-1 block truncate text-xs font-medium text-ink-soft">
-            अध्याय 1 : कर्म
-          </span>
-          <ProgressBar percent={14} showValue={false} className="mt-3" />
-          <span className="mt-1.5 flex items-baseline justify-between gap-2">
-            <span className="truncate text-xs font-medium text-ink-soft">
-              Page 25 of 178
+      <div className={rail}>
+        {[
+          { book: RESUMING, title: "मानव कर्म दर्शन", chapter: "अध्याय 1 : कर्म", page: "Page 25 of 178", pct: 14 },
+          { book: ALSO_READING, title: "मानव अभ्यास दर्शन", chapter: "अध्याय 2 : अभ्यास", page: "Page 61 of 195", pct: 31 },
+        ].map((b) => (
+          <div key={b.book.code} className={`${card} flex items-center gap-4`}>
+            <CoverTile book={b.book} size="resume" />
+            <span className="min-w-0 flex-1">
+              <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
+                {b.title}
+              </span>
+              <span lang="hi" className="hi hi-tight mt-1 block truncate text-xs font-medium text-ink-soft">
+                {b.chapter}
+              </span>
+              <ProgressBar percent={b.pct} showValue={false} className="mt-3" />
+              <span className="mt-1.5 flex items-baseline justify-between gap-2">
+                <span className="truncate text-xs font-medium text-ink-soft">{b.page}</span>
+                <span
+                  className="shrink-0 text-xs font-bold tabular-nums"
+                  style={{ color: "var(--ws-ink)" }}
+                >
+                  {b.pct}%
+                </span>
+              </span>
             </span>
-            <span
-              className="shrink-0 text-xs font-bold tabular-nums"
-              style={{ color: "var(--ws-ink)" }}
-            >
-              14%
-            </span>
-          </span>
-        </span>
+          </div>
+        ))}
       </div>
 
       <p className={`${label} mt-4`}>Resume</p>
-      <div className="mt-2.5 rounded-card border border-rule bg-card px-4 py-3">
-        <span className="flex w-full items-start gap-3">
-          {/* The glyph tile rather than a poster: a still is a URL, and a
-              fragment may not wait on the network. It is the real card's own
-              fallback, in the kind's own tint — warm for audio, blue for
-              video — which is the pair the Library shelf uses. */}
-          <span
-            aria-hidden
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kind-audio text-kind-audio-ink"
-          >
-            <WaveformIcon className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
-              जीवन विद्या शिविर — भाग 3
+      <div className={rail}>
+        {[
+          {
+            kind: "audio" as const,
+            title: "जीवन विद्या शिविर — भाग 3",
+            where: "Amarkantak · 2011",
+            pct: 38,
+            left: "42 min left",
+          },
+          {
+            kind: "video" as const,
+            title: "मानव व्यवहार दर्शन — प्रश्नोत्तर",
+            where: "Achoti · संवाद",
+            pct: 64,
+            left: "18 min left",
+          },
+        ].map((r) => (
+          <div key={r.kind} className={card}>
+            <span className="flex w-full items-start gap-3">
+              {/* The glyph tile rather than a poster or a still: both are URLs,
+                  and a fragment may not wait on the network. It is the real
+                  card's own fallback, in the kind's own tint — warm for audio,
+                  blue for video — which is the pair the Library shelf uses. */}
+              <span
+                aria-hidden
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                  r.kind === "audio"
+                    ? "bg-kind-audio text-kind-audio-ink"
+                    : "bg-kind-video text-kind-video-ink"
+                }`}
+              >
+                {r.kind === "audio" ? (
+                  <WaveformIcon className="h-5 w-5" />
+                ) : (
+                  <VideoIcon className="h-5 w-5" />
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
+                  {r.title}
+                </span>
+                <span className="ui-hi hi-tight mt-1 block truncate text-xs font-medium text-ink-soft">
+                  {r.where}
+                </span>
+              </span>
             </span>
-            <span className="hi-tight mt-1 block truncate text-xs font-medium text-ink-soft">
-              Amarkantak · 2011
+            <span className="mt-3 flex w-full items-center gap-3">
+              <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-canvas">
+                <span
+                  className="block h-full rounded-full"
+                  style={{ width: `${r.pct}%`, background: "var(--progress-fill)" }}
+                />
+              </span>
+              <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
+                {r.left}
+              </span>
             </span>
-          </span>
-        </span>
-        <span className="mt-3 flex w-full items-center gap-3">
-          <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-canvas">
-            <span
-              className="block h-full rounded-full"
-              style={{ width: "38%", background: "var(--progress-fill)" }}
-            />
-          </span>
-          <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
-            42 min left
-          </span>
-        </span>
+          </div>
+        ))}
       </div>
     </Stage>
   );
