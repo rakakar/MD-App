@@ -168,6 +168,20 @@ export interface Prefs {
   /** one-time "tap the middle for controls" coach mark */
   immersiveHintShown: boolean;
   /**
+   * Whether the six-card first-run deck has been through once.
+   *
+   * Set by finishing it *or* by skipping it — the deck is an explanation, not
+   * a gate, and a reader who pressed Skip has told us they do not want it more
+   * clearly than one who pressed Next six times.
+   *
+   * Local, like `journeyStage` and for the same reason: this is a fact about a
+   * device, not about a person. A reader who clears their storage meets an
+   * interface the app has no record of having explained, and explaining it
+   * again is the correct behaviour, not a bug to work around by moving the
+   * flag to an account.
+   */
+  onboardingSeen: boolean;
+  /**
    * Which stage of the study path the reader says they are in — 1–9, or null
    * before they have been asked.
    *
@@ -217,6 +231,7 @@ export const DEFAULT_PREFS: Prefs = {
   playbackRate: 1,
   syncNudgeShown: false,
   immersiveHintShown: false,
+  onboardingSeen: false,
   journeyStage: null,
 };
 

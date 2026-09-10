@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
+import { FirstRunGate } from "@/components/onboarding/FirstRunGate";
 import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
 import { PlayerBar } from "@/components/player/PlayerBar";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
@@ -80,6 +81,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <TrackAudioMode />
           {!bare && <BottomNav />}
           {!reader && <ConsentBanner />}
+          {/* The first-run deck, above everything and before anything else is
+              worth reading. Not on the reader and not on the auth screens:
+              both are places a reader arrives *deliberately*, by opening a
+              shared link to a passage or by coming back to sign in, and
+              covering either with an explanation of the app is answering a
+              question nobody asked. The deck is still owed, and it appears on
+              the next ordinary screen. */}
+          {!bare && <FirstRunGate />}
           {/* Outside `bare` so a notification arriving mid-chapter is still
               seen — it is the reader's own opt-in, not app chrome. */}
           <PushProvider />

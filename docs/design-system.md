@@ -81,6 +81,28 @@ anywhere in this app.
 
 ---
 
+## Deviations from the first-run comps, 9 Sep 2026
+
+Seven screens: six swipeable cards and the coach mark that follows them. The six are
+built (`components/onboarding/`); **the coach mark is not** — see the note under the
+table. Each card carries a working fragment of the real interface rather than a picture
+of one, which is what most of these rows are about: a fragment drawn from live data
+cannot show an interface the app does not have.
+
+| Comp | Shipped | Reason |
+|---|---|---|
+| Card 1 lists Explore · Originals · Resources · Community · My Journey | Originals · Translations · Resources · My Journey · Connect, read from `WORKSPACES` | An earlier naming this app has not had for some time — there is no Explore workspace and no Community one. A first-run card teaching five names has to teach the five that are there, and reading them out of the config means the card follows the next rename without anyone remembering to. |
+| Card 4 draws three language segments — हिन्दी · English · ಕನ್ನಡ | Two, हिन्दी · English | The real control switches between the original and *the* translation of the edition in front of you; a bilingual book is Hindi and one other language, never a menu of all of them (`ReaderChrome`'s `ReaderLanguageBar`). Three segments would teach a control that does not exist. The card's own sentence is what says Kannada is among the languages. |
+| Card 5 draws a pencil on Highlight and a bookmark on Note | Both as words | The selection bar draws these as words; only Share carries a glyph on that bar (`SelectionAction`). |
+| The Originals stage as a dark panel | Adopted, as `.stage-ink` in `globals.css` rather than `bg-ink` | Written with the theme tokens it inverted: `--color-ink` is near-white in dark and `--color-surface` near-black, so a dark stage designed to make six covers glow came out a white panel with dark chips. Declared once and never redefined per theme, on the same principle as white-on-accent: the pairing is the object, not a role, and no theme may change it. |
+| Real book covers on card 2 | `CoverTile`'s designed fallback, over the six real titles | Covers arrive over the network. The deck opens before anything has been fetched and has to work offline, so a fragment may only show what the app knows without asking the server. The titles cost nothing and are kept honest. |
+
+**Still to build: the coach mark** the seventh comp draws — "Switch workspaces here", anchored
+under the app bar with a Got it button, shown once after the deck ends. It is a separate
+one-time hint over live chrome rather than a card in the deck, and the brief that
+commissioned the deck asked for six cards ending on Start reading. `prefs.immersiveHintShown`
+is the pattern it should follow.
+
 ## Revisions after the comps — Home and Read, 13 Aug 2026
 
 Not deviations. The 2026-08-11 comps are the source of truth for every screen *except*
