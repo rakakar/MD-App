@@ -218,9 +218,26 @@ export const DEFAULT_PREFS: Prefs = {
   // this is the nearest preset (LINE_HEIGHTS[1])
   lineHeight: 2.05,
   margin: 1,
-  // a reader that opens bright at night is the single most common complaint
-  // about reading apps — follow the OS unless the user says otherwise
-  theme: "system",
+  /**
+   * Light, not `system`, at the designer's decision.
+   *
+   * It followed the OS before, on the argument that a reader who opens the app
+   * bright at night is the most common complaint about reading apps. That
+   * argument is still true and is now answered one level down instead: the
+   * *reader* has its own surface (`readerTheme`), and a book is where anyone
+   * actually sits at night. What "system" cost was that the app a reader was
+   * shown first was decided by a setting they made for something else, so half
+   * of them met a near-black shelf before ever seeing the app it was inverted
+   * from.
+   *
+   * Auto is still one tap away in the display sheet, and once chosen it is
+   * sticky like every other preference here.
+   *
+   * Two places hold this default and both must agree: this, and the literal in
+   * `layout.tsx`'s pre-paint `THEME_SCRIPT` (`p.theme||"light"`), which is what
+   * paints the first frame before any of this has been read.
+   */
+  theme: "light",
   // Defers to the app theme, so a reader who never opens the sheet reads on
   // exactly the paper they always did.
   readerTheme: "original",

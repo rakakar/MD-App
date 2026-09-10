@@ -153,7 +153,7 @@ export const viewport: Viewport = {
  */
 const THEME_SCRIPT = `(function(){try{
 var p=JSON.parse(localStorage.getItem("md.prefs.v1")||"{}");
-var t=p.theme||"system";
+var t=p.theme||"light";
 if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
 var d=document.documentElement;
 d.setAttribute("data-theme",t);
