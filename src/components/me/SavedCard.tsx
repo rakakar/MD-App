@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ShareIcon, TrashIcon } from "@/components/shell/icons";
+import { dayMonthYear } from "@/lib/dates";
 import { contentLang } from "@/lib/script";
 
 /**
@@ -140,17 +141,21 @@ function RowShare({ title, href }: { title: string; href: string }) {
 }
 
 /**
- * "12 Aug 2026". `Intl` rather than a month table of our own — `SutraCard`
- * already dates this way, and a second list of twelve strings is a second
- * place for them to go stale.
+ * "12 Aug 2026", from a `created_at` timestamp.
+ *
+ * `new Date(iso)` rather than `parseDay`, and that is the one difference from
+ * every other date in the app: this is an *instant*, not a calendar date, so
+ * it is meant to be read in the reader's own zone.
+ *
+ * The month comes from `MONTH_SHORT` now. This asked `en-IN` for a short one
+ * and got "Sept" for September — four letters where the other eleven have
+ * three — under a comment arguing that a table of twelve strings would be the
+ * thing to go stale. The table was already there, in `lib/events.ts`, and
+ * right; this was the only surface in the app printing the four-letter form.
  */
 export function savedDate(iso: string | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return "";
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(d);
+  return dayMonthYear(d);
 }

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { dayMonthShortYear as cardDay, dayMonthYear as fullDay, parseDay } from "./dates";
 
 /**
  * Connect → Events, as the API hands it over (Events_API_v1).
@@ -209,47 +210,11 @@ export function eventQuery(
 }
 
 // ---- dates ----
-
-/**
- * An ISO calendar date, read as a calendar date.
- *
- * `new Date("2026-11-13")` is parsed as UTC midnight, so west of Greenwich it
- * formats as the 12th — a shivir that starts a day earlier than the poster
- * says, on the one screen whose whole job is when things happen. These are
- * dates, not instants: the parts are read out and rebuilt in local time.
- */
-function parseDay(iso: string | null | undefined): Date | null {
-  if (!iso) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!m) return null;
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return isNaN(d.getTime()) ? null : d;
-}
-
-/**
- * Three letters, always.
- *
- * `Intl` under `en-IN` and `en-GB` abbreviates September to **"Sept"** — four
- * letters where the other eleven have three — and the comps print "5 Sep'26".
- * On a card whose date and location share one line at the largest text size,
- * the odd month out is the one that wraps. Written down rather than fetched
- * from a locale that changes its mind.
- */
-const MONTH_SHORT = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-/** "13 Nov'26" — the card's step, where two of these plus a location share a
- *  line on a 390pt phone. */
-function cardDay(d: Date): string {
-  return `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}'${String(d.getFullYear()).slice(2)}`;
-}
-
-/** "10 Jul 2026" — the detail screen's, where the row has the width for it. */
-function fullDay(d: Date): string {
-  return `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
-}
+//
+// The written-down month table, the two shapes these screens print it in, and
+// the calendar-date parser all moved to `lib/dates.ts` — three other surfaces
+// print a date and two of them had reinvented this, one of them wrongly. The
+// reasoning is unchanged and now lives beside the table.
 
 function range(start: string, end: string | null, fmt: (d: Date) => string): string {
   const a = parseDay(start);

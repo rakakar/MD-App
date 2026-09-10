@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
 import { ctaPrimaryCompact } from "@/components/ui";
 import { track } from "@/lib/analytics";
+import { dayMonth, parseDay } from "@/lib/dates";
 import { SUTRA } from "@/lib/labels";
 import { citationText, refToHref } from "@/lib/refs";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
@@ -22,24 +23,10 @@ import type { SutraOfTheDay } from "@/lib/types";
  * the label row so browsing stays available without competing with Share,
  * which is the action the design puts its weight behind.
  */
-/**
- * "2026-07-29" → "29 Jul". Returns "" on anything unparseable.
- *
- * Built from en-US parts rather than formatted in en-IN, because CLDR's
- * Indian and British short months abbreviate September to "Sept" — four
- * letters where every other month gets three, which reads as a typo in a
- * line this short. en-US gives the plain three-letter set; the parts are
- * reordered here to keep the day-first shape the rest of the app uses.
- */
-const SUTRA_DATE = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short" });
-
+/** "2026-07-29" → "29 Jul". Returns "" on anything unparseable. */
 function sutraDate(iso: string): string {
-  const d = new Date(`${iso}T00:00:00`);
-  if (isNaN(d.getTime())) return "";
-  const parts = SUTRA_DATE.formatToParts(d);
-  const day = parts.find((p) => p.type === "day")?.value;
-  const month = parts.find((p) => p.type === "month")?.value;
-  return day && month ? `${day} ${month}` : "";
+  const d = parseDay(iso);
+  return d ? dayMonth(d) : "";
 }
 
 export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
