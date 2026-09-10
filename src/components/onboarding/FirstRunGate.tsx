@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import { FirstRun } from "./FirstRun";
+import { SwitcherHint } from "./SwitcherHint";
 
 /**
  * Whether the deck is owed, and nothing else.
@@ -27,23 +28,59 @@ import { FirstRun } from "./FirstRun";
  */
 const NEVER_CHANGES = () => () => {};
 
-export function FirstRunGate() {
-  const seen = useSyncExternalStore(
-    NEVER_CHANGES,
-    () => getPrefs().onboardingSeen,
-    () => true
-  );
-  const [dismissed, setDismissed] = useState(false);
+/**
+ * One snapshot object, cached, because `useSyncExternalStore` compares
+ * snapshots by identity: a getter returning a fresh `{}` every call is an
+ * infinite render loop. Rebuilt only when a flag actually differs from the one
+ * last handed out.
+ */
+let cached = { deck: false, hint: false };
+function READ() {
+  const p = getPrefs();
+  if (p.onboardingSeen !== cached.deck || p.switcherHintShown !== cached.hint) {
+    cached = { deck: p.onboardingSeen, hint: p.switcherHintShown };
+  }
+  return cached;
+}
 
-  if (seen || dismissed) return null;
+export function FirstRunGate() {
+  const stored = useSyncExternalStore(
+    NEVER_CHANGES,
+    READ,
+    () => ({ deck: true, hint: true })
+  );
+  /**
+   * What this session has answered, over the top of what storage said.
+   *
+   * Two steps in order: the deck explains the app, then the mark points at the
+   * one control the deck could not, because the control was not on screen
+   * while the deck covered it. `hint` is deliberately not spent by skipping
+   * the deck — a reader who skipped an explanation is the one who most needs
+   * to be shown where the switcher is.
+   */
+  const [done, setDone] = useState({ deck: false, hint: false });
+  const deckSeen = stored.deck || done.deck;
+
+  if (!deckSeen) {
+    return (
+      <FirstRun
+        onDone={() => {
+          // Written on the way out, whichever way out was taken. Skipping is
+          // an answer; see the note on `onboardingSeen` in `lib/storage.ts`.
+          setPrefs({ onboardingSeen: true });
+          setDone((d) => ({ ...d, deck: true }));
+        }}
+      />
+    );
+  }
+
+  if (stored.hint || done.hint) return null;
 
   return (
-    <FirstRun
+    <SwitcherHint
       onDone={() => {
-        // Written on the way out, whichever way out was taken. Skipping is an
-        // answer; see the note on `onboardingSeen` in `lib/storage.ts`.
-        setPrefs({ onboardingSeen: true });
-        setDismissed(true);
+        setPrefs({ switcherHintShown: true });
+        setDone((d) => ({ ...d, hint: true }));
       }}
     />
   );

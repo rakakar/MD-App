@@ -182,6 +182,16 @@ export interface Prefs {
    */
   onboardingSeen: boolean;
   /**
+   * Whether the one-time "Switch workspaces here" mark has been shown.
+   *
+   * Its own flag rather than a second meaning for `onboardingSeen`, because
+   * the two are answered in different places: the deck is a layer over the app
+   * and this is a mark on a control that has to exist on screen. A reader who
+   * skipped the deck is exactly the reader this still owes an explanation to,
+   * so skipping one does not spend the other.
+   */
+  switcherHintShown: boolean;
+  /**
    * Which stage of the study path the reader says they are in — 1–9, or null
    * before they have been asked.
    *
@@ -232,6 +242,7 @@ export const DEFAULT_PREFS: Prefs = {
   syncNudgeShown: false,
   immersiveHintShown: false,
   onboardingSeen: false,
+  switcherHintShown: false,
   journeyStage: null,
 };
 

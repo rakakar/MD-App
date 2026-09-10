@@ -1213,6 +1213,24 @@ html[data-reading="1"] body {
    The panel is still there while closed, so `inert` on it is not optional: it
    is what keeps a collapsed group's links out of the tab order and off the
    accessibility tree, which is the job the old unmount was doing. */
+/* The first-run coach mark's spotlight.
+
+   The element itself is transparent and sits exactly over the control being
+   pointed at; the shadow *is* the scrim, spread wide enough to reach the
+   corners of any screen, so the lit hole and the dark everything-else are one
+   box rather than four rectangles doing arithmetic around a gap.
+
+   `black/40` is the workspace sheet's own backdrop — this mark points at the
+   control that opens that sheet, so the two should not darken the app by
+   different amounts. */
+.coach-spot {
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+  animation: fade-in 0.22s ease-out 1;
+}
+.coach-card {
+  animation: sheet-up 0.22s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
 /* The first-run deck's one dark stage — the panel the Originals card's covers
    sit on, as the comps draw it.
 
@@ -1262,6 +1280,11 @@ html[data-reading="1"] body {
   /* the panel still opens, it just arrives at full height at once */
   .disclosure {
     transition: none;
+  }
+  /* the mark still appears, it just does not slide or fade in */
+  .coach-spot,
+  .coach-card {
+    animation: none;
   }
   * {
     transition-duration: 0.01ms !important;

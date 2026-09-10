@@ -97,11 +97,14 @@ cannot show an interface the app does not have.
 | The Originals stage as a dark panel | Adopted, as `.stage-ink` in `globals.css` rather than `bg-ink` | Written with the theme tokens it inverted: `--color-ink` is near-white in dark and `--color-surface` near-black, so a dark stage designed to make six covers glow came out a white panel with dark chips. Declared once and never redefined per theme, on the same principle as white-on-accent: the pairing is the object, not a role, and no theme may change it. |
 | Real book covers on card 2 | `CoverTile`'s designed fallback, over the six real titles | Covers arrive over the network. The deck opens before anything has been fetched and has to work offline, so a fragment may only show what the app knows without asking the server. The titles cost nothing and are kept honest. |
 
-**Still to build: the coach mark** the seventh comp draws — "Switch workspaces here", anchored
-under the app bar with a Got it button, shown once after the deck ends. It is a separate
-one-time hint over live chrome rather than a card in the deck, and the brief that
-commissioned the deck asked for six cards ending on Start reading. `prefs.immersiveHintShown`
-is the pattern it should follow.
+The seventh screen — the "Switch workspaces here" coach mark — is built too
+(`components/onboarding/SwitcherHint.tsx`), on its own flag rather than sharing the deck's:
+a reader who skipped the deck is exactly the one still owed a pointer at the switcher.
+
+| Comp | Shipped | Reason |
+|---|---|---|
+| The whole app bar lit, the content below it dimmed | A hole cut around the switcher alone | Two lit regions is not the same as pointing at one control. On a phone the bar also holds Sign in and the display button, so "lit" ends up meaning three controls; and the bar is a different shape at every width, while a hole around the control is the same gesture everywhere. One element does it — transparent, laid over the control, with a shadow spread wide enough to reach any corner. |
+| "…the source works, student resources, community and your own journey" | The other four workspaces, by name, read from `WORKSPACES` | Same reason as card 1 of the deck: there is no Community workspace. The sentence also names the workspace you are *in* from the live one, so it is right in all five. |
 
 ## Revisions after the comps — Home and Read, 13 Aug 2026
 

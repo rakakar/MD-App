@@ -221,6 +221,10 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
   return (
     <div
       ref={rootRef}
+      /* The anchor the first-run coach mark measures. Both copies of this
+         control carry it — the phone's and the rail's — and the mark picks
+         whichever is actually on screen, since only one ever is. */
+      data-ws-switcher
       /* `flex-1` on the phone: with the brand mark gone this is the only thing
          on the left of the bar, and a control sized to its own label left a
          third of the row empty. It now runs from the gutter to the account
