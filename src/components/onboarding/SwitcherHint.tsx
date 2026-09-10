@@ -164,7 +164,16 @@ export function SwitcherHint({ onDone }: { onDone: () => void }) {
 
   return createPortal(
     <AccentScope color={workspace.color}>
-      <div role="dialog" aria-modal="true" aria-labelledby="ws-hint-title">
+      {/* Light, like the deck it follows and for the same reason — see
+          `FirstRun`. The scrim is unaffected: it is a fixed black at 40%,
+          not a themed one, so the app underneath darkens the same either
+          way. */}
+      <div
+        data-theme="light"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ws-hint-title"
+      >
         {/* The spotlight. Transparent itself; the shadow is the scrim. Sized
             and cornered to the control so the hole looks cut rather than
             approximate, and `pointer-events-auto` so a tap anywhere on the

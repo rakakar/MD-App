@@ -165,6 +165,13 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
       role="dialog"
       aria-modal="true"
       aria-label="What this app holds"
+      /* Light, whatever the app is set to — at the designer's decision, and
+         the reason is that this is seen once. A theme-correct dark version of
+         six cards is a second design to draw, review and keep for a screen
+         nobody meets twice. The app's own default is light now, so the reader
+         this could surprise is one who chose dark deliberately and then
+         cleared their storage. See the block in globals.css. */
+      data-theme="light"
       /* Opaque. What is behind is the app this deck exists to explain, and
          showing it half-lit through a scrim invites a reader to try to use
          it. */

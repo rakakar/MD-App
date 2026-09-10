@@ -471,6 +471,61 @@
   --color-hl-sky: #22344a;
 }
 
+/* **Light, wherever this is put — the first-run surfaces and nothing else.**
+   
+   `@theme` can only emit `:root`, so the light palette has no selector of its
+   own to reuse and these values are the one place in this file deliberately
+   written twice. They are kept immediately under the dark block so the two are
+   edited in one sitting; anything added there needs a line here.
+   
+   Only the tokens dark or sepia actually override are listed. A token with one
+   value in every theme is already right.
+   
+   Why force it at all: the deck and the switcher mark are seen once, so a
+   theme-correct version of each is a second design to draw, review and keep
+   for a screen nobody meets twice. The app's own default is light now
+   (`DEFAULT_PREFS.theme`), which is what makes this cheap rather than a
+   contradiction — the reader this could surprise is one who chose dark
+   deliberately and then cleared their storage. */
+[data-theme="light"] {
+  /* Not only tokens. `color` is inherited as a *resolved colour*, not as the
+     `var()` that produced it, so a subtree that redefines `--color-ink` still
+     inherits the near-white the body resolved under the dark theme — and every
+     element without an explicit colour class comes out washed out on white,
+     while its `text-ink-soft` neighbour is correctly dark. Re-resolving it here
+     is what makes the subtree actually light rather than merely
+     light-backgrounded. `color-scheme` goes with it so the UA's own parts —
+     scrollbars, focus rings, form controls — follow. */
+  color: var(--color-ink);
+  color-scheme: light;
+
+  --color-surface: #faf7f3;
+  --color-canvas: #efeae3;
+  --color-card: #ffffff;
+  --color-ink: #1a1613;
+  --color-ink-soft: #4a413a;
+  --color-muted: #9c9187;
+  --color-rule: #e4dbd1;
+  --color-danger: #b3261e;
+
+  --color-inset: #f7f3ec;
+
+  --color-kind-doc: #e6e1f5;
+  --color-kind-doc-ink: #5b4f9c;
+  --color-kind-video: #eaf0f4;
+  --color-kind-video-ink: #39647c;
+  --color-kind-audio: #fdf3ea;
+  --color-kind-audio-ink: #9e4a11;
+  --color-kind-image: #f6e2e9;
+  --color-kind-image-ink: #833653;
+  --color-kind-folder: #f6e2ce;
+  --color-kind-folder-ink: #9e4a11;
+
+  --color-hl-amber: #f8dfbe;
+  --color-hl-sage: #dcebd9;
+  --color-hl-sky: #dce8f7;
+}
+
 /* Readers who have asked their OS for more contrast get it, in whichever
    theme they are in — without a "High contrast" switch of our own.
 
@@ -678,6 +733,19 @@ html[data-reader-theme="quiet"][data-reading="1"] body {
 html[data-theme="dark"],
 html[data-theme="dark"] [data-ws] {
   --ws-ink: color-mix(in srgb, var(--ws-color) 55%, var(--color-ink));
+}
+
+/* The accent, put back to the raw hue inside a forced-light subtree.
+   
+   It cannot live in the `[data-theme="light"]` block above, and the reason is
+   worth writing down rather than rediscovering: the rule it has to beat is
+   `html[data-theme="dark"] [data-ws]`, and `AccentScope` — which every portal
+   wraps itself in — *is* a `[data-ws]`. So the lift for a near-black card was
+   still winning inside a deck painted on white. Matching that selector's
+   specificity and sitting after it is what settles it. */
+html [data-theme="light"],
+html [data-theme="light"] [data-ws] {
+  --ws-ink: var(--ws-color);
 }
 
 /* ---- and the same fix again, one axis over ----
