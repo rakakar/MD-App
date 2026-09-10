@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import { FirstRun } from "./FirstRun";
 import { SwitcherHint } from "./SwitcherHint";
@@ -43,6 +43,84 @@ function READ() {
   return cached;
 }
 
+/**
+ * How long the app has the reader to itself before the mark appears.
+ *
+ * Straight after Start reading, the mark landed on the same tap that closed
+ * the deck: six cards of explanation, then a seventh thing to dismiss. It is
+ * meant to *find* the reader once they are looking at the app, not to be the
+ * last card wearing different clothes.
+ */
+const SETTLE_MS = 6000;
+
+/**
+ * ...and how long since they last touched anything.
+ *
+ * A delay alone only moves the interruption: six seconds in is the middle of a
+ * scroll down the shelf, and a scrim arriving there is worse than one arriving
+ * at hand-off, not better. The mark waits for a gap in what the reader is
+ * doing, so it appears in a pause rather than across a gesture.
+ */
+const QUIET_MS = 1200;
+
+/** Re-checked this often once the settle time is up and only quiet is owed. */
+const POLL_MS = 400;
+
+/**
+ * True once the mark should show: the app has been in front of the reader long
+ * enough, they are not mid-gesture, and the tab is actually on screen.
+ *
+ * The visibility check is not a nicety. Without it the whole delay elapses in
+ * a background tab and the mark is already open, over nothing, when the reader
+ * comes back — which is the one arrival where they definitely did not ask a
+ * question.
+ */
+function useSettled(active: boolean): boolean {
+  const [settled, setSettled] = useState(false);
+  const lastTouch = useRef(0);
+
+  useEffect(() => {
+    if (!active) return;
+    let since = Date.now();
+    lastTouch.current = since;
+
+    const touched = () => { lastTouch.current = Date.now(); };
+    const events = ["pointerdown", "wheel", "keydown", "scroll", "touchstart"] as const;
+    for (const e of events) {
+      window.addEventListener(e, touched, { passive: true, capture: true });
+    }
+
+    // Coming back to a tab is an arrival of its own, so the clock starts
+    // again. Without this the delay simply runs down in the background and the
+    // mark opens a third of a second after the reader looks at the screen —
+    // technically not "already open", and no less of an ambush.
+    const returned = () => {
+      if (document.visibilityState !== "visible") return;
+      since = Date.now();
+      lastTouch.current = since;
+    };
+    document.addEventListener("visibilitychange", returned);
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      if (document.visibilityState !== "visible") return;
+      if (now - since < SETTLE_MS) return;
+      if (now - lastTouch.current < QUIET_MS) return;
+      setSettled(true);
+    }, POLL_MS);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", returned);
+      for (const e of events) {
+        window.removeEventListener(e, touched, { capture: true });
+      }
+    };
+  }, [active]);
+
+  return settled;
+}
+
 export function FirstRunGate() {
   const stored = useSyncExternalStore(
     NEVER_CHANGES,
@@ -60,6 +138,10 @@ export function FirstRunGate() {
    */
   const [done, setDone] = useState({ deck: false, hint: false });
   const deckSeen = stored.deck || done.deck;
+  const hintOwed = deckSeen && !stored.hint && !done.hint;
+  // Counted from the moment the mark becomes owed — the tap that closed the
+  // deck, or the frame a reader who left before it arrived comes back.
+  const settled = useSettled(hintOwed);
 
   if (!deckSeen) {
     return (
@@ -74,7 +156,7 @@ export function FirstRunGate() {
     );
   }
 
-  if (stored.hint || done.hint) return null;
+  if (!hintOwed || !settled) return null;
 
   return (
     <SwitcherHint

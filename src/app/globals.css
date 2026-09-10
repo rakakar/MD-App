@@ -1225,10 +1225,26 @@ html[data-reading="1"] body {
    different amounts. */
 .coach-spot {
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-  animation: fade-in 0.22s ease-out 1;
+  animation: fade-in 0.32s ease-out 1;
 }
+/* Arriving, not appearing. The mark now shows up a while after the deck ends
+   rather than on the tap that closed it, so it has to enter the way something
+   optional enters: a fade and 6px of rise, slower than a control the reader
+   pressed. `sheet-up` was borrowed at first and it is a bottom-sheet's
+   entrance — a card this size flew in from a full card-height below, which is
+   a lot of movement to announce a hint nobody asked for. */
 .coach-card {
-  animation: sheet-up 0.22s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: coach-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes coach-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* The first-run deck's one dark stage — the panel the Originals card's covers

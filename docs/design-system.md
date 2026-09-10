@@ -105,6 +105,7 @@ a reader who skipped the deck is exactly the one still owed a pointer at the swi
 |---|---|---|
 | The whole app bar lit, the content below it dimmed | A hole cut around the switcher alone | Two lit regions is not the same as pointing at one control. On a phone the bar also holds Sign in and the display button, so "lit" ends up meaning three controls; and the bar is a different shape at every width, while a hole around the control is the same gesture everywhere. One element does it — transparent, laid over the control, with a shadow spread wide enough to reach any corner. |
 | "…the source works, student resources, community and your own journey" | The other four workspaces, by name, read from `WORKSPACES` | Same reason as card 1 of the deck: there is no Community workspace. The sentence also names the workspace you are *in* from the live one, so it is right in all five. |
+| The mark follows Start reading | Six seconds later, and only in a pause | At hand-off it landed on the same tap that closed the deck — six cards of explanation, then a seventh thing to dismiss. A delay alone would only move the interruption into the middle of a scroll, so it also waits 1.2s since the reader last touched anything, and holds off entirely while the tab is in the background, restarting the clock when they come back. It enters on a fade and 6px of rise rather than the bottom-sheet slide it borrowed at first. |
 
 ## Revisions after the comps — Home and Read, 13 Aug 2026
 
