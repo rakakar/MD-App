@@ -1,13 +1,11 @@
 "use client";
 
-import { CoverTile } from "@/components/shelf/CoverTile";
+import { CoverTile, ProgressBar } from "@/components/shelf/CoverTile";
 import {
   ChevronRight,
-  HeadphonesIcon,
   LanguageIcon,
-  ListIcon,
   PathIcon,
-  VideoIcon,
+  WaveformIcon,
   WorkspaceIcon,
 } from "@/components/shell/icons";
 import { LEVELS, STAGES } from "@/lib/journey";
@@ -42,18 +40,12 @@ function Stage({
   tone = "paper",
 }: {
   children: React.ReactNode;
-  /** `ink` is the dark stage the Originals card is drawn on */
-  tone?: "paper" | "ink" | "tint";
+  tone?: "paper" | "tint";
 }) {
   const skin =
-    tone === "ink"
-      ? // `.stage-ink`, not `bg-ink text-surface` — see the note beside it in
-        // globals.css. Both of those tokens invert with the theme, so the one
-        // deliberately dark panel in the deck turned white in dark mode.
-        "stage-ink"
-      : tone === "tint"
-        ? "border border-rule"
-        : "border border-rule bg-card";
+    tone === "tint"
+      ? "border border-rule"
+      : "border border-rule bg-card";
   return (
     <div
       aria-hidden
@@ -126,45 +118,100 @@ function Switcher() {
   );
 }
 
-/* ---- 2. the Originals shelf ------------------------------------------ */
+/* ---- 2. Originals, as the two things you come back to ---------------- */
 
-/** Six real titles. No `cover_image`, so `CoverTile` draws its designed
- *  fallback — the same object the shelf shows for a book whose scan has not
- *  arrived, in the book's own hue. */
-const SHELF = [
-  { code: "JVEP", title_hi: "जीवन विद्या एक परिचय", cover_image: null },
-  { code: "ABVP", title_hi: "विकल्प एवं अध्ययन बिंदु", cover_image: null },
-  { code: "MKD", title_hi: "मानव कर्म दर्शन", cover_image: null },
-  { code: "MABD", title_hi: "मानव अभ्यास दर्शन", cover_image: null },
-  { code: "MAND", title_hi: "मानव अनुभव दर्शन", cover_image: null },
-  { code: "VJVD", title_hi: "व्यवहारात्मक जनवाद", cover_image: null },
-];
+/**
+ * The two books these fragments show, by their real codes.
+ *
+ * No `cover_image` on either, so `CoverTile` draws its designed fallback — the
+ * same object the shelf shows for a book whose scan has not arrived, and in the
+ * book's own hue, which is derived from the code. That is why the codes are
+ * real rather than invented: `bookHue` keys off them, so a made-up one would
+ * colour the tile differently here than everywhere else in the app.
+ *
+ * Stage one's reading is JVEP, so the journey card names it and the resume card
+ * names the book someone would be mid-way through. Separate entries rather than
+ * one shared: they illustrate different things and should be free to differ.
+ */
+const RESUMING = { code: "MKD", title_hi: "मानव कर्म दर्शन", cover_image: null };
+const FIRST_READ = { code: "JVEP", title_hi: "जीवन विद्या एक परिचय", cover_image: null };
 
-function Shelf() {
-  const tab = "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium";
+/**
+ * Where a reader left off, twice: in a book, and in a recording.
+ *
+ * This was a dark stage of six cover tiles under Books / Audio / Video tabs —
+ * the shelf as an object. The designer's change is to show what the shelf is
+ * *for* instead: Originals holds books and it holds forty hours of his own
+ * voice, and the honest picture of "in one place" is the two resume cards a
+ * reader actually meets on Home, one under the other.
+ *
+ * Both are the real cards. The book row is `ContinueReading`'s — cover,
+ * title, chapter, `ProgressBar`, printed page against percentage — and the
+ * recording row is `ContinueAv`'s, down to the kind tile it falls back to when
+ * a video has no still of its own.
+ */
+function Resuming() {
+  const label = "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft";
+  const row = "flex items-center gap-4 rounded-card border border-rule bg-card px-4 py-3";
   return (
-    <Stage tone="ink">
-      <ul className="grid grid-cols-3 gap-2.5">
-        {SHELF.map((b) => (
-          <li key={b.code}>
-            <CoverTile book={b} size="grid" caption="dash" />
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3.5 flex flex-wrap gap-2">
-        {/* White at two opacities rather than a token, for the same reason
-            the stage is: these sit on a panel no theme changes. */}
-        <span className={`${tab} bg-white/20`}>
-          <ListIcon className="h-3.5 w-3.5" />
-          Books
+    <Stage>
+      <p className={label}>Continue reading</p>
+      <div className={`mt-2.5 ${row}`}>
+        <CoverTile book={RESUMING} size="resume" />
+        <span className="min-w-0 flex-1">
+          <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
+            मानव कर्म दर्शन
+          </span>
+          <span lang="hi" className="hi hi-tight mt-1 block truncate text-xs font-medium text-ink-soft">
+            अध्याय 1 : कर्म
+          </span>
+          <ProgressBar percent={14} showValue={false} className="mt-3" />
+          <span className="mt-1.5 flex items-baseline justify-between gap-2">
+            <span className="truncate text-xs font-medium text-ink-soft">
+              Page 25 of 178
+            </span>
+            <span
+              className="shrink-0 text-xs font-bold tabular-nums"
+              style={{ color: "var(--ws-ink)" }}
+            >
+              14%
+            </span>
+          </span>
         </span>
-        <span className={`${tab} bg-white/10`}>
-          <HeadphonesIcon className="h-3.5 w-3.5" />
-          Audio
+      </div>
+
+      <p className={`${label} mt-4`}>Resume</p>
+      <div className="mt-2.5 rounded-card border border-rule bg-card px-4 py-3">
+        <span className="flex w-full items-start gap-3">
+          {/* The glyph tile rather than a poster: a still is a URL, and a
+              fragment may not wait on the network. It is the real card's own
+              fallback, in the kind's own tint — warm for audio, blue for
+              video — which is the pair the Library shelf uses. */}
+          <span
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kind-audio text-kind-audio-ink"
+          >
+            <WaveformIcon className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
+              जीवन विद्या शिविर — भाग 3
+            </span>
+            <span className="hi-tight mt-1 block truncate text-xs font-medium text-ink-soft">
+              Amarkantak · 2011
+            </span>
+          </span>
         </span>
-        <span className={`${tab} bg-white/10`}>
-          <VideoIcon className="h-3.5 w-3.5" />
-          Video
+        <span className="mt-3 flex w-full items-center gap-3">
+          <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-canvas">
+            <span
+              className="block h-full rounded-full"
+              style={{ width: "38%", background: "var(--progress-fill)" }}
+            />
+          </span>
+          <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
+            42 min left
+          </span>
         </span>
       </div>
     </Stage>
@@ -359,7 +406,7 @@ function Journey() {
         Your next step
       </p>
       <div className="mt-1.5 flex items-center gap-3 rounded-card border border-rule bg-card p-2.5">
-        <CoverTile book={SHELF[0]} size="resume" caption="dash" />
+        <CoverTile book={FIRST_READ} size="resume" caption="dash" />
         <span className="min-w-0 flex-1">
           <span lang="hi" className="hi hi-tight block truncate text-sm font-semibold">
             मानव का उद्देश्य
@@ -384,7 +431,7 @@ function Journey() {
 
 const FRAGMENTS: Record<OnboardingCardId, () => React.ReactElement> = {
   workspaces: Switcher,
-  originals: Shelf,
+  originals: Resuming,
   resources: Material,
   translations: Languages,
   highlights: Marking,

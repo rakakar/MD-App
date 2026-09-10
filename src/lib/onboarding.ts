@@ -40,7 +40,8 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
     title: "Originals holds the source works",
     body:
       "Every book, audio recording, video and other work of Shri A. Nagraj, in one place. Nothing here is edited or interpreted — it is the material as it was given.",
-    fragmentLabel: "The Originals shelf, showing book covers and the media tabs",
+    fragmentLabel:
+      "A book and a recording, each showing where the reader left off",
   },
   {
     id: "resources",

@@ -1315,21 +1315,6 @@ html[data-reading="1"] body {
   }
 }
 
-/* The first-run deck's one dark stage — the panel the Originals card's covers
-   sit on, as the comps draw it.
-
-   Declared here and **never redefined per theme**, which is the whole point of
-   it. Written as `bg-ink text-surface` it inverted: `--color-ink` is near-white
-   in dark and `--color-surface` near-black, so a dark stage designed to make
-   six covers glow came out as a white panel with dark chips on it. This is not
-   a theme colour, it is the colour of an object, in the same way the accent
-   under a white CTA label is — no theme may change either, because the pairing
-   is what makes it legible. */
-.stage-ink {
-  background: #1c1a18;
-  color: #fff;
-}
-
 .disclosure {
   display: grid;
   grid-template-rows: 0fr;
