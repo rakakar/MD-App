@@ -225,15 +225,16 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
                   key={c.id}
                   aria-label={`${c.title}. ${c.fragmentLabel}`}
                   aria-hidden={n !== i}
-                  /* Centred in whatever height is left over. The comps are
-                     drawn on a tall phone where the fragment reaches the text
-                     and there is no slack; on a short one there is, and a
-                     block pinned to the top leaves all of it in a heap above
-                     the buttons. Splitting it reads as composition. Not
-                     `flex-1` on the fragment itself — growing the stage to
-                     fill would clip the taller cards on a small phone, where
-                     the floor is all the room there is. */
-                  className="flex w-full shrink-0 flex-col justify-center select-none px-0.5"
+                  /* Top-aligned, and that is the fix rather than an
+                     oversight. Centring the block put the title wherever the
+                     card's own height happened to leave it, so the heading and
+                     the sentence stepped up and down under the reader's thumb
+                     as they swiped — which reads as the page settling rather
+                     than as a deck advancing. With `Stage` a fixed height and
+                     the block pinned to the top, the title lands in the same
+                     place on all six. The slack falls at the bottom, above the
+                     controls, where nothing moves. */
+                  className="flex w-full shrink-0 flex-col select-none px-0.5"
                   style={{ width: `${100 / ONBOARDING_CARDS.length}%` }}
                 >
                   <Fragment id={c.id} />

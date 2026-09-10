@@ -1,42 +1,64 @@
 "use client";
 
-import { CoverTile, ProgressBar } from "@/components/shelf/CoverTile";
+import { useEffect, useState } from "react";
+import { BookRail } from "@/components/home/BookRail";
+import { CoverTile } from "@/components/shelf/CoverTile";
 import {
   CheckIcon,
   ChevronRight,
-  LanguageIcon,
-  PathIcon,
+  HeadphonesIcon,
+  TocIcon,
   VideoIcon,
   WaveformIcon,
   WorkspaceIcon,
 } from "@/components/shell/icons";
+import { KindTile } from "@/components/ui/KindTile";
+import { getBooks } from "@/lib/api";
 import { LEVELS, STAGES } from "@/lib/journey";
 import type { OnboardingCardId } from "@/lib/onboarding";
+import type { BookSummary } from "@/lib/types";
 import { WORKSPACES, WORKSPACE_ORDER } from "@/lib/workspaceConfig";
 
 /**
  * The half of each first-run card that is above the line.
  *
  * **Built from the app, not drawn of it.** Every fragment here uses the real
- * components and the real data: `CoverTile` renders the same designed
- * gradient it renders on the shelf, the switcher rows come from `WORKSPACES`,
- * and the journey card reads `STAGES` and `LEVELS`. Nothing fetches — the deck
- * has to open instantly, before the first paint of anything else and while
- * offline — so what is shown is what the app already knows without asking the
- * server.
+ * components and the real data: `BookRail` is Home's own carousel, `KindTile`
+ * and the row around it are the library's list view, the switcher rows are
+ * `Header`'s `sheetRow`, and the journey card reads `STAGES` and `LEVELS`. A
+ * picture of the switcher goes stale the day a workspace is renamed and nobody
+ * notices until a reader does.
  *
- * That rules out real book covers and real event data, which arrive over the
- * network. It does not rule out real book *titles*, which are the six most
- * likely to be on the shelf, and it costs nothing to keep them honest.
+ * **Nothing blocks on the network, and one thing asks it politely.** The book
+ * rail fetches the shelf so it can show the real covers, and until that lands —
+ * or if it never does, offline — `CoverTile` draws the same designed fallback
+ * it draws anywhere else. The deck opens on the first frame either way.
  *
- * Everything in here is inert. A fragment is a picture the app happens to draw
- * with live components, so nothing is a button, nothing is a link, and the
- * whole block is `aria-hidden` — the card's own `aria-label` says what it is,
- * and a screen reader stepping through six decks of decorative controls is the
- * accessibility failure this pattern usually ships with.
+ * Everything here is inert, and the `inert` attribute does that rather than a
+ * convention: these are real components, so they contain real links, and six
+ * screens' worth of them in the tab order is the accessibility failure this
+ * pattern usually ships with. Each card's own `aria-label` says what the
+ * picture is.
  */
 
-/** The frame every fragment sits in: the comps' tall, rounded stage. */
+/**
+ * One height for every fragment, so the sentence under it does not move.
+ *
+ * The cards hold different amounts — five switcher rows against two rails
+ * against a passage — and with the stage sized to its contents the title and
+ * body stepped up and down as the reader swiped, which reads as the page
+ * settling rather than as a deck advancing. Fixed here and centred inside, so
+ * the only thing that changes between cards is the picture.
+ *
+ * 424px is the tallest of the six measured at their natural heights — the
+ * switcher's five rows and the shelf's two rails, both at 420 — with four
+ * pixels over. If a fragment outgrows it, it clips: the height is the contract
+ * and the fragment is what gives way. Measure the six again before raising it,
+ * because every pixel here comes off the bottom of a small phone.
+ */
+const STAGE_H = "h-[26.5rem]";
+
+/** The frame every fragment sits in. */
 function Stage({
   children,
   tone = "paper",
@@ -44,14 +66,11 @@ function Stage({
   children: React.ReactNode;
   tone?: "paper" | "tint";
 }) {
-  const skin =
-    tone === "tint"
-      ? "border border-rule"
-      : "border border-rule bg-card";
+  const skin = tone === "tint" ? "border border-rule" : "border border-rule bg-card";
   return (
     <div
-      aria-hidden
-      className={`flex min-h-[17rem] flex-col justify-center overflow-hidden rounded-card p-4 ${skin}`}
+      inert
+      className={`flex ${STAGE_H} flex-col justify-center overflow-hidden rounded-card p-4 ${skin}`}
       style={
         tone === "tint"
           ? { background: "color-mix(in srgb, var(--ws-color) 5%, var(--color-card))" }
@@ -63,33 +82,31 @@ function Stage({
   );
 }
 
+const LABEL = "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft";
+
 /* ---- 1. the switcher ------------------------------------------------- */
 
 /**
  * The switcher's five rows, exactly as the bottom sheet draws them.
  *
- * `Header`'s `sheetRow` is the original and this follows it line for line: the
- * gradient tile in the workspace's own hue with a white glyph on it, the name
- * over its tagline, and the row you are standing in marked the way the sheet
- * marks it — its own accent as a border, a 7% wash of that accent behind, and
- * a check at the end.
+ * `Header`'s `sheetRow` is the original and this follows it: the gradient tile
+ * in the workspace's own hue with a white glyph on it, the name over its
+ * tagline, and the row you are standing in marked the way the sheet marks it —
+ * its own accent as a border, a 7% wash of that accent behind, and a check.
  *
- * It was a filled dark row before, which was a shape the app does not have.
- * Selection is never colour alone here either: the check carries it for anyone
- * who cannot separate the wash from the paper.
+ * It was a filled dark row before, which is a shape the app does not have.
+ * Selection is not colour alone here either: the check carries it for anyone
+ * who cannot separate a 7% wash from the paper.
  *
  * The comps draw a different five — Explore, Originals, Resources, Community,
- * My Journey — which is an earlier naming this app has not had for some time.
- * A first-run card teaching a reader five names has to teach the five that are
- * actually there, so the rows are read out of `WORKSPACES` and will follow it
- * if a workspace is ever renamed again.
+ * My Journey — an earlier naming this app has not had for some time. A card
+ * teaching a reader five names has to teach the five that are there, so the
+ * rows are read out of `WORKSPACES` and follow the next rename on their own.
  */
 function Switcher() {
   return (
     <Stage tone="tint">
-      <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        Switch by what you came for
-      </p>
+      <p className={LABEL}>Switch by what you came for</p>
       <ul className="mt-3 flex flex-col gap-2">
         {WORKSPACE_ORDER.map((id) => {
           const ws = WORKSPACES[id];
@@ -116,14 +133,12 @@ function Switcher() {
               >
                 <WorkspaceIcon id={id} />
               </span>
-
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold leading-tight">{ws.name}</span>
                 <span className="mt-0.5 block truncate text-xs leading-snug text-ink-soft">
                   {ws.tagline}
                 </span>
               </span>
-
               {here && (
                 <span className="shrink-0" style={{ color: ws.color }}>
                   <CheckIcon className="h-4.5 w-4.5" />
@@ -137,94 +152,72 @@ function Switcher() {
   );
 }
 
-/* ---- 2. Originals, as the two things you come back to ---------------- */
+/* ---- 2. the shelf, and what you left in it --------------------------- */
 
 /**
- * The two books these fragments show, by their real codes.
+ * Written-down books as the floor, the shelf itself as soon as it answers.
  *
- * No `cover_image` on either, so `CoverTile` draws its designed fallback — the
- * same object the shelf shows for a book whose scan has not arrived, and in the
- * book's own hue, which is derived from the code. That is why the codes are
- * real rather than invented: `bookHue` keys off them, so a made-up one would
- * colour the tile differently here than everywhere else in the app.
- *
- * Stage one's reading is JVEP, so the journey card names it and the resume card
- * names the book someone would be mid-way through. Separate entries rather than
- * one shared: they illustrate different things and should be free to differ.
+ * The codes are real because `CoverTile` derives a book's fallback hue from its
+ * code — an invented one would colour the tile differently here than everywhere
+ * else in the app.
  */
-const RESUMING = { code: "MKD", title_hi: "मानव कर्म दर्शन", cover_image: null };
-const FIRST_READ = { code: "JVEP", title_hi: "जीवन विद्या एक परिचय", cover_image: null };
+const FALLBACK_SHELF = [
+  { code: "JVEP", title_hi: "जीवन विद्या एक परिचय", page_count: 110 },
+  { code: "ABVP", title_hi: "विकल्प एवं अध्ययन बिंदु", page_count: 60 },
+  { code: "MKD", title_hi: "मानव कर्म दर्शन", page_count: 178 },
+  { code: "MABD", title_hi: "मानव अभ्यास दर्शन", page_count: 195 },
+] as unknown as BookSummary[];
 
-/** A second book, so the reading rail is a rail rather than a card. */
-const ALSO_READING = { code: "MABD", title_hi: "मानव अभ्यास दर्शन", cover_image: null };
+function useShelf(): BookSummary[] {
+  const [books, setBooks] = useState<BookSummary[]>(FALLBACK_SHELF);
+  useEffect(() => {
+    let live = true;
+    // One `books/` call — the same one Home makes, so it is usually already in
+    // the browser's cache by the time the deck asks. A failure needs no
+    // handling: the fallback is already on screen and is a designed object
+    // rather than a placeholder.
+    void getBooks({ workspace: "originals" })
+      .then((rows) => {
+        if (live && rows.length > 0) setBooks(rows.slice(0, 6));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  return books;
+}
 
 /**
- * Where a reader left off — in a book, in a recording, in a talk.
+ * The shelf as a carousel, and under it the recordings you stopped in.
  *
  * This was a dark stage of six cover tiles under Books / Audio / Video tabs —
- * the shelf as an object. It shows what the shelf is *for* instead: Originals
- * holds books and it holds forty hours of his own voice, and the honest
- * picture of "in one place" is the resume rails a reader actually meets on
- * Home.
+ * the shelf as an object. It shows what the shelf holds and what a reader does
+ * with it instead: `BookRail`, which is Home's own carousel, over `ContinueAv`'s
+ * resume cards.
  *
- * **Two rails, drawn as rails.** The real ones bleed past the gutter and snap,
- * with the next card peeking — that peek is what says there are more without a
- * control saying so, and a fragment that squared the cards off inside the
- * stage would have been showing a different component.
+ * **Both drawn as rails**, with the next card peeking — that peek is what says
+ * there are more without a control saying so.
  *
- * The card is 15.5rem where the real one is 17.5. Copying the number gave the
- * wrong picture: the real rail bleeds to the edge of the screen and shows
- * 51px of the next card, while this one is inside a stage that is inside the
- * page gutters, and the same 280px left a 30px sliver that read as a clipped
- * card rather than as a rail. What has to match here is the proportion, not
- * the measurement.
- *
- * Everything here is a picture and none of it scrolls — the deck owns
- * horizontal drag on this screen, so a rail that really scrolled would be
- * fighting the card it sits on. Nothing in this file is interactive for
- * exactly that kind of reason; see the note at the top.
+ * The resume card is 15.5rem where the real one is 17.5, and copying the number
+ * was the mistake worth recording: the real rail bleeds to the edge of the
+ * screen and shows 51px of the next card, while this one sits in a stage inside
+ * the page gutters, where the same 280px left a 30px sliver that read as a
+ * clipped card rather than as a rail. What has to match is the proportion.
  */
-function Resuming() {
-  const label = "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft";
-  /* `-mx-4` against the stage's `p-4`, so the rail starts at the text above it
-     and runs out under the stage's clipped edge. */
-  const rail = "-mx-4 mt-2.5 flex gap-3 px-4";
+function Shelf() {
+  const books = useShelf();
   const card = "w-[15.5rem] shrink-0 rounded-card border border-rule bg-card px-4 py-3";
 
   return (
     <Stage>
-      <p className={label}>Continue reading</p>
-      <div className={rail}>
-        {[
-          { book: RESUMING, title: "मानव कर्म दर्शन", chapter: "अध्याय 1 : कर्म", page: "Page 25 of 178", pct: 14 },
-          { book: ALSO_READING, title: "मानव अभ्यास दर्शन", chapter: "अध्याय 2 : अभ्यास", page: "Page 61 of 195", pct: 31 },
-        ].map((b) => (
-          <div key={b.book.code} className={`${card} flex items-center gap-4`}>
-            <CoverTile book={b.book} size="resume" />
-            <span className="min-w-0 flex-1">
-              <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
-                {b.title}
-              </span>
-              <span lang="hi" className="hi hi-tight mt-1 block truncate text-xs font-medium text-ink-soft">
-                {b.chapter}
-              </span>
-              <ProgressBar percent={b.pct} showValue={false} className="mt-3" />
-              <span className="mt-1.5 flex items-baseline justify-between gap-2">
-                <span className="truncate text-xs font-medium text-ink-soft">{b.page}</span>
-                <span
-                  className="shrink-0 text-xs font-bold tabular-nums"
-                  style={{ color: "var(--ws-ink)" }}
-                >
-                  {b.pct}%
-                </span>
-              </span>
-            </span>
-          </div>
-        ))}
+      <p className={LABEL}>Books</p>
+      <div className="mt-2.5">
+        <BookRail books={books} />
       </div>
 
-      <p className={`${label} mt-4`}>Resume</p>
-      <div className={rail}>
+      <p className={`${LABEL} mt-4`}>Resume</p>
+      <div className="-mx-4 mt-2.5 flex gap-3 px-4">
         {[
           {
             kind: "audio" as const,
@@ -243,10 +236,10 @@ function Resuming() {
         ].map((r) => (
           <div key={r.kind} className={card}>
             <span className="flex w-full items-start gap-3">
-              {/* The glyph tile rather than a poster or a still: both are URLs,
-                  and a fragment may not wait on the network. It is the real
-                  card's own fallback, in the kind's own tint — warm for audio,
-                  blue for video — which is the pair the Library shelf uses. */}
+              {/* The glyph tile rather than a poster or a still: both are URLs
+                  the card would have to wait on, and this is the real card's
+                  own fallback — warm for audio, blue for video, the pair the
+                  Library shelf uses. */}
               <span
                 aria-hidden
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
@@ -262,15 +255,15 @@ function Resuming() {
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
+                <span lang="hi" className="hi hi-tight block truncate text-sm font-semibold">
                   {r.title}
                 </span>
-                <span className="ui-hi hi-tight mt-1 block truncate text-xs font-medium text-ink-soft">
+                <span className="ui-hi mt-1 block truncate text-xs font-medium leading-snug text-ink-soft">
                   {r.where}
                 </span>
               </span>
             </span>
-            <span className="mt-3 flex w-full items-center gap-3">
+            <span className="mt-2.5 flex w-full items-center gap-3">
               <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-canvas">
                 <span
                   className="block h-full rounded-full"
@@ -288,99 +281,159 @@ function Resuming() {
   );
 }
 
-/* ---- 3. the Resources shelf ------------------------------------------ */
+/* ---- 3. Resources, as the list a reader lands on --------------------- */
 
-const MATERIAL: { title: string; meta: string }[] = [
-  { title: "शिक्षा में मानवीय मूल्यों का समावेश", meta: "Shodh patra · 18 pages · 2019" },
-  { title: "ग्राम स्वराज्य योजना — कार्य विवरण", meta: "Yojana document · 42 pages" },
-  { title: "अभ्यास शिविर — अध्ययन क्रम", meta: "Study guide · 12 pages" },
+/**
+ * Three rows of the shelf's own list view.
+ *
+ * It was a chip row over three flat cards — a sketch of a list rather than the
+ * list. This is `CollectionListRow`'s shape, which is what `/resources` draws:
+ * the kind tile at `xl` on the left, the name, a line of what it is, then the
+ * accent-tinted chip with the file's own facts beside it, and a chevron at the
+ * end. A reader who has seen this recognises the screen when they arrive on
+ * it, which is the whole reason a fragment is a fragment and not a drawing.
+ */
+const MATERIAL = [
+  {
+    kind: "pdf" as const,
+    name: "शिक्षा में मानवीय मूल्यों का समावेश",
+    chip: "PDF",
+    note: "Shodh patra · 18 pages",
+  },
+  {
+    kind: "pdf" as const,
+    name: "ग्राम स्वराज्य योजना — कार्य विवरण",
+    chip: "PDF",
+    note: "Yojana · 42 pages",
+  },
+  {
+    kind: "folder" as const,
+    name: "अभ्यास शिविर — अध्ययन क्रम",
+    chip: "12 items",
+    note: "Study guides",
+  },
 ];
 
 function Material() {
   return (
     <Stage tone="tint">
-      <div className="flex flex-wrap gap-2">
-        {["Research", "Yojana", "Notes"].map((t, i) => (
-          <span
-            key={t}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-              i === 0 ? "bg-ink text-surface" : "border border-rule bg-card"
-            }`}
-          >
-            {t}
-          </span>
-        ))}
-      </div>
-      <ul className="mt-3 flex flex-col gap-2">
+      <p className={LABEL}>Student materials</p>
+      <ul className="mt-2.5 flex flex-col gap-2.5">
         {MATERIAL.map((m) => (
-          <li key={m.title} className="rounded-card border border-rule bg-card px-3.5 py-2.5">
-            <span lang="hi" className="hi hi-tight block text-sm font-semibold">
-              {m.title}
+          <li
+            key={m.name}
+            className="flex items-center gap-3.5 rounded-card border border-rule bg-card p-2.5"
+          >
+            <KindTile kind={m.kind} size="xl" />
+            <span className="min-w-0 flex-1">
+              <span lang="hi" className="hi hi-tight line-clamp-2 text-sm font-semibold">
+                {m.name}
+              </span>
+              {/* No description line. `DoorRow` takes one only when the caller
+                  asks (`withDescription`), and the shelf's top level does not:
+                  seven descriptions there would be a paragraph where a list was
+                  wanted. This is that level. */}
+              <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <span
+                  className="rounded-full px-2.5 py-0.5 text-xs font-bold"
+                  style={{
+                    background: "var(--color-accent-tint)",
+                    color: "var(--ws-ink)",
+                  }}
+                >
+                  {m.chip}
+                </span>
+                <span className="text-sm text-ink-soft">{m.note}</span>
+              </span>
             </span>
-            <span className="ui-hi mt-0.5 block text-xs leading-snug text-ink-soft">
-              {m.meta}
+            <span aria-hidden className="shrink-0 text-muted">
+              <ChevronRight />
             </span>
           </li>
         ))}
       </ul>
-      {/* The dashed row is the comp's, and it is doing real work: three cards
-          would otherwise read as the whole of Resources. */}
-      <p className="mt-2 rounded-card border border-dashed border-rule px-3.5 py-2.5 text-center text-xs text-ink-soft">
-        and 240 more from students and study groups
-      </p>
     </Stage>
   );
 }
 
-/* ---- 4. the language toggle ------------------------------------------ */
+/* ---- 4. the reader, with both languages ------------------------------ */
 
 /**
- * Two segments, not the comp's three.
+ * A page of a translation, with the reader's own bottom chrome under it.
  *
- * The real control switches between the original and *the* translation of the
- * edition open in front of you — a bilingual book is Hindi and one other
- * language, never a menu of all of them (`ReaderChrome`'s `ReaderLanguageBar`).
- * Drawing three here would teach a control that does not exist; the card's own
- * sentence is what says Kannada is among the languages available.
+ * The toggle used to float in the middle of the card over an invented "Original
+ * and translation together" chip, which is not a control this app has. It sits
+ * where the designer put it: docked at the foot, above the page-number row and
+ * under its own hairline — the two are different questions and the rule is what
+ * says so (`ReaderChrome`'s `ReaderBottomBar`).
+ *
+ * The app's `--color-rule` stands in for `--reader-rule`. The reader's tokens
+ * only resolve inside a book, and this fragment is on the app's paper.
  */
 function Languages() {
   const seg = "flex min-h-9 flex-1 items-center justify-center rounded-control px-3 text-sm";
   return (
     <Stage>
-      <div className="flex items-stretch gap-1 rounded-control border border-rule p-1">
-        <span
-          className={`${seg} font-semibold text-white`}
-          style={{ background: "var(--ws-color)" }}
-          lang="hi"
-        >
-          हिन्दी
-        </span>
-        <span className={`${seg} text-ink-soft`}>English</span>
+      <div className="flex flex-1 flex-col justify-center">
+        <p lang="hi" className="hi hi-note text-title">
+          मानव का सहज आचरण ही मानवीयता है। यह आचरण मूल्य, चरित्र और नैतिकता के
+          रूप में प्रकट होता है।
+        </p>
+        <p className="mt-3.5 text-sm leading-relaxed text-ink-soft">
+          Humaneness is the natural conduct of a human being. This conduct
+          expresses itself as values, character and ethics.
+        </p>
       </div>
-      <p lang="hi" className="hi hi-note mt-4 text-title">
-        मानव का सहज आचरण ही मानवीयता है। यह आचरण मूल्य, चरित्र और नैतिकता के रूप
-        में प्रकट होता है।
-      </p>
-      <p className="mt-3.5 border-t border-rule pt-3.5 text-sm leading-relaxed text-ink-soft">
-        Humaneness is the natural conduct of a human being. This conduct expresses
-        itself as values, character and ethics.
-      </p>
-      <p
-        className="mt-3.5 inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 text-xs font-semibold"
-        style={{
-          background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
-          color: "var(--ws-ink)",
-        }}
-      >
-        <LanguageIcon className="h-3.5 w-3.5" />
-        Original and translation together
-      </p>
+
+      {/* Drawn to the stage's own edges, the way the real bar is drawn to the
+          screen's. */}
+      <div className="-mx-4 -mb-4 mt-4 border-t border-rule">
+        <div className="border-b border-rule px-4 py-2">
+          <div className="flex items-stretch gap-1 rounded-control border border-rule p-1">
+            <span
+              lang="hi"
+              className={`${seg} font-semibold text-white`}
+              style={{ background: "var(--ws-color)" }}
+            >
+              हिन्दी
+            </span>
+            <span className={`${seg} text-ink-soft`}>English</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 px-4 py-1.5">
+          <span
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-soft"
+          >
+            <TocIcon className="h-5 w-5" />
+          </span>
+          <span className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-control border border-rule px-3 text-sm font-medium tabular-nums">
+            42 / 164
+          </span>
+          <span
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-soft"
+          >
+            <HeadphonesIcon className="h-5 w-5" />
+          </span>
+        </div>
+      </div>
     </Stage>
   );
 }
 
-/* ---- 5. highlight and note ------------------------------------------- */
+/* ---- 5. mark a line, and find it again ------------------------------- */
 
+/**
+ * The selection bar over a painted line, and the card it becomes.
+ *
+ * Both halves are real and the pairing is the point: the dark pill is what
+ * appears when you hold a line (`SelectionBar` — three colour swatches, then
+ * the word actions, on its own dark surface in every theme), and the card under
+ * it is the row that turns up in Highlights & Notes, down to the book and the
+ * `पृष्ठ N · date` line. That card used to be an invented "YOUR NOTE" panel,
+ * which taught a screen this app does not have.
+ */
 function Marking() {
   return (
     <Stage>
@@ -391,34 +444,37 @@ function Marking() {
         </span>{" "}
         — यही मानव की अपेक्षा है।
       </p>
-      {/* The selection bar's two actions, in the order it offers them, and
-          without the comp's pencil and bookmark glyphs — `SelectionAction`
-          draws these as words. Only Share carries an icon on that bar. */}
-      <div className="mt-4 flex gap-2">
-        <span className="inline-flex items-center rounded-full bg-ink px-3.5 py-2 text-sm font-medium text-surface">
-          Highlight
-        </span>
-        <span className="inline-flex items-center rounded-full bg-inset px-3.5 py-2 text-sm font-medium text-ink-soft">
-          Note
-        </span>
+
+      {/* `bg-overlay` with white on it, fixed in every theme, because the real
+          bar is: it floats over a page whose surface the reader chooses. */}
+      <div className="mt-4 flex w-fit max-w-full items-center gap-1 overflow-hidden rounded-full bg-overlay px-2 py-1.5 text-white shadow-raised">
+        {["bg-hl-amber", "bg-hl-sage", "bg-hl-sky"].map((c) => (
+          <span key={c} className={`h-8 w-8 shrink-0 rounded-full ring-1 ring-white/25 ${c}`} />
+        ))}
+        <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-white/20" />
+        {/* Note and Share, not the real bar's Note · Share · Copy. That bar
+            scrolls when it runs out of room and this one cannot, so the third
+            word came out sliced down its middle at the stage's edge — which
+            reads as a rendering fault rather than as a bar with more in it. */}
+        {["Note", "Share"].map((a) => (
+          <span
+            key={a}
+            className="inline-flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-full px-3 text-sm font-medium"
+          >
+            {a}
+          </span>
+        ))}
       </div>
-      <div
-        className="mt-3.5 rounded-card border border-rule p-3.5"
-        style={{ background: "color-mix(in srgb, var(--ws-color) 6%, var(--color-card))" }}
-      >
-        <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-          Your note
+
+      <p className={`${LABEL} mt-5`}>Highlights &amp; Notes</p>
+      <div className="mt-2.5 rounded-card border border-rule bg-card p-4 shadow-card">
+        <p lang="hi" className="hi hi-tight line-clamp-2 text-title leading-relaxed">
+          <span className="box-decoration-clone rounded-md bg-hl-amber px-1">
+            समाधान, समृद्धि, अभय और सह-अस्तित्व
+          </span>
         </p>
-        <p className="mt-1.5 text-sm leading-relaxed">
-          These four are not goals to reach one after another — they describe one
-          state.
-        </p>
-        <p
-          className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold"
-          style={{ color: "var(--ws-ink)" }}
-        >
-          <PathIcon className="h-3.5 w-3.5" />
-          Saved to My Journey
+        <p className="ui-hi mt-2.5 text-xs leading-snug text-ink-soft">
+          मानव कर्म दर्शन · पृष्ठ 93 · 9 Sep 2026
         </p>
       </div>
     </Stage>
@@ -427,11 +483,21 @@ function Marking() {
 
 /* ---- 6. the journey -------------------------------------------------- */
 
+/** "Level One" — the level's number said as a word, as `StageCard` draws it. */
+const LEVEL_WORD: Record<number, string> = { 1: "One", 2: "Two", 3: "Three", 4: "Four" };
+
 /**
- * Stage one, drawn the way the dashboard's own card draws it: nine segments
- * grouped into the four levels, the level named above them, and one next step
- * underneath. Read out of `STAGES` and `LEVELS`, so a stage renamed in the
- * source is renamed here.
+ * Stage one, drawn as the dashboard's own card draws it.
+ *
+ * `StageCard` is the original: the level named above nine segments grouped into
+ * their four levels, the stage's name, what happens in it and how long it
+ * usually takes, then the one next step. The segments take that card's three
+ * tones exactly — the stage you declared is the accent, the rest of its level a
+ * wash of it, every other level fainter still, and none of the three means
+ * "done", because this is a position and not a score.
+ *
+ * Read out of `STAGES` and `LEVELS`, so a stage renamed in the source is
+ * renamed here.
  */
 function Journey() {
   const stage = STAGES[0];
@@ -439,59 +505,66 @@ function Journey() {
   return (
     <Stage tone="tint">
       <div className="flex items-baseline justify-between gap-3">
-        <p
-          className="text-xs font-bold uppercase tracking-[0.09em]"
-          style={{ color: "var(--ws-ink)" }}
-        >
-          Level one
+        <p className={LABEL} style={{ color: "var(--ws-ink)" }}>
+          Level {LEVEL_WORD[level.id]}
         </p>
-        <p className="text-xs text-ink-soft">Stage {stage.id} of {STAGES.length}</p>
+        <p className="shrink-0 text-sm text-ink-soft">
+          Stage {stage.id} of {STAGES.length}
+        </p>
       </div>
-      <div className="mt-2 flex items-center gap-2">
+
+      <div className="mt-2.5 flex items-center gap-2">
         {LEVELS.map((l) => (
           <div key={l.id} className="flex flex-1 gap-1">
-            {l.stages.map((s) => (
+            {l.stages.map((id) => (
               <span
-                key={s}
+                key={id}
                 className="h-1.5 flex-1 rounded-full"
                 style={{
                   background:
-                    s === stage.id
-                      ? "var(--ws-ink)"
-                      : l.id === level.id
-                        ? "color-mix(in srgb, var(--ws-color) 35%, var(--color-inset))"
-                        : "var(--color-inset)",
+                    id === stage.id
+                      ? "var(--ws-color)"
+                      : l.id === stage.level
+                        ? "color-mix(in srgb, var(--ws-color) 35%, var(--color-card))"
+                        : "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
                 }}
               />
             ))}
           </div>
         ))}
       </div>
+
       <p lang="hi" className="hi hi-tight mt-3 text-xl font-semibold">
         {stage.hi}
       </p>
-      <p className="mt-0.5 text-sm text-ink-soft">7 days · the first camp</p>
+      {/* The note alone. `StageCard` follows it with the duration sentence,
+          and both together clamped mid-phrase — "1–2 camps over 6 months t…" —
+          which is worse than not saying it. The card is a picture of the
+          screen, not a copy of its every line. */}
+      <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed">{stage.note}</p>
 
-      <p className="mt-4 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        Your next step
-      </p>
+      <p className={`${LABEL} mt-4`}>Your next step</p>
       <div className="mt-1.5 flex items-center gap-3 rounded-card border border-rule bg-card p-2.5">
-        <CoverTile book={FIRST_READ} size="resume" caption="dash" />
+        <CoverTile
+          book={{ code: "JVEP", title_hi: "जीवन विद्या एक परिचय", cover_image: null }}
+          size="resume"
+          caption="dash"
+        />
         <span className="min-w-0 flex-1">
           <span lang="hi" className="hi hi-tight block truncate text-sm font-semibold">
-            मानव का उद्देश्य
+            जीवन विद्या एक परिचय
           </span>
-          <span lang="hi" className="hi mt-0.5 block text-xs text-ink-soft">
-            पृष्ठ 24
+          <span lang="hi" className="hi hi-tight mt-0.5 block text-xs text-ink-soft">
+            अध्याय 1 · पृष्ठ 24
           </span>
-          <span className="mt-2 block h-1 w-full rounded-full bg-inset">
+          <span className="mt-2 block h-1.5 w-full overflow-hidden rounded-full bg-canvas">
             <span
-              className="block h-1 w-1/3 rounded-full"
-              style={{ background: "var(--ws-ink)" }}
+              className="block h-full rounded-full"
+              style={{ width: "22%", background: "var(--progress-fill)" }}
             />
           </span>
         </span>
-        <span className="shrink-0 text-muted">
+        <span aria-hidden className="shrink-0 text-muted">
           <ChevronRight className="h-5 w-5" />
         </span>
       </div>
@@ -501,7 +574,7 @@ function Journey() {
 
 const FRAGMENTS: Record<OnboardingCardId, () => React.ReactElement> = {
   workspaces: Switcher,
-  originals: Resuming,
+  originals: Shelf,
   resources: Material,
   translations: Languages,
   highlights: Marking,

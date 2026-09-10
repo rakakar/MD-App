@@ -41,28 +41,30 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
     body:
       "Every book, audio recording, video and other work of Shri A. Nagraj, in one place. Nothing here is edited or interpreted — it is the material as it was given.",
     fragmentLabel:
-      "A book and a recording, each showing where the reader left off",
+      "The books carousel, and the recordings a reader stopped in",
   },
   {
     id: "resources",
     title: "Resources is what students have built",
     body:
       "Research papers, study guides and yojana material contributed by students sit apart from the originals, so the two are never confused.",
-    fragmentLabel: "The Resources shelf, showing student material",
+    fragmentLabel: "The Resources shelf, as a list of student material",
   },
   {
     id: "translations",
     title: "Read in English or Kannada",
     body:
       "Translations are available alongside the original. In read mode you can switch between Hindi and your chosen language at any point, without losing your place.",
-    fragmentLabel: "The reader's language toggle, over a passage and its translation",
+    fragmentLabel:
+      "A passage and its translation, with the reader's language toggle below",
   },
   {
     id: "highlights",
     title: "Highlight a line, keep a note",
     body:
       "Select any passage to highlight it or write against it. Everything you mark is collected in My Journey, with a link back to the page it came from.",
-    fragmentLabel: "A highlighted passage with a note written against it",
+    fragmentLabel:
+      "A highlighted passage, the selection bar, and the card it becomes",
   },
   {
     id: "journey",
