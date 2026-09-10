@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CheckIcon, PinIcon } from "@/components/shell/icons";
 import { useWorkspace } from "@/components/shell/WorkspaceProvider";
 import { SearchField } from "@/components/SearchField";
@@ -44,10 +44,32 @@ export function StateSheet({
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * A–Z, whatever order the API sends.
+   *
+   * `contacts/states/` returns them by something that is not the name —
+   * measured today: Chhattisgarh, Delhi NCR, Gujarat, Karnataka, Madhya
+   * Pradesh, Maharashtra, Rajasthan, Uttar Pradesh, and then Jharkhand,
+   * Andhra Pradesh, Odisha, Tamil Nadu, Bihar, Canada. Alphabetical for the
+   * first eight and then not, which is worse than either: a reader who has
+   * learnt that the list is sorted stops scanning where their letter should
+   * have been.
+   *
+   * Sorted here rather than asked for, because this is presentation and it is
+   * the one derivation the app can make that cannot go stale — unlike a count
+   * or a bucket, a name's place in the alphabet does not change at midnight.
+   *
+   * `localeCompare` rather than `<`, so a name that arrives with an accent or
+   * in another script sorts where a reader would look for it rather than by
+   * code point.
+   */
+  const sorted = useMemo(
+    () => [...states.states].sort((a, b) => a.name.localeCompare(b.name)),
+    [states.states]
+  );
+
   const q = query.trim().toLowerCase();
-  const rows = q
-    ? states.states.filter((s) => s.name.toLowerCase().includes(q))
-    : states.states;
+  const rows = q ? sorted.filter((s) => s.name.toLowerCase().includes(q)) : sorted;
 
   const choose = (code: string) => {
     onSelect(code);

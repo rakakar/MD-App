@@ -71,12 +71,21 @@ export function ContactsScreen({
       {/* The chooser looks like the comps' select and is a button, because what
           it opens is a sheet with a search box in it — a native `<select>`
           cannot hold one, and a dozen states is where scanning stops being
-          enough. */}
+          enough.
+
+          Pinned under the app bar, the same way the events search row and the
+          books filter are: it is the one control on this screen, and a reader
+          nine cards down a state with somebody in every city had to scroll back
+          to the top to change it. The air is padding *inside* the sticky box —
+          a larger `top` would leave a strip of moving list showing above it —
+          and `-mx-4 px-4` bleeds the page's own ground to the gutters so the
+          rows pass behind it rather than beside it. */}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:mx-0 sm:px-0 lg:top-0">
       <button
         type="button"
         onClick={() => setSheetOpen(true)}
         aria-haspopup="dialog"
-        className="mt-4 flex min-h-14 w-full items-center gap-3 rounded-control border border-rule bg-card px-3.5 text-start"
+        className="flex min-h-14 w-full items-center gap-3 rounded-control border border-rule bg-card px-3.5 text-start"
       >
         <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
           <PinIcon />
@@ -95,6 +104,7 @@ export function ContactsScreen({
           <ChevronDown />
         </span>
       </button>
+      </div>
 
       <div
         className={`mt-3.5 transition-opacity ${pending ? "opacity-60" : ""}`}
