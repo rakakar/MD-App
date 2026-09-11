@@ -119,7 +119,12 @@ export function LaunchScreen({ onDone }: { onDone: () => void }) {
       // own note gives: this is seen once, so a dark twin of it is a second
       // design to draw and keep for a screen nobody meets twice.
       data-theme="light"
-      className="fixed inset-0 z-60 overflow-y-auto bg-surface"
+      // A held frame, not a played one — see the file note on why the
+      // reference's multi-second reveal is not reproduced here. This is the
+      // one concession to it: the card arrives rather than simply appearing,
+      // without asking a reader who has cleared their storage to sit through
+      // a sequence to get to a button they may have already pressed once.
+      className="fixed inset-0 z-60 overflow-y-auto bg-surface motion-safe:animate-[fade-in_320ms_ease-out]"
     >
       {/* A portal renders outside the provider's [data-ws], so without this
           every var(--ws-color) below would fall back to the app default
