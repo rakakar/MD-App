@@ -1492,10 +1492,10 @@ html[data-reading="1"] body {
 .launch-scrim-x {
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--launch-ground) 96%, transparent) 0%,
-    color-mix(in srgb, var(--launch-ground) 86%, transparent) 24%,
-    color-mix(in srgb, var(--launch-ground) 40%, transparent) 44%,
-    transparent 60%
+    color-mix(in srgb, var(--launch-ground) 84%, transparent) 0%,
+    color-mix(in srgb, var(--launch-ground) 70%, transparent) 24%,
+    color-mix(in srgb, var(--launch-ground) 30%, transparent) 46%,
+    transparent 62%
   );
 }
 /* And a third, on the right, that only exists once the deck is there: the
