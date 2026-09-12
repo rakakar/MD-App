@@ -158,7 +158,7 @@ export function LaunchPane({
                Dropping the class ends the animation and hands opacity back to
                the transition. */
             className={`
-              absolute inset-0 inline-flex items-center justify-center rounded-hero
+              absolute inset-0 inline-flex items-center justify-center rounded-control
               text-base font-bold text-on-accent transition-[opacity,transform] duration-300
               lg:inset-y-0 lg:left-0 lg:w-[15.625rem]
               ${started ? "pointer-events-none translate-y-2 scale-[0.97] opacity-0" : "launch-cta"}
