@@ -1525,11 +1525,11 @@ html[data-reading="1"] body {
   line-height: 1.55;
 }
 .launch-founder-line {
-  font-size: 0.984375rem;
+  font-size: 1.0625rem; /* --text-title */
   line-height: 1.35;
 }
 .launch-founder-sub {
-  font-size: 0.7875rem;
+  font-size: 0.875rem;
   line-height: 1.45;
 }
 @media (width >= 64rem) {
@@ -1550,11 +1550,11 @@ html[data-reading="1"] body {
     line-height: 1.55;
   }
   .launch-founder-line {
-    font-size: 1.09375rem;
+    font-size: 1.1875rem;
     line-height: 1.35;
   }
   .launch-founder-sub {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     line-height: 1.45;
   }
 }
