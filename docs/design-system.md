@@ -109,6 +109,42 @@ a reader who skipped the deck is exactly the one still owed a pointer at the swi
 | Fragments sized to their contents | One fixed height for all six, 424px, top-aligned | Measured at their natural heights the six ran 282–452px, so the heading and the sentence under them stepped up and down as the reader swiped — which reads as the page settling rather than as a deck advancing. Fixed at the tallest, and the block pinned to the top rather than centred, the title lands at the same y on all six (verified: 524px on a 390pt phone). The slack falls at the bottom, above the controls, where nothing moves. |
 | The mark follows Start reading | Six seconds later, and only in a pause | At hand-off it landed on the same tap that closed the deck — six cards of explanation, then a seventh thing to dismiss. A delay alone would only move the interruption into the middle of a scroll, so it also waits 1.2s since the reader last touched anything, and holds off entirely while the tab is in the background, restarting the clock when they come back. It enters on a fade and 6px of rise rather than the bottom-sheet slide it borrowed at first. |
 
+## The launch screen, 12 Sep 2026
+
+The screen the app opens on before the deck, from the designer's two animation studies
+(`MDApp Launch Desktop Video.html`, `MDApp Launch Mobile Video.html`). Built as
+`components/onboarding/LaunchPane.tsx` inside `FirstRunFlow.tsx`, which owns the layer
+and both panes because the transition between them is the point and is not the same
+transition on the two shapes.
+
+Nothing in it is invented: the studies were drawn from this system, and their ink
+(`#1A1613`), secondary ink (`#4A413A`), 20px card radius, Newsreader display and Tiro
+Devanagari are the tokens already in `globals.css`. Only the accent differs — the studies
+use `#C8621A`, the app's Originals hue is `#A64E12` — and the screen takes the app's, via
+`--ws-color` under an `AccentScope`, because this is the one screen where the workspace
+the reader lands in is already decided.
+
+| Study | Shipped | Reason |
+|---|---|---|
+| Four scenes over 9.4s before the button is pressable | The same order at 0.6× — button live at 1.7s | A study is a video, where four seconds of artwork settling is pacing. Here it is a reader waiting to get in. The sequence, the easings and the two continuous motions (the artwork's drift, the button's glow) are unchanged; only the clock is compressed. The numbers are in one block in `globals.css` under `.launch`. |
+| A drawn status bar at the top of the phone frame | Gone | It is scaffolding for a video of a phone. The real screen is in a real phone, under a real status bar, and `env(safe-area-inset-top)` is what holds the room for it. |
+| The desktop study's own six cards, mocked | The real deck (`FirstRun`) in the panel | The study's right-hand panel is a drawing of the deck this app already has, down to the same six headings. Drawing it twice is how one copy goes stale. |
+| Both backgrounds as 1.7MB and 2.0MB PNGs | WebP at q80, 313KB and 341KB | A launch screen is the first paint of a cold visit. Crops are chosen by `<source media>` inside a `<picture>`, so only one of the two is ever fetched. The PNGs stay out of the repo as the designer's sources. |
+| The founder's portrait as a 2.2MB square | 440px WebP, 16KB, framed at `50% 22%` | It is drawn at 74×92. A centred crop of a square cuts the face in half at 3:4, which is what the study's own `objectPosition` is for. |
+| `prefers-reduced-motion` not addressed (a video cannot) | Everything arrives in place; the artwork neither settles nor drifts and the button stops glowing | Each entrance is an animation with a `both` fill and no opacity declared outside its keyframes, so removing the animation leaves the element at its finished state rather than at its first frame. |
+
+Two things that are not deviations but are worth writing down, because both cost a
+debugging pass:
+
+- **The desktop button was dead on arrival.** The line that replaces it once the deck is
+  open (`A quick tour of the five workspaces`) sits over it in the same fixed-height box,
+  and at zero opacity it was still the element under the cursor. It needs
+  `pointer-events-none`, not just `opacity-0`.
+- **`opacity-0` cannot fade out an element with a running animation.** The button's
+  entrance fade and its glow are animations, and a running animation outranks any
+  declaration — the class did nothing. The class comes *off* on the way out, which ends
+  the animation and hands opacity back to the transition.
+
 ## Revisions after the comps — Home and Read, 13 Aug 2026
 
 Not deviations. The 2026-08-11 comps are the source of truth for every screen *except*

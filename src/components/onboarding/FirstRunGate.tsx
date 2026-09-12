@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getPrefs, setPrefs } from "@/lib/storage";
-import { FirstRun } from "./FirstRun";
+import { FirstRunFlow } from "./FirstRunFlow";
 import { SwitcherHint } from "./SwitcherHint";
 
 /**
@@ -151,7 +151,7 @@ export function FirstRunGate() {
 
   if (!deckSeen) {
     return (
-      <FirstRun
+      <FirstRunFlow
         onDone={() => {
           // Written on the way out, whichever way out was taken. Skipping is
           // an answer; see the note on `onboardingSeen` in `lib/storage.ts`.

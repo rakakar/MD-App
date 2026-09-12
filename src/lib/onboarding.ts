@@ -79,3 +79,26 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
 export function advanceLabel(index: number): string {
   return index === ONBOARDING_CARDS.length - 1 ? "Start reading" : "Next";
 }
+
+/**
+ * **The launch screen's words.**
+ *
+ * The screen the app opens on before the deck: the artwork, the app's name,
+ * one sentence of what it is, whose work it carries, and one button. Here
+ * beside the deck's copy for the same reason the deck's copy is here — the
+ * designer owns these lines and will rewrite them without opening a `.tsx`.
+ *
+ * `tour` is the desktop-only line that takes the button's place once the deck
+ * has faded in beside it, so the left column does not go on offering a door
+ * the reader has already walked through.
+ */
+export const LAUNCH = {
+  title: "Madhyasth Darshan",
+  eyebrow: "Study app",
+  description:
+    "The all-in-one platform to read original literature, explore deep study resources, and connect with fellow students on the path of coexistence.",
+  founderLine: "मध्यस्थ दर्शन सह-अस्तित्ववाद",
+  founderSub: "प्रणेता: श्री ए. नागराज, अमरकंटक, म.प्र.",
+  cta: "Start Your Journey",
+  tour: "A quick tour of the five workspaces",
+} as const;

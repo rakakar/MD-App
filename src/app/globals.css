@@ -1315,6 +1315,250 @@ html[data-reading="1"] body {
   }
 }
 
+
+/* ---------------------------------------------------------------------------
+   The first-run launch screen.
+
+   A still photograph, the app's identity over it, the founder's card, and one
+   button. The choreography is the designer's animation study, rebuilt in CSS:
+   the artwork settles into place and then drifts, the identity block rises in
+   line by line, the founder's card lifts in at the bottom, and the invitation
+   fades in last and keeps a slow glow so it is the one thing still moving when
+   the screen is otherwise finished.
+
+   The whole sequence is the study's, at 0.6× its length. The study is a video,
+   where four seconds before the button appears is pacing; here it is a reader
+   waiting to get in, so the *order* is kept exactly and the clock is
+   compressed — the button is pressable at 1.7s.
+
+   Numbers live here rather than in the component for the usual reason: this is
+   one bespoke screen with a typographic scale of its own, and the alternative
+   was thirty arbitrary Tailwind values inside `components/`.
+   --------------------------------------------------------------------------- */
+
+/* The warm ground the scrims fade to. The study drew #FFFDF8; the app's page
+   is `--color-surface`, and the launch layer is forced light, so the two are
+   the same warm off-white and the scrim never announces an edge. */
+.launch {
+  --launch-ground: var(--color-surface);
+  --launch-rise: 1.125rem;
+}
+
+/* Each line of the identity block, and the founder's card: up, in, and out of
+   blur. `--launch-at` is the only thing a call site sets. */
+.launch-in {
+  animation: launch-rise var(--launch-dur, 0.8s) cubic-bezier(0.215, 0.61, 0.355, 1)
+    var(--launch-at, 0s) both;
+}
+@keyframes launch-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--launch-rise));
+    filter: blur(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+/* The artwork arrives slightly too large and settles — then, once settled,
+   creeps. Two elements rather than one because both animate `transform`, and
+   the second has to start from where the first stopped. */
+.launch-settle {
+  animation: launch-settle 1.45s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+@keyframes launch-settle {
+  from {
+    opacity: 0;
+    transform: scale(1.07);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.launch-drift {
+  animation: launch-drift 26s linear 1.45s both;
+}
+@keyframes launch-drift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+
+/* The halo behind the mark. It breathes rather than pulses — five and a half
+   seconds a cycle, which is slow enough that you notice it only if you stop. */
+.launch-halo {
+  opacity: 0.22;
+  animation: launch-halo 5.5s ease-in-out 1.6s infinite;
+}
+@keyframes launch-halo {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.44;
+    transform: scale(1.09);
+  }
+}
+
+/* The invitation. Fades in last, then the glow under it swells and falls on
+   its own clock — the study's one piece of continuous motion, and the reason
+   the screen does not read as a frozen picture while the reader decides. */
+.launch-cta {
+  box-shadow: 0 0.375rem 1.125rem -0.5rem
+    color-mix(in srgb, var(--ws-color) 50%, transparent);
+  animation: launch-fade 0.7s ease-out 1.7s both,
+    launch-cta-glow 4.5s ease-in-out 2.4s infinite;
+}
+@keyframes launch-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes launch-cta-glow {
+  0%,
+  100% {
+    box-shadow: 0 0.375rem 1.125rem -0.5rem
+      color-mix(in srgb, var(--ws-color) 50%, transparent);
+  }
+  50% {
+    box-shadow: 0 0.75rem 2rem -0.5rem
+      color-mix(in srgb, var(--ws-color) 78%, transparent);
+  }
+}
+
+/* The deck's entrance, which is two different entrances.
+
+   On a phone it is a page arriving over the launch screen: a fade and a little
+   rise, the same vocabulary as every other full-screen layer in the app. On a
+   wide window it is a panel coming in from the right — the last of a slide, a
+   fade, and three percent of scale — because nothing is being replaced there
+   and the movement has to say "beside", not "instead of". */
+.launch-panel {
+  animation: launch-page 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes launch-page {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (width >= 64rem) {
+  .launch-panel {
+    animation: launch-slide-in 0.75s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+  }
+  @keyframes launch-slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(3rem) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* The scrims. Vertical on the phone, where the artwork runs the full height
+   and the type sits over its top and bottom; horizontal on the desktop, where
+   the type has a column of its own on the left and the artwork is what fills
+   the rest of the window. */
+.launch-scrim-y {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--launch-ground) 55%, transparent) 0%,
+    color-mix(in srgb, var(--launch-ground) 26%, transparent) 14%,
+    transparent 28%,
+    transparent 74%,
+    color-mix(in srgb, var(--launch-ground) 30%, transparent) 86%,
+    color-mix(in srgb, var(--launch-ground) 72%, transparent) 100%
+  );
+}
+.launch-scrim-x {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--launch-ground) 96%, transparent) 0%,
+    color-mix(in srgb, var(--launch-ground) 86%, transparent) 24%,
+    color-mix(in srgb, var(--launch-ground) 40%, transparent) 44%,
+    transparent 60%
+  );
+}
+/* And a third, on the right, that only exists once the deck is there: the
+   panel is a light card, and without this it would sit on a photograph. It
+   comes up with the panel rather than before it. */
+.launch-scrim-panel {
+  background: linear-gradient(
+    270deg,
+    color-mix(in srgb, var(--launch-ground) 88%, transparent) 0%,
+    transparent 46%
+  );
+  transition: opacity 0.75s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* --- the launch screen's own type scale, phone then desktop --------------- */
+.launch-title {
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+.launch-eyebrow {
+  font-size: 0.71875rem;
+  letter-spacing: 0.16em;
+}
+.launch-desc {
+  font-size: 0.84375rem;
+  line-height: 1.5;
+}
+.launch-founder-line {
+  font-size: 0.984375rem;
+  line-height: 1.35;
+}
+.launch-founder-sub {
+  font-size: 0.7875rem;
+  line-height: 1.45;
+}
+@media (width >= 64rem) {
+  .launch {
+    --launch-rise: 1.125rem;
+  }
+  .launch-title {
+    font-size: 3.125rem;
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+  }
+  .launch-eyebrow {
+    font-size: 0.78125rem;
+    letter-spacing: 0.18em;
+  }
+  .launch-desc {
+    font-size: 1.03125rem;
+    line-height: 1.55;
+  }
+  .launch-founder-line {
+    font-size: 1.09375rem;
+    line-height: 1.35;
+  }
+  .launch-founder-sub {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+}
+
 .disclosure {
   display: grid;
   grid-template-rows: 0fr;
@@ -1353,6 +1597,26 @@ html[data-reading="1"] body {
   /* the mark still appears, it just does not slide or fade in */
   .coach-spot,
   .coach-card {
+    animation: none;
+  }
+  /* The launch screen arrives whole: everything is in its final place, the
+     artwork neither settles nor drifts, and the invitation stops glowing. The
+     `both` fill on these means removing the animation leaves each element at
+     its natural style, which is the finished one. */
+  .launch-in,
+  .launch-settle,
+  .launch-drift,
+  .launch-halo,
+  .launch-cta {
+    animation: none;
+  }
+  .launch-halo {
+    opacity: 0.3;
+  }
+  .launch-scrim-panel {
+    transition: none;
+  }
+  .launch-panel {
     animation: none;
   }
   * {

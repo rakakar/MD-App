@@ -175,13 +175,22 @@ export function AppAccent({ children }: { children: ReactNode }) {
  */
 export function AccentScope({
   color,
+  className,
   children,
 }: {
   color: string;
+  /** For a scope that has to carry layout too — a portal whose content is
+   *  sized against the viewport needs this div in the height chain, and an
+   *  extra wrapper around it would only move the same problem down one level. */
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <div data-ws="scope" style={{ "--ws-color": color } as React.CSSProperties}>
+    <div
+      data-ws="scope"
+      className={className}
+      style={{ "--ws-color": color } as React.CSSProperties}
+    >
       {children}
     </div>
   );
