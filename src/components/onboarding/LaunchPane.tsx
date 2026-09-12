@@ -65,21 +65,26 @@ export function LaunchPane({
           <BrandMark className="relative h-full w-full" />
         </div>
 
-        <div className="flex flex-col gap-[1.125rem] lg:gap-[0.4375rem]">
-          <h1
-            className="launch-in launch-title font-display font-medium"
-            style={{ color: "var(--ws-ink)", "--launch-at": "0.65s" } as React.CSSProperties}
-          >
-            {LAUNCH.title}
-          </h1>
+        <div className="flex flex-col gap-[1.125rem] lg:gap-3">
+          {/* Title and eyebrow are one unit, set tight. Spaced like the
+              sentence below them they read as three separate announcements;
+              this way STUDY APP is what the name is qualified by. */}
+          <div className="flex flex-col gap-1 lg:gap-1.5">
+            <h1
+              className="launch-in launch-title font-display font-medium"
+              style={{ color: "var(--ws-ink)", "--launch-at": "0.65s" } as React.CSSProperties}
+            >
+              {LAUNCH.title}
+            </h1>
+            <p
+              className="launch-in launch-eyebrow font-semibold uppercase text-ink-soft"
+              style={{ "--launch-at": "0.85s", "--launch-dur": "0.72s" } as React.CSSProperties}
+            >
+              {LAUNCH.eyebrow}
+            </p>
+          </div>
           <p
-            className="launch-in launch-eyebrow font-semibold uppercase text-muted"
-            style={{ "--launch-at": "0.85s", "--launch-dur": "0.72s" } as React.CSSProperties}
-          >
-            {LAUNCH.eyebrow}
-          </p>
-          <p
-            className="launch-in launch-desc text-pretty text-ink-soft lg:mt-3"
+            className="launch-in launch-desc text-pretty font-medium text-ink-soft lg:mt-1"
             style={{ "--launch-at": "1s", "--launch-dur": "0.85s" } as React.CSSProperties}
           >
             {LAUNCH.description}
@@ -113,12 +118,12 @@ export function LaunchPane({
           />
           <div className="flex min-w-0 flex-1 flex-col gap-[0.28rem]">
             <p
-              className="hi hi-tight launch-founder-line"
+              className="launch-founder-line"
               style={{ color: "var(--ws-ink)" }}
             >
               {LAUNCH.founderLine}
             </p>
-            <p className="hi hi-tight launch-founder-sub text-ink-soft">
+            <p className="launch-founder-sub text-ink-soft">
               {LAUNCH.founderSub}
             </p>
           </div>

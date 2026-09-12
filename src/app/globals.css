@@ -1517,20 +1517,31 @@ html[data-reading="1"] body {
   letter-spacing: -0.015em;
 }
 .launch-eyebrow {
-  font-size: 0.8125rem; /* the app's --text-xs floor, rather than under it */
+  font-size: 0.875rem;
   letter-spacing: 0.16em;
 }
 .launch-desc {
-  font-size: 0.9375rem; /* --text-sm, the app's own body step */
+  font-size: 1rem;
   line-height: 1.55;
 }
+/* Mukta, not Tiro. Tiro is the book face and it earns a chapter; these two
+   lines are a caption on a card, and at this size Tiro's stroke contrast reads
+   as decoration where Mukta reads as a label. Set here rather than by adding
+   `.hi-note` at the call site because these classes already own the size and
+   the leading, and two classes disagreeing about one line is how the twenty
+   inert `leading-*` utilities on `.hi` elsewhere in this app happened. */
+/* 18px on the phone is a ceiling, not a preference: the line is 181px wide at
+   18 and 191 at 19, and a 360pt phone leaves it exactly 191. The desktop card
+   has 329px and takes the larger size below. */
 .launch-founder-line {
-  font-size: 1.0625rem; /* --text-title */
-  line-height: 1.35;
+  font-family: var(--font-devanagari-sans);
+  font-size: 1.125rem;
+  line-height: 1.4;
 }
 .launch-founder-sub {
-  font-size: 0.875rem;
-  line-height: 1.45;
+  font-family: var(--font-devanagari-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
 }
 @media (width >= 64rem) {
   .launch {
@@ -1542,20 +1553,20 @@ html[data-reading="1"] body {
     letter-spacing: -0.02em;
   }
   .launch-eyebrow {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     letter-spacing: 0.18em;
   }
   .launch-desc {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     line-height: 1.55;
   }
   .launch-founder-line {
-    font-size: 1.1875rem;
-    line-height: 1.35;
+    font-size: 1.40625rem;
+    line-height: 1.4;
   }
   .launch-founder-sub {
-    font-size: 0.9375rem;
-    line-height: 1.45;
+    font-size: 1.0625rem;
+    line-height: 1.5;
   }
 }
 
