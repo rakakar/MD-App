@@ -81,22 +81,6 @@ anywhere in this app.
 
 ---
 
-## Deviations from the launch screen reference, 11 Sep 2026
-
-An eighth screen, ahead of the six above: `MD Launch B Animation.mp4`, the designer's
-title card for the app opening — a wall of book covers, the mark and the name over it,
-what the app is for, and Shri A. Nagraj ji's own photograph, before "Start Your Journey".
-Built as `components/onboarding/LaunchScreen.tsx`, gated the same way the deck itself is —
-`onboardingSeen`, nothing of its own — so a reader who reloads before finishing either
-sees the launch screen again ahead of the deck.
-
-| Comp | Shipped | Reason |
-|---|---|---|
-| A ten-second reveal — the grid fades in, then the mark, then the name, then the photo, then the button | Everything at once, held | The choreography was staging for a video someone watches once; a reader who has to wait through it every time they clear their storage is a worse trade than a reader who sees the finished card immediately and reads it at their own pace. |
-| A circular seal reading "Divya Path Sansthan · Amarkantak · Estd. 1981" | `BrandMark` — `/brand/logo.svg` | The same file, not a second one: the seal in the reference *is* the app's own mark, at a size where the ring text finally reads. Rendered here the way the app bar renders it everywhere else. |
-| Eight covers as a decorative texture | `CoverTile`'s own fallback over eight real book codes, held — never swapped for the live shelf | First shipped fetching `getBooks` and replacing the fallback the moment it answered, the same pattern `Fragments.tsx` uses. Measured: on a warm connection that swap lands well under the launch screen's own 320ms fade, so what a reader actually saw was eight tiles popping from flat colour to full photographs while the fade was still settling — reported back as "glitchy." This wall is decoration, not a shelf preview, and the real shelf is the next thing a reader who finishes the deck sees; held to the one designed state, it cannot glitch. |
-| A stock or illustrated author photo | `public/brand/anagraj.jpg`, from the project's own files | Whose literature this is is the one thing the deck itself never says. |
-
 ## Deviations from the first-run comps, 9 Sep 2026
 
 Seven screens: six swipeable cards and the coach mark that follows them. The six are

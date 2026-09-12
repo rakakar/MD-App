@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import { FirstRun } from "./FirstRun";
-import { LaunchScreen } from "./LaunchScreen";
 import { SwitcherHint } from "./SwitcherHint";
 
 /**
@@ -144,16 +143,6 @@ export function FirstRunGate() {
    * to be shown where the switcher is.
    */
   const [done, setDone] = useState({ deck: false, hint: false });
-  /**
-   * Whether the launch screen has been tapped through, this session.
-   *
-   * Not a stored flag, and deliberately: `deckSeen` is the one fact this whole
-   * gate persists, and the launch screen is not confirmed done until the
-   * reader has finished the deck behind it. A reload mid-launch-screen or
-   * mid-deck shows the launch screen again ahead of the deck — the same
-   * behaviour `done.deck` already has, for the same reason.
-   */
-  const [launched, setLaunched] = useState(false);
   const deckSeen = stored.deck || done.deck;
   const hintOwed = deckSeen && !stored.hint && !done.hint;
   // Counted from the moment the mark becomes owed — the tap that closed the
@@ -161,9 +150,6 @@ export function FirstRunGate() {
   const settled = useSettled(hintOwed);
 
   if (!deckSeen) {
-    if (!launched) {
-      return <LaunchScreen onDone={() => setLaunched(true)} />;
-    }
     return (
       <FirstRun
         onDone={() => {
