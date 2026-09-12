@@ -1517,12 +1517,12 @@ html[data-reading="1"] body {
   letter-spacing: -0.015em;
 }
 .launch-eyebrow {
-  font-size: 0.71875rem;
+  font-size: 0.8125rem; /* the app's --text-xs floor, rather than under it */
   letter-spacing: 0.16em;
 }
 .launch-desc {
-  font-size: 0.84375rem;
-  line-height: 1.5;
+  font-size: 0.9375rem; /* --text-sm, the app's own body step */
+  line-height: 1.55;
 }
 .launch-founder-line {
   font-size: 0.984375rem;
@@ -1542,11 +1542,11 @@ html[data-reading="1"] body {
     letter-spacing: -0.02em;
   }
   .launch-eyebrow {
-    font-size: 0.78125rem;
+    font-size: 0.875rem;
     letter-spacing: 0.18em;
   }
   .launch-desc {
-    font-size: 1.03125rem;
+    font-size: 1.125rem;
     line-height: 1.55;
   }
   .launch-founder-line {
