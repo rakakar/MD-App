@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { BrandMark } from "@/components/shell/icons";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { AccentScope, useWorkspace } from "@/components/shell/WorkspaceProvider";
 import { ctaPrimary } from "@/components/ui";
-import { getBooks } from "@/lib/api";
 import type { BookSummary } from "@/lib/types";
 
 /**
@@ -19,12 +18,13 @@ import type { BookSummary } from "@/lib/types";
  * — everything the animation reveals in sequence is simply on screen, because
  * the reveal was choreography for a video and not a thing a reader waits on.
  *
- * **Every asset is a real one.** The covers are the shelf's own — fetched the
- * way `Fragments.tsx` fetches them, with the same designed fallback while
- * that call is in flight — and the portrait is Shri A. Nagraj ji's own,
- * `public/brand/anagraj.jpg`. The mark is `BrandMark`, the same file the app
- * bar renders everywhere else. Nothing here is drawn to look like the app; it
- * is the app's own pieces, arranged once, full-screen.
+ * **Every asset is a real one.** The covers are `CoverTile`'s own designed
+ * fallback over real book codes — see `LAUNCH_SHELF` below for why this is
+ * the one caller that never swaps it for the live shelf — and the portrait is
+ * Shri A. Nagraj ji's own, `public/brand/anagraj.jpg`. The mark is
+ * `BrandMark`, the same file the app bar renders everywhere else. Nothing
+ * here is drawn to look like the app; it is the app's own pieces, arranged
+ * once, full-screen.
  *
  * **Shown once, and the flag is the deck's own.** `FirstRunGate` renders this
  * before `FirstRun` and only for as long as `onboardingSeen` is false — there
@@ -39,11 +39,20 @@ import type { BookSummary } from "@/lib/types";
  *
  * Real codes and real titles, because `CoverTile` derives a book's fallback
  * hue from its code — an invented one would colour the tile differently here
- * than everywhere else in the app. Swapped for the live shelf as soon as
- * `books/` answers; until then, or if it never does, this is what is on
- * screen — a designed object, not a placeholder.
+ * than everywhere else in the app.
+ *
+ * **Never swapped for the live shelf, and that used to be the plan.** This
+ * fetched `books/` and replaced the fallback with real cover photographs the
+ * moment it answered — which on a warm connection is well under the fade's
+ * own 320ms, so what a reader actually saw was the fade still settling while
+ * all eight tiles popped from flat colour to full photographs in one frame.
+ * Measured: the swap was consistently done before the first screenshot this
+ * ever got checked with. A wall that changes its mind while it is still
+ * arriving reads as broken, not as loading — and this wall is decoration, not
+ * a shelf preview; the real one is the very next thing a reader who finishes
+ * the deck sees. Held to the one designed state, it cannot glitch.
  */
-const FALLBACK_SHELF: BookSummary[] = (
+const LAUNCH_SHELF: BookSummary[] = (
   [
     ["JVEP", "जीवन विद्या एक परिचय"],
     ["ABVP", "विकल्प एवं अध्ययन बिंदु"],
@@ -56,28 +65,8 @@ const FALLBACK_SHELF: BookSummary[] = (
   ] as const
 ).map(([code, title_hi]) => ({ code, title_hi }) as BookSummary);
 
-function useLaunchShelf(): BookSummary[] {
-  const [books, setBooks] = useState<BookSummary[]>(FALLBACK_SHELF);
-  useEffect(() => {
-    let live = true;
-    // The same `books/` call Home makes on the very next screen, so this is
-    // rarely a second request in practice. A failure needs no handling: the
-    // fallback is already on screen and is not a lesser version of this one.
-    void getBooks({ workspace: "originals" })
-      .then((rows) => {
-        if (live && rows.length > 0) setBooks(rows.slice(0, 8));
-      })
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, []);
-  return books;
-}
-
 export function LaunchScreen({ onDone }: { onDone: () => void }) {
   const { workspace } = useWorkspace();
-  const books = useLaunchShelf();
   const goRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -144,7 +133,7 @@ export function LaunchScreen({ onDone }: { onDone: () => void }) {
                 one screen later, so the wall behind this title is not a
                 second, slightly different idea of what a cover looks like. */}
             <ul aria-hidden className="pointer-events-none grid grid-cols-4 gap-2.5 p-2.5">
-              {books.map((b) => (
+              {LAUNCH_SHELF.map((b) => (
                 <li key={b.code ?? b.title_hi}>
                   <CoverTile book={b} size="grid" caption="none" />
                 </li>
