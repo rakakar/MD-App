@@ -56,7 +56,16 @@ import { WORKSPACES, WORKSPACE_ORDER } from "@/lib/workspaceConfig";
  * and the fragment is what gives way. Measure the six again before raising it,
  * because every pixel here comes off the bottom of a small phone.
  */
-const STAGE_H = "h-[26.5rem]";
+/**
+ * 424px, the tallest of the six measured at their natural heights, so the
+ * heading under them lands at the same y on all six.
+ *
+ * `shrink-0` is half of that promise and was missing. In a column shorter than
+ * the deck needs — a 1024×768 iPad in landscape, where the desktop panel is
+ * 674px — flex shrank this to 336 and the fragment was sliced through a row
+ * rather than the deck scrolling. It is a fixed height or it is nothing.
+ */
+const STAGE_H = "h-[26.5rem] shrink-0";
 
 /** The frame every fragment sits in. */
 function Stage({

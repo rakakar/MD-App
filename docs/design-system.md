@@ -135,6 +135,11 @@ the reader lands in is already decided.
 | Eyebrow 11.5/12.5px, description 13.5/16.5px, founder card 15.75/17.5px and 12.6/14px (phone/desktop) | 13/14px, 15/18px, 17/19px and 14/15px | The designer's call, 12 Sep. The studies set both a step under the app's own scale — 11.5px is below `--text-xs`, which is the floor everywhere else — and on a real screen at arm's length the sentence that says what the app *is* was reading as a caption. The description now sits at `--text-sm` on the phone, the app's body step, and one step above it on the desktop, where it has a 452px column to fill. The founder's two lines went up with them — Devanagari carries matras above and below and loses more than Latin does at a small size, and this is the one line on the screen that is a proper name. Both still set on one line each at 390pt. |
 | `prefers-reduced-motion` not addressed (a video cannot) | Everything arrives in place; the artwork neither settles nor drifts and the button stops glowing | Each entrance is an animation with a `both` fill and no opacity declared outside its keyframes, so removing the animation leaves the element at its finished state rather than at its first frame. |
 
+On a tablet the phone layout is capped at `max-w-lg` and centred — the deck's own column
+width, so the two agree across the cross-fade. Uncapped, a 768pt portrait iPad ran the
+description across 704px in one line under a 704px button, which is a phone layout
+stretched rather than a tablet one.
+
 Two things that are not deviations but are worth writing down, because both cost a
 debugging pass:
 

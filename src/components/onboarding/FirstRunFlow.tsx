@@ -109,8 +109,8 @@ export function FirstRunFlow({ onDone }: { onDone: () => void }) {
               this covers the launch screen; on a desktop it is the card on the
               right. */}
           {started && (
-            <div className="launch-panel absolute inset-0 bg-surface lg:relative lg:inset-auto lg:flex lg:min-w-0 lg:flex-1 lg:justify-end lg:bg-transparent">
-              <div className="h-full w-full lg:h-[min(88dvh,45.25rem)] lg:max-w-[33.75rem] lg:overflow-y-auto lg:rounded-sheet lg:border lg:border-rule lg:bg-card lg:px-7 lg:pb-[1.375rem] lg:pt-[1.625rem] lg:shadow-raised">
+            <div className="launch-panel absolute inset-0 overflow-y-auto bg-surface lg:relative lg:inset-auto lg:flex lg:min-w-0 lg:flex-1 lg:justify-end lg:bg-transparent">
+              <div className="h-full w-full lg:h-[min(92dvh,45.25rem)] lg:max-w-[33.75rem] lg:overflow-y-auto lg:rounded-sheet lg:border lg:border-rule lg:bg-card lg:px-7 lg:pb-[1.375rem] lg:pt-[1.625rem] lg:shadow-raised">
                 <FirstRun onDone={onDone} />
               </div>
             </div>

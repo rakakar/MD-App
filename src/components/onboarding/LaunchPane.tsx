@@ -34,10 +34,16 @@ export function LaunchPane({
 }) {
   return (
     <div
+      /* `max-w-lg` is the deck's own column width, and it is here for the
+         tablet: without it a 768pt portrait iPad ran the sentence across 704px
+         in one line and drew a 704px button under it, which is a phone layout
+         stretched rather than a tablet one. Capped, the column is the same
+         width the deck will be when it fades in over it. The desktop split
+         overrides the cap with its own fixed column. */
       className="
-        relative flex h-full w-full flex-col justify-between
+        relative mx-auto flex h-full w-full max-w-lg flex-col justify-between
         px-7 pb-10 pt-[max(1.75rem,env(safe-area-inset-top))]
-        lg:w-[28.25rem] lg:shrink-0 lg:justify-center lg:gap-6 lg:px-0 lg:py-0
+        lg:mx-0 lg:w-[28.25rem] lg:max-w-none lg:shrink-0 lg:justify-center lg:gap-6 lg:px-0 lg:py-0
       "
     >
       {/* Identity. Centred on the phone, where it is the whole top half;
