@@ -117,8 +117,11 @@ export function LaunchPane({
             className="h-[5.175rem] w-[4.1625rem] shrink-0 rounded-tile object-cover object-[50%_22%] lg:h-[5.75rem] lg:w-[4.625rem]"
           />
           <div className="flex min-w-0 flex-1 flex-col gap-[0.28rem]">
+            {/* 600 is a real Mukta face here — layout.tsx loads 400/500/600/700
+                — so this is a weight rather than a browser synthesising one,
+                which is the trap Tiro sets (it ships a single 400). */}
             <p
-              className="launch-founder-line"
+              className="launch-founder-line font-semibold"
               style={{ color: "var(--ws-ink)" }}
             >
               {LAUNCH.founderLine}
