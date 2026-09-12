@@ -96,9 +96,16 @@ export function LaunchPane({
           the desktop column. */}
       <div className="flex flex-col gap-[1.125rem] lg:gap-6">
         <div
+          /* Translucent, but not enough to read through. The study set this
+             at 82% over a patch of table; on a 768pt portrait tablet the crop
+             puts a book spine right behind it and its title — Devanagari, at
+             about the same size — came through and collided with the line on
+             the card. 88% plus a blur of what is behind fixes it wherever the
+             artwork lands, and keeps the card sitting *on* the photograph
+             rather than punched out of it. */
           className="
             launch-in flex items-center gap-[0.9rem] rounded-card border border-rule
-            bg-card/80 p-[0.73rem] pe-[1.125rem]
+            bg-card/88 p-[0.73rem] pe-[1.125rem] backdrop-blur-sm
             lg:gap-4 lg:p-[0.8125rem] lg:pe-5
           "
           style={{ "--launch-at": "1.3s", "--launch-dur": "0.85s" } as React.CSSProperties}
