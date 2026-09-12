@@ -110,7 +110,16 @@ export function FirstRunFlow({ onDone }: { onDone: () => void }) {
               right. */}
           {started && (
             <div className="launch-panel absolute inset-0 overflow-y-auto bg-surface lg:relative lg:inset-auto lg:flex lg:min-w-0 lg:flex-1 lg:justify-end lg:bg-transparent">
-              <div className="h-full w-full lg:h-[min(92dvh,45.25rem)] lg:max-w-[33.75rem] lg:overflow-y-auto lg:rounded-sheet lg:border lg:border-rule lg:bg-card lg:px-7 lg:pb-[1.375rem] lg:pt-[1.625rem] lg:shadow-raised">
+              {/* 46.5rem, and the number is measured rather than chosen: the deck's
+                  tallest card is 689px in this column and the card's own padding
+                  is 48, so 744 is the first height that holds it. The study drew
+                  724 and that is 15px short — enough for a scrollbar down the
+                  side of a panel nobody should be scrolling. `overflow-hidden`
+                  rather than `auto` so there is no scrollbar to appear at all;
+                  what keeps the controls on screen when the *window* is shorter
+                  than that is the stage's ability to give up height, not a
+                  scroll. */}
+              <div className="h-full w-full lg:h-[min(92dvh,46.5rem)] lg:max-w-[33.75rem] lg:overflow-hidden lg:rounded-sheet lg:border lg:border-rule lg:bg-card lg:px-7 lg:pb-[1.375rem] lg:pt-[1.625rem] lg:shadow-raised">
                 <FirstRun onDone={onDone} />
               </div>
             </div>

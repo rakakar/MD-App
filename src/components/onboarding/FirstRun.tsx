@@ -151,7 +151,7 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
     /* Full-bleed on a phone, and inside the desktop panel just the panel's
        own padding — the card around it already supplies the margins that the
        safe-area insets supply on a phone. */
-    <div className="mx-auto flex h-full min-h-dvh w-full max-w-lg flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 lg:h-auto lg:min-h-0 lg:px-0 lg:pb-0 lg:pt-0">
+    <div className="mx-auto flex h-full min-h-dvh w-full max-w-lg flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 lg:min-h-0 lg:px-0 lg:pb-0 lg:pt-0">
       <div className="flex items-center justify-between">
         <span aria-hidden style={{ color: "var(--ws-color)" }}>
           <BrandMark className="h-7 w-7" />

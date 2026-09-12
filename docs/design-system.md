@@ -148,6 +148,14 @@ debugging pass:
   open (`A quick tour of the five workspaces`) sits over it in the same fixed-height box,
   and at zero opacity it was still the element under the cursor. It needs
   `pointer-events-none`, not just `opacity-0`.
+- **The panel was 15px too short, and 15px is a scrollbar.** The study draws it at 724
+  and the deck's tallest card is 689 in that column, which with the card's own 48px of
+  padding needs 744. Fixed at 46.5rem, `overflow-hidden` rather than `auto` so there is
+  no scrollbar to appear at all. What keeps the controls on screen when the *window* is
+  shorter than 744 is `STAGE_H`'s floor: the stage gives up height down to 336px — 3px on
+  a 1280×800 laptop, 57 on a 1024×768 iPad in landscape — and since it is centred and
+  already `overflow-hidden`, it degrades quietly where a clipped control or a scrollbar
+  would not.
 - **`opacity-0` cannot fade out an element with a running animation.** The button's
   entrance fade and its glow are animations, and a running animation outranks any
   declaration — the class did nothing. The class comes *off* on the way out, which ends

@@ -60,12 +60,16 @@ import { WORKSPACES, WORKSPACE_ORDER } from "@/lib/workspaceConfig";
  * 424px, the tallest of the six measured at their natural heights, so the
  * heading under them lands at the same y on all six.
  *
- * `shrink-0` is half of that promise and was missing. In a column shorter than
- * the deck needs — a 1024×768 iPad in landscape, where the desktop panel is
- * 674px — flex shrank this to 336 and the fragment was sliced through a row
- * rather than the deck scrolling. It is a fixed height or it is nothing.
+ * It is also the deck's shock absorber, which is why it has a floor rather than
+ * `shrink-0`. When the window is too short to give the desktop panel its full
+ * height, something has to yield, and the choice is between clipping a few
+ * pixels off a fragment — which is already `overflow-hidden` and centred, so it
+ * degrades quietly — and pushing the controls off the bottom of the card or
+ * putting a scrollbar down its side. The stage yields, to a floor of 336px:
+ * unbounded it collapsed to 336 on a 1024×768 iPad anyway and sliced the
+ * switcher through its fourth row.
  */
-const STAGE_H = "h-[26.5rem] shrink-0";
+const STAGE_H = "h-[26.5rem] min-h-[21rem]";
 
 /** The frame every fragment sits in. */
 function Stage({
