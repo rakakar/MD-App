@@ -95,7 +95,12 @@ export function FirstRunFlow({ onDone }: { onDone: () => void }) {
           }`}
         />
 
-        <div className="relative flex h-full w-full items-center lg:gap-10 lg:ps-10 lg:pe-8 xl:gap-14 xl:ps-22 xl:pe-18">
+        {/* Capped and centred, not spread. The two columns are anchored to
+            opposite edges, so on a wide monitor every extra pixel went into the
+            gap between them and the screen read as two unrelated things at
+            either side of a photograph. The study is drawn at 1440; past that
+            the pair holds its shape and the window grows around it. */}
+        <div className="relative mx-auto flex h-full w-full max-w-[90rem] items-center lg:gap-10 lg:ps-10 lg:pe-8 xl:gap-14 xl:ps-22 xl:pe-18">
           <LaunchPane started={started} onStart={() => setStarted(true)} />
 
           {/* Mounted on the press rather than hidden until it, so the entrance
