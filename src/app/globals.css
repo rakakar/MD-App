@@ -1481,9 +1481,11 @@ html[data-reading="1"] body {
 .launch-scrim-y {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--launch-ground) 55%, transparent) 0%,
-    color-mix(in srgb, var(--launch-ground) 26%, transparent) 14%,
-    transparent 28%,
+    color-mix(in srgb, var(--launch-ground) 82%, transparent) 0%,
+    color-mix(in srgb, var(--launch-ground) 68%, transparent) 16%,
+    color-mix(in srgb, var(--launch-ground) 42%, transparent) 30%,
+    color-mix(in srgb, var(--launch-ground) 16%, transparent) 42%,
+    transparent 54%,
     transparent 74%,
     color-mix(in srgb, var(--launch-ground) 30%, transparent) 86%,
     color-mix(in srgb, var(--launch-ground) 72%, transparent) 100%
