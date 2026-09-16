@@ -109,6 +109,32 @@ a reader who skipped the deck is exactly the one still owed a pointer at the swi
 | Fragments sized to their contents | One fixed height for all six, 424px, top-aligned | Measured at their natural heights the six ran 282–452px, so the heading and the sentence under them stepped up and down as the reader swiped — which reads as the page settling rather than as a deck advancing. Fixed at the tallest, and the block pinned to the top rather than centred, the title lands at the same y on all six (verified: 524px on a 390pt phone). The slack falls at the bottom, above the controls, where nothing moves. |
 | The mark follows Start reading | Six seconds later, and only in a pause | At hand-off it landed on the same tap that closed the deck — six cards of explanation, then a seventh thing to dismiss. A delay alone would only move the interruption into the middle of a scroll, so it also waits 1.2s since the reader last touched anything, and holds off entirely while the tab is in the background, restarting the clock when they come back. It enters on a fade and 6px of rise rather than the bottom-sheet slide it borrowed at first. |
 
+## The sutra share card, 16 Sep 2026
+
+Share on the sutra card used to hand the OS a line of text. It now opens a sheet
+(`components/home/ShareSutraSheet.tsx`) showing the verse drawn onto the designer's
+watercolour plate, with Share and Download under it. A verse pasted as text arrives in a
+chat stripped of the book it came from; as a picture it arrives whole, and a picture is
+the form these actually travel in.
+
+**The card is drawn on a canvas in the reader's browser, not by a server route.** The
+obvious answer was `ImageResponse`, and it is the wrong one here: it renders through
+Satori, which lays glyphs out itself rather than asking a text engine. Devanagari cannot
+be laid out by advancing along a string — matras reorder around the consonant they attach
+to and conjuncts fuse into single forms; `ि` is written before the letter it is pronounced
+after. A canvas hands the string to the browser's own shaper, the one that has been
+drawing this verse correctly on the card all along. Three smaller reasons agree: the
+share sheet wants a *file*, so a server render would be fetched back and turned into one
+anyway; the app is a PWA and this works offline; and the preview in the sheet is the very
+bitmap that gets shared, so the two cannot drift.
+
+| Design | Shipped | Reason |
+|---|---|---|
+| The verse set on two lines | Auto-fitted, 62px down to a 34px floor | The design was drawn against a short sutra. They run from one line to six, so the size is found rather than set: step down until the block fits its box. Below 34px it would be too small to read in a chat thread, so the longest verses take the floor and grow into the plate's empty lower half. |
+| The block centred on the plate | Hung from under the eyebrow | Centring looked right on a four-line sutra and dropped a two-line one into the middle of the plate, away from the label that introduces it. The label is the fixed point. |
+| Palette from the app's tokens | Written into `lib/sutraCard.ts` | The plate leaves the app and is looked at in someone else's photo roll. It has no theme, so it must not follow one — a reader in dark mode sharing a verse that came out dark on cream watercolour would be a bug, not a preference. |
+| One Download button | Download on every platform except iOS, where it says Save and opens the share sheet | On iOS an `<a download>` saves nothing, least of all in a standalone PWA. Save to Photos lives in the share sheet, so there that *is* the download; sending the reader there is the honest version of the button rather than a control that silently fails. The test is a user-agent sniff because nothing in the platform reports whether the anchor will write a file. |
+
 ## The launch screen, 12 Sep 2026
 
 The screen the app opens on before the deck, from the designer's two animation studies

@@ -55,6 +55,7 @@ export type GaEvent =
   // arrows, the curated pool is deeper than anyone wants it to be.
   | "sutra_browse"
   | "sutra_share"
+  | "sutra_card_download"
   | "event_view"
   | "event_register"
   | "login"

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
+import { ShareSutraSheet } from "./ShareSutraSheet";
 import { ctaPrimaryCompact } from "@/components/ui";
 import { track } from "@/lib/analytics";
 import { dayMonth, parseDay } from "@/lib/dates";
@@ -55,19 +56,16 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
     }
   };
 
-  const share = async () => {
-    const text = citationText(sutra.text_hi, sutra.canonical_ref);
-    track("sutra_share");
-    try {
-      if (navigator.share) {
-        await navigator.share({ text });
-      } else {
-        await navigator.clipboard.writeText(text);
-      }
-    } catch {
-      // user cancelled share sheet
-    }
-  };
+  /**
+   * Share opens a sheet now rather than going straight to the OS.
+   *
+   * It used to hand the system `citationText` — the verse and its reference as
+   * a line of text. What actually gets forwarded is a picture: the sheet draws
+   * the card, shows it, and lets the reader choose where it goes. The text path
+   * survives inside the sheet as the fallback for a browser that cannot share
+   * files.
+   */
+  const [sharing, setSharing] = useState(false);
 
   const arrow =
     "flex h-7 w-7 items-center justify-center rounded-full text-(--sutra-soft) transition " +
@@ -177,7 +175,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
               once or from none of them. */}
           <button
             type="button"
-            onClick={share}
+            onClick={() => setSharing(true)}
             className={ctaPrimaryCompact}
             style={{ background: "var(--ws-color)" }}
           >
@@ -186,6 +184,15 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
           </button>
         </div>
       </div>
+
+      <ShareSutraSheet
+        open={sharing}
+        onClose={() => setSharing(false)}
+        text={sutra.text_hi}
+        source={sutra.book_title}
+        citation={citationText(sutra.text_hi, sutra.canonical_ref)}
+        date={sutra.sutra_date}
+      />
     </figure>
   );
 }
