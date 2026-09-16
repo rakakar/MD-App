@@ -37,11 +37,38 @@ const NEVER_CHANGES = () => () => {};
 let cached = { deck: false, hint: false };
 function READ() {
   const p = getPrefs();
-  if (p.onboardingSeen !== cached.deck || p.switcherHintShown !== cached.hint) {
-    cached = { deck: p.onboardingSeen, hint: p.switcherHintShown };
+  const deck = REPLAY ? false : p.onboardingSeen;
+  const hint = REPLAY ? false : p.switcherHintShown;
+  if (deck !== cached.deck || hint !== cached.hint) {
+    cached = { deck, hint };
   }
   return cached;
 }
+
+/**
+ * **`?firstrun` replays the whole first run, on a device you cannot open a
+ * console on.**
+ *
+ * This exists for showing the app to people. Clearing the flags means clearing
+ * `localStorage`, which on a phone means clearing Safari's website data or
+ * deleting the installed app and adding it again — not something to do between
+ * two run-throughs in front of a room. A URL is something you can put in a
+ * message to yourself and tap twice.
+ *
+ * Read here rather than through `useSearchParams` for two reasons: this runs
+ * inside the client snapshot, which is the one place a client-only value can be
+ * read without disagreeing with the server (the server snapshot below says
+ * everything is seen, as it must); and `useSearchParams` would opt the shell
+ * into dynamic rendering on every route in the app to answer a question asked
+ * once.
+ *
+ * It does not clear the stored flags — it overrides them for this page load.
+ * Finishing the deck writes them as usual, so the next plain load is back to
+ * normal without anything to undo.
+ */
+const REPLAY =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).has("firstrun");
 
 /**
  * How long the app has the reader to itself before the mark appears.
