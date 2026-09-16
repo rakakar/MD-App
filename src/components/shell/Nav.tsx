@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AvatarMenu, DisplayButton, EventChip, WorkspaceSwitcher } from "./Header";
+import { AvatarMenu, DisplayButton, WorkspaceSwitcher } from "./Header";
 import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
@@ -107,7 +107,6 @@ export function Sidebar() {
           Workspace
         </p>
         <WorkspaceSwitcher variant="popover" />
-        <EventChip />
       </div>
       {/* Nav and the route's own facets scroll together, and the avatar stays
           pinned to the floor. A rail that is only four nav rows tall never

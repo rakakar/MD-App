@@ -68,7 +68,6 @@ export type GaEvent =
   | "push_banner_dismiss"
   | "push_notification_click"
   | "install_pwa"
-  | "header_event_chip_tap"
   // Where feedback actually comes from. The reader's selection bar and the
   // account menu are two very different asks — one is a correction on a
   // passage, the other is everything else — and only the ratio can tell us

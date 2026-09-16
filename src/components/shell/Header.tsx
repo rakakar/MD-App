@@ -8,13 +8,10 @@ import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { ctaPrimaryBar } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
-import { getEvents } from "@/lib/api";
-import { cardDateRange, type EventCard } from "@/lib/events";
 import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceConfig";
 import { DisplaySheet } from "./DisplaySheet";
 import { useWorkspace } from "./WorkspaceProvider";
 import {
-  CalendarChipIcon,
   CheckIcon,
   ChevronDown,
   CloseIcon,
@@ -322,47 +319,6 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
   );
 }
 
-/**
- * Upcoming-event chip (PRD §2): next event's date, deep-links to the event.
- * Hidden when there are none. Mitigates Connect being 2 taps away.
- *
- * **The first row of the Upcoming bucket, not the first row this file picked.**
- * The API buckets and orders — upcoming is soonest first — so "the next one"
- * is `results[0]` and there is no client-side sort here to disagree with the
- * list the chip leads to.
- */
-function EventChip() {
-  const [next, setNext] = useState<EventCard | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    getEvents({ bucket: "upcoming" })
-      .then((r) => {
-        if (!cancelled) setNext(r.results[0] ?? null);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!next) return null;
-  const date = cardDateRange(next);
-  return (
-    <Link
-      href={`/connect/events/${next.slug}`}
-      onClick={() => track("header_event_chip_tap")}
-      className="flex min-h-11 items-center gap-1.5 rounded-full border border-rule bg-card px-3 text-xs font-medium text-ink transition-colors hover:border-ws-connect hover:text-ws-connect"
-      aria-label={`Upcoming event${date ? ` on ${date}` : ""}`}
-    >
-      <CalendarChipIcon className="h-3.5 w-3.5" />
-      {/* The chip has room for one date, and a range would wrap the bar. The
-          start is the one a reader is deciding with. */}
-      {date ? date.split(" – ")[0] : "Event"}
-    </Link>
-  );
-}
-
 function AvatarMenu() {
   const { user, loading } = useAuth();
   const { open: openFeedback } = useFeedback();
@@ -658,4 +614,4 @@ export function Header() {
   );
 }
 
-export { AvatarMenu, EventChip, WorkspaceSwitcher };
+export { AvatarMenu, WorkspaceSwitcher };
