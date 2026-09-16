@@ -40,9 +40,17 @@ export function LaunchPane({
          stretched rather than a tablet one. Capped, the column is the same
          width the deck will be when it fades in over it. The desktop split
          overrides the cap with its own fixed column. */
+      /* The top padding clears the notch *and then some*. At the inset alone
+         the mark sat hard against the status bar, which on a screen whose
+         whole job is to be looked at for two seconds reads as cramped rather
+         than as full-bleed. The extra 2.75rem is what drops the identity into
+         the sky rather than onto the edge of it; the 4.5rem floor is the same
+         position on a phone that reports no inset. `justify-between` spends
+         the difference out of the gap in the middle, so nothing at the bottom
+         moves. */
       className="
         relative mx-auto flex h-full w-full max-w-lg flex-col justify-between
-        px-7 pb-10 pt-[max(1.75rem,env(safe-area-inset-top))]
+        px-7 pb-10 pt-[max(4.5rem,calc(env(safe-area-inset-top)+2.75rem))]
         lg:mx-0 lg:w-[28.25rem] lg:max-w-none lg:shrink-0 lg:justify-center lg:gap-6 lg:px-0 lg:py-0
       "
     >
