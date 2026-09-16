@@ -947,6 +947,22 @@ html[data-reading="1"] body {
 .reader-chrome[data-hidden="true"] {
   opacity: 0;
   pointer-events: none;
+  /* **A hidden bar must not still be filtering the page.**
+  
+     WebKit does not move an element's backdrop region with its `transform`:
+     the bar slides off the top of the screen, and the blur it was applying
+     stays behind, sampling and smearing the strip of text the bar used to
+     cover. `opacity: 0` does not stop it either. On an iPhone the result is
+     two lines of Devanagari permanently out of focus under the status bar,
+     while the bar itself is nowhere to be seen — reported from an iPhone 14
+     Plus, 16 Sep.
+  
+     Neither bar carries a backdrop-filter any more (see `ReaderChrome`), so
+     today this changes nothing. It stays because the bug is in the *pattern* —
+     transform-hidden plus a backdrop-filter — and this class is where that
+     pattern lives. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .reader-chrome-top[data-hidden="true"] {
   transform: translateY(-100%);

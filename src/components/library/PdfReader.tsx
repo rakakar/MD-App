@@ -1309,7 +1309,7 @@ export function PdfReader({
         // `reader-chrome` is the book reader's own transition — the bar slides
         // up and fades rather than blinking out, and a hidden one stops taking
         // taps so the page beneath it is fully readable.
-        className="reader-chrome reader-chrome-top absolute inset-x-0 top-0 z-20 flex items-center gap-1 border-b border-rule bg-card/95 px-2 py-2 backdrop-blur"
+        className="reader-chrome reader-chrome-top absolute inset-x-0 top-0 z-20 flex items-center gap-1 border-b border-rule bg-card px-2 py-2"
         style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top))" }}
       >
         {backHref && (

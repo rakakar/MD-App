@@ -98,7 +98,7 @@ export function ReaderTopBar({
     <div
       data-reader-chrome
       data-hidden={hidden}
-      className="reader-chrome reader-chrome-top fixed inset-x-0 top-0 z-40 bg-(--reader-bg)/95 pt-[env(safe-area-inset-top)] backdrop-blur"
+      className="reader-chrome reader-chrome-top fixed inset-x-0 top-0 z-40 bg-(--reader-bg) pt-[env(safe-area-inset-top)]"
     >
       {/* A fixed 16px gutter, not `.reader-content`. The bar used to be laid
           out on the reading measure, which meant its controls moved whenever
@@ -316,7 +316,7 @@ export function ReaderBottomBar({
          Tailwind scans comments as well as code, so a class name spelt in a
          comment with an ellipsis inside its brackets is emitted as a real rule
          — and an elided CSS function does not parse. It cost a build.) */
-      className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg)/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg) pb-[env(safe-area-inset-bottom)]"
       style={{ bottom }}
     >
       {/* Above the row with the page number in it, and under its own hairline
