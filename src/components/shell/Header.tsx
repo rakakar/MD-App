@@ -37,10 +37,14 @@ import {
  * switcher, hero and selection state, and it cross-fades over 180ms rather
  * than cutting.
  *
- * The sheet is portalled to <body> on purpose. The header sets backdrop-blur,
- * and a backdrop-filter makes an element the containing block for its
- * fixed-position descendants — inline, the sheet's `fixed inset-0` resolved to
- * the 48px header instead of the viewport, so it opened as a sliver of itself.
+ * The sheet is portalled to <body> on purpose, and it stays that way. The
+ * header used to set backdrop-blur, and a backdrop-filter makes an element the
+ * containing block for its fixed-position descendants — inline, the sheet's
+ * `fixed inset-0` resolved to the 48px header instead of the viewport, so it
+ * opened as a sliver of itself. The blur is gone now (see the bar's own note),
+ * but so is any reason to move the sheet back: `filter`, `transform`,
+ * `perspective` and `will-change` do the same thing to a fixed descendant, and
+ * a portal is immune to all four.
  */
 function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover" }) {
   const { workspace, select } = useWorkspace();
@@ -598,18 +602,27 @@ export function Header() {
   useHeaderHeight(ref);
 
   return (
-    // pt-safe: installed as a PWA the viewport is viewport-fit=cover, so
-    // without it the bar sits under the status bar / notch.
     <header
       ref={ref}
       /* The bar takes a trace of the workspace so the chrome belongs to the
-         shelf under it — see `--ws-chrome`. Still translucent, because the
-         blur behind it is what makes content scrolling under the bar read as
-         *under* it: the mix is taken to 85% against transparent rather than
-         being written as a `/85` utility, which cannot reach inside a
-         `color-mix`. */
-      className="sticky top-0 z-40 border-b border-rule pt-[env(safe-area-inset-top)] backdrop-blur-lg lg:hidden"
-      style={{ background: "color-mix(in srgb, var(--ws-chrome) 85%, transparent)" }}
+         shelf under it — see `--ws-chrome` — and it is opaque.
+         
+         It was 85% over a 24px backdrop blur, on the theory that seeing a
+         little of what passes beneath is what makes content read as going
+         *under* the bar. Over the pale shelves it was drawn against that is
+         true and almost invisible. Over the Shorts rail's black tiles it is
+         neither: 15% of black turns a cream bar grey, the blur smears it as
+         the rail scrolls, and the effect is a bar that looks out of focus
+         rather than one with depth. Worse on a phone, where
+         `viewport-fit=cover` puts the status bar inside this element — nothing
+         scrolls under a notch, so there the wash reads as a rendering fault.
+         
+         Depth here is already carried by the bottom rule and by content
+         disappearing at it. The blur goes with the transparency: a
+         backdrop-filter that has nothing to filter still costs a compositing
+         layer on every scrolled frame. */
+      className="sticky top-0 z-40 border-b border-rule pt-[env(safe-area-inset-top)] lg:hidden"
+      style={{ background: "var(--ws-chrome)" }}
     >
       {/* Two or three items now, and they fit one row at every text size. */}
       <div className="flex flex-wrap items-center gap-2.5 px-4 py-2">
