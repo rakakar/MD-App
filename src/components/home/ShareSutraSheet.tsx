@@ -125,50 +125,72 @@ export function ShareSutraSheet({
     a.remove();
   };
 
-  return (
-    <Sheet open={open} onClose={onClose} title="Share sutra" accent={APP_ACCENT}>
-      {/* 3:4, held whatever the card is doing, so the sheet does not jump to
-          its full height the moment the bitmap arrives. */}
-      <div className="mx-auto aspect-3/4 w-full max-w-sm overflow-hidden rounded-card border border-rule bg-inset">
-        {url ? (
-          /* eslint-disable-next-line @next/next/no-img-element -- an object URL
-             for a bitmap this browser just drew: there is nothing for a loader
-             to optimise and next/image cannot take a blob. */
-          <img
-            src={url}
-            alt={`${text} — ${source}`}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div
-            className="flex h-full w-full items-center justify-center text-sm text-muted"
-            role="status"
-          >
-            {failed ? "Could not draw the card" : "Preparing…"}
-          </div>
-        )}
-      </div>
+  /* The two buttons belong to the sheet's footer, not to its body. `Sheet`
+     keeps the footer outside the scroller for exactly this reason — "a sheet
+     that ends in a decision must not scroll its own decision off screen" — and
+     in the body they did: on a phone with Safari's own bars up, Share and Save
+     sat below the fold of an 85dvh panel. */
+  const buttons = (
+    <div className="flex gap-3">
+      <button
+        type="button"
+        onClick={share}
+        disabled={!url}
+        className={`${ctaPrimaryBar} flex-1 disabled:opacity-50`}
+        style={{ background: "var(--ws-color)" }}
+      >
+        <ShareIcon className="h-4 w-4" />
+        Share
+      </button>
+      <button
+        type="button"
+        onClick={download}
+        disabled={!url}
+        className="inline-flex min-h-12 flex-1 items-center justify-center gap-1.5 rounded-control border border-rule bg-card px-4 text-sm font-semibold text-ink transition-colors disabled:opacity-50"
+      >
+        <DownloadIcon className="h-4 w-4" />
+        {IS_IOS ? "Save" : "Download"}
+      </button>
+    </div>
+  );
 
-      <div className="mt-5 flex gap-3 pb-1">
-        <button
-          type="button"
-          onClick={share}
-          disabled={!url}
-          className={`${ctaPrimaryBar} flex-1 disabled:opacity-50`}
-          style={{ background: "var(--ws-color)" }}
-        >
-          <ShareIcon className="h-4 w-4" />
-          Share
-        </button>
-        <button
-          type="button"
-          onClick={download}
-          disabled={!url}
-          className="inline-flex min-h-12 flex-1 items-center justify-center gap-1.5 rounded-control border border-rule bg-card px-4 text-sm font-semibold text-ink transition-colors disabled:opacity-50"
-        >
-          <DownloadIcon className="h-4 w-4" />
-          {IS_IOS ? "Save" : "Download"}
-        </button>
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Share sutra"
+      accent={APP_ACCENT}
+      footer={buttons}
+    >
+      {/* Sized by *height*, not width, and that is the fix: at `max-w-sm` the
+          card was 384×512 and on a short screen it simply pushed everything
+          under it away. Driven from the height it can never do that, and 3:4
+          means the width follows — 312px at the cap, which fits the narrowest
+          phone this app is drawn for with room either side. The box holds its
+          shape while the bitmap is still being drawn, so the sheet does not
+          jump to full height the moment it arrives. */}
+      {/* `Sheet` gives its body no padding of its own — every caller sets the
+          comps' px-5 for itself. */}
+      <div className="px-5 py-4">
+        <div className="mx-auto aspect-3/4 h-[min(55dvh,26rem)] max-w-full overflow-hidden rounded-card border border-rule bg-inset">
+          {url ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- an object URL
+               for a bitmap this browser just drew: there is nothing for a loader
+               to optimise and next/image cannot take a blob. */
+            <img
+              src={url}
+              alt={`${text} — ${source}`}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center text-sm text-muted"
+              role="status"
+            >
+              {failed ? "Could not draw the card" : "Preparing…"}
+            </div>
+          )}
+        </div>
       </div>
     </Sheet>
   );
