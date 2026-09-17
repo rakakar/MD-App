@@ -5,7 +5,12 @@ import { DownloadIcon, ShareIcon } from "@/components/shell/icons";
 import { Sheet } from "@/components/ui/Sheet";
 import { ctaPrimaryBar } from "@/components/ui";
 import { track } from "@/lib/analytics";
-import { renderSutraCard, sutraCardFilename } from "@/lib/sutraCard";
+import {
+  renderSutraCard,
+  SUTRA_PLATES,
+  sutraCardFilename,
+  type SutraPlate,
+} from "@/lib/sutraCard";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 
 /**
@@ -44,6 +49,13 @@ export function ShareSutraSheet({
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  /**
+   * Which painting. Deliberately not remembered between sheets: the choice
+   * belongs to the verse being sent rather than to the reader, and a stored
+   * preference would quietly make every card they ever send the same one,
+   * which is the thing having four of them is meant to avoid.
+   */
+  const [plate, setPlate] = useState<SutraPlate>(SUTRA_PLATES[0]);
   const blobRef = useRef<Blob | null>(null);
 
   // Drawn when the sheet opens, not on mount: most readers never press Share,
@@ -54,7 +66,7 @@ export function ShareSutraSheet({
     let objectUrl: string | null = null;
     setFailed(false);
 
-    renderSutraCard({ text, source })
+    renderSutraCard({ text, source, plate })
       .then((blob) => {
         if (dead) return;
         blobRef.current = blob;
@@ -71,7 +83,7 @@ export function ShareSutraSheet({
       setUrl(null);
       blobRef.current = null;
     };
-  }, [open, text, source]);
+  }, [open, text, source, plate]);
 
   const file = () =>
     blobRef.current
@@ -190,6 +202,45 @@ export function ShareSutraSheet({
               {failed ? "Could not draw the card" : "Preparing…"}
             </div>
           )}
+        </div>
+
+        {/* The plates, all four at once. A row rather than a carousel: there
+            are four, they fit, and a choice you can see all of is made at a
+            glance where one you have to scroll through is browsed. */}
+        <div
+          role="radiogroup"
+          aria-label="Background"
+          className="mt-4 flex justify-center gap-2.5"
+        >
+          {SUTRA_PLATES.map((p) => {
+            const on = p.id === plate.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                aria-label={p.label}
+                onClick={() => setPlate(p)}
+                /* The selected one is ringed in the workspace's colour rather
+                   than dimming the other three: four small paintings are the
+                   thing being compared, and three of them greyed is three of
+                   them misrepresented. */
+                className="shrink-0 rounded-tile p-0.5 transition-colors"
+                style={{ background: on ? "var(--ws-color)" : "transparent" }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- a
+                    fixed local 3KB thumbnail at the size it was written at. */}
+                <img
+                  src={p.thumb}
+                  alt=""
+                  width={168}
+                  height={224}
+                  className="h-16 w-12 rounded-tile border border-rule object-cover"
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
     </Sheet>

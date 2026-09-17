@@ -26,26 +26,85 @@
  * not follow one — a reader in dark mode sharing a verse that came out dark on
  * cream watercolour would be a bug, not a preference.
  */
-import { APP_ACCENT } from "./workspaceConfig";
 
 /** The artwork, and the card: 3:4, the shape a phone screenshot is shared at. */
 const W = 1080;
 const H = 1440;
-const PLATE = "/brand/sutra-card.webp";
 
-/** Ink on the plate. Sampled from the artwork, not from the app's tokens. */
+/**
+ * **The plates.** Four paintings of the same idea — the portrait top right, a
+ * clear middle for the verse, a scene along the bottom — so the reader picks
+ * the one that suits the verse or the day rather than always sending the same
+ * picture.
+ *
+ * Each is 1080×1440 WebP, and each has a 168px thumbnail beside it: the picker
+ * shows all four at once, and four full plates is 400KB to open a sheet with.
+ */
+export interface SutraPlate {
+  id: string;
+  /** what a screen reader is told the choice is */
+  label: string;
+  src: string;
+  thumb: string;
+}
+
+export const SUTRA_PLATES: SutraPlate[] = [
+  { id: "riverside", label: "Riverside", src: "/brand/sutra-card-1.webp", thumb: "/brand/sutra-card-1-thumb.webp" },
+  { id: "shore", label: "Shore at dawn", src: "/brand/sutra-card-2.webp", thumb: "/brand/sutra-card-2-thumb.webp" },
+  { id: "dusk", label: "Dusk over water", src: "/brand/sutra-card-3.webp", thumb: "/brand/sutra-card-3-thumb.webp" },
+  { id: "meadow", label: "Meadow", src: "/brand/sutra-card-4.webp", thumb: "/brand/sutra-card-4-thumb.webp" },
+];
+
+/**
+ * **Ink on the plate — one palette for all four, and the numbers are measured.**
+ *
+ * Sampled from the artwork rather than taken from the app's tokens, for the
+ * reason in the file's own note: this leaves the app and has no theme to
+ * follow.
+ *
+ * One palette rather than four, because the plates only really disagree about
+ * the two smallest pieces of type and the answer for both is "a little darker
+ * than drawn". The figures below are the worst case across all four plates,
+ * measured in the band each piece of type actually sits in:
+ *
+ * | | worst | on |
+ * |---|---|---|
+ * | verse — `INK` | 5.90:1 | Dusk over water |
+ * | eyebrow — `ACCENT` | 4.51:1 | Dusk over water |
+ * | attribution — `MUTED` | 4.52:1 | Dusk over water |
+ *
+ * `ACCENT` is the app's terracotta at 86%: at full strength it measured 3.60
+ * on the dusk plate's pink sky. `MUTED` is a long way down from the `#8b8073`
+ * this was drawn with, which measured **1.60** over that plate's water — the
+ * one that was already failing on the plate shipped first, at 3.45. The book's
+ * title is now separated from the author's name by size and weight rather than
+ * by being paler than it, which is the trade a coloured background forces.
+ *
+ * `RULE` carries no words, so it is decoration and has no floor to clear.
+ */
 const INK = "#2f2a24";
-const MUTED = "#8b8073";
+const MUTED = "#413c36";
+const ACCENT = "#8f430f";
 const RULE = "#c98a4b";
 
 /** Where the block of type sits, measured off the artwork's clear middle. */
-const BOX = { top: 560, bottom: 1010, width: 840 };
+/**
+ * Where the block of type sits.
+ *
+ * `top` is set by the portrait, which reaches about y430 on all four plates and
+ * leaves room for the eyebrow under it; `bottom` by the scene, which on the
+ * tightest plate (Shore at dawn) begins at its horizon around y890. The clear
+ * paper between them is what the type gets, and a long verse spends all of it.
+ */
+const BOX = { top: 500, bottom: 950, width: 840 };
 
 export interface SutraCardInput {
   /** the verse, as Devanagari */
   text: string;
   /** the book it is from */
   source: string;
+  /** which painting to print it on; defaults to the first */
+  plate?: SutraPlate;
 }
 
 /** Whoever wrote it — the same on every card, so it is not a parameter. */
@@ -133,7 +192,11 @@ function fitVerse(
  * which is exactly what JPEG rings around, and a share is one file rather than
  * a page of them.
  */
-export async function renderSutraCard({ text, source }: SutraCardInput): Promise<Blob> {
+export async function renderSutraCard({
+  text,
+  source,
+  plate = SUTRA_PLATES[0],
+}: SutraCardInput): Promise<Blob> {
   const devanagari = family("--font-tiro-devanagari", "serif");
   const ui = family("--font-mukta", "sans-serif");
 
@@ -155,8 +218,8 @@ export async function renderSutraCard({ text, source }: SutraCardInput): Promise
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("no 2d context");
 
-  const [plate, glyph] = await Promise.all([load(PLATE), sun(APP_ACCENT)]);
-  ctx.drawImage(plate, 0, 0, W, H);
+  const [art, glyph] = await Promise.all([load(plate.src), sun(ACCENT)]);
+  ctx.drawImage(art, 0, 0, W, H);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -184,7 +247,7 @@ export async function renderSutraCard({ text, source }: SutraCardInput): Promise
   const eyebrowY = BOX.top - 78;
   const left = mid - unit / 2;
   ctx.drawImage(glyph, left - (iconSize - iconInk) / 2, eyebrowY - iconSize + 6, iconSize, iconSize);
-  ctx.fillStyle = APP_ACCENT;
+  ctx.fillStyle = ACCENT;
   ctx.textAlign = "left";
   ctx.fillText(EYEBROW, left + iconInk + gap, eyebrowY);
   ctx.textAlign = "center";
