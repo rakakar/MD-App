@@ -39,6 +39,11 @@ export type GaEvent =
   // question this rail exists to answer.
   | "short_play"
   | "search"
+  // One per question put to the Assistant: which of the four answers it got,
+  // and whether the reader chose that (a chip, a command) or the Assistant
+  // guessed. A high share of guesses followed by a second ask of the same
+  // words under another chip is what a wrong guess looks like.
+  | "assistant_ask"
   // Expanding a result in place vs opening the book — the ratio tells us
   // whether readers can judge a passage from the list, or need its context.
   | "search_result_expand"

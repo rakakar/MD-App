@@ -121,7 +121,7 @@ function NothingHere({ state, basePath }: { state: FindState; basePath: string }
           state.q ? (
             <>
               <Link
-                href={`/search?q=${encodeURIComponent(state.q)}`}
+                href={`/assistant?mode=books&q=${encodeURIComponent(state.q)}`}
                 className="font-semibold underline underline-offset-2"
                 style={{ color: "var(--ws-ink)" }}
               >

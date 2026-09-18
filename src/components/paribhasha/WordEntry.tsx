@@ -14,17 +14,17 @@ import type { ParibhashaWord } from "@/lib/types";
  * definition is in the HTML for a search engine and for a reader with no
  * JavaScript; the marks arrive with the headword index.
  */
-export function WordEntry({ word }: { word: ParibhashaWord }) {
+export function WordEntry({ word, size }: { word: ParibhashaWord; size?: "sm" | "lg" }) {
   return (
     <GlossaryProvider>
       <WordTrailProvider>
-        <Definitions word={word} />
+        <Definitions word={word} size={size} />
       </WordTrailProvider>
     </GlossaryProvider>
   );
 }
 
-function Definitions({ word }: { word: ParibhashaWord }) {
+function Definitions({ word, size }: { word: ParibhashaWord; size?: "sm" | "lg" }) {
   const segments = useDefinitionSegments(word.definitions, word.hindi);
-  return <DefinitionList definitions={word.definitions} segments={segments} />;
+  return <DefinitionList definitions={word.definitions} segments={segments} size={size} />;
 }

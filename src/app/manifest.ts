@@ -30,7 +30,7 @@ export default function manifest(): MetadataRoute.Manifest {
     // long-press the installed icon — the three things people actually open
     shortcuts: [
       { name: "Read", short_name: "Read", url: "/books" },
-      { name: "Search", short_name: "Search", url: "/search" },
+      { name: "Assistant", short_name: "Assistant", url: "/assistant" },
       { name: "My Journey", short_name: "Journey", url: "/me" },
     ],
     // `any` and `maskable` are two different drawings of the same mark, and

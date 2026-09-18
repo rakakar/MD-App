@@ -37,10 +37,10 @@ export default function NotFound() {
             Resources
           </Link>
           <Link
-            href="/search"
+            href="/assistant"
             className="rounded-full border border-rule bg-card px-4 py-2 text-sm font-semibold"
           >
-            Search
+            Assistant
           </Link>
           <Link
             href="/"

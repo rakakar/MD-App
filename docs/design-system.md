@@ -190,6 +190,40 @@ debugging pass:
   declaration — the class did nothing. The class comes *off* on the way out, which ends
   the animation and hands opacity back to the transition.
 
+## The Assistant, 18 Sep 2026
+
+Ten screens (`design_docs/screens/assistant/`), replacing the v1 centre-slot Search. One
+box, four kinds of answer — **Paribhasha** (the dictionary on the device), **Book search**
+(`GET search`, contract §9.1), **Research** (the metered chat API, `lib/chat.ts`) and
+**Navigate** (the app's own map, `lib/assistant/destinations.ts`). With no chip chosen,
+`lib/assistant/intent.ts` picks one from what was typed, by rules rather than a model, and
+leans away from Research because it is the only one that spends a reader's daily
+allowance. `/search` redirects to `/assistant`, query string and all.
+
+| Comp | Shipped | Reason |
+|---|---|---|
+| 1 · "Answers only from the 41 books in Read" | "…the 12 original books" | The shelf is read live (`books/?workspace=originals`), and 12 is what the API has today. The tab is called Books here, not Read. Originals only, because that is all Research and Book search read. |
+| 2 · Source line "Paribhasha Sanhita · p. 214" and a bookmark on the card | "Paribhasha · N parts", no bookmark | The glossary carries no source book or page per entry, and there is nowhere to save a word to. A dead control is worse than none. |
+| 2 · "14 places in books" chip | "Find in the books" | Counting would spend a vector search on every look-up just to print a number; the chip asks the search when the reader wants it. |
+| 2, 3 · "Related: …" / Related words | Headwords found inside the entry's own definitions | The glossary has no related field. Its definitions are written in its own vocabulary, so the words inside one are exactly the words needed to understand it (`lib/assistant/related.ts`). |
+| 3 · English gloss, "noun", bookmark | Not shown | No such fields in the glossary. |
+| 3 · Occurrences "14 in 5 books" | The passages `GET search` finds for the headword, grouped by book | Ranked retrieval, not a concordance. The heading counts what search finds, which is the honest claim. |
+| 3 · Full-screen, no tab bar | Keeps the tab bar; the reading bar stands on it | The route is shared and indexed; it is a page in the app, not a reader. |
+| 4 · Exact phrase | Passages from `GET search` narrowed to those containing the phrase | The engine has no phrase mode. When none contain it the list says "Nearest passages" rather than claiming exactness. |
+| 4 · — | The Library lane under the passages (unquoted queries) | Kept from the old Search, which it replaces — never merged with the passages (contract §13.5). |
+| 5 · Answer streaming word by word, stop button | Working state, then the whole answer | `POST chat/` returns whole. Typing it out after the fact would be theatre, and a stop button would stop nothing. When the BE streams, the working state is where the text goes. |
+| 5 · "Reading 7 passages from 4 books" while working | "Reading the passages that answer this"; the counts appear with the answer | The counts are only known once the answer arrives. |
+| 6 · "Cited for the first claim", surrounding paragraphs | "Cited in the answer", the cited paragraph alone | The API does not say which sentence a citation supports, and `paras/{ref}/` returns the one paragraph. |
+| 7 · Title "Vyavastha across four books" | The question itself | There is no generated title. Shown in the compact bar once the big header scrolls away. |
+| 7 · Save to Journey | Saves the conversation on this device, marked "Saved to Journey" in the list | My Journey has no model for it yet. First thing to move to the server when one exists. |
+| 7 · "Ask next" suggestions | Built from glossary words in the answer: "Where does X appear?", "Paribhasha: X" | The API returns no follow-ups; these are real questions the app can answer. |
+| 7 · — | "N of 30 research questions left today" | The contract asks that the cap never be discovered by refusal. |
+| 8 · "12 notes tagged Avlokan", "3 upcoming" | What the place holds, in words | Notes carry no tags and the app keeps no counts it could stand behind. Leftover words ("Avlokan") are looked up in the library for the "Also possible" rows. |
+| 9 · "Transcribed on device · not sent until you stop" | "Nothing is asked until you stop" | The browser's recogniser (Chrome sends audio to Google) is not ours to vouch for. The mic button is hidden where the browser has no recogniser. |
+| 10 · Conversations | Kept in this browser only, and the list says so | No conversations endpoint; a Research turn stores its answer so reopening never spends a question. |
+| Four accents | Paribhasha terracotta, Book search Connect's teal, Research and Navigate Translations' green; the question bubble Connect's teal | Borrowed from the five tuned workspace hues rather than three new colours. Each answer is an `AccentScope`, so `--ws-color` / `--ws-ink` keep their meaning. |
+| App bar | The Assistant draws its own (tile, title, AI badge, history / new) and the workspace bar is hidden on `/assistant` | As drawn. The tab bar stays, and publishes its height as `--bottom-nav-h` for the composer to stand on. |
+
 ## Media, compacted — 18 Sep 2026
 
 The designer's revision of `/av` ("1b — Compact, first card at 265px"). Every change

@@ -24,7 +24,7 @@ function CommandK() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        router.push("/search");
+        router.push("/assistant");
       }
     };
     window.addEventListener("keydown", onKey);
@@ -42,6 +42,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   // readers qualify — the book's and the PDF's.
   const reader = ownsViewport(pathname);
   const bare = neutral || reader;
+  // The Assistant draws its own app bar — the comps' tile, title and
+  // conversation button — and keeps the tab bar, which its composer stands on.
+  const ownHeader = pathname === "/assistant" || pathname.startsWith("/assistant/");
 
   return (
     // Outermost, because the theme is the one thing every screen reads —
@@ -58,7 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               sidebar is mounted once here and a page's facets are fetched per
               request — so the slot that joins them has to be above both. */}
           <RailProvider>
-            {!bare && <Header />}
+            {!bare && !ownHeader && <Header />}
             {!bare && <Sidebar />}
             <CommandK />
             <ServiceWorker />

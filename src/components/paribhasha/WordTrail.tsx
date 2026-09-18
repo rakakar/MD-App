@@ -218,10 +218,13 @@ export function DefinitionList({
   definitions,
   segments,
   tone = "page",
+  size = "sm",
 }: {
   definitions: string[];
   segments: ReturnType<typeof useDefinitionSegments>;
   tone?: "page" | "reader";
+  /** `lg` is the word's own page, where the definition is the page */
+  size?: "sm" | "lg";
 }) {
   const soft = tone === "reader" ? "text-(--reader-ink-soft)" : "text-ink-soft";
   const bullet =
@@ -246,7 +249,10 @@ export function DefinitionList({
               className={`mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full opacity-70 ${bullet}`}
             />
           )}
-          <p lang="hi" className={`hi text-sm leading-relaxed ${i === 0 ? "" : soft}`}>
+          <p
+            lang="hi"
+            className={`hi ${size === "lg" ? "text-xl" : "text-sm"} leading-relaxed ${i === 0 ? "" : soft}`}
+          >
             <DefinitionText text={d} segments={segments[i]} />
           </p>
         </li>

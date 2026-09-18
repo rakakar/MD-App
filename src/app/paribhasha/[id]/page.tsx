@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { EntryExtras, EntryShare } from "@/components/paribhasha/EntryExtras";
 import { WordEntry } from "@/components/paribhasha/WordEntry";
+import { BackIcon } from "@/components/shell/icons";
+import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { getParibhashaWord } from "@/lib/api";
 
@@ -45,31 +48,47 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
   const word = await load(params);
   if (!word) notFound();
 
+  // Design 3 · Paribhasha — full entry. The headword and its definitions are
+  // server-rendered, so they are in the HTML for a search engine and for a
+  // reader with no JavaScript; related words, occurrences and the reading bar
+  // need the device and arrive after (`EntryExtras`).
   return (
-    <PageContainer>
-      <Link href="/paribhasha" className="text-xs text-ink-soft underline underline-offset-2">
-        ← Paribhasha
-      </Link>
+    <AppAccent>
+      <PageContainer>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/paribhasha"
+            aria-label="Paribhasha glossary"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card"
+          >
+            <BackIcon className="h-5 w-5" />
+          </Link>
+          <p className="min-w-0 flex-1 text-title font-semibold text-ink-soft">Paribhasha entry</p>
+          <EntryShare title={word.hindi} />
+        </div>
 
-      <h1 lang="hi" className="hi mt-3 text-2xl font-bold leading-snug">
-        {word.hindi}
-      </h1>
-      {word.hinglish && <p className="mt-0.5 text-sm text-ink-soft">{word.hinglish}</p>}
+        <h1 lang="hi" className="hi mt-6 text-5xl font-semibold leading-tight">
+          {word.hindi}
+        </h1>
+        <p className="mt-1 text-base text-ink-soft">
+          {[word.hinglish, "Paribhasha"].filter(Boolean).join(" · ")}
+        </p>
 
-      {/* One explanation in the order a manager arranged it (§14.1), never a
-          numbered list of competing senses — bulleted only so a second
-          definition is visibly a second one. */}
-      <div className="mt-5 rounded-2xl border border-rule bg-card p-4">
-        <WordEntry word={word} />
-      </div>
+        <p
+          className="mt-6 text-xs font-bold uppercase tracking-[0.09em]"
+          style={{ color: "var(--ws-ink)" }}
+        >
+          Paribhasha
+        </p>
+        {/* One explanation in the order a manager arranged it (§14.1), never a
+            numbered list of competing senses — bulleted only so a second
+            definition is visibly a second one. */}
+        <div className="mt-2 border-b border-rule pb-6">
+          <WordEntry word={word} size="lg" />
+        </div>
 
-      <Link
-        href={`/search?q=${encodeURIComponent(word.hindi)}`}
-        className="mt-4 block rounded-xl px-4 py-2.5 text-center text-sm font-medium text-white"
-        style={{ background: "var(--ws-color)" }}
-      >
-        Find this word in the books
-      </Link>
-    </PageContainer>
+        <EntryExtras word={word} />
+      </PageContainer>
+    </AppAccent>
   );
 }

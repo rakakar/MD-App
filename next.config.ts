@@ -51,6 +51,12 @@ const nextConfig: NextConfig = {
       { source: "/audio/:path*", destination: "/resources", permanent: true },
       { source: "/videos", destination: "/resources", permanent: true },
       { source: "/videos/:path*", destination: "/resources", permanent: true },
+      // Search became the Assistant (18 Sep 2026) — same slot, same box, with
+      // Paribhasha, Research and Navigate beside it. Old links keep their
+      // query string, so `/search?q=अनुभव` still arrives asked; `mode=paribhasha`
+      // is the same word in both. Not permanent, so the address can be
+      // reclaimed without fighting browser caches.
+      { source: "/search", destination: "/assistant", permanent: false },
     ];
   },
 };

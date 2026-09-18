@@ -1378,7 +1378,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         // this button here so the habit forms before the chat arrives; scoped
         // to this book, because a global search from page 19 of a chapter is
         // almost never the question being asked.
-        assistantHref={`/search?book=${encodeURIComponent(book.code)}`}
+        assistantHref="/assistant"
       />
 
       {/* ---- content ---- */}

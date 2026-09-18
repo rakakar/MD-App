@@ -235,6 +235,11 @@ The app has five workspaces, selected from a **header dropdown** (bottom-sheet o
 
 ## 7. Search (v1 centre slot) & assistant placeholder
 
+> **[REVISED 18 Sep 2026] The slot is the Assistant now**, at `/assistant` (`/search`
+> redirects). Search lives on inside it as *Book search*, beside Paribhasha, Research
+> (the chat API, signed-in and capped) and Navigate. What was built, and where it departs
+> from the designer's ten screens, is in `docs/design-system.md` → "The Assistant".
+
 - `GET search?q=` — global search; result component renders the **forward-compatible shape** `{type: text|audio|video, timestamp?}` even though v1 results are text-only. Text results deep-link via `canonical_ref` (§4 paragraph links).
 - Workspace-aware filter chips (All · current workspace) using the section mapping.
 - A quiet inline banner: "स्मार्ट सहायक जल्द आ रहा है / Smart assistant coming soon."

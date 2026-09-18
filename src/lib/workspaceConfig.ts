@@ -102,7 +102,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
       // break every link anyone has to a recording.
       { label: "Media", href: "/av", icon: "av" },
       { label: "Library", href: "/originals", icon: "browse" },
-      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
+      { label: "Assistant", href: "/assistant", icon: "assistant", isSearch: true },
     ],
   },
   translations: {
@@ -120,7 +120,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     // `/books?ws=translations` still resolves for anyone holding the link.
     nav: [
       { label: "Translations", href: "/translations", icon: "home" },
-      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
+      { label: "Assistant", href: "/assistant", icon: "assistant", isSearch: true },
     ],
   },
   resources: {
@@ -142,7 +142,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     // here; the honest fix is not to offer it.
     nav: [
       { label: "Student Materials", href: "/resources", icon: "materials" },
-      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
+      { label: "Assistant", href: "/assistant", icon: "assistant", isSearch: true },
     ],
   },
   journey: {
@@ -159,7 +159,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     nav: [
       { label: "Dashboard", href: "/me", icon: "overview" },
       { label: "Highlights & Notes", href: "/me/bookmarks", icon: "highlights" },
-      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
+      { label: "Assistant", href: "/assistant", icon: "assistant", isSearch: true },
     ],
   },
   connect: {
@@ -191,7 +191,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
       { label: "Events", href: "/connect", icon: "events" },
       { label: "Centres", href: "/connect/centres", icon: "centers" },
       { label: "Links", href: "/connect/links", icon: "links" },
-      { label: "Assistant", href: "/search", icon: "assistant", isSearch: true },
+      { label: "Assistant", href: "/assistant", icon: "assistant", isSearch: true },
     ],
   },
 };

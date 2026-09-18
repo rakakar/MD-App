@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { AvatarMenu, DisplayButton, WorkspaceSwitcher } from "./Header";
 import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
@@ -36,6 +37,27 @@ export function BottomNav() {
   const { workspace, tab } = useWorkspace();
   const pathname = usePathname() ?? "/";
   const claimed = tab && tab.path === pathname ? tab.href : null;
+  const navRef = useRef<HTMLElement>(null);
+
+  /**
+   * The bar's real height, published as `--bottom-nav-h` for anything that has
+   * to stand on it — the Assistant's composer. Measured rather than assumed:
+   * at the largest text size a two-line label makes the row taller, and the
+   * home-indicator inset is in here too. 0 on a desktop, where the bar is hidden.
+   */
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty("--bottom-nav-h", `${el.offsetHeight}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--bottom-nav-h");
+    };
+  }, []);
 
   const item = (nav: NavItem) => {
     const active = isActive(nav, pathname, claimed);
@@ -78,6 +100,7 @@ export function BottomNav() {
 
   return (
     <nav
+      ref={navRef}
       aria-label={`${workspace.name} navigation`}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
     >

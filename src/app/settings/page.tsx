@@ -131,6 +131,8 @@ export default function SettingsPage() {
           push to offer, and a heading over an empty space explains nothing. */}
       <NotificationSetting />
 
+      {/* The Assistant's "open downloads" lands here, on this heading. */}
+      <span id="downloads" className="block scroll-mt-20" aria-hidden />
       <SectionHeading>Offline downloads</SectionHeading>
       <div className="rounded-2xl border border-rule bg-card">
         {downloads.length === 0 ? (
