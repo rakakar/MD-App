@@ -393,7 +393,7 @@ function Header({
       </span>
       <div className="min-w-0 flex-1">
         <h1 className="flex items-center gap-2">
-          <span className="font-display text-3xl font-medium leading-tight tracking-[-0.015em]">
+          <span className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-3xl">
             Assistant
           </span>
           <AiBadge />

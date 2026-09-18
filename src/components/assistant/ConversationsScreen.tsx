@@ -74,7 +74,7 @@ export function ConversationsScreen() {
           >
             <BackIcon className="h-5 w-5" />
           </Link>
-          <h1 className="min-w-0 flex-1 font-display text-3xl font-medium leading-tight tracking-[-0.015em]">
+          <h1 className="min-w-0 flex-1 font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-3xl">
             Conversations
           </h1>
           <Link
