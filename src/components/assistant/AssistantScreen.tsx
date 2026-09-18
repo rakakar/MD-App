@@ -394,8 +394,11 @@ function Header({
           </span>
           <AiBadge />
         </h1>
-        <p className="text-sm leading-snug text-ink-soft">
-          Answers only from {books ? `the ${books} original books` : "the original books"}
+        {/* One line at 375pt beside the tile and the button — about 30
+            characters of room, so it says "only" by saying "from" these books.
+            Truncates rather than wraps at the largest text sizes. */}
+        <p className="truncate text-sm leading-snug text-ink-soft">
+          Answers from {books ? `${books} original books` : "the original books"}
         </p>
       </div>
       {active ? (
