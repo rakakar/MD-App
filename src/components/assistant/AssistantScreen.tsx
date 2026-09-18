@@ -30,7 +30,7 @@ import {
 import type { ChatQuota } from "@/lib/types";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 import { BookSearchAnswer } from "./BookSearchAnswer";
-import { Composer, type InputLang } from "./Composer";
+import { Composer } from "./Composer";
 import { HistoryIcon, IntentGlyph, SparkIcon } from "./icons";
 import { NavigateAnswer } from "./NavigateAnswer";
 import { ParibhashaAnswer } from "./ParibhashaAnswer";
@@ -39,7 +39,6 @@ import { ResearchAnswer } from "./ResearchAnswer";
 import { useDictionary, useOriginalBooks } from "./useAssistantData";
 import { canListen, VoiceSheet } from "./VoiceSheet";
 
-const LANG_KEY = "md.assistant.lang";
 const DEFAULT_MODE: Intent = "paribhasha";
 
 /**
@@ -70,7 +69,6 @@ export function AssistantScreen() {
   // then reads the intent from what is typed.
   const [mode, setMode] = useState<Intent | null>(DEFAULT_MODE);
   const [text, setText] = useState("");
-  const [lang, setLang] = useState<InputLang>("hi");
   const [quota, setQuota] = useState<ChatQuota | null>(null);
   const [listening, setListening] = useState(false);
   const [voice, setVoice] = useState(false);
@@ -82,10 +80,6 @@ export function AssistantScreen() {
   useEffect(() => {
     setVoice(canListen());
     setRecent(listConversations().slice(0, 3));
-    try {
-      const saved = window.localStorage.getItem(LANG_KEY);
-      if (saved === "hi" || saved === "en") setLang(saved);
-    } catch {}
   }, []);
 
   // ---- the conversation in the URL ----
@@ -122,7 +116,6 @@ export function AssistantScreen() {
         intent,
         query: q,
         at: new Date().toISOString(),
-        ...(intent === "books" && lang === "en" ? { asTyped: true } : {}),
       };
       const now = turn.at;
       // The id is made out here, not in the updater: React may run an updater
@@ -141,7 +134,7 @@ export function AssistantScreen() {
       setText("");
       track("assistant_ask", { intent, chosen: forced || chosen ? "chip" : "auto", length: q.length });
     },
-    [conv, mode, dictionary, lang, router]
+    [conv, mode, dictionary, router]
   );
 
   // A new turn scrolls its question to the top, so the answer reads downward
@@ -324,13 +317,6 @@ export function AssistantScreen() {
         onChange={setText}
         onSubmit={() => ask(text)}
         placeholder={placeholder}
-        lang={lang}
-        onLang={(l) => {
-          setLang(l);
-          try {
-            window.localStorage.setItem(LANG_KEY, l);
-          } catch {}
-        }}
         commands={commands}
         onCommand={onCommand}
         canListen={voice}
@@ -339,7 +325,7 @@ export function AssistantScreen() {
 
       <VoiceSheet
         open={listening}
-        initialLang={lang}
+        initialLang="hi"
         onClose={() => setListening(false)}
         onDone={(heard, send) => {
           setListening(false);

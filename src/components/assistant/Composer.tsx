@@ -10,11 +10,10 @@ export type InputLang = "hi" | "en";
 /**
  * The box at the foot of the Assistant, standing on the tab bar.
  *
- * **हिं·EN is how Roman letters are read**, not a translation switch. The books
- * are Devanagari, so by default "anubhav" is rewritten to अनुभव before it is
- * searched; EN searches exactly what was typed, for the reader looking for an
- * English word in a bilingual passage. It also picks the language the
- * microphone listens for.
+ * No हिं·EN switch, though the comps draw one (removed 18 Sep at the
+ * designer's call). Roman letters are always read as Hindi — "anubhav" is
+ * searched as अनुभव — and Book search's own "search as typed" link is the way
+ * back for the rare English word. The microphone has its own language choice.
  *
  * The command list opens only once what is typed reads as a command ("open…",
  * "resume…"), so a reader typing a word to look up never gets a menu over the
@@ -26,8 +25,6 @@ export function Composer({
   onChange,
   onSubmit,
   placeholder,
-  lang,
-  onLang,
   commands,
   onCommand,
   canListen,
@@ -38,8 +35,6 @@ export function Composer({
   onChange: (v: string) => void;
   onSubmit: () => void;
   placeholder: string;
-  lang: InputLang;
-  onLang: (l: InputLang) => void;
   commands: Destination[];
   onCommand: (d: Destination) => void;
   canListen: boolean;
@@ -152,22 +147,6 @@ export function Composer({
               autoComplete="off"
               className="min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-ink-soft"
             />
-            <button
-              type="button"
-              onClick={() => onLang(lang === "hi" ? "en" : "hi")}
-              aria-label={
-                lang === "hi"
-                  ? "Roman letters are read as Hindi. Switch to search as typed"
-                  : "Searching exactly as typed. Switch to read Roman letters as Hindi"
-              }
-              className="inline-flex h-10 shrink-0 items-center rounded-full bg-inset px-3 text-sm"
-            >
-              <span lang="hi" className={lang === "hi" ? "hi-note font-bold text-ink" : "hi-note text-ink-soft"}>
-                हिं
-              </span>
-              <span className="mx-0.5 text-ink-soft">·</span>
-              <span className={lang === "en" ? "font-bold text-ink" : "text-ink-soft"}>EN</span>
-            </button>
             {canListen && (
               <button
                 type="button"
