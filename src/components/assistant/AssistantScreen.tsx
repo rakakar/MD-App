@@ -40,6 +40,7 @@ import { useDictionary, useOriginalBooks } from "./useAssistantData";
 import { canListen, VoiceSheet } from "./VoiceSheet";
 
 const LANG_KEY = "md.assistant.lang";
+const DEFAULT_MODE: Intent = "paribhasha";
 
 /**
  * The Assistant — one box, four kinds of answer (designer's comps, 18 Sep).
@@ -64,7 +65,10 @@ export function AssistantScreen() {
   const books = useOriginalBooks();
 
   const [conv, setConv] = useState<Conversation | null>(null);
-  const [mode, setMode] = useState<Intent | null>(null);
+  // Paribhasha is chosen when the screen opens — looking a word up is what
+  // most people come here for. Tapping it again clears it, and the Assistant
+  // then reads the intent from what is typed.
+  const [mode, setMode] = useState<Intent | null>(DEFAULT_MODE);
   const [text, setText] = useState("");
   const [lang, setLang] = useState<InputLang>("hi");
   const [quota, setQuota] = useState<ChatQuota | null>(null);
@@ -107,7 +111,12 @@ export function AssistantScreen() {
     (query: string, forced?: Intent) => {
       const q = query.trim();
       if (!q) return;
-      const intent = forced ?? mode ?? detectIntent(q, dictionary);
+      // The chip decides the question that starts a conversation. Follow-ups
+      // are read from what is typed: the chips are not on screen by then, so a
+      // choice made there must not silently turn "explain simply" into a
+      // dictionary look-up three turns later.
+      const chosen = conv ? null : mode;
+      const intent = forced ?? chosen ?? detectIntent(q, dictionary);
       const turn: Turn = {
         id: newId(),
         intent,
@@ -130,7 +139,7 @@ export function AssistantScreen() {
       }
       scrollTo.current = turn.id;
       setText("");
-      track("assistant_ask", { intent, chosen: forced || mode ? "chip" : "auto", length: q.length });
+      track("assistant_ask", { intent, chosen: forced || chosen ? "chip" : "auto", length: q.length });
     },
     [conv, mode, dictionary, lang, router]
   );
@@ -175,7 +184,7 @@ export function AssistantScreen() {
 
   const startOver = () => {
     setConv(null);
-    setMode(null);
+    setMode(DEFAULT_MODE);
     setText("");
     setRecent(listConversations().slice(0, 3));
     router.replace("/assistant", { scroll: false });
