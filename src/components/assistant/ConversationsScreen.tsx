@@ -87,9 +87,12 @@ export function ConversationsScreen() {
           </Link>
         </header>
 
+        {/* The search and the filters stay in reach while the list scrolls —
+            narrowing is what a long history is used for. The page's own
+            ground behind them, so cards slide under rather than through. */}
         {all !== null && all.length > 0 && (
-          <>
-            <label className="mt-5 flex min-h-14 items-center gap-3 rounded-card border border-rule bg-card px-4">
+          <div className="sticky top-0 z-20 -mx-4 border-b border-rule bg-surface px-4 pb-3 pt-5 sm:-mx-6 sm:px-6">
+            <label className="flex min-h-14 items-center gap-3 rounded-card border border-rule bg-card px-4">
               <SearchGlyph className="h-5 w-5 shrink-0 text-ink-soft" />
               <input
                 value={q}
@@ -100,7 +103,7 @@ export function ConversationsScreen() {
               />
             </label>
 
-            <div className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+            <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
               <FilterChip label="All" selected={kind === null} onClick={() => setKind(null)} />
               {INTENTS.filter((i) => counts[i]).map((i) => (
                 <FilterChip
@@ -113,7 +116,7 @@ export function ConversationsScreen() {
                 />
               ))}
             </div>
-          </>
+          </div>
         )}
 
         {all !== null && all.length === 0 && (
