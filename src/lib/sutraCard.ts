@@ -32,13 +32,14 @@ const W = 1080;
 const H = 1440;
 
 /**
- * **The plates.** Four paintings of the same idea — the portrait top right, a
+ * **The plates.** Five paintings of the same idea — the portrait top right, a
  * clear middle for the verse, a scene along the bottom — so the reader picks
  * the one that suits the verse or the day rather than always sending the same
  * picture.
  *
  * Each is 1080×1440 WebP, and each has a 168px thumbnail beside it: the picker
- * shows all four at once, and four full plates is 400KB to open a sheet with.
+ * shows all of them at once, and five full plates is half a megabyte to open a
+ * sheet with.
  */
 export interface SutraPlate {
   id: string;
@@ -53,18 +54,19 @@ export const SUTRA_PLATES: SutraPlate[] = [
   { id: "shore", label: "Shore at dawn", src: "/brand/sutra-card-2.webp", thumb: "/brand/sutra-card-2-thumb.webp" },
   { id: "dusk", label: "Dusk over water", src: "/brand/sutra-card-3.webp", thumb: "/brand/sutra-card-3-thumb.webp" },
   { id: "meadow", label: "Meadow", src: "/brand/sutra-card-4.webp", thumb: "/brand/sutra-card-4-thumb.webp" },
+  { id: "valley", label: "Valley at sunrise", src: "/brand/sutra-card-5.webp", thumb: "/brand/sutra-card-5-thumb.webp" },
 ];
 
 /**
- * **Ink on the plate — one palette for all four, and the numbers are measured.**
+ * **Ink on the plate — one palette for all five, and the numbers are measured.**
  *
  * Sampled from the artwork rather than taken from the app's tokens, for the
  * reason in the file's own note: this leaves the app and has no theme to
  * follow.
  *
- * One palette rather than four, because the plates only really disagree about
+ * One palette rather than five, because the plates only really disagree about
  * the two smallest pieces of type and the answer for both is "a little darker
- * than drawn". The figures below are the worst case across all four plates,
+ * than drawn". The figures below are the worst case across all five plates,
  * measured in the band each piece of type actually sits in:
  *
  * | | worst | on |
@@ -91,7 +93,7 @@ const RULE = "#c98a4b";
 /**
  * Where the block of type sits.
  *
- * `top` is set by the portrait, which reaches about y430 on all four plates and
+ * `top` is set by the portrait, which reaches about y430 on all five plates and
  * leaves room for the eyebrow under it; `bottom` by the scene, which on the
  * tightest plate (Shore at dawn) begins at its horizon around y890. The clear
  * paper between them is what the type gets, and a long verse spends all of it.

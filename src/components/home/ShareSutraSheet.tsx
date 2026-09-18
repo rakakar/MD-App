@@ -53,7 +53,7 @@ export function ShareSutraSheet({
    * Which painting. Deliberately not remembered between sheets: the choice
    * belongs to the verse being sent rather than to the reader, and a stored
    * preference would quietly make every card they ever send the same one,
-   * which is the thing having four of them is meant to avoid.
+   * which is the thing having several of them is meant to avoid.
    */
   const [plate, setPlate] = useState<SutraPlate>(SUTRA_PLATES[0]);
   const blobRef = useRef<Blob | null>(null);
@@ -174,7 +174,13 @@ export function ShareSutraSheet({
       accent={APP_ACCENT}
       footer={buttons}
     >
-      {/* Sized by *height*, not width, and that is the fix: at `max-w-sm` the
+      {/* 44dvh, not the 55 this started at: the picker row under the preview
+          is 84px the preview has to leave room for, and at 55 a 667pt or
+          780pt phone scrolled the thumbnails under the footer — measured below
+          at 375×667, 360×780 and 428×926 with the body not scrolling at all.
+          On a tall phone the 26rem cap is what binds, so nothing changes there.
+
+          Sized by *height*, not width, and that is the fix: at `max-w-sm` the
           card was 384×512 and on a short screen it simply pushed everything
           under it away. Driven from the height it can never do that, and 3:4
           means the width follows — 312px at the cap, which fits the narrowest
@@ -184,7 +190,7 @@ export function ShareSutraSheet({
       {/* `Sheet` gives its body no padding of its own — every caller sets the
           comps' px-5 for itself. */}
       <div className="px-5 py-4">
-        <div className="mx-auto aspect-3/4 h-[min(55dvh,26rem)] max-w-full overflow-hidden rounded-card border border-rule bg-inset">
+        <div className="mx-auto aspect-3/4 h-[min(44dvh,26rem)] max-w-full overflow-hidden rounded-card border border-rule bg-inset">
           {url ? (
             /* eslint-disable-next-line @next/next/no-img-element -- an object URL
                for a bitmap this browser just drew: there is nothing for a loader
@@ -204,8 +210,8 @@ export function ShareSutraSheet({
           )}
         </div>
 
-        {/* The plates, all four at once. A row rather than a carousel: there
-            are four, they fit, and a choice you can see all of is made at a
+        {/* The plates, all of them at once. A row rather than a carousel: five
+            still fit the narrowest phone, and a choice you can see all of is made at a
             glance where one you have to scroll through is browsed. */}
         <div
           role="radiogroup"
@@ -223,9 +229,9 @@ export function ShareSutraSheet({
                 aria-label={p.label}
                 onClick={() => setPlate(p)}
                 /* The selected one is ringed in the workspace's colour rather
-                   than dimming the other three: four small paintings are the
-                   thing being compared, and three of them greyed is three of
-                   them misrepresented. */
+                   than dimming the others: several small paintings are the
+                   thing being compared, and the rest greyed would be the
+                   rest misrepresented. */
                 className="shrink-0 rounded-tile p-0.5 transition-colors"
                 style={{ background: on ? "var(--ws-color)" : "transparent" }}
               >
