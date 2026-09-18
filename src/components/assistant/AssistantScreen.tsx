@@ -236,7 +236,7 @@ export function AssistantScreen() {
       )}
 
       <div className="mx-auto w-full max-w-3xl px-4 pb-40 sm:px-6">
-        <Header active={conv !== null} onNew={startOver} />
+        <Header books={books?.length ?? null} active={conv !== null} onNew={startOver} />
         <div ref={sentinel} aria-hidden className="h-px" />
 
         {!conv ? (
@@ -370,9 +370,11 @@ function AiBadge() {
 }
 
 function Header({
+  books,
   active,
   onNew,
 }: {
+  books: number | null;
   active: boolean;
   onNew: () => void;
 }) {
@@ -392,6 +394,9 @@ function Header({
           </span>
           <AiBadge />
         </h1>
+        <p className="text-sm leading-snug text-ink-soft">
+          Answers only from {books ? `the ${books} original books` : "the original books"}
+        </p>
       </div>
       {active ? (
         <button
