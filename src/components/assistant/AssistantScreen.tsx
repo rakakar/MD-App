@@ -236,7 +236,7 @@ export function AssistantScreen() {
       )}
 
       <div className="mx-auto w-full max-w-3xl px-4 pb-40 sm:px-6">
-        <Header books={books?.length ?? null} active={conv !== null} onNew={startOver} />
+        <Header active={conv !== null} onNew={startOver} />
         <div ref={sentinel} aria-hidden className="h-px" />
 
         {!conv ? (
@@ -370,22 +370,20 @@ function AiBadge() {
 }
 
 function Header({
-  books,
   active,
   onNew,
 }: {
-  books: number | null;
   active: boolean;
   onNew: () => void;
 }) {
   return (
-    <header className="-mx-4 flex items-center gap-4 border-b border-rule px-4 pb-4 pt-5 sm:-mx-6 sm:px-6">
+    <header className="-mx-4 flex items-center gap-3 border-b border-rule px-4 pb-4 pt-5 sm:-mx-6 sm:px-6">
       <span
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-tile text-white shadow-card"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-white shadow-card"
         style={{ background: APP_ACCENT }}
         aria-hidden
       >
-        <SparkIcon className="h-6 w-6" />
+        <SparkIcon className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
         <h1 className="flex items-center gap-2">
@@ -394,9 +392,6 @@ function Header({
           </span>
           <AiBadge />
         </h1>
-        <p className="text-sm leading-snug text-ink-soft">
-          Answers only from {books ? `the ${books} original books` : "the original books"}
-        </p>
       </div>
       {active ? (
         <button
