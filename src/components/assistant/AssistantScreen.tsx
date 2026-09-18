@@ -82,6 +82,24 @@ export function AssistantScreen() {
     setRecent(listConversations().slice(0, 3));
   }, []);
 
+  /**
+   * A fresh Assistant opens ready to type — Paribhasha is already chosen, so
+   * the word is the only thing left to give it. Not when reopening a saved
+   * conversation (`?c=`): there the reader came to read, and a keyboard would
+   * cover half the answer. `preventScroll` keeps the header in view while the
+   * keyboard rises.
+   *
+   * Browsers decide whether focus brings the keyboard up. Android does after
+   * a tap on the tab bar; iOS Safari only raises it from a tap on the box
+   * itself, so there the caret is in place and one tap opens the keyboard.
+   */
+  useEffect(() => {
+    if (params.get("c")) return;
+    inputRef.current?.focus({ preventScroll: true });
+    // mount only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ---- the conversation in the URL ----
   const cParam = params.get("c");
   /** the conversation this screen just started — its URL is ours, not a visit */
