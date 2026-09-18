@@ -438,16 +438,8 @@ function EmptyState({
   recent: Conversation[];
 }) {
   return (
-    <div className="pt-7">
-      <h2 className="font-display text-3xl font-medium leading-tight tracking-[-0.015em]">
-        What are you looking for?
-      </h2>
-      <p className="mt-2 text-base leading-relaxed text-ink-soft">
-        Type a word for its paribhasha, a phrase to find it in the books, a question, or a place in
-        the app.
-      </p>
-
-      <p className="mt-7 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+    <div className="pt-6">
+      <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
         What do you need
       </p>
       <div className="mt-3 grid grid-cols-2 gap-3" role="radiogroup" aria-label="What do you need">
