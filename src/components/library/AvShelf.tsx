@@ -6,15 +6,16 @@ import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
 import { filesSummary, formatDuration } from "./format";
 import { RailSlot } from "@/components/shell/Rail";
-import { CountedSegmented, EmptyState, KindTile } from "@/components/ui";
+import { EmptyState, KindTile } from "@/components/ui";
 import type { TileKind } from "@/components/ui/KindTile";
-import { CollectionViewport } from "./CollectionViewport";
+import { Chip } from "@/components/ui/Segmented";
 import {
-  CollectionGridCard,
-  CollectionListRow,
-  CountedHeading,
-} from "./CollectionShell";
-import { VideoIcon, WaveformIcon } from "@/components/shell/icons";
+  CollectionViewProvider,
+  ProvidedView,
+  ProvidedViewToggle,
+} from "./CollectionLayout";
+import { CollectionGridCard, CollectionListRow } from "./CollectionShell";
+import { ShelfTitle } from "./ShelfTitle";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
@@ -76,6 +77,8 @@ export const AV_PAGE = 100;
  * folder's own page.
  */
 export function AvShelf({
+  title,
+  description,
   find,
   state,
   topics,
@@ -83,6 +86,9 @@ export function AvShelf({
   basePath,
   offset,
 }: {
+  title: string;
+  /** what the page holds — behind the title's `i`, not printed under it */
+  description: string;
   find: LibraryFindResponse;
   /** the find as asked, kind lock included — see `avFindState` */
   state: FindState;
@@ -103,36 +109,72 @@ export function AvShelf({
   const narrowed = chipCount({ ...state, selection: { ...state.selection, kind: [] } });
   const asked = narrowed > 0 || state.q.length > 0;
 
+  // How much is here — on the title's line now, where it says what the page
+  // holds, rather than on a heading of its own above the first collection.
+  // One count, in one place: the search results used to print a second copy
+  // of the same two numbers under the controls.
+  const meta =
+    find.count > 0 ? (
+      <>
+        {find.count} {find.count === 1 ? "recording" : "recordings"}
+        {groups.length > 1 && <> · {groups.length} collections</>}
+      </>
+    ) : null;
+
   return (
-    <>
+    /* List first, for a reader who has never chosen. Every tile on this page
+       is the same glyph in one of two tints, and the names — long, often
+       Devanagari — are the content; the grid spent a 165px column on artwork
+       that told them nothing while the name wrapped to three lines. */
+    <CollectionViewProvider fallback="list">
+      <ShelfTitle title={title} description={description} meta={meta} />
+
       {/* Above the controls, because it is the shortest path to the thing a
           returning reader came for — and drawn client-side from playheads, so
           it is simply absent for anyone who has not started anything. */}
       <ContinueAv sources={groups} />
 
-      {/* The box and the Filters button first, the split under it — the comps'
-          order, and the right one: "which of these" is a question about the
-          results, so it belongs next to them rather than above the control that
-          produces them. */}
-      <FindBar
-        basePath={basePath}
-        state={state}
-        scope="Audio and video"
-        dense
-        filters={
-          <FindFilters
-            topics={topics}
-            facets={facets}
-            state={state}
-            basePath={basePath}
-            itemCount={find.count}
-            noun="recording"
-            hideAxes={hideAxes}
-          />
-        }
-      />
+      {/* **Pinned under the app bar: the search, and the row that decides
+          what is below it.** Seven collections run past the first screen and
+          seventy-three files run a long way past it; changing Audios to
+          Videos should not mean scrolling back up to find the chips. The
+          app's one sticky-row recipe — the air is padding inside the box, and
+          the box is opaque, so nothing scrolls through a gap above it. */}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 pt-2 sm:mx-0 sm:px-0 lg:top-0">
+        <FindBar
+          basePath={basePath}
+          state={state}
+          scope="Audio and video"
+          placeholder="Search by name, topic, year…"
+          dense
+          filters={
+            <FindFilters
+              topics={topics}
+              facets={facets}
+              state={state}
+              basePath={basePath}
+              itemCount={find.count}
+              noun="recording"
+              hideAxes={hideAxes}
+              iconOnly
+            />
+          }
+        />
 
-      <Segments facets={facets} chosen={chosen} state={state} basePath={basePath} />
+        {/* The kind chips and the layout toggle on one row: one says which
+            recordings, the other how to lay them out, and both are about the
+            results directly underneath. The toggle only when there is a
+            layout to choose — a search draws each match grouped under its
+            folder, which has one shape. */}
+        <div className="mt-2.5 flex items-center gap-2">
+          <KindChips facets={facets} chosen={chosen} state={state} basePath={basePath} />
+          {!asked && groups.length > 0 && (
+            <div className="ml-auto">
+              <ProvidedViewToggle />
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* What is on, between the controls and the count they produced — the
           comps' "filters active". Phone only: the rail below carries the
@@ -172,21 +214,6 @@ export function AvShelf({
         </p>
       )}
 
-      {/* The count, which the browse hands to the layout switch to share a row
-          with and a find prints on its own. */}
-      {asked && find.count > 0 && (
-        <p className="mt-4 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-          <span className="tabular-nums">{find.count}</span>{" "}
-          {find.count === 1 ? "recording" : "recordings"}
-          {groups.length > 1 && (
-            <>
-              {" · "}
-              <span className="tabular-nums">{groups.length}</span> collections
-            </>
-          )}
-        </p>
-      )}
-
       {groups.length > 0 ? (
         asked ? (
           <div className="mt-2 flex flex-col">
@@ -195,32 +222,9 @@ export function AvShelf({
             ))}
           </div>
         ) : (
-          <CollectionLayout
-            groups={groups}
-            shelves={shelves}
-            /* The Library shelf's heading, with the count moved under it
-               rather than strung after it on the same line. The heading names
-               what is below; the count is a fact *about* it, and at the same
-               size and weight the two were competing to be read first. It also
-               buys the width back: this row shares it with the layout switch,
-               and on one line the pair truncated. */
-            summary={
-              <CountedHeading>
-                {find.count > 0 && (
-                  <>
-                    <span className="tabular-nums">{find.count}</span>{" "}
-                    {find.count === 1 ? "recording" : "recordings"}
-                    {groups.length > 1 && (
-                      <>
-                        {" · "}
-                        <span className="tabular-nums">{groups.length}</span> collections
-                      </>
-                    )}
-                  </>
-                )}
-              </CountedHeading>
-            }
-          />
+          <div className="mt-3">
+            <CollectionLayout groups={groups} shelves={shelves} />
+          </div>
         )
       ) : (
         <div className="mt-6">
@@ -236,20 +240,25 @@ export function AvShelf({
       )}
 
       <Pager find={find} state={state} basePath={basePath} offset={offset} />
-    </>
+    </CollectionViewProvider>
   );
 }
 
 /**
- * Audio · Video · everything — **the Type axis, promoted**.
+ * All · Audios · Videos — **the Type axis, promoted**, as chips.
  *
  * It is the same `kind` selection the sieve draws everywhere else, moved to the
- * top of the page and given the whole width, because here it is not one filter
- * among six: it is which of the two things this page is about the reader wants.
- * Counts come from the facet, which the endpoint computes ignoring the axis's
- * own selection — so "Audio 35" stays honest while Video is the one showing.
+ * top of the page, because here it is not one filter among six: it is which of
+ * the two things this page is about the reader wants. Counts come from the
+ * facet, which the endpoint computes ignoring the axis's own selection — so
+ * "Audios 35" stays honest while Videos is the one showing.
+ *
+ * Chips rather than the segmented control it was: the designer's call, and it
+ * frees the row's far end for the layout toggle, which a full-width segment
+ * could not share a line with. Solid for the chosen one, since something is
+ * always chosen here and "All" is a real option rather than the absence of one.
  */
-function Segments({
+function KindChips({
   facets,
   chosen,
   state,
@@ -265,55 +274,44 @@ function Segments({
   );
   const total = AV_KINDS.reduce((n, kind) => n + (counts.get(kind) ?? 0), 0);
   const options = [
-    { key: "all", label: "All", count: total, kinds: AV_KINDS, icon: undefined },
-    {
-      key: "audio",
-      label: "Audios",
-      count: counts.get("audio") ?? 0,
-      kinds: ["audio"],
-      icon: <WaveformIcon className="h-4 w-4" />,
-    },
-    {
-      key: "video",
-      label: "Videos",
-      count: counts.get("video") ?? 0,
-      kinds: ["video"],
-      icon: <VideoIcon className="h-4 w-4" />,
-    },
+    { key: "all", label: "All", count: total, kinds: undefined as FileKind[] | undefined },
+    { key: "audio", label: "Audios", count: counts.get("audio") ?? 0, kinds: ["audio"] as FileKind[] },
+    { key: "video", label: "Videos", count: counts.get("video") ?? 0, kinds: ["video"] as FileKind[] },
   ];
   // One option is not a choice. A workspace holding only recordings and no
   // video should not be asked which of the two it wants.
-  if (options.filter((o) => o.count > 0).length < 2) return null;
+  if (options.filter((o) => o.key !== "all" && o.count > 0).length < 2) return null;
+
+  const active =
+    chosen.length === AV_KINDS.length ? "all" : chosen.includes("audio") ? "audio" : "video";
 
   return (
-    <div className="mt-3">
-      <CountedSegmented
-        label="Audio or video"
-        // Links, not state: a filtered shelf that is a real URL can be shared,
-        // bookmarked and prerendered. "All" writes no `kind` at all rather than
-        // both values — the page supplies the lock, and a bare `/av` is the
-        // address worth sharing.
-        value={
-          chosen.length === AV_KINDS.length
-            ? "all"
-            : chosen.includes("audio")
-              ? "audio"
-              : "video"
-        }
-        segments={options.map((o) => ({
-          value: o.key,
-          label: o.label,
-          count: o.count,
-          icon: o.icon,
-          href: findHref(basePath, {
+    /* Scrolls sideways rather than wrapping. At the largest text size three
+       counted chips and the toggle do not fit a phone, and a second row of
+       chips would push the first collection down by the height this whole
+       redesign was trying to give back. */
+    <div
+      role="group"
+      aria-label="Audio or video"
+      className="-my-1 flex min-w-0 flex-1 gap-1 overflow-x-auto py-1 [scrollbar-width:none]"
+    >
+      {options.map((o) => (
+        <Chip
+          key={o.key}
+          label={o.label}
+          count={o.count}
+          selected={active === o.key}
+          variant="solid"
+          // Links, not state: a filtered shelf that is a real URL can be shared,
+          // bookmarked and prerendered. "All" writes no `kind` at all rather
+          // than both values — the page supplies the lock, and a bare `/av` is
+          // the address worth sharing.
+          href={findHref(basePath, {
             ...state,
-            selection: {
-              ...state.selection,
-              ...(o.key === "all" ? { kind: undefined } : { kind: o.kinds }),
-            },
-          }),
-        }))}
-      />
+            selection: { ...state.selection, kind: o.kinds },
+          })}
+        />
+      ))}
     </div>
   );
 }
@@ -399,22 +397,19 @@ function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: Shelf
 /**
  * The collections, in whichever shape the reader last chose.
  *
- * A client boundary only for the toggle's own state — the cards and rows below
- * it stay server-rendered children, so choosing a layout re-renders two
- * wrappers rather than the shelf.
+ * Both shapes are built here, on the server, and the provider picks one — so
+ * choosing a layout swaps two already-rendered trees rather than re-rendering
+ * the shelf. The toggle that drives it lives up in the sticky controls.
  */
 function CollectionLayout({
   groups,
   shelves,
-  summary,
 }: {
   groups: FolderGroup[];
   shelves: ShelfMap;
-  summary: React.ReactNode;
 }) {
   return (
-    <CollectionViewport
-      summary={summary}
+    <ProvidedView
       grid={
         <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
           {groups.map((group) => (

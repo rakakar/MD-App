@@ -49,10 +49,22 @@ export function FindBar({
   scope,
   dense = false,
   filters,
+  placeholder,
 }: {
   basePath: string;
   state: FindState;
   scope: string;
+  /**
+   * The line under the box, moved into it.
+   *
+   * By default the placeholder names the scope and a caption beneath says what
+   * the box reads. Media's comps fold the two together — "Search by name,
+   * topic, year…" — to spend one row rather than two on the way to the first
+   * collection, so passing this swaps the placeholder and drops the caption,
+   * whose words it now carries. The scope survives in the field's accessible
+   * name, which is what a screen reader hears whatever the box shows.
+   */
+  placeholder?: string;
   /**
    * The box is sharing a header line on a desktop, so the caption under it
    * drops there and keeps its phone. The line is worth its height where the
@@ -115,7 +127,7 @@ export function FindBar({
   }
 
   return (
-    <div className={`mt-4 ${dense ? "lg:mt-0" : ""}`}>
+    <div className={placeholder ? "" : `mt-4 ${dense ? "lg:mt-0" : ""}`}>
       <FindRow
         search={
           <SearchField
@@ -130,7 +142,7 @@ export function FindBar({
               commit("");
               inputRef.current?.focus();
             }}
-            placeholder={`Search ${scope}…`}
+            placeholder={placeholder ?? `Search ${scope}…`}
             label={`Search ${scope}`}
             unasked={q.trim() !== state.q}
             pending={pending}
@@ -144,9 +156,11 @@ export function FindBar({
            set of filters is the smaller cost. */
         filters={filters}
       />
-      <p className={`mt-1.5 px-1 text-xs text-ink-soft ${dense ? "lg:hidden" : ""}`}>
-        By name, topic, year or place
-      </p>
+      {!placeholder && (
+        <p className={`mt-1.5 px-1 text-xs text-ink-soft ${dense ? "lg:hidden" : ""}`}>
+          By name, topic, year or place
+        </p>
+      )}
     </div>
   );
 }

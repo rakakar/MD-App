@@ -182,6 +182,7 @@ export function FindFilters({
   itemCount,
   noun = "item",
   hideAxes = [],
+  iconOnly = false,
 }: {
   topics: Topic[];
   facets: LibraryFacets;
@@ -192,6 +193,8 @@ export function FindFilters({
   /** what this page's rows are called, singular: "item", "recording" */
   noun?: string;
   hideAxes?: FindAxis[];
+  /** draw the trigger as the glyph alone — see `FilterButton` */
+  iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -209,7 +212,7 @@ export function FindFilters({
 
   return (
     <>
-      <FilterButton count={count} onClick={() => setOpen(true)} />
+      <FilterButton count={count} onClick={() => setOpen(true)} iconOnly={iconOnly} />
       <Sheet
         open={open}
         onClose={() => setOpen(false)}

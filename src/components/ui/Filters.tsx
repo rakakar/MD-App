@@ -27,9 +27,18 @@ import { Chip } from "./Segmented";
 export function FilterButton({
   count = 0,
   onClick,
+  iconOnly = false,
 }: {
   count?: number;
   onClick: () => void;
+  /**
+   * The glyph without the word — Media's comps, where the box beside it has
+   * to carry "Search by name, topic, year…" and the labelled button cost it
+   * the last word. The name is still in `aria-label`; the tint and the count
+   * badge still say when filters are on, which is the part a sighted reader
+   * needs the word for least.
+   */
+  iconOnly?: boolean;
 }) {
   const on = count > 0;
   return (
@@ -38,7 +47,9 @@ export function FilterButton({
       onClick={onClick}
       aria-haspopup="dialog"
       aria-label={on ? `Filters, ${count} applied` : "Filters"}
-      className="flex min-h-12 shrink-0 items-center gap-2 rounded-control border px-4 text-sm font-medium transition-colors"
+      className={`flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-control border text-sm font-medium transition-colors ${
+        iconOnly ? (on ? "px-3" : "w-12") : "px-4"
+      }`}
       style={
         on
           ? {
@@ -49,8 +60,8 @@ export function FilterButton({
           : { borderColor: "var(--color-rule)", background: "var(--color-card)" }
       }
     >
-      <FilterIcon className="h-4 w-4" />
-      Filters
+      <FilterIcon className={iconOnly ? "h-5 w-5" : "h-4 w-4"} />
+      {!iconOnly && "Filters"}
       {on && (
         <span
           aria-hidden

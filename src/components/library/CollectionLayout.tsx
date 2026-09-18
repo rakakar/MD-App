@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { GridIcon, ListIcon } from "@/components/shell/icons";
 
 /**
@@ -26,8 +26,18 @@ const KEY = "md.avlayout.v1";
 
 export type CollectionView = "grid" | "list";
 
-export function useCollectionView(): [CollectionView, (v: CollectionView) => void] {
-  const [view, setView] = useState<CollectionView>("grid");
+/**
+ * `fallback` is what a reader who has never chosen sees. It is per page rather
+ * than global because the pages disagree about it on purpose: the Library shelf
+ * opens on its grid, where the tiles differ from each other, and Media opens on
+ * its list, where every tile is the same glyph and the names are the content.
+ * The stored choice is still one choice — someone who switches either page has
+ * told the app how they like collections drawn, and both follow it.
+ */
+export function useCollectionView(
+  fallback: CollectionView = "grid"
+): [CollectionView, (v: CollectionView) => void] {
+  const [view, setView] = useState<CollectionView>(fallback);
 
   useEffect(() => {
     try {
@@ -93,4 +103,54 @@ export function ViewToggle({
       })}
     </div>
   );
+}
+
+/**
+ * **The same choice, for a page that puts the toggle somewhere other than
+ * directly above the collections.**
+ *
+ * `CollectionViewport` keeps the toggle and the content in one box, which is
+ * right when the toggle shares a row with a count. Media puts it at the end of
+ * its filter chips instead, inside a sticky block that also holds the search,
+ * so the toggle and the content it switches are no longer neighbours — and the
+ * cards and rows between them are server-rendered. A context is the smallest
+ * thing that lets two separate client islands agree on one value.
+ */
+const ViewContext = createContext<[CollectionView, (v: CollectionView) => void] | null>(
+  null
+);
+
+export function CollectionViewProvider({
+  fallback,
+  children,
+}: {
+  fallback?: CollectionView;
+  children: React.ReactNode;
+}) {
+  const state = useCollectionView(fallback);
+  return <ViewContext.Provider value={state}>{children}</ViewContext.Provider>;
+}
+
+function useView() {
+  const state = useContext(ViewContext);
+  if (!state) throw new Error("inside CollectionViewProvider only");
+  return state;
+}
+
+/** The toggle, reading the provider rather than holding state of its own. */
+export function ProvidedViewToggle() {
+  const [view, setView] = useView();
+  return <ViewToggle view={view} onView={setView} />;
+}
+
+/** Whichever of the two already-rendered shapes the provider says. */
+export function ProvidedView({
+  grid,
+  list,
+}: {
+  grid: React.ReactNode;
+  list: React.ReactNode;
+}) {
+  const [view] = useView();
+  return <>{view === "grid" ? grid : list}</>;
 }

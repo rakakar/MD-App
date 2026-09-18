@@ -190,6 +190,26 @@ debugging pass:
   declaration — the class did nothing. The class comes *off* on the way out, which ends
   the animation and hands opacity back to the transition.
 
+## Media, compacted — 18 Sep 2026
+
+The designer's revision of `/av` ("1b — Compact, first card at 265px"). Every change
+spends less height above the first collection.
+
+| Before | Now | Note |
+|---|---|---|
+| Title at 26px | `text-2xl` | The app's page-title step. Media stood a size above every other page title for no reason the page gave. |
+| Description printed under the title | Behind an `i` beside it | `ShelfTitle`. Opens in place under the title on the app's `.disclosure` ease, `inert` while shut — a sentence to read, so not a popover over the search it is introducing. |
+| Count as a heading above the collections, and again under a search | Once, on the title's line, ranged right | "73 recordings · 7 collections". One count in one place. |
+| Audio / Video as a full-width segmented control | Counted chips — `Chip`'s new `count` | Solid when chosen, and no tick when a count is present: "73 ✓" reads as a score. Frees the row's end for the layout toggle. |
+| Placeholder "Search Audio and video…" with a caption beneath | "Search by name, topic, year…", no caption | `FindBar`'s `placeholder`. The scope is kept in the field's accessible name. The filter button goes icon-only here (`FilterButton`'s `iconOnly`) — labelled, it cost the box its last word. |
+| Layout toggle on its own row with the count | At the end of the chips | `CollectionViewProvider` lets the toggle and the grid/list it drives live in separate client islands. |
+| Grid by default | List by default | Per page: the Library shelf still opens on grid. Every tile here is the same glyph in one of two tints; the names are the content. The stored choice is still shared. |
+| Controls scroll away | Search and chips pinned under the app bar | Shown in the designer's scrolled frame. The app's one sticky-row recipe. |
+
+Measured: the placeholder fits whole at 360, 390 and 428pt; the chips and toggle share a
+row cleanly at 390 and 428. On a 360pt phone the chips run 28px over and scroll sideways
+rather than wrap to a second row.
+
 ## Revisions after the comps — Home and Read, 13 Aug 2026
 
 Not deviations. The 2026-08-11 comps are the source of truth for every screen *except*

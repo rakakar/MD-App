@@ -73,14 +73,9 @@ export default async function AvPage({
           top of the screen and again in the switcher inside it, and a third
           naming above the title was answering a question the reader had not
           asked on the way to a page they chose from the tab bar. */}
-      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        Media
-      </h1>
-      <p className="mt-0.5 text-sm text-ink-soft">
-        Discourses, satsangs and shivir sessions of Shri A. Nagraj.
-      </p>
-
       <AvShelf
+        title="Media"
+        description="Discourses, satsangs and shivir sessions of Shri A. Nagraj."
         find={found}
         state={state}
         topics={topics}

@@ -243,6 +243,7 @@ export function Chip({
   href,
   onClick,
   onRemove,
+  count,
 }: {
   label: string;
   selected?: boolean;
@@ -251,6 +252,14 @@ export function Chip({
   onClick?: () => void;
   /** renders the chip as a dismissible one — the active-filters row */
   onRemove?: () => void;
+  /**
+   * How many things choosing this chip would show — Media's "Audios 35".
+   *
+   * A chip carrying a count drops the selected tick. The number is already
+   * the most specific thing on the chip, and "73 ✓" reads as a score rather
+   * than as a choice; the fill alone says which one is on.
+   */
+  count?: number;
 }) {
   const l = contentLang(label);
   // `shrink-0` and `whitespace-nowrap` together are what keep a chip on one
@@ -265,8 +274,13 @@ export function Chip({
   // is asked for a weight, at which point globals hands it to Mukta — which is
   // the sans these labels want. A topic or a place typed by a manager is a
   // chrome label, not a line of scripture.
-  const base =
-    "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-sm transition-colors";
+  // A counted chip is 4px narrower a side. It carries a second word, and on
+  // Media three of them share a 390pt row with the layout toggle — at 3.5 the
+  // last count slid 14px under the toggle. Measured to fit at 390 and 428;
+  // on a 360pt phone the row still runs over and scrolls sideways instead.
+  const base = `inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border ${
+    count != null ? "px-2.5" : "px-3.5"
+  } text-sm transition-colors`;
   const cls = !selected
     ? `${base} border-rule bg-card text-ink`
     : variant === "solid"
@@ -284,10 +298,21 @@ export function Chip({
 
   const body = (
     <>
-      {selected && variant === "solid" && <CheckIcon className="h-3.5 w-3.5 shrink-0" />}
+      {selected && variant === "solid" && count == null && (
+        <CheckIcon className="h-3.5 w-3.5 shrink-0" />
+      )}
       <span {...l} className={`${l.className} ${selected ? "font-semibold" : "font-medium"}`}>
         {label}
       </span>
+      {count != null && (
+        <span
+          className={`tabular-nums ${
+            selected && variant === "solid" ? "opacity-80" : "text-ink-soft"
+          }`}
+        >
+          {count}
+        </span>
+      )}
       {onRemove && (
         <span aria-hidden className="text-base leading-none opacity-70">
           ×
