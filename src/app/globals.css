@@ -1722,3 +1722,29 @@ html[data-reading="1"] body {
     opacity: 0.6;
   }
 }
+
+/* A conversation arriving: the question rises into place, then its answer
+   follows a beat later — the thread builds downward the way it is read. */
+.assistant-turn-in {
+  animation: assistant-rise 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.assistant-answer-in {
+  animation: assistant-rise 360ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms both;
+}
+@keyframes assistant-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-turn-in,
+  .assistant-answer-in {
+    animation-name: fade-in;
+    animation-duration: 200ms;
+  }
+}

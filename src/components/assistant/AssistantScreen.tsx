@@ -210,6 +210,24 @@ export function AssistantScreen() {
     );
   }, []);
 
+  /**
+   * The landing leaves rather than vanishing when the first question is
+   * asked: 200ms of fade and a small drop while the conversation rises in
+   * above it, then it is unmounted. Coming back ("+") shows it at once.
+   */
+  const [landing, setLanding] = useState<"shown" | "leaving" | "gone">("shown");
+  useEffect(() => {
+    if (!conv) {
+      setLanding("shown");
+      return;
+    }
+    if (landing !== "shown") return;
+    setLanding("leaving");
+    const t = setTimeout(() => setLanding("gone"), 220);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conv === null]);
+
   const startOver = () => {
     setConv(null);
     setMode(DEFAULT_MODE);
@@ -251,10 +269,15 @@ export function AssistantScreen() {
                     if (el) turnRefs.current.set(t.id, el);
                     else turnRefs.current.delete(t.id);
                   }}
-                  className="flex scroll-mt-24 flex-col gap-5"
+                  className="assistant-turn-in flex scroll-mt-24 flex-col gap-5"
+                  // A reopened conversation settles in top to bottom, a
+                  // beat apart; a new question is always the last, so
+                  // capping the stagger keeps it from waiting on the rest.
+                  style={{ animationDelay: `${Math.min(i, 4) * 60}ms` }}
                   aria-label={`${INTENT_LABEL[t.intent]}: ${t.query}`}
                 >
                   <QueryBubble>{t.query}</QueryBubble>
+                  <div className="assistant-answer-in">
                   <IntentScope intent={t.intent}>
                     {t.intent === "paribhasha" && (
                       <ParibhashaAnswer
@@ -303,6 +326,7 @@ export function AssistantScreen() {
                       />
                     )}
                   </IntentScope>
+                  </div>
                 </section>
               );
             })}
@@ -338,7 +362,12 @@ export function AssistantScreen() {
             : null
         }
         above={
-          conv ? null : (
+          landing === "gone" ? null : (
+            <div
+              className={`transition-[opacity,transform] duration-200 ease-out motion-reduce:transform-none ${
+                landing === "leaving" ? "pointer-events-none translate-y-2 opacity-0" : ""
+              }`}
+            >
             <Landing
               books={books?.length ?? null}
               mode={mode}
@@ -350,6 +379,7 @@ export function AssistantScreen() {
               dictionary={dictionary}
               onPick={(word) => ask(word, "paribhasha")}
             />
+            </div>
           )
         }
       />
