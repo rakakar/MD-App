@@ -4,9 +4,8 @@ import { useMemo } from "react";
 import { INTENT_HINT, INTENT_LABEL, INTENTS, type Intent } from "@/lib/assistant/intent";
 import { searchGlossary } from "@/lib/glossary";
 import type { BookSummary, ParibhashaWord } from "@/lib/types";
-import { Chip } from "@/components/ui";
 import { IntentGlyph } from "./icons";
-import { INTENT_COLOR, IntentScope } from "./parts";
+import { INTENT_COLOR } from "./parts";
 
 /** rows of live Paribhasha matches above the box — a glance, not the list */
 const PEEK = 4;
@@ -27,18 +26,16 @@ const PEEK = 4;
 export function Landing({
   shelf,
   scope,
-  onScope,
   mode,
   onMode,
   text,
   dictionary,
   onPick,
 }: {
-  /** the Originals shelf — counted in the subtitle, offered to Book search */
+  /** the Originals shelf — counted in the subtitle */
   shelf: BookSummary[] | null;
   /** Book search's chosen books; empty means all of them */
   scope: string[];
-  onScope: (codes: string[]) => void;
   mode: Intent | null;
   onMode: (m: Intent) => void;
   text: string;
@@ -48,8 +45,6 @@ export function Landing({
 }) {
   const q = text.trim();
   const books = shelf?.length ?? null;
-  const toggle = (code: string) =>
-    onScope(scope.includes(code) ? scope.filter((c) => c !== code) : [...scope, code]);
   const matches = useMemo(
     () => (mode === "paribhasha" && dictionary && q ? searchGlossary(dictionary, q, PEEK) : null),
     [mode, dictionary, q]
@@ -153,29 +148,6 @@ export function Landing({
                 </span>
               </p>
             </div>
-          ) : null}
-          {/* Book search only: which books to look in, right above the box.
-              One scrolling row rather than a wrapped block — twelve Hindi
-              titles would stand four rows high and push the title off the
-              screen. "All books" is the default and clears any choice. */}
-          {mode === "books" && shelf && shelf.length > 1 ? (
-            <IntentScope intent="books">
-              <div
-                role="group"
-                aria-label="Books to search"
-                className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6"
-              >
-                <Chip label="All books" selected={scope.length === 0} onClick={() => onScope([])} />
-                {shelf.map((b) => (
-                  <Chip
-                    key={b.code}
-                    label={b.title_hi}
-                    selected={scope.includes(b.code)}
-                    onClick={() => toggle(b.code)}
-                  />
-                ))}
-              </div>
-            </IntentScope>
           ) : null}
         </div>
       </div>

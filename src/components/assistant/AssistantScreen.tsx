@@ -30,6 +30,7 @@ import {
   type Intent,
 } from "@/lib/assistant/intent";
 import type { ChatQuota } from "@/lib/types";
+import { BookPickerSheet } from "./BookPickerSheet";
 import { BookSearchAnswer } from "./BookSearchAnswer";
 import { Composer } from "./Composer";
 import { MenuGlyph } from "./icons";
@@ -75,6 +76,13 @@ export function AssistantScreen() {
   const [mode, setMode] = useState<Intent | null>(DEFAULT_MODE);
   /** Book search's own choice of books, made above the box; empty is all of them */
   const [scope, setScope] = useState<string[]>([]);
+  const [picking, setPicking] = useState(false);
+  const scopeLabel =
+    scope.length === 0
+      ? "All books"
+      : scope.length === 1
+        ? (books?.find((b) => b.code === scope[0])?.title_hi ?? "1 book")
+        : `${scope.length} books`;
   const [text, setText] = useState("");
   const [quota, setQuota] = useState<ChatQuota | null>(null);
   const [listening, setListening] = useState(false);
@@ -366,6 +374,14 @@ export function AssistantScreen() {
                   setText("");
                   inputRef.current?.focus();
                 },
+                option:
+                  mode === "books" && books && books.length > 1
+                    ? {
+                        label: scopeLabel,
+                        hindi: scope.length === 1,
+                        onClick: () => setPicking(true),
+                      }
+                    : undefined,
               }
             : null
         }
@@ -379,7 +395,6 @@ export function AssistantScreen() {
             <Landing
               shelf={books}
               scope={scope}
-              onScope={setScope}
               mode={mode}
               onMode={(m) => {
                 setMode(m);
@@ -393,6 +408,19 @@ export function AssistantScreen() {
           )
         }
       />
+
+      {books && (
+        <BookPickerSheet
+          open={picking}
+          shelf={books}
+          scope={scope}
+          onClose={() => setPicking(false)}
+          onApply={(codes) => {
+            setScope(codes);
+            inputRef.current?.focus();
+          }}
+        />
+      )}
 
       <VoiceSheet
         open={listening}

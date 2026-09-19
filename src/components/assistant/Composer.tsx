@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode, type RefObject } from "react";
-import { CloseIcon } from "@/components/shell/icons";
+import { ChevronDown, CloseIcon } from "@/components/shell/icons";
 import type { Destination } from "@/lib/assistant/destinations";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 import { ArrowGlyph, ArrowUpIcon, EnterIcon, MicIcon } from "./icons";
@@ -12,6 +12,11 @@ export type InputLang = "hi" | "en";
 export interface ComposerPill {
   label: string;
   onClear: () => void;
+  /**
+   * A second control beside the pill, for a mode with a setting of its own —
+   * Book search's "All books ▾", which opens the book picker.
+   */
+  option?: { label: string; hindi?: boolean; onClick: () => void };
 }
 
 /**
@@ -140,7 +145,7 @@ export function Composer({
             does not vanish before it has finished leaving.
           */}
           <div
-            className="min-w-0 flex-1 border bg-card pl-5 pr-2 transition-[border-color,border-radius,box-shadow] duration-300 ease-out focus-within:border-(--color-accent-deep)"
+            className={`min-w-0 flex-1 border bg-card pr-2 transition-[border-color,border-radius,box-shadow,padding] ${pill ? "pl-3" : "pl-5"} duration-300 ease-out focus-within:border-(--color-accent-deep)`}
             style={{
               borderRadius: pill ? 20 : 28,
               borderColor: lit ? "color-mix(in srgb, var(--color-accent-deep) 45%, var(--color-rule))" : "var(--color-rule)",
@@ -154,12 +159,12 @@ export function Composer({
               style={{ gridTemplateRows: pill ? "1fr" : "0fr", opacity: pill ? 1 : 0 }}
               inert={!pill || undefined}
             >
-              <div className="min-h-0 overflow-hidden">
+              <div className="flex min-h-0 items-center gap-1.5 overflow-hidden">
                 <button
                   type="button"
                   onClick={pill?.onClear}
                   aria-label={`${shownPill} chosen — clear`}
-                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold"
+                  className="mt-3 inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border pl-3 pr-2 text-sm font-semibold"
                   style={{
                     borderColor: "color-mix(in srgb, var(--color-accent) 30%, transparent)",
                     background: "color-mix(in srgb, var(--color-accent) 14%, var(--color-card))",
@@ -169,6 +174,23 @@ export function Composer({
                   {shownPill}
                   <CloseIcon className="h-3.5 w-3.5" />
                 </button>
+                {pill?.option && (
+                  <button
+                    type="button"
+                    onClick={pill.option.onClick}
+                    aria-haspopup="dialog"
+                    aria-label={`Books to search: ${pill.option.label}. Change`}
+                    className="mt-3 inline-flex min-h-9 min-w-0 items-center gap-0.5 rounded-full border border-rule bg-card pl-3 pr-2 text-sm font-semibold text-ink"
+                  >
+                    <span
+                      lang={pill.option.hindi ? "hi" : undefined}
+                      className={`${pill.option.hindi ? "hi-note" : ""} truncate`}
+                    >
+                      {pill.option.label}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-ink-soft" />
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex min-h-14 items-center gap-2">
