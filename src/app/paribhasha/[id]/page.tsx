@@ -62,7 +62,7 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
           <Suspense fallback={<GlossaryBack />}>
             <EntryBack />
           </Suspense>
-          <p className="min-w-0 flex-1 text-title font-semibold text-ink-soft">Paribhasha entry</p>
+          <span aria-hidden className="flex-1" />
           <EntryShare title={word.hindi} />
         </div>
 
