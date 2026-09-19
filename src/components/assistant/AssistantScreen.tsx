@@ -96,27 +96,30 @@ export function AssistantScreen() {
   }, []);
 
   /**
-   * A fresh Assistant opens ready to type, the chips sitting just above the
-   * keyboard. Not when reopening a saved
-   * conversation (`?c=`): there the reader came to read, and a keyboard would
-   * cover half the answer. `preventScroll` keeps the header in view while the
-   * keyboard rises.
+   * The Assistant always opens ready to type — the cursor in the box and, where
+   * the phone allows it, the keyboard up. On every arrival: a fresh screen, a
+   * saved conversation reopened from the list, a return from a word's page,
+   * and a tap on the tab while already here (the URL changes, the screen
+   * does not remount, so the conversation in the URL is what is watched).
+   * `preventScroll` keeps the header in view while the keyboard rises.
    *
    * Browsers decide whether focus brings the keyboard up. Android does after
    * a tap on the tab bar; iOS Safari only raises it from a tap on the box
    * itself, so there the caret is in place and one tap opens the keyboard.
    */
+  /** the conversation this screen just started — its URL is ours, not a visit */
+  const created = useRef<string | null>(null);
+  const cKey = params.get("c");
   useEffect(() => {
-    if (params.get("c")) return;
+    // Not when the URL changed because a question was just asked here — the
+    // reader is about to read the answer, and a keyboard would cover it.
+    if (cKey && cKey === created.current) return;
     inputRef.current?.focus({ preventScroll: true });
-    // mount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cKey]);
 
   // ---- the conversation in the URL ----
   const cParam = params.get("c");
-  /** the conversation this screen just started — its URL is ours, not a visit */
-  const created = useRef<string | null>(null);
   useEffect(() => {
     if (!cParam) {
       setConv(null);
