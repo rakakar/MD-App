@@ -1741,6 +1741,9 @@ html[data-reading="1"] body {
     transform: none;
   }
 }
+.assistant-fade-in {
+  animation: fade-in 280ms ease-out both;
+}
 @media (prefers-reduced-motion: reduce) {
   .assistant-turn-in,
   .assistant-answer-in {

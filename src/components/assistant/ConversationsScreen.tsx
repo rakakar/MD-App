@@ -91,7 +91,7 @@ export function ConversationsScreen() {
             narrowing is what a long history is used for. The page's own
             ground behind them, so cards slide under rather than through. */}
         {all !== null && all.length > 0 && (
-          <div className="sticky top-0 z-20 -mx-4 border-b border-rule bg-surface px-4 pb-3 pt-5 sm:-mx-6 sm:px-6">
+          <div className="assistant-fade-in sticky top-0 z-20 -mx-4 border-b border-rule bg-surface px-4 pb-3 pt-5 sm:-mx-6 sm:px-6">
             <label className="flex min-h-14 items-center gap-3 rounded-card border border-rule bg-card px-4">
               <SearchGlyph className="h-5 w-5 shrink-0 text-ink-soft" />
               <input
@@ -120,7 +120,7 @@ export function ConversationsScreen() {
         )}
 
         {all !== null && all.length === 0 && (
-          <div className="py-16 text-center">
+          <div className="assistant-turn-in py-16 text-center">
             <p className="text-title font-semibold">No conversations yet</p>
             <p className="mt-2 text-sm text-ink-soft">
               Whatever you ask the Assistant is kept here, on this device.
@@ -132,8 +132,10 @@ export function ConversationsScreen() {
           <p className="py-10 text-center text-sm text-ink-soft">Nothing matches “{q.trim()}”.</p>
         )}
 
-        {thisWeek.length > 0 && <Group title="This week" items={thisWeek} now={now} />}
-        {earlier.length > 0 && <Group title="Earlier" items={earlier} now={now} />}
+        {thisWeek.length > 0 && <Group title="This week" items={thisWeek} now={now} from={0} />}
+        {earlier.length > 0 && (
+          <Group title="Earlier" items={earlier} now={now} from={thisWeek.length} />
+        )}
 
         {all !== null && all.length > 0 && (
           <p className="mt-8 text-center text-xs text-ink-soft">
@@ -178,13 +180,33 @@ function FilterChip({
   );
 }
 
-function Group({ title, items, now }: { title: string; items: Conversation[]; now: number }) {
+/**
+ * The list settles in top to bottom, the same rise the conversation itself
+ * uses, a beat apart per card. Capped at the eighth, so a long history is
+ * all there within half a second; cards brought back by the search or a
+ * filter get the same small entrance, since they are new to the screen.
+ */
+const STAGGER_MS = 45;
+const STAGGER_CAP = 8;
+
+function Group({
+  title,
+  items,
+  now,
+  from,
+}: {
+  title: string;
+  items: Conversation[];
+  now: number;
+  /** how many cards came before this group, so the stagger runs on */
+  from: number;
+}) {
   return (
     <section className="mt-6">
-      <h2 className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">{title}</h2>
+      <h2 className="assistant-fade-in text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">{title}</h2>
       <ul className="mt-3 flex flex-col gap-3">
-        {items.map((c) => (
-          <Card key={c.id} c={c} now={now} />
+        {items.map((c, i) => (
+          <Card key={c.id} c={c} now={now} delay={Math.min(from + i, STAGGER_CAP) * STAGGER_MS} />
         ))}
       </ul>
     </section>
@@ -205,7 +227,7 @@ function Tag({ children, color }: { children: React.ReactNode; color: string }) 
   );
 }
 
-function Card({ c, now }: { c: Conversation; now: number }) {
+function Card({ c, now, delay }: { c: Conversation; now: number; delay: number }) {
   const k = kindOf(c);
   const first = c.turns[0];
   const sources = c.turns.reduce((n, t) => n + (t.intent === "research" ? (t.count ?? 0) : 0), 0);
@@ -215,7 +237,7 @@ function Card({ c, now }: { c: Conversation; now: number }) {
   const phrase = first?.intent === "books" && /^\s*["“'‘]/.test(first.query);
 
   return (
-    <li className="group relative">
+    <li className="assistant-turn-in group relative" style={{ animationDelay: `${delay}ms` }}>
       <Link
         href={`/assistant?c=${c.id}`}
         className="block rounded-card border border-rule bg-card p-5 shadow-card"
