@@ -3,43 +3,51 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BackIcon, PlusIcon } from "@/components/shell/icons";
+import { PlusIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { track } from "@/lib/analytics";
 import { firstSentence } from "@/lib/assistant/answer";
 import {
-  ago,
   getConversation,
-  kindOf,
-  listConversations,
   newId,
   putConversation,
   titleFor,
   type Conversation,
   type Turn,
 } from "@/lib/assistant/conversations";
-import { commandSuggestions, type Destination } from "@/lib/assistant/destinations";
+import {
+  bookDestinations,
+  commandSuggestions,
+  matchDestinations,
+  resumeDestination,
+  type Destination,
+} from "@/lib/assistant/destinations";
 import {
   detectIntent,
-  INTENT_HINT,
   INTENT_LABEL,
   INTENT_PLACEHOLDER,
   INTENTS,
   type Intent,
 } from "@/lib/assistant/intent";
 import type { ChatQuota } from "@/lib/types";
-import { APP_ACCENT } from "@/lib/workspaceConfig";
 import { BookSearchAnswer } from "./BookSearchAnswer";
 import { Composer } from "./Composer";
-import { HistoryIcon, IntentGlyph, SparkIcon } from "./icons";
+import { MenuGlyph } from "./icons";
+import { Landing } from "./Landing";
 import { NavigateAnswer } from "./NavigateAnswer";
 import { ParibhashaAnswer } from "./ParibhashaAnswer";
-import { Eyebrow, INTENT_COLOR, IntentScope, QueryBubble } from "./parts";
+import { IntentScope, QueryBubble } from "./parts";
 import { ResearchAnswer } from "./ResearchAnswer";
 import { useDictionary, useOriginalBooks } from "./useAssistantData";
 import { canListen, VoiceSheet } from "./VoiceSheet";
 
-const DEFAULT_MODE: Intent = "paribhasha";
+/**
+ * Nothing chosen when the screen opens (designer's recording, 19 Sep): the
+ * four chips stand above the box, and choosing one is the first thing a
+ * reader does. A default choice would hide the very row that says what the
+ * Assistant can do.
+ */
+const DEFAULT_MODE: Intent | null = null;
 
 /**
  * The Assistant — one box, four kinds of answer (designer's comps, 18 Sep).
@@ -64,27 +72,22 @@ export function AssistantScreen() {
   const books = useOriginalBooks();
 
   const [conv, setConv] = useState<Conversation | null>(null);
-  // Paribhasha is chosen when the screen opens — looking a word up is what
-  // most people come here for. Tapping it again clears it, and the Assistant
-  // then reads the intent from what is typed.
   const [mode, setMode] = useState<Intent | null>(DEFAULT_MODE);
   const [text, setText] = useState("");
   const [quota, setQuota] = useState<ChatQuota | null>(null);
   const [listening, setListening] = useState(false);
   const [voice, setVoice] = useState(false);
-  const [recent, setRecent] = useState<Conversation[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const turnRefs = useRef(new Map<string, HTMLElement>());
   const scrollTo = useRef<string | null>(null);
 
   useEffect(() => {
     setVoice(canListen());
-    setRecent(listConversations().slice(0, 3));
   }, []);
 
   /**
-   * A fresh Assistant opens ready to type — Paribhasha is already chosen, so
-   * the word is the only thing left to give it. Not when reopening a saved
+   * A fresh Assistant opens ready to type, the chips sitting just above the
+   * keyboard. Not when reopening a saved
    * conversation (`?c=`): there the reader came to read, and a keyboard would
    * cover half the answer. `preventScroll` keeps the header in view while the
    * keyboard rises.
@@ -129,11 +132,25 @@ export function AssistantScreen() {
       // dictionary look-up three turns later.
       const chosen = conv ? null : mode;
       const intent = forced ?? chosen ?? detectIntent(q, dictionary);
+      // Navigate, chosen, "opens it instead of answering": straight to the
+      // best place, no conversation. Only when nothing matches does it become
+      // a turn, so the reader is told why nothing happened.
+      if (intent === "navigate" && !forced && chosen === "navigate") {
+        const resume = resumeDestination();
+        const best = matchDestinations(q, [...(resume ? [resume] : []), ...bookDestinations(books ?? [])])
+          .matches[0]?.destination;
+        if (best) {
+          track("assistant_ask", { intent, chosen: "chip", length: q.length });
+          router.push(best.href);
+          return;
+        }
+      }
       const turn: Turn = {
         id: newId(),
         intent,
         query: q,
         at: new Date().toISOString(),
+        ...(intent === "books" && chosen === "books" ? { exact: true } : {}),
       };
       const now = turn.at;
       // The id is made out here, not in the updater: React may run an updater
@@ -152,7 +169,7 @@ export function AssistantScreen() {
       setText("");
       track("assistant_ask", { intent, chosen: forced || chosen ? "chip" : "auto", length: q.length });
     },
-    [conv, mode, dictionary, router]
+    [conv, mode, dictionary, router, books]
   );
 
   // A new turn scrolls its question to the top, so the answer reads downward
@@ -197,7 +214,6 @@ export function AssistantScreen() {
     setConv(null);
     setMode(DEFAULT_MODE);
     setText("");
-    setRecent(listConversations().slice(0, 3));
     router.replace("/assistant", { scroll: false });
     window.scrollTo({ top: 0 });
     inputRef.current?.focus();
@@ -209,17 +225,6 @@ export function AssistantScreen() {
     router.push(d.href);
   };
 
-  // ---- the compact header, once the big one has scrolled away ----
-  const sentinel = useRef<HTMLDivElement>(null);
-  const [compact, setCompact] = useState(false);
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => setCompact(!e.isIntersecting));
-    io.observe(el);
-    return () => io.disconnect();
-  }, [conv === null]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const turns = conv?.turns ?? [];
   const placeholder = conv
     ? turns[turns.length - 1]?.intent === "books"
@@ -229,30 +234,10 @@ export function AssistantScreen() {
 
   return (
     <AppAccent>
-      {conv && compact && (
-        <div className="fixed inset-x-0 top-0 z-30 border-b border-rule bg-surface/95 backdrop-blur lg:left-64">
-          <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
-            <button
-              type="button"
-              onClick={startOver}
-              aria-label="New conversation"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card"
-            >
-              <BackIcon className="h-5 w-5" />
-            </button>
-            <p className="min-w-0 flex-1 truncate text-title font-semibold">{conv.title}</p>
-            <AiBadge />
-          </div>
-        </div>
-      )}
+      <Header active={conv !== null} onNew={startOver} />
 
-      <div className="mx-auto w-full max-w-3xl px-4 pb-40 sm:px-6">
-        <Header books={books?.length ?? null} active={conv !== null} onNew={startOver} />
-        <div ref={sentinel} aria-hidden className="h-px" />
-
-        {!conv ? (
-          <EmptyState mode={mode} onMode={setMode} recent={recent} />
-        ) : (
+      {conv && (
+        <div className="mx-auto w-full max-w-3xl px-4 pb-40 sm:px-6">
           <div className="flex flex-col gap-8 pt-6">
             {turns.map((t, i) => {
               const prevResearch = turns
@@ -283,6 +268,7 @@ export function AssistantScreen() {
                       <BookSearchAnswer
                         query={t.query}
                         asTyped={!!t.asTyped}
+                        exact={!!t.exact}
                         onSettle={(summary, count) => settle(t.id, { summary, count })}
                       />
                     )}
@@ -326,8 +312,8 @@ export function AssistantScreen() {
               </p>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <Composer
         inputRef={inputRef}
@@ -339,6 +325,33 @@ export function AssistantScreen() {
         onCommand={onCommand}
         canListen={voice}
         onListen={() => setListening(true)}
+        pill={
+          !conv && mode
+            ? {
+                label: INTENT_LABEL[mode],
+                onClear: () => {
+                  setMode(null);
+                  setText("");
+                  inputRef.current?.focus();
+                },
+              }
+            : null
+        }
+        above={
+          conv ? null : (
+            <Landing
+              books={books?.length ?? null}
+              mode={mode}
+              onMode={(m) => {
+                setMode(m);
+                inputRef.current?.focus();
+              }}
+              text={text}
+              dictionary={dictionary}
+              onPick={(word) => ask(word, "paribhasha")}
+            />
+          )
+        }
       />
 
       <VoiceSheet
@@ -373,159 +386,39 @@ function AiBadge() {
   );
 }
 
-function Header({
-  books,
-  active,
-  onNew,
-}: {
-  books: number | null;
-  active: boolean;
-  onNew: () => void;
-}) {
+/**
+ * The Assistant's own app bar, as the 19 Sep comps draw it: conversations on
+ * the left, the name in the middle, a new conversation on the right. Sticky,
+ * so both doors stay in reach down a long answer — which is what the old
+ * compact bar that appeared on scroll was for.
+ */
+function Header({ active, onNew }: { active: boolean; onNew: () => void }) {
   return (
-    <header className="-mx-4 flex items-center gap-3 border-b border-rule px-4 pb-4 pt-5 sm:-mx-6 sm:px-6">
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-white shadow-card"
-        style={{ background: APP_ACCENT }}
-        aria-hidden
-      >
-        <SparkIcon className="h-5 w-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <h1 className="flex items-center gap-2">
-          <span className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-3xl">
-            Assistant
-          </span>
-          <AiBadge />
-        </h1>
-        {/* One line at 375pt beside the tile and the button — about 30
-            characters of room, so it says "only" by saying "from" these books.
-            Truncates rather than wraps at the largest text sizes. */}
-        <p className="truncate text-sm leading-snug text-ink-soft">
-          Answers from {books ? `${books} original books` : "the original books"}
-        </p>
-      </div>
-      {active ? (
-        <button
-          type="button"
-          onClick={onNew}
-          aria-label="New conversation"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card"
-        >
-          <PlusIcon className="h-5 w-5" />
-        </button>
-      ) : (
+    <header className="sticky top-0 z-30 border-b border-rule bg-surface">
+      <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
         <Link
           href="/assistant/conversations"
           aria-label="Past conversations"
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card"
         >
-          <HistoryIcon className="h-5 w-5" />
+          <MenuGlyph className="h-5 w-5" />
         </Link>
-      )}
-    </header>
-  );
-}
-
-/**
- * 1 · Empty state.
- *
- * The four chips are optional and say so. Chosen, one fixes what the next
- * question is; left alone, the Assistant decides from what is typed. Tapping a
- * chosen chip again un-chooses it — the "leave all four unselected" the hint
- * promises has to be reachable.
- */
-function EmptyState({
-  mode,
-  onMode,
-  recent,
-}: {
-  mode: Intent | null;
-  onMode: (m: Intent | null) => void;
-  recent: Conversation[];
-}) {
-  return (
-    <div className="pt-6">
-      <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        What do you need
-      </p>
-      <div className="mt-3 grid grid-cols-2 gap-3" role="radiogroup" aria-label="What do you need">
-        {INTENTS.map((i) => {
-          const on = mode === i;
-          return (
-            <button
-              key={i}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => onMode(on ? null : i)}
-              className={`flex min-h-14 items-center gap-3 rounded-card border px-4 text-left text-base font-semibold transition-colors ${
-                on ? "border-transparent text-white shadow-card" : "border-rule bg-card text-ink"
-              }`}
-              style={on ? { background: INTENT_COLOR[i] } : undefined}
-            >
-              <span style={on ? undefined : { color: INTENT_COLOR[i] }}>
-                <IntentGlyph intent={i} className="h-5 w-5" />
-              </span>
-              {INTENT_LABEL[i]}
-            </button>
-          );
-        })}
-      </div>
-
-      <IntentScope intent={mode ?? "paribhasha"}>
-        <p
-          className="mt-4 flex gap-3 rounded-card border p-4 text-sm leading-relaxed text-ink-soft"
-          style={{
-            borderColor: "color-mix(in srgb, var(--ws-color) 22%, transparent)",
-            background: "color-mix(in srgb, var(--ws-color) 7%, var(--color-card))",
-          }}
-        >
-          <span aria-hidden className="mt-0.5 shrink-0" style={{ color: "var(--ws-ink)" }}>
-            ⓘ
+        <h1 className="flex min-w-0 flex-1 items-center justify-center gap-2">
+          <span className="font-display text-2xl font-medium leading-tight tracking-[-0.015em]">
+            Assistant
           </span>
-          {INTENT_HINT[mode ?? "auto"]}
-        </p>
-      </IntentScope>
-
-      {recent.length > 0 && (
-        <section className="mt-8">
-          <Eyebrow
-            action={
-              <Link
-                href="/assistant/conversations"
-                className="inline-flex min-h-11 items-center text-sm font-semibold"
-                style={{ color: "var(--ws-ink)" }}
-              >
-                All
-              </Link>
-            }
-          >
-            Continue
-          </Eyebrow>
-          <ul className="mt-1">
-            {recent.map((c) => {
-              const k = kindOf(c);
-              return (
-                <li key={c.id}>
-                  <Link href={`/assistant?c=${c.id}`} className="flex min-h-12 items-center gap-3 py-2">
-                    <span style={{ color: INTENT_COLOR[k] }}>
-                      <IntentGlyph intent={k} className="h-5 w-5" />
-                    </span>
-                    <span
-                      lang={/[ऀ-ॿ]/.test(c.title) ? "hi" : undefined}
-                      className={`min-w-0 flex-1 truncate text-base ${/[ऀ-ॿ]/.test(c.title) ? "hi-note" : ""}`}
-                    >
-                      {c.title}
-                    </span>
-                    <span className="shrink-0 text-sm text-ink-soft">{ago(c.updatedAt)}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-    </div>
+          <AiBadge />
+        </h1>
+        <button
+          type="button"
+          onClick={onNew}
+          aria-label="New conversation"
+          disabled={!active}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card disabled:opacity-40"
+        >
+          <PlusIcon className="h-5 w-5" />
+        </button>
+      </div>
+    </header>
   );
 }

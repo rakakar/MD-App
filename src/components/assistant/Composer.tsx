@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useState, type ReactNode, type RefObject } from "react";
+import { CloseIcon } from "@/components/shell/icons";
 import type { Destination } from "@/lib/assistant/destinations";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 import { ArrowGlyph, ArrowUpIcon, EnterIcon, MicIcon } from "./icons";
 
 export type InputLang = "hi" | "en";
+
+/** The chosen answer, shown as a pill inside the box — one tap clears it. */
+export interface ComposerPill {
+  label: string;
+  onClear: () => void;
+}
 
 /**
  * The box at the foot of the Assistant, standing on the tab bar.
@@ -29,6 +36,8 @@ export function Composer({
   onCommand,
   canListen,
   onListen,
+  pill,
+  above,
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
   value: string;
@@ -39,11 +48,20 @@ export function Composer({
   onCommand: (d: Destination) => void;
   canListen: boolean;
   onListen: () => void;
+  pill?: ComposerPill | null;
+  /**
+   * What stands directly on the box — the landing's title, chips and help
+   * line. Inside the same fixed block, so it rides up with the keyboard and
+   * the chips stay where the thumb already is.
+   */
+  above?: ReactNode;
 }) {
   const [hi, setHi] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const showCommands = commands.length > 0 && !dismissed;
   const ready = value.trim().length > 0;
+  /** lit once there is something to ask, or a mode waiting for its words */
+  const lit = ready || !!pill;
 
   useEffect(() => {
     setHi(0);
@@ -52,9 +70,11 @@ export function Composer({
 
   return (
     <div
-      className="fixed inset-x-0 z-30 border-t border-rule bg-surface lg:left-64"
+      className="fixed inset-x-0 z-30 lg:left-64"
       style={{ bottom: "var(--bottom-nav-h, 0px)" }}
     >
+      {above}
+      <div className="border-t border-rule bg-surface">
       <div className="mx-auto max-w-3xl px-4 pb-3 pt-3 sm:px-6">
         {showCommands && (
           <div
@@ -101,7 +121,7 @@ export function Composer({
         )}
 
         <form
-          className="flex items-center gap-3"
+          className="flex items-end gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             if (showCommands) onCommand(commands[hi]);
@@ -109,9 +129,31 @@ export function Composer({
           }}
         >
           <div
-            className="flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-full border bg-card pl-5 pr-2 transition-colors focus-within:border-(--color-accent-deep)"
-            style={{ borderColor: ready ? "var(--color-accent-deep)" : "var(--color-rule)" }}
+            className={`min-w-0 flex-1 border bg-card transition-colors focus-within:border-(--color-accent-deep) ${
+              pill ? "rounded-card pb-1 pl-4 pr-2 pt-3" : "rounded-full pl-5 pr-2"
+            }`}
+            style={{
+              borderColor: lit ? "color-mix(in srgb, var(--color-accent-deep) 45%, var(--color-rule))" : "var(--color-rule)",
+              boxShadow: pill ? "0 0 0 4px color-mix(in srgb, var(--color-accent) 10%, transparent)" : undefined,
+            }}
           >
+            {pill && (
+              <button
+                type="button"
+                onClick={pill.onClear}
+                aria-label={`${pill.label} chosen — clear`}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold"
+                style={{
+                  borderColor: "color-mix(in srgb, var(--color-accent) 30%, transparent)",
+                  background: "color-mix(in srgb, var(--color-accent) 14%, var(--color-card))",
+                  color: "var(--color-accent-deep)",
+                }}
+              >
+                {pill.label}
+                <CloseIcon className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <div className="flex min-h-14 items-center gap-2">
             <input
               ref={inputRef}
               value={value}
@@ -157,17 +199,29 @@ export function Composer({
                 <MicIcon className="h-5 w-5" />
               </button>
             )}
+            </div>
           </div>
           <button
             type="submit"
             aria-label="Ask"
-            disabled={!ready}
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white transition-colors disabled:text-ink-soft"
-            style={{ background: ready ? APP_ACCENT : "var(--color-rule)" }}
+            aria-disabled={!ready}
+            onClick={(e) => {
+              // A chosen mode lights the button before anything is typed, as
+              // drawn; pressing it then is a nudge to type, not a request.
+              if (!ready) {
+                e.preventDefault();
+                inputRef.current?.focus();
+              }
+            }}
+            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition-colors ${
+              lit ? "text-white shadow-card" : "text-ink-soft"
+            }`}
+            style={{ background: lit ? APP_ACCENT : "var(--color-rule)" }}
           >
             <ArrowUpIcon className="h-5 w-5" />
           </button>
         </form>
+      </div>
       </div>
     </div>
   );

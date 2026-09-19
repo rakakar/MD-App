@@ -202,6 +202,12 @@ allowance. `/search` redirects to `/assistant`, query string and all.
 
 | Comp | Shipped | Reason |
 |---|---|---|
+| Landing, 19 Sep revision ("chips at the thumb") | Built as drawn: title and chips stand on the composer; picking one crossfades the chips into its help line in the same slot (both layers stacked in one grid cell, so the slot never changes height); the choice is a pill in the box, cleared with one tap | — |
+| Landing · Paribhasha live list "Paribhasha Sanhita · p. 96" | The word and the start of its definition | No source or page per entry in the glossary. |
+| Landing · Book search "every exact match across the 41 books, in reading order" | With the chip chosen the whole line is a phrase; matches set out book by book, then chapter, page, paragraph. Help line says "every passage that uses it, book by book in reading order" | Retrieval narrowed to the phrase, not a full concordance — "every exact match" would overclaim. |
+| Landing · Navigate "opens it instead of answering" | With the chip chosen, send goes straight to the best match; only no match becomes a turn | As drawn. Auto-detected navigation still answers with the Go to card, since the reader did not ask to be moved. |
+| Landing · nothing chosen on open | Adopted | Supersedes the 18 Sep "Paribhasha by default": a default choice would hide the chip row the landing exists to show. |
+| Landing · no Continue list | Adopted — past conversations are the header's left button | |
 | 1 · "Answers only from the 41 books in Read" | "…the 12 original books" | The shelf is read live (`books/?workspace=originals`), and 12 is what the API has today. The tab is called Books here, not Read. Originals only, because that is all Research and Book search read. |
 | 2 · Source line "Paribhasha Sanhita · p. 214" and a bookmark on the card | "Paribhasha · N parts", no bookmark | The glossary carries no source book or page per entry, and there is nowhere to save a word to. A dead control is worse than none. |
 | 2 · "14 places in books" chip | "Find in the books" | Counting would spend a vector search on every look-up just to print a number; the chip asks the search when the reader wants it. |

@@ -99,21 +99,22 @@ export const INTENT_LABEL: Record<Intent, string> = {
 };
 
 export const INTENT_PLACEHOLDER: Record<Intent | "auto", string> = {
-  auto: "Ask, look up or search…",
-  paribhasha: "Look up a word in Paribhasha",
-  books: "Find a word or phrase in the books",
-  research: "Ask a question about the books",
+  auto: "Ask anything from the books",
+  paribhasha: "Look up a word",
+  books: "Search an exact phrase",
+  research: "Ask a question",
   navigate: "Where do you want to go?",
 };
 
-export const INTENT_HINT: Record<Intent | "auto", string> = {
-  auto: "Leave all four unselected and the Assistant reads the intent from what you type.",
-  paribhasha:
-    "Paribhasha selected — type a word and entries appear as you type. Leave all four unselected and the Assistant reads the intent from what you type.",
-  books:
-    "Book search selected — every passage in the original books that uses your words. Put a phrase in quotes to find it exactly.",
-  research:
-    "Research selected — a written answer assembled from cited passages. Needs sign-in, and counts toward your daily questions.",
-  navigate:
-    "Navigate selected — name a place in the app, like “my notes” or “downloads”, and go straight there.",
+/**
+ * The help line that takes the chip row's place once one is chosen (designer's
+ * "chips at the thumb", 19 Sep). Each says what happens next, and nothing the
+ * app cannot do: Paribhasha has no book or page per entry to show, and Book
+ * search is ranked retrieval narrowed to the phrase, set out book by book.
+ */
+export const INTENT_HINT: Record<Intent, string> = {
+  paribhasha: "Type a word — matching entries appear as you type.",
+  books: "Type a phrase — every passage that uses it, book by book in reading order.",
+  research: "Ask a question — the answer is built only from passages in the books, each one cited.",
+  navigate: "Name a place in the app — the Assistant opens it instead of answering.",
 };

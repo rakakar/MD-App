@@ -8,7 +8,7 @@ import { track } from "@/lib/analytics";
 import { search, searchLibrary } from "@/lib/api";
 import { quotedPhrase } from "@/lib/assistant/intent";
 import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
-import { refToHref } from "@/lib/refs";
+import { parseRef, refToHref } from "@/lib/refs";
 import { LibraryLane } from "@/components/library/LibraryLane";
 import type { LibrarySearchRow, SearchResponse, SearchResult } from "@/lib/types";
 import { AnswerEyebrow } from "./parts";
@@ -33,14 +33,17 @@ const STEP = 10;
 export function BookSearchAnswer({
   query,
   asTyped,
+  exact: exactMode = false,
   onSettle,
 }: {
   query: string;
   /** skip the Roman → Devanagari rewrite — the composer's EN setting */
   asTyped: boolean;
+  /** the Book search chip was chosen: the whole line is a phrase, quoted or not */
+  exact?: boolean;
   onSettle: (summary: string, count: number) => void;
 }) {
-  const phrase = quotedPhrase(query);
+  const phrase = quotedPhrase(query) ?? (exactMode ? query.trim() : null);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [raw, setRaw] = useState(asTyped);
   const [failed, setFailed] = useState(false);
@@ -82,10 +85,11 @@ export function BookSearchAnswer({
     if (!response || !phrase) return null;
     const needle = normalise(phrase);
     const searched = response.searchedAs ? normalise(response.searchedAs) : null;
-    return response.results.filter((r) => {
+    const hits = response.results.filter((r) => {
       const hay = normalise(`${r.text ?? ""} ${r.snippet ?? ""}`);
       return hay.includes(needle) || (searched !== null && hay.includes(searched));
     });
+    return inReadingOrder(hits);
   }, [response, phrase]);
 
   const pool = useMemo(
@@ -195,6 +199,26 @@ export function BookSearchAnswer({
 
       {library && library.length > 0 && <LibraryLane rows={library} />}
     </div>
+  );
+}
+
+/**
+ * Exact matches, book by book in the order a reader meets them — the book
+ * with most matches first, then chapter, page and paragraph inside it. Ranking
+ * means nothing once every row contains the phrase; the order of the text does.
+ */
+function inReadingOrder(hits: SearchResult[]): SearchResult[] {
+  const perBook = new Map<string, number>();
+  for (const h of hits) perBook.set(bookKey(h), (perBook.get(bookKey(h)) ?? 0) + 1);
+  const n = (v: string | number | undefined) => (typeof v === "number" ? v : Number(v) || 0);
+  const para = (h: SearchResult) => n(h.canonical_ref ? parseRef(h.canonical_ref)?.para : 0);
+  return [...hits].sort(
+    (a, b) =>
+      (perBook.get(bookKey(b)) ?? 0) - (perBook.get(bookKey(a)) ?? 0) ||
+      bookKey(a).localeCompare(bookKey(b)) ||
+      n(a.chapter_number) - n(b.chapter_number) ||
+      n(a.page_number) - n(b.page_number) ||
+      para(a) - para(b)
   );
 }
 

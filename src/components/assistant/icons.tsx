@@ -255,3 +255,10 @@ export function DestinationGlyph({ icon, className }: { icon: DestinationIcon; c
       return <HistoryIcon className={className} />;
   }
 }
+
+/** three lines of falling length — the conversations list, as the comps draw it */
+export const MenuGlyph = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M4 7h16M4 12h11M4 17h7" />
+  </Svg>
+);

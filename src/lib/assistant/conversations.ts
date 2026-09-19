@@ -26,6 +26,8 @@ export interface Turn {
   at: string;
   /** Book search only — the composer was on EN: search exactly as typed */
   asTyped?: boolean;
+  /** Book search only — asked with the chip chosen: the whole line is a phrase */
+  exact?: boolean;
   /** Research only — the answer as it arrived, so reopening is free */
   answer?: ChatAnswer;
   /** one line for the conversation list, written when the turn settles */
