@@ -5,6 +5,7 @@ import { ChevronDown, CloseIcon } from "@/components/shell/icons";
 import type { Destination } from "@/lib/assistant/destinations";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 import { ArrowGlyph, ArrowUpIcon, EnterIcon, MicIcon } from "./icons";
+import { useKeyboardInset } from "./useKeyboardInset";
 
 export type InputLang = "hi" | "en";
 
@@ -61,6 +62,7 @@ export function Composer({
    */
   above?: ReactNode;
 }) {
+  const keyboard = useKeyboardInset();
   const [hi, setHi] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const showCommands = commands.length > 0 && !dismissed;
@@ -79,7 +81,9 @@ export function Composer({
   return (
     <div
       className="fixed inset-x-0 z-30 lg:left-64"
-      style={{ bottom: "var(--bottom-nav-h, 0px)" }}
+      // On the keyboard when it is up, on the tab bar when it is down — the
+      // keyboard covers the tab bar, so the box must not wait above it.
+      style={{ bottom: keyboard > 0 ? keyboard : "var(--bottom-nav-h, 0px)" }}
     >
       {above}
       <div className="border-t border-rule bg-surface">
