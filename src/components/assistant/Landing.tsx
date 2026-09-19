@@ -47,12 +47,20 @@ export function Landing({
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-4 sm:px-6">
-      <h2 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-3xl">
-        What are you looking for?
-      </h2>
-      <p className="mt-1 text-sm text-ink-soft">
-        Answers from {books ? `${books} original books` : "the original books"}
-      </p>
+      {/* The question is answered once a chip is chosen, so it fades with the
+          chip row. Opacity only: it keeps its place, so the help line and the
+          box below it stay exactly where they were. */}
+      <div
+        aria-hidden={mode !== null || undefined}
+        className={`transition-opacity duration-200 ${mode ? "opacity-0" : "opacity-100"}`}
+      >
+        <h2 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-3xl">
+          What are you looking for?
+        </h2>
+        <p className="mt-1 text-sm text-ink-soft">
+          Answers from {books ? `${books} original books` : "the original books"}
+        </p>
+      </div>
 
       {/* One slot, two layers stacked in the same grid cell. Both are always
           laid out, so the slot is the height of the taller and swapping them
