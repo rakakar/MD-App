@@ -3,9 +3,10 @@
 import { useMemo } from "react";
 import { INTENT_HINT, INTENT_LABEL, INTENTS, type Intent } from "@/lib/assistant/intent";
 import { searchGlossary } from "@/lib/glossary";
-import type { ParibhashaWord } from "@/lib/types";
+import type { BookSummary, ParibhashaWord } from "@/lib/types";
+import { Chip } from "@/components/ui";
 import { IntentGlyph } from "./icons";
-import { INTENT_COLOR } from "./parts";
+import { INTENT_COLOR, IntentScope } from "./parts";
 
 /** rows of live Paribhasha matches above the box — a glance, not the list */
 const PEEK = 4;
@@ -24,14 +25,20 @@ const PEEK = 4;
  * its answer. It can do that because the dictionary is on the device.
  */
 export function Landing({
-  books,
+  shelf,
+  scope,
+  onScope,
   mode,
   onMode,
   text,
   dictionary,
   onPick,
 }: {
-  books: number | null;
+  /** the Originals shelf — counted in the subtitle, offered to Book search */
+  shelf: BookSummary[] | null;
+  /** Book search's chosen books; empty means all of them */
+  scope: string[];
+  onScope: (codes: string[]) => void;
   mode: Intent | null;
   onMode: (m: Intent) => void;
   text: string;
@@ -40,6 +47,9 @@ export function Landing({
   onPick: (word: string) => void;
 }) {
   const q = text.trim();
+  const books = shelf?.length ?? null;
+  const toggle = (code: string) =>
+    onScope(scope.includes(code) ? scope.filter((c) => c !== code) : [...scope, code]);
   const matches = useMemo(
     () => (mode === "paribhasha" && dictionary && q ? searchGlossary(dictionary, q, PEEK) : null),
     [mode, dictionary, q]
@@ -70,12 +80,12 @@ export function Landing({
           in 150ms, the arriving one waits for it and takes 300ms with a 4px
           rise — two blocks of text at half opacity over each other is the
           muddle this avoids. Reduced motion keeps the fades, drops the rise. */}
-      <div className="mt-5 grid">
+      <div className="mt-5 grid grid-cols-1">
         <div
           role="group"
           aria-label="What do you need"
           inert={mode !== null || undefined}
-          className={`col-start-1 row-start-1 flex flex-wrap content-end gap-2.5 transition-[opacity,transform] ease-out motion-reduce:transform-none ${
+          className={`col-start-1 row-start-1 flex min-w-0 flex-wrap content-end gap-2.5 transition-[opacity,transform] ease-out motion-reduce:transform-none ${
             mode ? "translate-y-1 opacity-0 duration-150" : "translate-y-0 opacity-100 delay-150 duration-300"
           }`}
         >
@@ -97,7 +107,7 @@ export function Landing({
         <div
           aria-live="polite"
           inert={mode === null || undefined}
-          className={`col-start-1 row-start-1 self-end transition-[opacity,transform] ease-out motion-reduce:transform-none ${
+          className={`col-start-1 row-start-1 min-w-0 self-end transition-[opacity,transform] ease-out motion-reduce:transform-none ${
             mode ? "translate-y-0 opacity-100 delay-150 duration-300" : "translate-y-1 opacity-0 duration-150"
           }`}
         >
@@ -135,10 +145,37 @@ export function Landing({
                 <span className="mt-0.5 block text-sm leading-relaxed text-ink-soft">
                   {mode === "paribhasha" && q && dictionary
                     ? `No entry matches “${q}” yet — keep typing, or press send.`
-                    : INTENT_HINT[mode]}
+                    : mode === "books" && scope.length > 0
+                      ? `Type a phrase — every passage that uses it in ${
+                          scope.length === 1 ? "this book" : `these ${scope.length} books`
+                        }, in reading order.`
+                      : INTENT_HINT[mode]}
                 </span>
               </p>
             </div>
+          ) : null}
+          {/* Book search only: which books to look in, right above the box.
+              One scrolling row rather than a wrapped block — twelve Hindi
+              titles would stand four rows high and push the title off the
+              screen. "All books" is the default and clears any choice. */}
+          {mode === "books" && shelf && shelf.length > 1 ? (
+            <IntentScope intent="books">
+              <div
+                role="group"
+                aria-label="Books to search"
+                className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6"
+              >
+                <Chip label="All books" selected={scope.length === 0} onClick={() => onScope([])} />
+                {shelf.map((b) => (
+                  <Chip
+                    key={b.code}
+                    label={b.title_hi}
+                    selected={scope.includes(b.code)}
+                    onClick={() => toggle(b.code)}
+                  />
+                ))}
+              </div>
+            </IntentScope>
           ) : null}
         </div>
       </div>

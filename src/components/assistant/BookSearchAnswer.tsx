@@ -10,7 +10,7 @@ import { quotedPhrase } from "@/lib/assistant/intent";
 import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import { LibraryLane } from "@/components/library/LibraryLane";
-import type { LibrarySearchRow, SearchResponse, SearchResult } from "@/lib/types";
+import type { BookSummary, LibrarySearchRow, SearchResponse, SearchResult } from "@/lib/types";
 import { AnswerEyebrow } from "./parts";
 
 /** cards before "N more passages" — enough to judge the list by */
@@ -34,6 +34,8 @@ export function BookSearchAnswer({
   query,
   asTyped,
   exact: exactMode = false,
+  books: scope,
+  shelf,
   onSettle,
 }: {
   query: string;
@@ -41,8 +43,13 @@ export function BookSearchAnswer({
   asTyped: boolean;
   /** the Book search chip was chosen: the whole line is a phrase, quoted or not */
   exact?: boolean;
+  /** the books chosen above the box; absent or empty means all of them */
+  books?: string[];
+  /** the shelf, to name the chosen books */
+  shelf?: BookSummary[] | null;
   onSettle: (summary: string, count: number) => void;
 }) {
+  const scopeKey = (scope ?? []).join(",");
   const phrase = quotedPhrase(query) ?? (exactMode ? query.trim() : null);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [raw, setRaw] = useState(asTyped);
@@ -69,7 +76,7 @@ export function BookSearchAnswer({
     const ctrl = new AbortController();
     setResponse(null);
     setFailed(false);
-    search(phrase ?? query, { raw, signal: ctrl.signal })
+    searchIn(phrase ?? query, scopeKey ? scopeKey.split(",") : [], raw, ctrl.signal)
       .then((r) => {
         setResponse(r);
         track("search", { query_length: query.length, results: r.total, mode: r.mode });
@@ -78,7 +85,7 @@ export function BookSearchAnswer({
         if ((e as Error).name !== "AbortError") setFailed(true);
       });
     return () => ctrl.abort();
-  }, [query, phrase, raw]);
+  }, [query, phrase, raw, scopeKey]);
 
   /** Passages that really contain the phrase, when one was quoted. */
   const exact = useMemo(() => {
@@ -119,6 +126,9 @@ export function BookSearchAnswer({
     return <p className="text-sm text-ink-soft" role="status">Searching the books…</p>;
   }
 
+  const scopeNames = (scope ?? []).map(
+    (code) => shelf?.find((b) => b.code === code)?.title_hi ?? code
+  );
   const label = phrase
     ? exact && exact.length > 0
       ? `Exact phrase · ${exact.length} ${exact.length === 1 ? "passage" : "passages"}`
@@ -128,6 +138,15 @@ export function BookSearchAnswer({
   return (
     <div className="flex flex-col gap-4">
       <AnswerEyebrow label={label} />
+
+      {scopeNames.length > 0 && (
+        <p className="text-sm text-ink-soft">
+          Searched in{" "}
+          <span lang="hi" className="hi-note font-semibold text-ink">
+            {scopeNames.join(", ")}
+          </span>
+        </p>
+      )}
 
       {phrase && exact && exact.length === 0 && pool.length > 0 && (
         <p className="text-sm text-ink-soft">
@@ -220,6 +239,31 @@ function inReadingOrder(hits: SearchResult[]): SearchResult[] {
       n(a.page_number) - n(b.page_number) ||
       para(a) - para(b)
   );
+}
+
+/**
+ * One search, or one per chosen book, merged.
+ *
+ * The endpoint narrows to a single `book`, so a choice of several is asked
+ * book by book — each gets its own full ranked list rather than a share of
+ * one overall list, which is what makes a small book's matches reachable.
+ * The rewrite and the glossary card come back the same from every call, so
+ * the first one's are kept.
+ */
+async function searchIn(
+  q: string,
+  codes: string[],
+  raw: boolean,
+  signal: AbortSignal
+): Promise<SearchResponse> {
+  if (codes.length <= 1) return search(q, { raw, signal, book: codes[0] });
+  const all = await Promise.all(codes.map((book) => search(q, { raw, signal, book })));
+  return {
+    ...all[0],
+    results: all.flatMap((r) => r.results),
+    total: all.reduce((n, r) => n + r.total, 0),
+    terms: [...new Set(all.flatMap((r) => r.terms))],
+  };
 }
 
 function normalise(s: string): string {

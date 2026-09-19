@@ -28,6 +28,8 @@ export interface Turn {
   asTyped?: boolean;
   /** Book search only — asked with the chip chosen: the whole line is a phrase */
   exact?: boolean;
+  /** Book search only — the books it was limited to; absent means all of them */
+  books?: string[];
   /** Research only — the answer as it arrived, so reopening is free */
   answer?: ChatAnswer;
   /** one line for the conversation list, written when the turn settles */

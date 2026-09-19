@@ -73,6 +73,8 @@ export function AssistantScreen() {
 
   const [conv, setConv] = useState<Conversation | null>(null);
   const [mode, setMode] = useState<Intent | null>(DEFAULT_MODE);
+  /** Book search's own choice of books, made above the box; empty is all of them */
+  const [scope, setScope] = useState<string[]>([]);
   const [text, setText] = useState("");
   const [quota, setQuota] = useState<ChatQuota | null>(null);
   const [listening, setListening] = useState(false);
@@ -150,7 +152,9 @@ export function AssistantScreen() {
         intent,
         query: q,
         at: new Date().toISOString(),
-        ...(intent === "books" && chosen === "books" ? { exact: true } : {}),
+        ...(intent === "books" && chosen === "books"
+          ? { exact: true, ...(scope.length ? { books: scope } : {}) }
+          : {}),
       };
       const now = turn.at;
       // The id is made out here, not in the updater: React may run an updater
@@ -169,7 +173,7 @@ export function AssistantScreen() {
       setText("");
       track("assistant_ask", { intent, chosen: forced || chosen ? "chip" : "auto", length: q.length });
     },
-    [conv, mode, dictionary, router, books]
+    [conv, mode, scope, dictionary, router, books]
   );
 
   // A new turn scrolls its question to the top, so the answer reads downward
@@ -231,6 +235,7 @@ export function AssistantScreen() {
   const startOver = () => {
     setConv(null);
     setMode(DEFAULT_MODE);
+    setScope([]);
     setText("");
     router.replace("/assistant", { scroll: false });
     window.scrollTo({ top: 0 });
@@ -292,6 +297,8 @@ export function AssistantScreen() {
                         query={t.query}
                         asTyped={!!t.asTyped}
                         exact={!!t.exact}
+                        books={t.books}
+                        shelf={books}
                         onSettle={(summary, count) => settle(t.id, { summary, count })}
                       />
                     )}
@@ -355,6 +362,7 @@ export function AssistantScreen() {
                 label: INTENT_LABEL[mode],
                 onClear: () => {
                   setMode(null);
+                  setScope([]);
                   setText("");
                   inputRef.current?.focus();
                 },
@@ -369,7 +377,9 @@ export function AssistantScreen() {
               }`}
             >
             <Landing
-              books={books?.length ?? null}
+              shelf={books}
+              scope={scope}
+              onScope={setScope}
               mode={mode}
               onMode={(m) => {
                 setMode(m);
