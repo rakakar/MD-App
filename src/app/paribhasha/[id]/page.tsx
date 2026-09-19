@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { EntryBack, GlossaryBack } from "@/components/paribhasha/EntryBack";
 import { EntryExtras, EntryShare } from "@/components/paribhasha/EntryExtras";
 import { WordEntry } from "@/components/paribhasha/WordEntry";
-import { BackIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { getParibhashaWord } from "@/lib/api";
@@ -56,13 +57,11 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
     <AppAccent>
       <PageContainer>
         <div className="flex items-center gap-3">
-          <Link
-            href="/paribhasha"
-            aria-label="Paribhasha glossary"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card"
-          >
-            <BackIcon className="h-5 w-5" />
-          </Link>
+          {/* Reads the URL, so it waits in a Suspense boundary; the page
+              itself stays statically rendered with the glossary as its back. */}
+          <Suspense fallback={<GlossaryBack />}>
+            <EntryBack />
+          </Suspense>
           <p className="min-w-0 flex-1 text-title font-semibold text-ink-soft">Paribhasha entry</p>
           <EntryShare title={word.hindi} />
         </div>
@@ -87,7 +86,9 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
           <WordEntry word={word} size="lg" />
         </div>
 
-        <EntryExtras word={word} />
+        <Suspense>
+          <EntryExtras word={word} />
+        </Suspense>
       </PageContainer>
     </AppAccent>
   );

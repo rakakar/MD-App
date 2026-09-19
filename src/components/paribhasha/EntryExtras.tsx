@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChatIcon, BookGlyph } from "@/components/assistant/icons";
 import { useDictionary } from "@/components/assistant/useAssistantData";
+import { useEntryFrom } from "./EntryBack";
 import { ChevronRight, ShareIcon } from "@/components/shell/icons";
 import { search } from "@/lib/api";
 import { relatedWords } from "@/lib/assistant/related";
@@ -50,6 +51,7 @@ export function EntryShare({ title }: { title: string }) {
  */
 export function EntryExtras({ word }: { word: ParibhashaWord }) {
   const dictionary = useDictionary();
+  const from = useEntryFrom();
   const related = useMemo(
     () => (dictionary ? relatedWords(dictionary, word, 6) : []),
     [dictionary, word]
@@ -93,7 +95,7 @@ export function EntryExtras({ word }: { word: ParibhashaWord }) {
             {related.map((w) => (
               <Link
                 key={w.id}
-                href={`/paribhasha/${w.id}`}
+                href={`/paribhasha/${w.id}${from}`}
                 lang="hi"
                 className="hi-note inline-flex min-h-11 items-center rounded-full border px-4 text-base font-medium"
                 style={{

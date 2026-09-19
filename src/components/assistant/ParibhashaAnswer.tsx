@@ -119,7 +119,7 @@ export function ParibhashaAnswer({
             {first.definitions.length > 1 && ` · ${first.definitions.length} parts`}
           </span>
           <Link
-            href={`/paribhasha/${first.id}`}
+            href={`/paribhasha/${first.id}?from=assistant`}
             className="inline-flex min-h-11 items-center gap-1 font-semibold"
             style={{ color: "var(--ws-ink)" }}
           >
@@ -132,7 +132,7 @@ export function ParibhashaAnswer({
       {rest.map((w) => (
         <Link
           key={w.id}
-          href={`/paribhasha/${w.id}`}
+          href={`/paribhasha/${w.id}?from=assistant`}
           className="flex items-center gap-3 rounded-card border border-rule bg-card px-5 py-4"
         >
           <span className="min-w-0 flex-1">
