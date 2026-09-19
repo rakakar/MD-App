@@ -52,7 +52,7 @@ export function Landing({
           box below it stay exactly where they were. */}
       <div
         aria-hidden={mode !== null || undefined}
-        className={`transition-opacity duration-200 ${mode ? "opacity-0" : "opacity-100"}`}
+        className={`transition-opacity duration-300 ease-out ${mode ? "opacity-0" : "opacity-100 delay-100"}`}
       >
         <h2 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-3xl">
           What are you looking for?
@@ -64,14 +64,19 @@ export function Landing({
 
       {/* One slot, two layers stacked in the same grid cell. Both are always
           laid out, so the slot is the height of the taller and swapping them
-          moves nothing; opacity and `inert` decide which one is there. */}
+          moves nothing; opacity and `inert` decide which one is there.
+
+          A crossfade in sequence rather than at once: the leaving layer goes
+          in 150ms, the arriving one waits for it and takes 300ms with a 4px
+          rise — two blocks of text at half opacity over each other is the
+          muddle this avoids. Reduced motion keeps the fades, drops the rise. */}
       <div className="mt-5 grid">
         <div
           role="group"
           aria-label="What do you need"
           inert={mode !== null || undefined}
-          className={`col-start-1 row-start-1 flex flex-wrap content-end gap-2.5 transition-opacity duration-200 ${
-            mode ? "opacity-0" : "opacity-100"
+          className={`col-start-1 row-start-1 flex flex-wrap content-end gap-2.5 transition-[opacity,transform] ease-out motion-reduce:transform-none ${
+            mode ? "translate-y-1 opacity-0 duration-150" : "translate-y-0 opacity-100 delay-150 duration-300"
           }`}
         >
           {INTENTS.map((i) => (
@@ -92,8 +97,8 @@ export function Landing({
         <div
           aria-live="polite"
           inert={mode === null || undefined}
-          className={`col-start-1 row-start-1 self-end transition-opacity duration-200 ${
-            mode ? "opacity-100 delay-100" : "opacity-0"
+          className={`col-start-1 row-start-1 self-end transition-[opacity,transform] ease-out motion-reduce:transform-none ${
+            mode ? "translate-y-0 opacity-100 delay-150 duration-300" : "translate-y-1 opacity-0 duration-150"
           }`}
         >
           {mode && matches && matches.length > 0 ? (

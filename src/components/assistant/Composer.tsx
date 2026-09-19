@@ -62,6 +62,9 @@ export function Composer({
   const ready = value.trim().length > 0;
   /** lit once there is something to ask, or a mode waiting for its words */
   const lit = ready || !!pill;
+  /** the label on screen — kept after clearing, while the row closes */
+  const [shownPill, setShownPill] = useState(pill?.label ?? "");
+  if (pill && pill.label !== shownPill) setShownPill(pill.label);
 
   useEffect(() => {
     setHi(0);
@@ -128,31 +131,46 @@ export function Composer({
             else if (ready) onSubmit();
           }}
         >
+          {/*
+            The box grows to take the pill rather than snapping to a new shape.
+            The pill's row opens on a 0fr → 1fr grid track, and the corner eases
+            from a full round (28px on a 56px box) to the card's 20px, so the
+            landing above — which stands on this box — rises with it instead of
+            jumping. The last label is held while the row closes, so the pill
+            does not vanish before it has finished leaving.
+          */}
           <div
-            className={`min-w-0 flex-1 border bg-card transition-colors focus-within:border-(--color-accent-deep) ${
-              pill ? "rounded-card pb-1 pl-4 pr-2 pt-3" : "rounded-full pl-5 pr-2"
-            }`}
+            className="min-w-0 flex-1 border bg-card pl-5 pr-2 transition-[border-color,border-radius,box-shadow] duration-300 ease-out focus-within:border-(--color-accent-deep)"
             style={{
+              borderRadius: pill ? 20 : 28,
               borderColor: lit ? "color-mix(in srgb, var(--color-accent-deep) 45%, var(--color-rule))" : "var(--color-rule)",
-              boxShadow: pill ? "0 0 0 4px color-mix(in srgb, var(--color-accent) 10%, transparent)" : undefined,
+              boxShadow: pill
+                ? "0 0 0 4px color-mix(in srgb, var(--color-accent) 10%, transparent)"
+                : "0 0 0 0 transparent",
             }}
           >
-            {pill && (
-              <button
-                type="button"
-                onClick={pill.onClear}
-                aria-label={`${pill.label} chosen — clear`}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold"
-                style={{
-                  borderColor: "color-mix(in srgb, var(--color-accent) 30%, transparent)",
-                  background: "color-mix(in srgb, var(--color-accent) 14%, var(--color-card))",
-                  color: "var(--color-accent-deep)",
-                }}
-              >
-                {pill.label}
-                <CloseIcon className="h-3.5 w-3.5" />
-              </button>
-            )}
+            <div
+              className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+              style={{ gridTemplateRows: pill ? "1fr" : "0fr", opacity: pill ? 1 : 0 }}
+              inert={!pill || undefined}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={pill?.onClear}
+                  aria-label={`${shownPill} chosen — clear`}
+                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold"
+                  style={{
+                    borderColor: "color-mix(in srgb, var(--color-accent) 30%, transparent)",
+                    background: "color-mix(in srgb, var(--color-accent) 14%, var(--color-card))",
+                    color: "var(--color-accent-deep)",
+                  }}
+                >
+                  {shownPill}
+                  <CloseIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
             <div className="flex min-h-14 items-center gap-2">
             <input
               ref={inputRef}
