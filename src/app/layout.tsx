@@ -155,7 +155,8 @@ export const viewport: Viewport = {
  * decided on the client, so without it a first visit painted the whole home
  * page and then covered it once JS arrived — a blink on a laptop, a second or
  * more on a phone. The CSS in globals.css holds the page back while it is set,
- * and FirstRunGate clears it. The conditions must match `bare` in AppShell and
+ * and FirstRunGate clears it. The conditions must match where AppShell mounts
+ * FirstRunGate (`bare`, `sharedLink`) and
  * `REPLAY`/`onboardingSeen` in FirstRunGate, or the page stays hidden.
  */
 const THEME_SCRIPT = `(function(){try{
@@ -180,7 +181,7 @@ if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale))
 if(p.boldText)d.setAttribute("data-bold","1");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
-var bare=reading||/^\\/(login|signup)$/.test(location.pathname);
+var bare=reading||/^\\/(login|signup)$|^\\/a\\//.test(location.pathname);
 if(!bare&&(!p.onboardingSeen||new URLSearchParams(location.search).has("firstrun")))d.setAttribute("data-first-run","1");
 }catch(e){}})()`;
 
