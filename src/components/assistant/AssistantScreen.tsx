@@ -74,7 +74,7 @@ export function AssistantScreen() {
 
   const [conv, setConv] = useState<Conversation | null>(null);
   const [mode, setMode] = useState<Intent | null>(DEFAULT_MODE);
-  /** Book search's own choice of books, made above the box; empty is all of them */
+  /** The books chosen above the box, for Book search and Research; empty is all of them */
   const [scope, setScope] = useState<string[]>([]);
   const [picking, setPicking] = useState(false);
   const scopeLabel =
@@ -166,6 +166,9 @@ export function AssistantScreen() {
         ...(intent === "books" && chosen === "books"
           ? { exact: true, ...(scope.length ? { books: scope } : {}) }
           : {}),
+        // Research keeps to the chosen books for the whole conversation — a
+        // follow-up about "these books" must not quietly widen to all of them.
+        ...(intent === "research" && scope.length ? { books: scope } : {}),
       };
       const now = turn.at;
       // The id is made out here, not in the updater: React may run an updater
@@ -218,6 +221,22 @@ export function AssistantScreen() {
       ask(qParam, intent);
     }
   }, [qParam, modeParam, cParam, dictionary, ask]);
+
+  /** "Go deeper": the same question again, as a new turn, at the deep level. */
+  const deepen = useCallback((of: Turn) => {
+    const turn: Turn = {
+      id: newId(),
+      intent: "research",
+      query: of.query,
+      at: new Date().toISOString(),
+      deep: true,
+      deepens: of.id,
+      ...(of.books?.length ? { books: of.books } : {}),
+    };
+    setConv((c) => (c ? { ...c, turns: [...c.turns, turn], updatedAt: turn.at } : c));
+    scrollTo.current = turn.id;
+    track("assistant_ask", { intent: "research", chosen: "deepen", length: of.query.length });
+  }, []);
 
   const settle = useCallback((turnId: string, patch: Partial<Turn>) => {
     setConv((c) =>
@@ -274,10 +293,14 @@ export function AssistantScreen() {
         <div className="mx-auto w-full max-w-3xl px-4 pb-40 sm:px-6">
           <div className="flex flex-col gap-8 pt-6">
             {turns.map((t, i) => {
+              // A deeper answer is the same question asked again, so its
+              // context is what the original had — not the original itself.
+              const before = t.deepens ? turns.findIndex((p) => p.id === t.deepens) : i;
               const prevResearch = turns
-                .slice(0, i)
+                .slice(0, before < 0 ? i : before)
                 .reverse()
                 .find((p) => p.intent === "research" && p.answer)?.answer?.id;
+              const deepened = turns.some((p) => p.deepens === t.id);
               return (
                 <section
                   key={t.id}
@@ -327,6 +350,11 @@ export function AssistantScreen() {
                         query={t.query}
                         stored={t.answer}
                         continueFrom={prevResearch}
+                        books={t.books}
+                        deep={!!t.deep}
+                        shelf={books}
+                        quota={quota}
+                        onDeepen={t.deep || deepened ? undefined : () => deepen(t)}
                         dictionary={dictionary}
                         saved={conv.savedToJourney}
                         onToggleSaved={() =>
@@ -351,6 +379,7 @@ export function AssistantScreen() {
             {quota?.capped && quota.remaining !== null && quota.limit !== null && (
               <p className="text-center text-sm text-ink-soft">
                 {quota.remaining} of {quota.limit} research questions left today
+                {quota.deep_remaining != null && ` · ${quota.deep_remaining} detailed`}
               </p>
             )}
           </div>
@@ -378,7 +407,7 @@ export function AssistantScreen() {
                   inputRef.current?.focus();
                 },
                 option:
-                  mode === "books" && books && books.length > 1
+                  (mode === "books" || mode === "research") && books && books.length > 1
                     ? {
                         label: scopeLabel,
                         hindi: scope.length === 1,

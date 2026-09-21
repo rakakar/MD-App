@@ -685,6 +685,8 @@ export async function search(
   opts: {
     workspace?: string;
     book?: string;
+    /** several books in one search (contract §9.1) — never one call per book */
+    books?: string[];
     limit?: number;
     /** search the query exactly as typed, skipping the Devanagari rewrite */
     raw?: boolean;
@@ -696,6 +698,7 @@ export async function search(
       q,
       workspace: opts.workspace,
       book: opts.book,
+      books: opts.books?.length ? opts.books.join(",") : undefined,
       limit: opts.limit,
       raw: opts.raw ? 1 : undefined,
     })}`,

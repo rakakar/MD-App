@@ -144,7 +144,11 @@ export function Landing({
                       ? `Type a phrase — every passage that uses it in ${
                           scope.length === 1 ? "this book" : `these ${scope.length} books`
                         }, in reading order.`
-                      : INTENT_HINT[mode]}
+                      : mode === "research" && scope.length > 0
+                        ? `Ask a question — answered only from ${
+                            scope.length === 1 ? "this book" : `these ${scope.length} books`
+                          }, with the passages cited.`
+                        : INTENT_HINT[mode]}
                 </span>
               </p>
             </div>

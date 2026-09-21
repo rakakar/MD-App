@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { BookmarkIcon, ChevronRight } from "@/components/shell/icons";
@@ -11,11 +12,19 @@ import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import { LibraryLane } from "@/components/library/LibraryLane";
 import type { BookSummary, LibrarySearchRow, SearchResponse, SearchResult } from "@/lib/types";
+import { ctaPrimary } from "@/components/ui";
 import { AnswerEyebrow } from "./parts";
 
 /** cards before "N more passages" — enough to judge the list by */
 const FIRST = 5;
 const STEP = 10;
+/**
+ * What a signed-out reader sees before being asked to sign in. Book search is
+ * a signed-in feature by product choice (signups), but a bare wall would hide
+ * whether the books even answer the question — two real passages and the
+ * true count make the case for signing in better than any sentence could.
+ */
+const PREVIEW = 2;
 
 /**
  * 4 · Book search — exact phrase, or words.
@@ -49,6 +58,8 @@ export function BookSearchAnswer({
   shelf?: BookSummary[] | null;
   onSettle: (summary: string, count: number) => void;
 }) {
+  const { user, loading: authLoading } = useAuth();
+  const locked = !authLoading && !user;
   const scopeKey = (scope ?? []).join(",");
   const phrase = quotedPhrase(query) ?? (exactMode ? query.trim() : null);
   const [response, setResponse] = useState<SearchResponse | null>(null);
@@ -64,13 +75,13 @@ export function BookSearchAnswer({
    */
   const [library, setLibrary] = useState<LibrarySearchRow[] | null>(null);
   useEffect(() => {
-    if (phrase) return;
+    if (phrase || locked) return;
     const ctrl = new AbortController();
     searchLibrary(query, ctrl.signal)
       .then(setLibrary)
       .catch(() => setLibrary(null));
     return () => ctrl.abort();
-  }, [query, phrase]);
+  }, [query, phrase, locked]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -122,7 +133,9 @@ export function BookSearchAnswer({
   if (failed) {
     return <p className="text-sm text-ink-soft">Search is unavailable right now.</p>;
   }
-  if (!response) {
+  // Also while sign-in is still being checked, so a signed-out reader never
+  // sees the whole list flash up and then fold into the preview.
+  if (!response || authLoading) {
     return <p className="text-sm text-ink-soft" role="status">Searching the books…</p>;
   }
 
@@ -174,7 +187,18 @@ export function BookSearchAnswer({
         <p className="text-sm text-ink-soft">Nothing in the books matches “{phrase ?? query}”.</p>
       )}
 
-      {books.length > 1 && (
+      {locked && pool.length > 0 && (
+        <>
+          <ul className="flex flex-col gap-3">
+            {pool.slice(0, PREVIEW).map((r, i) => (
+              <PassageCard key={r.canonical_ref ?? i} result={r} terms={terms} />
+            ))}
+          </ul>
+          <SignInCard total={pool.length} books={books.length} />
+        </>
+      )}
+
+      {!locked && books.length > 1 && (
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
           <BookChip
             label="All books"
@@ -200,13 +224,15 @@ export function BookSearchAnswer({
         </div>
       )}
 
-      <ul className="flex flex-col gap-3">
-        {list.slice(0, shown).map((r, i) => (
-          <PassageCard key={r.canonical_ref ?? i} result={r} terms={terms} />
-        ))}
-      </ul>
+      {!locked && (
+        <ul className="flex flex-col gap-3">
+          {list.slice(0, shown).map((r, i) => (
+            <PassageCard key={r.canonical_ref ?? i} result={r} terms={terms} />
+          ))}
+        </ul>
+      )}
 
-      {list.length > shown && (
+      {!locked && list.length > shown && (
         <button
           type="button"
           onClick={() => setShown((n) => n + STEP)}
@@ -216,7 +242,36 @@ export function BookSearchAnswer({
         </button>
       )}
 
-      {library && library.length > 0 && <LibraryLane rows={library} />}
+      {!locked && library && library.length > 0 && <LibraryLane rows={library} />}
+    </div>
+  );
+}
+
+function SignInCard({ total, books }: { total: number; books: number }) {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const here = `${pathname}${params.size ? `?${params}` : ""}`;
+  const rest = total - Math.min(total, PREVIEW);
+  return (
+    <div className="rounded-card border border-rule bg-card p-5">
+      <p className="font-semibold">
+        {rest > 0
+          ? `Sign in to see all ${total} passages${books > 1 ? ` from ${books} books` : ""}`
+          : "Sign in to keep searching the books"}
+      </p>
+      <p className="mt-1 text-sm text-ink-soft">
+        Free. It also keeps your bookmarks, notes and reading place on every device.
+        Paribhasha and Navigate work without signing in.
+      </p>
+      <div className="mt-4">
+        <Link
+          href={`/login?next=${encodeURIComponent(here)}`}
+          className={ctaPrimary}
+          style={{ background: "var(--color-accent-deep)" }}
+        >
+          Sign in
+        </Link>
+      </div>
     </div>
   );
 }
@@ -242,14 +297,18 @@ function inReadingOrder(hits: SearchResult[]): SearchResult[] {
 }
 
 /**
- * One search, or one per chosen book, merged.
+ * One search, however many books are chosen.
  *
- * The endpoint narrows to a single `book`, so a choice of several is asked
- * book by book — each gets its own full ranked list rather than a share of
- * one overall list, which is what makes a small book's matches reachable.
- * The rewrite and the glossary card come back the same from every call, so
- * the first one's are kept.
+ * It used to be one call per book, merged here, so that a small book's
+ * matches were not crowded out of one shared list. But every call spends one
+ * semantic search from the reader's hourly budget, so five books ran it down
+ * five times as fast and the results quietly went keyword-only. Now the BE
+ * takes the whole choice in one call (`books=`, contract §9.1), and a choice
+ * of several asks for the largest list it will give, which keeps a small
+ * book's passages reachable.
  */
+const MULTI_BOOK_LIMIT = 50;
+
 async function searchIn(
   q: string,
   codes: string[],
@@ -257,13 +316,7 @@ async function searchIn(
   signal: AbortSignal
 ): Promise<SearchResponse> {
   if (codes.length <= 1) return search(q, { raw, signal, book: codes[0] });
-  const all = await Promise.all(codes.map((book) => search(q, { raw, signal, book })));
-  return {
-    ...all[0],
-    results: all.flatMap((r) => r.results),
-    total: all.reduce((n, r) => n + r.total, 0),
-    terms: [...new Set(all.flatMap((r) => r.terms))],
-  };
+  return search(q, { raw, signal, books: codes, limit: MULTI_BOOK_LIMIT });
 }
 
 function normalise(s: string): string {

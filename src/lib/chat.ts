@@ -24,7 +24,7 @@ export const getChatSession = (): Promise<ChatSession> =>
 
 export async function askChat(
   query: string,
-  opts: { mode?: "quick" | "deep"; continueFrom?: number } = {}
+  opts: { mode?: "quick" | "deep"; continueFrom?: number; books?: string[] } = {}
 ): Promise<{ answer: ChatAnswer; quota: ChatQuota }> {
   return authedFetch(chatUrl(), {
     method: "POST",
@@ -32,6 +32,8 @@ export async function askChat(
       query,
       mode: opts.mode ?? "quick",
       ...(opts.continueFrom !== undefined ? { continue_from: opts.continueFrom } : {}),
+      // answer only from these books; omitted means every book
+      ...(opts.books?.length ? { books: opts.books } : {}),
     }),
   });
 }
@@ -43,6 +45,12 @@ export async function askChat(
  */
 export function isQuotaExhausted(err: unknown): boolean {
   return (err as { status?: number })?.status === 429;
+}
+
+/** Only the day's deep answers are used up — a quick answer still works. */
+export function isDeepQuotaExhausted(err: unknown): boolean {
+  const e = err as { status?: number; data?: { code?: string } };
+  return e?.status === 429 && e.data?.code === "deep_limit";
 }
 
 /** The answer service is down; the question was not spent. */

@@ -801,6 +801,10 @@ export interface ChatQuota {
   /** null for managers, who are uncapped */
   limit: number | null;
   remaining: number | null;
+  /** Deep answers come out of the same day, with a smaller cap of their own;
+   *  deep_remaining never exceeds remaining. null for managers. */
+  deep_limit?: number | null;
+  deep_remaining?: number | null;
   capped: boolean;
 }
 
@@ -833,6 +837,10 @@ export interface ChatAnswer {
   rewritten_query: string;
   /** "not_found" is an honest answer, not a failure — the books do not say. */
   status: "ok" | "not_found" | "error";
+  /** "deep" = the fuller answer asked for with "Go deeper" */
+  mode?: "quick" | "deep";
+  /** book codes the answer was limited to; empty means every book */
+  books?: string[];
   answer: string;
   citations: ChatCitation[];
   feedback: ChatFeedback | null;

@@ -10,7 +10,7 @@ import { WORKSPACES } from "@/lib/workspaceConfig";
 let genres: Promise<BookGenre[]> | null = null;
 
 /**
- * Which books Book search looks in — a checklist in a sheet, grouped by series.
+ * Which books Book search and Research look in — a checklist in a sheet, grouped by series.
  *
  * Replaced a sideways-scrolling row of chips above the box (19 Sep): twelve
  * Hindi titles in one row hid ten of them off the edge, and a reader looking
@@ -87,7 +87,7 @@ export function BookPickerSheet({
       open={open}
       onClose={onClose}
       title="Search in"
-      subtitle="Choose the books Book search looks in"
+      subtitle="Book search and Research look only in the books you choose"
       accent={WORKSPACES.connect.color}
       actions={draft.length > 0 ? <SheetTextAction onClick={() => setDraft([])}>Clear</SheetTextAction> : undefined}
       footer={

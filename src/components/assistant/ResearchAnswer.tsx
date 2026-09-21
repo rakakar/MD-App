@@ -8,9 +8,9 @@ import { ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
 import { ctaPrimary } from "@/components/ui";
 import { answerAsText, parseAnswer, type Run } from "@/lib/assistant/answer";
 import { glossaryWordsIn } from "@/lib/assistant/related";
-import { askChat, isAnswerServiceDown, isQuotaExhausted } from "@/lib/chat";
+import { askChat, isAnswerServiceDown, isDeepQuotaExhausted, isQuotaExhausted } from "@/lib/chat";
 import { parseRef } from "@/lib/refs";
-import type { ChatAnswer, ChatCitation, ChatQuota, ParibhashaWord } from "@/lib/types";
+import type { BookSummary, ChatAnswer, ChatCitation, ChatQuota, ParibhashaWord } from "@/lib/types";
 import { WORKSPACES } from "@/lib/workspaceConfig";
 import { CitationSheet } from "./CitationSheet";
 import { CopyIcon, NoteIcon } from "./icons";
@@ -27,7 +27,12 @@ import type { Ask } from "./types";
  */
 const inflight = new Map<string, Promise<{ answer: ChatAnswer; quota: ChatQuota }>>();
 
-type Failure = { kind: "signin" } | { kind: "quota"; detail: string } | { kind: "down" } | { kind: "error" };
+type Failure =
+  | { kind: "signin" }
+  | { kind: "quota"; detail: string }
+  | { kind: "deep_quota"; detail: string }
+  | { kind: "down" }
+  | { kind: "error" };
 
 /**
  * 5 & 7 · Research — an answer written from cited passages.
@@ -44,6 +49,11 @@ export function ResearchAnswer({
   query,
   stored,
   continueFrom,
+  books,
+  deep = false,
+  shelf,
+  quota,
+  onDeepen,
   dictionary,
   saved,
   onToggleSaved,
@@ -57,6 +67,16 @@ export function ResearchAnswer({
   stored?: ChatAnswer;
   /** the previous Research answer in this conversation, for a follow-up */
   continueFrom?: number;
+  /** answer only from these book codes; absent means every book */
+  books?: string[];
+  /** the fuller answer: the large model plus a rerank, from "Go deeper" */
+  deep?: boolean;
+  /** the shelf, to name the chosen books */
+  shelf?: BookSummary[] | null;
+  /** the reader's allowance as last reported, for the "Go deeper" count */
+  quota?: ChatQuota | null;
+  /** ask this same question again, deeper — absent once it has been */
+  onDeepen?: () => void;
   dictionary: ParibhashaWord[] | null;
   saved: boolean;
   onToggleSaved: () => void;
@@ -82,7 +102,7 @@ export function ResearchAnswer({
     const key = `${turnId}:${attempt}`;
     let job = inflight.get(key);
     if (!job) {
-      job = askChat(query, { continueFrom });
+      job = askChat(query, { continueFrom, books, mode: deep ? "deep" : "quick" });
       inflight.set(key, job);
     }
     job
@@ -97,7 +117,10 @@ export function ResearchAnswer({
         if (!alive) return;
         const status = (e as { status?: number }).status;
         if (status === 401 || status === 403) setFailure({ kind: "signin" });
-        else if (isQuotaExhausted(e)) {
+        else if (isDeepQuotaExhausted(e)) {
+          const detail = (e as { data?: { detail?: string } }).data?.detail;
+          setFailure({ kind: "deep_quota", detail: detail ?? "Today’s detailed answers are used up." });
+        } else if (isQuotaExhausted(e)) {
           const detail = (e as { data?: { detail?: string } }).data?.detail;
           setFailure({ kind: "quota", detail: detail ?? "You have asked all of today’s questions." });
         } else if (isAnswerServiceDown(e)) setFailure({ kind: "down" });
@@ -123,15 +146,38 @@ export function ResearchAnswer({
   if (failure) return <FailureCard failure={failure} onRetry={() => setAttempt((n) => n + 1)} onAsk={onAsk} query={query} />;
 
   if (!answer) {
-    return <Thinking>Reading the passages that answer this</Thinking>;
+    return (
+      <Thinking>
+        {deep ? "Reading more closely for a fuller answer" : "Reading the passages that answer this"}
+      </Thinking>
+    );
   }
 
   const cites = answer.citations;
-  const books = new Set(cites.map((c) => c.book).filter(Boolean)).size;
+  const citedBooks = new Set(cites.map((c) => c.book).filter(Boolean)).size;
   const text = answerAsText(query, answer.answer, cites);
+  const scopeNames = (answer.books ?? books ?? []).map(
+    (code) => shelf?.find((b) => b.code === code)?.title_hi ?? code
+  );
+  const deepLeft = quota?.capped ? (quota.deep_remaining ?? null) : null;
 
   return (
     <div className="flex flex-col gap-5">
+      {(answer.mode === "deep" || deep) && (
+        <p className="text-sm font-semibold" style={{ color: "var(--color-accent-deep)" }}>
+          Detailed answer
+        </p>
+      )}
+
+      {scopeNames.length > 0 && (
+        <p className="text-sm text-ink-soft">
+          Answered only from{" "}
+          <span lang="hi" className="hi-note font-semibold text-ink">
+            {scopeNames.join(", ")}
+          </span>
+        </p>
+      )}
+
       {answer.rewritten_query && (
         <p className="text-sm text-ink-soft">
           Answered as: <span className="text-ink">{answer.rewritten_query}</span>
@@ -151,7 +197,7 @@ export function ResearchAnswer({
             ✦
           </span>
           Read {cites.length} {cites.length === 1 ? "passage" : "passages"}
-          {books > 1 && ` from ${books} books`}
+          {citedBooks > 1 && ` from ${citedBooks} books`}
         </p>
       )}
 
@@ -183,6 +229,35 @@ export function ResearchAnswer({
             : "Assembled from cited passages only. Where the books differ, both readings are shown — this is not a prabodhak’s interpretation."}
         </p>
       </div>
+
+      {/* Deep is offered after an answer, never chosen up front: the quick one
+          is usually enough, and the fuller one costs 15-20x as much. Not for
+          "not found" — a closer reading of the same passages cannot find what
+          they do not say. */}
+      {onDeepen && answer.status === "ok" && (
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={onDeepen}
+            disabled={deepLeft === 0}
+            className="flex min-h-12 items-center justify-center gap-2 rounded-control border px-4 text-title font-semibold disabled:opacity-50"
+            style={{
+              borderColor: "color-mix(in srgb, var(--color-accent) 40%, transparent)",
+              background: "color-mix(in srgb, var(--color-accent) 10%, var(--color-card))",
+              color: "var(--color-accent-deep)",
+            }}
+          >
+            <span aria-hidden>✦</span> Go deeper
+          </button>
+          <p className="text-center text-xs text-ink-soft">
+            {deepLeft === 0
+              ? "Today’s detailed answers are used up"
+              : `A fuller answer from a closer reading${
+                  deepLeft !== null ? ` · ${deepLeft} left today` : ""
+                }`}
+          </p>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <button
@@ -361,7 +436,7 @@ function FailureCard({
         <p className="font-semibold">Research needs you to be signed in</p>
         <p className="mt-1 text-sm text-ink-soft">
           Each answer is written from the books for you, and there is a daily limit per
-          reader. Paribhasha, Book search and Navigate work without signing in.
+          reader. Paribhasha and Navigate work without signing in.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
@@ -373,6 +448,12 @@ function FailureCard({
           </Link>
           <SuggestionChip onClick={() => onAsk(query, "books")}>Search the books instead</SuggestionChip>
         </div>
+      </>
+    ) : failure.kind === "deep_quota" ? (
+      <>
+        <p className="font-semibold">Today’s detailed answers are used up</p>
+        <p className="mt-1 text-sm text-ink-soft">{failure.detail}</p>
+        <p className="mt-1 text-sm text-ink-soft">The answer above still stands, and you can keep asking.</p>
       </>
     ) : failure.kind === "quota" ? (
       <>

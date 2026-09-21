@@ -523,6 +523,7 @@ change needed no client edit.
 |---|---|
 | `q` **(required)** | Devanagari, Hinglish or English; 2+ characters |
 | `book` | restrict to one book code, e.g. `MVD` |
+| `books` | restrict to several book codes in **one** search, comma-separated, e.g. `MVD,JVEP`. Use this rather than one call per book: every call spends one semantic search from the caller's hourly budget |
 | `workspace` | narrow *within* the corpus. It cannot widen it — `workspace=translations` returns nothing |
 | `limit` | max hits — default 25, max 50 |
 | `raw=1` | search exactly as typed; skip the Devanagari rewrite |
@@ -639,6 +640,36 @@ session, no IP (`SearchQueryLog`: query, rewrite, mode, result count,
 duration). What a reader types into a book search is corpus vocabulary, not
 personal data. Zero-result rows are the useful ones: each is either a gap in
 the corpus or a word retrieval does not understand yet.
+
+### 9.2 Research (MD Chat) — `/api/v1/chat/`
+
+Signed-in only (`X-Session-Token`). One grounded answer per call, with
+verified citations.
+
+`POST` body:
+
+| Field | Meaning |
+|---|---|
+| `query` **(required)** | the question, up to 500 characters |
+| `mode` | `quick` (default) or `deep`: a larger model plus a rerank step, roughly 15–20× the cost of quick. Offer it as "Go deeper" on an answer that already exists, not as an up-front choice |
+| `continue_from` | id of the answer this follows up on; omit to start a fresh conversation |
+| `books` | list of book codes to answer from, e.g. `["MVD","JVEP"]`; omit or `[]` for every book. Part of the answer-cache identity, so a scoped answer is never served for a different scope |
+
+Each answer carries `mode` and `books` back. Every response (and `GET`)
+carries the reader's quota:
+
+```json
+"quota": {"limit": 30, "remaining": 27, "deep_limit": 5, "deep_remaining": 4, "capped": true}
+```
+
+- 30 questions a day; up to 5 of them may be `deep`. `deep_remaining` never
+  exceeds `remaining`. Managers are uncapped (all four values `null`).
+- **Answers served from the cache are free**: a question already answered with
+  the same wording, scope and mode does not count against the day.
+- `429` with `code: "daily_limit"` = the day is used up; `code: "deep_limit"`
+  = only deep is used up, and a quick answer still works. `detail` is the
+  reader-facing sentence (Hindi + English); show it as sent.
+- `503` = the answer service is down; the question was not counted.
 
 ---
 
