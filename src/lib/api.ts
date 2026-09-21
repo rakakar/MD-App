@@ -34,6 +34,7 @@ import type {
   ParibhashaWord,
   SearchResponse,
   SearchResult,
+  SharedAnswer,
   ShortClip,
   SutraOfTheDay,
   Topic,
@@ -599,6 +600,21 @@ export async function getParibhasha(
 export async function getParibhashaWord(id: number): Promise<ParibhashaWord | null> {
   try {
     return await apiFetch<ParibhashaWord>(`paribhasha/${id}/`);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
+}
+
+/**
+ * A shared answer, for anyone with the link (contract §9.3). A stored answer
+ * never changes, so it is cached for a day; a manager taking a link down is
+ * the only change, and a day is an acceptable lag for that.
+ */
+export async function getSharedAnswer(code: string): Promise<SharedAnswer | null> {
+  if (!/^[a-z0-9]{4,12}$/.test(code)) return null;
+  try {
+    return await apiFetch<SharedAnswer>(`shared/${code}/`, { revalidate: 86400 });
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) return null;
     throw e;

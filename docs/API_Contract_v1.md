@@ -690,6 +690,21 @@ Every response (and `GET`) carries the reader's quota:
   reader-facing sentence (Hindi + English); show it as sent.
 - `503` = the answer service is down; the question was not counted.
 
+### 9.3 Shared answers — `/api/v1/chat/{id}/share/` and `/api/v1/shared/{code}/`
+
+A reader can make one of their own Research or Deep research answers public.
+
+- `POST chat/{id}/share/` (signed in, own answer, `status: "ok"` only) →
+  `{"code": "k7x2p9ab"}`. Idempotent: sharing again returns the same code.
+- `GET shared/{code}/` — **no login**. The answer as the asker saw it:
+  `query, rewritten_query, status, mode, books, plan, answer, citations,
+  asked_at, code, shared_at`. Never who asked. `404` for an unknown code or
+  one a manager has taken down (`share_hidden` in dj-admin).
+
+Links never expire. The FE page is `/a/{code}`: readable without an account,
+not indexed by search engines for now (one switch when answer quality has
+been measured), with Save as PDF and "Ask your own question".
+
 ---
 
 ## 10. Workspaces

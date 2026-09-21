@@ -68,6 +68,13 @@ export async function getChatHistory(cursor?: string): Promise<{
   return authedFetch(url.toString());
 }
 
+/**
+ * Make one of the reader's own answers public (contract §9.3). The same code
+ * every time, so a link already sent keeps working; the page is `/a/{code}`.
+ */
+export const shareChatAnswer = (id: number): Promise<{ code: string }> =>
+  authedFetch(chatUrl(`${id}/share/`), { method: "POST" });
+
 /** Upsert — a reader changing their mind replaces the verdict. */
 export const rateChatAnswer = (
   id: number,

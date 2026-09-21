@@ -45,6 +45,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   // The Assistant draws its own app bar — the comps' tile, title and
   // conversation button — and keeps the tab bar, which its composer stands on.
   const ownHeader = pathname === "/assistant" || pathname.startsWith("/assistant/");
+  // A shared answer is a deliberate arrival, like a shared passage: the tour
+  // of the app waits for the next ordinary screen.
+  const sharedLink = pathname.startsWith("/a/");
 
   return (
     // Outermost, because the theme is the one thing every screen reads —
@@ -91,7 +94,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               covering either with an explanation of the app is answering a
               question nobody asked. The deck is still owed, and it appears on
               the next ordinary screen. */}
-          {!bare && <FirstRunGate />}
+          {!bare && !sharedLink && <FirstRunGate />}
           {/* Outside `bare` so a notification arriving mid-chapter is still
               seen — it is the reader's own opt-in, not app chrome. */}
           <PushProvider />

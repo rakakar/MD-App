@@ -1771,3 +1771,24 @@ html[data-first-run] body > :not(.launch) {
     animation-duration: 200ms;
   }
 }
+
+
+/* Save as PDF from a shared answer (/a/{code}) is the browser's own print.
+   Only that page is affected — `:has(.print-page)` — and on it the app's
+   chrome stays off the paper: the header and sidebar come before <main>,
+   the tab bar, player and banners after it. */
+@media print {
+  body:has(.print-page) header,
+  body:has(.print-page) aside,
+  body:has(.print-page) nav,
+  body:has(.print-page) main ~ * {
+    display: none !important;
+  }
+  body:has(.print-page) main {
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+  body:has(.print-page) {
+    background: #fff !important;
+  }
+}

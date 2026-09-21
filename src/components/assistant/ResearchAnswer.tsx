@@ -8,7 +8,13 @@ import { ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
 import { ctaPrimary } from "@/components/ui";
 import { answerAsText, parseAnswer, type Run } from "@/lib/assistant/answer";
 import { glossaryWordsIn } from "@/lib/assistant/related";
-import { askChat, isAnswerServiceDown, isDeepQuotaExhausted, isQuotaExhausted } from "@/lib/chat";
+import {
+  askChat,
+  isAnswerServiceDown,
+  isDeepQuotaExhausted,
+  isQuotaExhausted,
+  shareChatAnswer,
+} from "@/lib/chat";
 import { parseRef } from "@/lib/refs";
 import type { BookSummary, ChatAnswer, ChatCitation, ChatQuota, ParibhashaWord } from "@/lib/types";
 import { WORKSPACES } from "@/lib/workspaceConfig";
@@ -54,6 +60,8 @@ export function ResearchAnswer({
   shelf,
   quota,
   onDeepen,
+  shareUrl,
+  readOnly = false,
   dictionary,
   saved,
   onToggleSaved,
@@ -77,6 +85,10 @@ export function ResearchAnswer({
   quota?: ChatQuota | null;
   /** ask this same question again, deeper — absent once it has been */
   onDeepen?: () => void;
+  /** the public link (a path is fine), when this answer is shown from one */
+  shareUrl?: string;
+  /** a shared answer: nothing to save to this reader's Journey */
+  readOnly?: boolean;
   dictionary: ParibhashaWord[] | null;
   saved: boolean;
   onToggleSaved: () => void;
@@ -90,6 +102,7 @@ export function ResearchAnswer({
   const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState<"idle" | "working" | "copied">("idle");
 
   useEffect(() => {
     if (answer || loading) return;
@@ -164,6 +177,34 @@ export function ResearchAnswer({
   const readAs = answer.plan?.queries[0] && /[A-Za-z]/.test(query) ? answer.plan.queries[0] : null;
   const parts = answer.plan?.queries.slice(1) ?? [];
   const text = answerAsText(query, answer.answer, cites);
+
+  /**
+   * Share as a link (contract §9.3): anyone can open it, no account needed,
+   * and it shows the answer as it is here — tables, sources you can open.
+   * The link is made on the first share and is the same ever after. If it
+   * cannot be made (offline, an answer from before sharing existed), the
+   * answer goes out as text instead, as it always used to.
+   */
+  const share = async () => {
+    let url = shareUrl?.startsWith("/") ? `${window.location.origin}${shareUrl}` : shareUrl;
+    if (!url) {
+      setShared("working");
+      try {
+        const { code } = await shareChatAnswer(answer.id);
+        url = `${window.location.origin}/a/${code}`;
+      } catch {
+        url = undefined;
+      }
+    }
+    if (navigator.share) {
+      await navigator.share(url ? { title: query, url } : { title: query, text }).catch(() => {});
+      setShared("idle");
+    } else {
+      await navigator.clipboard?.writeText(url ?? text).catch(() => {});
+      setShared("copied");
+      setTimeout(() => setShared("idle"), 1800);
+    }
+  };
   const scopeNames = (answer.books ?? books ?? []).map(
     (code) => shelf?.find((b) => b.code === code)?.title_hi ?? code
   );
@@ -251,8 +292,8 @@ export function ResearchAnswer({
           ) : b.kind === "table" ? (
             // Its own scroll: a comparison is wider than a phone, and the
             // page itself must never scroll sideways.
-            <div key={i} className="-mx-4 overflow-x-auto px-4">
-              <table className="w-full min-w-[32rem] border-collapse text-base leading-snug">
+            <div key={i} className="-mx-4 overflow-x-auto px-4 print:mx-0 print:overflow-visible print:px-0">
+              <table className="w-full min-w-[32rem] border-collapse text-base leading-snug print:min-w-0 print:text-sm">
                 {b.head.length > 0 && (
                   <thead>
                     <tr>
@@ -303,7 +344,7 @@ export function ResearchAnswer({
           own and reads three times the passages, so it finds what one search
           missed, and a deep answer that finds nothing does not use up one. */}
       {onDeepen && answer.status !== "error" && (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 print:hidden">
           <button
             type="button"
             onClick={onDeepen}
@@ -331,7 +372,8 @@ export function ResearchAnswer({
         </div>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 print:hidden">
+        {!readOnly && (
         <button
           type="button"
           aria-pressed={saved}
@@ -343,6 +385,7 @@ export function ResearchAnswer({
           </span>
           {saved ? "Saved to Journey" : "Save to Journey"}
         </button>
+        )}
         <button
           type="button"
           aria-label={copied ? "Copied" : "Copy answer"}
@@ -358,14 +401,21 @@ export function ResearchAnswer({
         </button>
         <button
           type="button"
-          aria-label="Share answer"
-          onClick={() => {
-            if (navigator.share) void navigator.share({ title: query, text }).catch(() => {});
-            else void navigator.clipboard?.writeText(text);
-          }}
-          className="flex h-12 w-14 items-center justify-center rounded-control border border-rule bg-card"
+          aria-label={shared === "copied" ? "Link copied" : "Share answer as a link"}
+          disabled={shared === "working"}
+          onClick={() => void share()}
+          className={`flex h-12 items-center justify-center gap-2 rounded-control border border-rule bg-card ${
+            readOnly ? "flex-1 px-4 text-title font-semibold" : "w-14"
+          } ${shared === "copied" && !readOnly ? "w-auto px-3" : ""}`}
         >
-          <ShareIcon className="h-5 w-5" />
+          {shared === "copied" ? (
+            <span className="text-xs font-semibold">Link copied</span>
+          ) : (
+            <>
+              <ShareIcon className="h-5 w-5" />
+              {readOnly && "Share"}
+            </>
+          )}
         </button>
       </div>
 
@@ -406,7 +456,7 @@ export function ResearchAnswer({
       )}
 
       {next.length > 0 && (
-        <section className="flex flex-col gap-3">
+        <section className="flex flex-col gap-3 print:hidden">
           <Eyebrow>Ask next</Eyebrow>
           <div className="flex flex-wrap gap-2">
             <SuggestionChip tone="tint" onClick={() => onAsk(next[0].hindi, "books")}>

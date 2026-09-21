@@ -853,6 +853,12 @@ export interface ChatAnswer {
   feedback: ChatFeedback | null;
 }
 
+/** A shared answer (contract §9.3): the answer, never who asked. */
+export interface SharedAnswer extends Omit<ChatAnswer, "id" | "feedback"> {
+  code: string;
+  shared_at: string;
+}
+
 export interface ChatSession {
   quota: ChatQuota;
   modes: ("quick" | "deep")[];
