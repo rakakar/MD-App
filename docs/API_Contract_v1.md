@@ -676,8 +676,13 @@ Every response (and `GET`) carries the reader's quota:
 ```
 
 - 30 questions a day; up to 5 of them may be `deep`. `deep_remaining` never
-  exceeds `remaining`. A deep answer that comes back `not_found` or `error` does
-  not use up one of the 5. Managers are uncapped (all four values `null`).
+  exceeds `remaining`. Only answers that answered count: one that comes back
+  `not_found` or `error` uses up nothing, quick or deep — so offer Deep
+  research after a `not_found` quick answer too; it searches each part of the
+  question separately and often finds what one search missed. Managers are
+  uncapped (all four values `null`).
+- A request about form ("in a table", "in simple words", "scientifically") is
+  never a reason for `not_found`; the answer follows it from what the books say.
 - **Answers served from the cache are free**: a question already answered with
   the same wording, scope and mode does not count against the day.
 - `429` with `code: "daily_limit"` = the day is used up; `code: "deep_limit"`

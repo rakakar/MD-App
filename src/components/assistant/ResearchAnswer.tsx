@@ -290,16 +290,19 @@ export function ResearchAnswer({
         <InfoIcon className="mt-0.5 h-5 w-5 shrink-0" />
         <p>
           {answer.status === "not_found"
-            ? "The books don’t answer this directly, so nothing has been assembled. Try Book search for the words themselves."
+            ? deep || answer.mode === "deep"
+              ? "The books don’t answer this directly, so nothing has been assembled. Try Book search for the words themselves."
+              : "The passages this search found don’t answer it, so nothing has been assembled. Deep research below searches each part of the question on its own; Book search finds the words themselves."
             : "Assembled from cited passages only. Where the books differ, both readings are shown — this is not a prabodhak’s interpretation."}
         </p>
       </div>
 
       {/* Deep research is offered after an answer, never chosen up front: the
           quick one is usually enough, and deep costs about ten times as much.
-          Not after "not found" either — it is a closer reading of the same
-          books, not a wider one. */}
-      {onDeepen && answer.status === "ok" && (
+          After "not found" too — it searches each part of the question on its
+          own and reads three times the passages, so it finds what one search
+          missed, and a deep answer that finds nothing does not use up one. */}
+      {onDeepen && answer.status !== "error" && (
         <div className="flex flex-col gap-1.5">
           <button
             type="button"
@@ -312,14 +315,18 @@ export function ResearchAnswer({
               color: "var(--color-accent-deep)",
             }}
           >
-            <span aria-hidden>✦</span> Deep research
+            <span aria-hidden>✦</span> {answer.status === "not_found" ? "Try Deep research" : "Deep research"}
           </button>
           <p className="text-center text-xs text-ink-soft">
             {deepLeft === 0
               ? "Today’s deep research is used up"
-              : `Definitions, each part of the question searched, a fuller answer · about a minute${
-                  deepLeft !== null ? ` · ${deepLeft} left today` : ""
-                }`}
+              : answer.status === "not_found"
+                ? `Searches each part of your question on its own and reads more passages · about a minute · not counted if it finds nothing${
+                    deepLeft !== null ? ` · ${deepLeft} left today` : ""
+                  }`
+                : `Definitions, each part of the question searched, a fuller answer · about a minute${
+                    deepLeft !== null ? ` · ${deepLeft} left today` : ""
+                  }`}
           </p>
         </div>
       )}
