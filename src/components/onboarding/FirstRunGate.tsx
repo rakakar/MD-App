@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import { FirstRunFlow } from "./FirstRunFlow";
 import { SwitcherHint } from "./SwitcherHint";
@@ -175,6 +175,17 @@ export function FirstRunGate() {
   // Counted from the moment the mark becomes owed — the tap that closed the
   // deck, or the frame a reader who left before it arrived comes back.
   const settled = useSettled(hintOwed);
+
+  // Releases the page the pre-paint script held back (see `data-first-run` in
+  // app/layout.tsx). A layout effect, so the frame the deck leaves is the frame
+  // the app appears — a plain effect would paint one blank frame between them.
+  // `READ()` rather than `stored`: the hydration pass renders with the server
+  // snapshot, which says "seen" for everyone and would release it too early.
+  useLayoutEffect(() => {
+    if (READ().deck || done.deck) {
+      document.documentElement.removeAttribute("data-first-run");
+    }
+  }, [done.deck]);
 
   if (!deckSeen) {
     return (

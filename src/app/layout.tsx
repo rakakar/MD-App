@@ -150,6 +150,13 @@ export const viewport: Viewport = {
  * The route test must match READER_ROUTE **and** PDF_READER_ROUTE in
  * lib/routes.ts — `ownsViewport` is the union, and `data-reading` is what
  * stops iOS rubber-banding to white behind either reader.
+ *
+ * `data-first-run` is the same fix for the launch screen. The deck can only be
+ * decided on the client, so without it a first visit painted the whole home
+ * page and then covered it once JS arrived — a blink on a laptop, a second or
+ * more on a phone. The CSS in globals.css holds the page back while it is set,
+ * and FirstRunGate clears it. The conditions must match `bare` in AppShell and
+ * `REPLAY`/`onboardingSeen` in FirstRunGate, or the page stays hidden.
  */
 const THEME_SCRIPT = `(function(){try{
 var p=JSON.parse(localStorage.getItem("md.prefs.v1")||"{}");
@@ -173,6 +180,8 @@ if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale))
 if(p.boldText)d.setAttribute("data-bold","1");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
+var bare=reading||/^\\/(login|signup)$/.test(location.pathname);
+if(!bare&&(!p.onboardingSeen||new URLSearchParams(location.search).has("firstrun")))d.setAttribute("data-first-run","1");
 }catch(e){}})()`;
 
 export default function RootLayout({

@@ -1360,6 +1360,26 @@ html[data-reading="1"] body {
   --launch-rise: 1.125rem;
 }
 
+/* Before hydration on a first visit, the page under the launch layer is held
+   back so the reader never sees the home page blink on and then get covered.
+   Bare ground is exactly the launch screen's own first frame — the artwork
+   fades in from it — so the hand-over is invisible. Set by the pre-paint
+   script in layout.tsx, cleared by FirstRunGate.
+
+   The 8s reveal is a floor, not the design: if the JS never arrives at all,
+   the server-rendered page still becomes readable instead of staying blank. */
+html[data-first-run] body > :not(.launch) {
+  animation: first-run-hold 0s linear 8s both;
+}
+@keyframes first-run-hold {
+  from {
+    visibility: hidden;
+  }
+  to {
+    visibility: visible;
+  }
+}
+
 /* Each line of the identity block, and the founder's card: up, in, and out of
    blur. `--launch-at` is the only thing a call site sets. */
 .launch-in {
