@@ -817,6 +817,10 @@ export interface ChatCitation {
   canonical_ref: string;
   book: string | null;
   chapter: string | null;
+  /** "definition" = an official definition from परिभाषा संहिता, opened by
+   *  `word_id`; its ref reads "परिभाषा: <word>". Absent on older answers. */
+  kind?: "passage" | "definition";
+  word_id?: number;
 }
 
 export interface ChatFeedback {
@@ -841,6 +845,9 @@ export interface ChatAnswer {
   mode?: "quick" | "deep";
   /** book codes the answer was limited to; empty means every book */
   books?: string[];
+  /** Deep research only: the key terms, and the searches the question was
+   *  split into (the first is the whole question, in Hindi) */
+  plan?: { terms: string[]; queries: string[] };
   answer: string;
   citations: ChatCitation[];
   feedback: ChatFeedback | null;

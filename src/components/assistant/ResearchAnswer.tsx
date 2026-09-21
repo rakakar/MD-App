@@ -69,11 +69,11 @@ export function ResearchAnswer({
   continueFrom?: number;
   /** answer only from these book codes; absent means every book */
   books?: string[];
-  /** the fuller answer: the large model plus a rerank, from "Go deeper" */
+  /** Deep research: planned, every part searched, definitions, the large model */
   deep?: boolean;
   /** the shelf, to name the chosen books */
   shelf?: BookSummary[] | null;
-  /** the reader's allowance as last reported, for the "Go deeper" count */
+  /** the reader's allowance as last reported, for the "Deep research" count */
   quota?: ChatQuota | null;
   /** ask this same question again, deeper — absent once it has been */
   onDeepen?: () => void;
@@ -119,7 +119,7 @@ export function ResearchAnswer({
         if (status === 401 || status === 403) setFailure({ kind: "signin" });
         else if (isDeepQuotaExhausted(e)) {
           const detail = (e as { data?: { detail?: string } }).data?.detail;
-          setFailure({ kind: "deep_quota", detail: detail ?? "Today’s detailed answers are used up." });
+          setFailure({ kind: "deep_quota", detail: detail ?? "Today’s deep research is used up." });
         } else if (isQuotaExhausted(e)) {
           const detail = (e as { data?: { detail?: string } }).data?.detail;
           setFailure({ kind: "quota", detail: detail ?? "You have asked all of today’s questions." });
@@ -148,13 +148,21 @@ export function ResearchAnswer({
   if (!answer) {
     return (
       <Thinking>
-        {deep ? "Reading more closely for a fuller answer" : "Reading the passages that answer this"}
+        {deep
+          ? "Deep research takes about a minute — looking up the definitions, searching each part of your question, then writing"
+          : "Reading the passages that answer this"}
       </Thinking>
     );
   }
 
   const cites = answer.citations;
-  const citedBooks = new Set(cites.map((c) => c.book).filter(Boolean)).size;
+  const passages = cites.filter((c) => c.kind !== "definition");
+  const definitions = cites.length - passages.length;
+  const citedBooks = new Set(passages.map((c) => c.book).filter(Boolean)).size;
+  // How the question was read: the first planned query is the whole question
+  // in Hindi, worth showing only when the reader did not write it that way.
+  const readAs = answer.plan?.queries[0] && /[A-Za-z]/.test(query) ? answer.plan.queries[0] : null;
+  const parts = answer.plan?.queries.slice(1) ?? [];
   const text = answerAsText(query, answer.answer, cites);
   const scopeNames = (answer.books ?? books ?? []).map(
     (code) => shelf?.find((b) => b.code === code)?.title_hi ?? code
@@ -164,9 +172,27 @@ export function ResearchAnswer({
   return (
     <div className="flex flex-col gap-5">
       {(answer.mode === "deep" || deep) && (
-        <p className="text-sm font-semibold" style={{ color: "var(--color-accent-deep)" }}>
-          Detailed answer
-        </p>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-semibold" style={{ color: "var(--color-accent-deep)" }}>
+            Deep research
+          </p>
+          {readAs && (
+            <p className="text-sm text-ink-soft">
+              Read as{" "}
+              <span lang="hi" className="hi-note text-ink">
+                {readAs}
+              </span>
+            </p>
+          )}
+          {parts.length > 0 && (
+            <p className="text-sm text-ink-soft">
+              Searched in {parts.length} parts:{" "}
+              <span lang="hi" className="hi-note text-ink">
+                {parts.join(" · ")}
+              </span>
+            </p>
+          )}
+        </div>
       )}
 
       {scopeNames.length > 0 && (
@@ -196,22 +222,61 @@ export function ResearchAnswer({
           >
             ✦
           </span>
-          Read {cites.length} {cites.length === 1 ? "passage" : "passages"}
-          {citedBooks > 1 && ` from ${citedBooks} books`}
+          {passages.length > 0 &&
+            `Read ${passages.length} ${passages.length === 1 ? "passage" : "passages"}${
+              citedBooks > 1 ? ` from ${citedBooks} books` : ""
+            }`}
+          {passages.length > 0 && definitions > 0 && " · "}
+          {definitions > 0 && `${definitions} ${definitions === 1 ? "definition" : "definitions"}`}
         </p>
       )}
 
       <div className="flex flex-col gap-4 text-lg leading-relaxed">
         {blocks.map((b, i) =>
           b.kind === "item" ? (
-            <p key={i} className="flex gap-2">
+            <p key={i} className={`flex gap-2 ${b.depth ? "pl-6" : ""}`}>
               <span aria-hidden className="text-ink-soft">
-                •
+                {b.depth ? "◦" : "•"}
               </span>
               <span>
                 <Runs runs={b.runs} cites={cites} onOpen={setOpen} />
               </span>
             </p>
+          ) : b.kind === "heading" ? (
+            <h3 key={i} className="mt-2 text-title font-semibold leading-snug">
+              <Runs runs={b.runs} cites={cites} onOpen={setOpen} />
+            </h3>
+          ) : b.kind === "rule" ? (
+            <hr key={i} className="border-rule" />
+          ) : b.kind === "table" ? (
+            // Its own scroll: a comparison is wider than a phone, and the
+            // page itself must never scroll sideways.
+            <div key={i} className="-mx-4 overflow-x-auto px-4">
+              <table className="w-full min-w-[32rem] border-collapse text-base leading-snug">
+                {b.head.length > 0 && (
+                  <thead>
+                    <tr>
+                      {b.head.map((c, j) => (
+                        <th key={j} className="border border-rule bg-inset p-2 text-left align-top font-semibold">
+                          <Runs runs={c} cites={cites} onOpen={setOpen} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                )}
+                <tbody>
+                  {b.rows.map((row, r) => (
+                    <tr key={r}>
+                      {row.map((c, j) => (
+                        <td key={j} className="border border-rule p-2 align-top">
+                          <Runs runs={c} cites={cites} onOpen={setOpen} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <p key={i}>
               <Runs runs={b.runs} cites={cites} onOpen={setOpen} />
@@ -230,10 +295,10 @@ export function ResearchAnswer({
         </p>
       </div>
 
-      {/* Deep is offered after an answer, never chosen up front: the quick one
-          is usually enough, and the fuller one costs 15-20x as much. Not for
-          "not found" — a closer reading of the same passages cannot find what
-          they do not say. */}
+      {/* Deep research is offered after an answer, never chosen up front: the
+          quick one is usually enough, and deep costs about ten times as much.
+          Not after "not found" either — it is a closer reading of the same
+          books, not a wider one. */}
       {onDeepen && answer.status === "ok" && (
         <div className="flex flex-col gap-1.5">
           <button
@@ -247,12 +312,12 @@ export function ResearchAnswer({
               color: "var(--color-accent-deep)",
             }}
           >
-            <span aria-hidden>✦</span> Go deeper
+            <span aria-hidden>✦</span> Deep research
           </button>
           <p className="text-center text-xs text-ink-soft">
             {deepLeft === 0
-              ? "Today’s detailed answers are used up"
-              : `A fuller answer from a closer reading${
+              ? "Today’s deep research is used up"
+              : `Definitions, each part of the question searched, a fuller answer · about a minute${
                   deepLeft !== null ? ` · ${deepLeft} left today` : ""
                 }`}
           </p>
@@ -310,11 +375,19 @@ export function ResearchAnswer({
                 >
                   <CiteBadge n={i + 1} />
                   <span className="min-w-0 flex-1 truncate">
-                    <span lang="hi" className="hi-note font-medium">
-                      {c.book ?? parseRef(c.canonical_ref)?.code}
-                    </span>
-                    {parseRef(c.canonical_ref) && (
-                      <span className="text-ink-soft"> · p. {parseRef(c.canonical_ref)!.page}</span>
+                    {c.kind === "definition" ? (
+                      <span lang="hi" className="hi-note font-medium">
+                        परिभाषा · {c.canonical_ref.replace(/^परिभाषा:\s*/, "")}
+                      </span>
+                    ) : (
+                      <>
+                        <span lang="hi" className="hi-note font-medium">
+                          {c.book ?? parseRef(c.canonical_ref)?.code}
+                        </span>
+                        {parseRef(c.canonical_ref) && (
+                          <span className="text-ink-soft"> · p. {parseRef(c.canonical_ref)!.page}</span>
+                        )}
+                      </>
                     )}
                   </span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
@@ -451,7 +524,7 @@ function FailureCard({
       </>
     ) : failure.kind === "deep_quota" ? (
       <>
-        <p className="font-semibold">Today’s detailed answers are used up</p>
+        <p className="font-semibold">Today’s deep research is used up</p>
         <p className="mt-1 text-sm text-ink-soft">{failure.detail}</p>
         <p className="mt-1 text-sm text-ink-soft">The answer above still stands, and you can keep asking.</p>
       </>

@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { BookmarkIcon } from "@/components/shell/icons";
 import { Sheet } from "@/components/ui";
-import { resolvePara } from "@/lib/api";
+import { getParibhashaWord, resolvePara } from "@/lib/api";
 import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
-import type { ChatCitation, ParaResolution } from "@/lib/types";
+import type { ChatCitation, ParaResolution, ParibhashaWord } from "@/lib/types";
 import { WORKSPACES } from "@/lib/workspaceConfig";
 import { BookGlyph } from "./icons";
 
@@ -21,7 +21,89 @@ import { BookGlyph } from "./icons";
  * retrieved, so this lookup is expected to succeed; if it does not, the sheet
  * still offers the way into the reader.
  */
-export function CitationSheet({
+export function CitationSheet(props: {
+  citation: ChatCitation | null;
+  number: number;
+  onClose: () => void;
+}) {
+  return props.citation?.kind === "definition" ? <DefinitionSheet {...props} /> : <PassageSheet {...props} />;
+}
+
+/**
+ * A definition from परिभाषा संहिता, cited in the answer. Not a passage in a
+ * book, so there is no reader to open: the glossary entry is where it lives,
+ * and its page leads back here (`?from=assistant`).
+ */
+function DefinitionSheet({
+  citation,
+  number,
+  onClose,
+}: {
+  citation: ChatCitation | null;
+  number: number;
+  onClose: () => void;
+}) {
+  const id = citation?.word_id ?? null;
+  const [word, setWord] = useState<ParibhashaWord | null>(null);
+  const [failed, setFailed] = useState(false);
+  const headword = citation?.canonical_ref.replace(/^परिभाषा:\s*/, "") ?? "";
+
+  useEffect(() => {
+    if (id === null) return;
+    let alive = true;
+    setWord(null);
+    setFailed(false);
+    getParibhashaWord(id)
+      .then((w) => alive && (w ? setWord(w) : setFailed(true)))
+      .catch(() => alive && setFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
+  return (
+    <Sheet
+      open={citation !== null}
+      onClose={onClose}
+      title={`Source ${number}`}
+      subtitle="Official definition"
+      accent={WORKSPACES.originals.color}
+      footer={
+        id !== null ? (
+          <Link
+            href={`/paribhasha/${id}?from=assistant`}
+            className="flex min-h-12 items-center justify-center gap-2 rounded-control px-4 text-title font-semibold text-white"
+            style={{ background: "var(--ws-color)" }}
+          >
+            Open in Paribhasha
+          </Link>
+        ) : null
+      }
+    >
+      <div className="px-5 pt-4">
+        <p lang="hi" className="hi-note text-xl font-semibold">
+          {word?.hindi ?? headword}
+        </p>
+        <p lang="hi" className="hi-note mt-1 text-sm text-ink-soft">
+          परिभाषा संहिता · A. Nagraj
+        </p>
+        <div className="mt-4 rounded-card border border-rule bg-card p-4">
+          {!word && !failed && <p className="text-sm text-ink-soft">Opening the definition…</p>}
+          {failed && <p className="text-sm text-ink-soft">The definition could not be loaded here.</p>}
+          {word && (
+            <ol lang="hi" className="hi flex list-decimal flex-col gap-2 pl-5 text-lg leading-relaxed">
+              {word.definitions.map((d, i) => (
+                <li key={i}>{d}</li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+function PassageSheet({
   citation,
   number,
   onClose,

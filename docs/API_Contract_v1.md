@@ -651,19 +651,33 @@ verified citations.
 | Field | Meaning |
 |---|---|
 | `query` **(required)** | the question, up to 500 characters |
-| `mode` | `quick` (default) or `deep`: a larger model plus a rerank step, roughly 15–20× the cost of quick. Offer it as "Go deeper" on an answer that already exists, not as an up-front choice |
+| `mode` | `quick` (default) = **Research**, a few seconds. `deep` = **Deep research**, 30–60 seconds: the question is split into parts, each part searched, the glossary's definitions of its key terms added, and the answer written by the larger model — about 10× the cost of quick. Offer it as a "Deep research" button on an answer that already exists, not as an up-front choice |
 | `continue_from` | id of the answer this follows up on; omit to start a fresh conversation |
 | `books` | list of book codes to answer from, e.g. `["MVD","JVEP"]`; omit or `[]` for every book. Part of the answer-cache identity, so a scoped answer is never served for a different scope |
 
-Each answer carries `mode` and `books` back. Every response (and `GET`)
-carries the reader's quota:
+Each answer carries `mode` and `books` back. A `deep` answer also carries
+`plan: {terms: [...], queries: [...]}` — the key terms and the searches the
+question was split into (the first query is the whole question in Hindi) —
+worth showing, so a reader can see how their question was read.
+
+**Citations** carry `kind`: `"passage"` (a paragraph — open it with
+`paras/{canonical_ref}/`) or `"definition"` (an official definition from
+परिभाषा संहिता, with `word_id` — open `paribhasha/{word_id}/`; its
+`canonical_ref` reads `परिभाषा: <word>`). Definitions are added only when no
+`books` were chosen: "answered only from these books" is a promise.
+
+**Answers are Markdown and are shown as written**: headings (`#`–`####`),
+`- ` bullets, `**bold**`, `---` rules, and tables. Render them; do not strip.
+
+Every response (and `GET`) carries the reader's quota:
 
 ```json
 "quota": {"limit": 30, "remaining": 27, "deep_limit": 5, "deep_remaining": 4, "capped": true}
 ```
 
 - 30 questions a day; up to 5 of them may be `deep`. `deep_remaining` never
-  exceeds `remaining`. Managers are uncapped (all four values `null`).
+  exceeds `remaining`. A deep answer that comes back `not_found` or `error` does
+  not use up one of the 5. Managers are uncapped (all four values `null`).
 - **Answers served from the cache are free**: a question already answered with
   the same wording, scope and mode does not count against the day.
 - `429` with `code: "daily_limit"` = the day is used up; `code: "deep_limit"`

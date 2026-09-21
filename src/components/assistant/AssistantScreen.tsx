@@ -222,7 +222,7 @@ export function AssistantScreen() {
     }
   }, [qParam, modeParam, cParam, dictionary, ask]);
 
-  /** "Go deeper": the same question again, as a new turn, at the deep level. */
+  /** "Deep research": the same question again, as a new turn, at the deep level. */
   const deepen = useCallback((of: Turn) => {
     const turn: Turn = {
       id: newId(),
@@ -379,7 +379,7 @@ export function AssistantScreen() {
             {quota?.capped && quota.remaining !== null && quota.limit !== null && (
               <p className="text-center text-sm text-ink-soft">
                 {quota.remaining} of {quota.limit} research questions left today
-                {quota.deep_remaining != null && ` · ${quota.deep_remaining} detailed`}
+                {quota.deep_remaining != null && ` · ${quota.deep_remaining} deep research`}
               </p>
             )}
           </div>
