@@ -841,6 +841,10 @@ export interface ChatAnswer {
   rewritten_query: string;
   /** "not_found" is an honest answer, not a failure — the books do not say. */
   status: "ok" | "not_found" | "error";
+  /** not_found only: the question is not one these books could answer at all
+   *  ("the capital of India") — Deep research is not offered for it.
+   *  Optional: older BE builds do not send it. */
+  off_topic?: boolean;
   /** "deep" = the fuller answer asked for with "Go deeper" */
   mode?: "quick" | "deep";
   /** book codes the answer was limited to; empty means every book */

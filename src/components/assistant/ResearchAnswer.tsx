@@ -331,7 +331,9 @@ export function ResearchAnswer({
         <InfoIcon className="mt-0.5 h-5 w-5 shrink-0" />
         <p>
           {answer.status === "not_found"
-            ? deep || answer.mode === "deep"
+            ? answer.off_topic
+              ? "This isn’t something the books of Madhyasth Darshan speak about, so it isn’t answered here."
+              : deep || answer.mode === "deep"
               ? "The books don’t answer this directly, so nothing has been assembled. Try Book search for the words themselves."
               : "The passages this search found don’t answer it, so nothing has been assembled. Deep research below searches each part of the question on its own; Book search finds the words themselves."
             : "Assembled from cited passages only. Where the books differ, both readings are shown — this is not a prabodhak’s interpretation."}
@@ -342,8 +344,10 @@ export function ResearchAnswer({
           quick one is usually enough, and deep costs about ten times as much.
           After "not found" too — it searches each part of the question on its
           own and reads three times the passages, so it finds what one search
-          missed, and a deep answer that finds nothing does not use up one. */}
-      {onDeepen && answer.status !== "error" && (
+          missed, and a deep answer that finds nothing does not use up one.
+          Not for a question the books could never answer ("the capital of
+          India"): searching harder cannot find what is not there. */}
+      {onDeepen && answer.status !== "error" && !answer.off_topic && (
         <div className="flex flex-col gap-1.5 print:hidden">
           <button
             type="button"
