@@ -141,3 +141,41 @@ export function ownsViewport(pathname: string | null | undefined): boolean {
     (!!pathname && (PDF_READER_ROUTE.test(pathname) || SHORTS_ROUTE.test(pathname)))
   );
 }
+
+/**
+ * Where a signed-in reader lands when there is nowhere to go back to.
+ *
+ * Originals, not My Journey. Signing in is not a request to be taken anywhere:
+ * the reader goes back to what they were doing, and when there is nothing to
+ * go back to they start where every reader starts — the primary workspace,
+ * from which the tour and the switcher lead on to the others. My Journey's own
+ * "Sign In to begin" still asks for `/me` by name, and gets it.
+ */
+export const SIGNED_IN_HOME = "/";
+
+/**
+ * A sign-in link that brings the reader back to `from` afterwards.
+ *
+ * `from` is a path (and optionally a query) inside the app. The auth screens
+ * are left out — returning to /login after logging in is a loop.
+ */
+export function signInHref(from?: string | null): string {
+  const back = safeReturnPath(from);
+  return back === SIGNED_IN_HOME ? "/login" : `/login?next=${encodeURIComponent(back)}`;
+}
+
+/**
+ * `next` from the query string, made safe to navigate to.
+ *
+ * Only a same-app path survives: it must start with one `/` — `//host` and
+ * `/\host` are other origins to a browser — and it must not be an auth screen.
+ * Anything else becomes SIGNED_IN_HOME, so a link that arrives with
+ * `?next=https://…` cannot use the sign-in form as a redirector.
+ */
+export function safeReturnPath(next: string | null | undefined): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    return SIGNED_IN_HOME;
+  }
+  if (/^\/(login|signup)(?=$|[/?#])/.test(next)) return SIGNED_IN_HOME;
+  return next;
+}

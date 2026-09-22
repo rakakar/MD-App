@@ -24,7 +24,7 @@ import {
 } from "@/lib/personal";
 import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
 import { citationText, paraAnchorId, parseRef } from "@/lib/refs";
-import { documentHref, documentTextHref } from "@/lib/routes";
+import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
 import {
   getListeningPosition,
   getPrefs,
@@ -1058,7 +1058,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         setPrefs({ syncNudgeShown: true });
         showToast({
           text: `${what} — saved on this device.`,
-          href: "/login",
+          href: signInHref(window.location.pathname),
           hrefLabel: "Sign in to sync",
         });
       } else {

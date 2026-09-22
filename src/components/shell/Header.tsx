@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -8,6 +9,7 @@ import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { ctaPrimaryBar } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
+import { signInHref } from "@/lib/routes";
 import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceConfig";
 import { DisplaySheet } from "./DisplaySheet";
 import { useWorkspace } from "./WorkspaceProvider";
@@ -324,6 +326,10 @@ function AvatarMenu() {
   const { open: openFeedback } = useFeedback();
   const [open, setOpen] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(false);
+  // Back here after signing in. The path only — reading the query would need
+  // `useSearchParams`, which opts every route under the shell into client
+  // rendering to serve one link.
+  const pathname = usePathname();
 
   if (loading) {
     return <div className="h-12 w-12 rounded-control bg-ink/5" aria-hidden />;
@@ -332,7 +338,7 @@ function AvatarMenu() {
   if (!user) {
     return (
       <Link
-        href="/login"
+        href={signInHref(pathname)}
         className={ctaPrimaryBar}
         style={{ background: "var(--ws-color)" }}
       >

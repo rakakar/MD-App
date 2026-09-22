@@ -9,6 +9,7 @@ import { ArrowLeftIcon, BrandMark, InfoIcon } from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
 import { googleLoginUrl, login, primeSession, signup } from "@/lib/me";
 import { LAUNCH } from "@/lib/onboarding";
+import { safeReturnPath } from "@/lib/routes";
 
 const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
 
@@ -52,11 +53,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [busy, setBusy] = useState(false);
   const keyboard = useKeyboardInset() > 0;
 
-  const next = search.get("next") ?? "/me";
-  // "Back to reading" goes back to what the reader was doing when they were
-  // asked to sign in — the `next` they were sent with — and home otherwise.
-  // `/me` is the default *destination*, not somewhere they came from.
-  const back = search.get("next") ?? "/";
+  // Back to what the reader was doing when they were asked to sign in, and
+  // Originals when there is nothing to go back to — see SIGNED_IN_HOME. The
+  // "Back to reading" pill and the post-sign-in landing are the same place.
+  const next = safeReturnPath(search.get("next"));
   const login_ = mode === "login";
   const ready = email.trim() !== "" && password !== "";
 
@@ -124,7 +124,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           />
 
           <Link
-            href={back}
+            href={next}
             className="absolute start-4 top-[calc(max(env(safe-area-inset-top),1rem)+0.5rem)] inline-flex min-h-11 items-center gap-2 rounded-full border border-rule bg-card/90 pe-4 ps-3.5 text-sm font-semibold text-ink-soft shadow-card backdrop-blur-sm transition-colors hover:bg-card"
           >
             <ArrowLeftIcon className="h-4 w-4 shrink-0" />
