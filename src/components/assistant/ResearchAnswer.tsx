@@ -309,7 +309,7 @@ export function ResearchAnswer({
                   {b.rows.map((row, r) => (
                     <tr key={r}>
                       {row.map((c, j) => (
-                        <td key={j} className="border border-rule p-2 align-top">
+                        <td key={j} className="whitespace-pre-line border border-rule p-2 align-top">
                           <Runs runs={c} cites={cites} onOpen={setOpen} />
                         </td>
                       ))}

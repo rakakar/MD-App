@@ -77,12 +77,14 @@ const TABLE_ROW = /^\s*\|.*\|\s*$/;
 const TABLE_DIVIDER = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
 
 function cells(line: string, citations: ChatCitation[]): Run[][] {
+  // A Markdown table row is one line, so "<br>" is how a model breaks a line
+  // inside a cell. It is drawn as that break, not shown as the tag.
   return line
     .trim()
     .replace(/^\|/, "")
     .replace(/\|$/, "")
     .split("|")
-    .map((c) => inline(c.trim(), citations));
+    .map((c) => inline(c.trim().replace(/\s*<br\s*\/?>\s*/gi, "\n"), citations));
 }
 
 /**
