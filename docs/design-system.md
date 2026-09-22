@@ -190,6 +190,22 @@ debugging pass:
   declaration — the class did nothing. The class comes *off* on the way out, which ends
   the animation and hands opacity back to the transition.
 
+## Sign in and Create account, 22 Sep 2026
+
+Two comps from the designer: resting (arriving from a book) and live with the keyboard up.
+Built in `components/auth/AuthForm.tsx`, which serves both `/login` and `/signup`. The band
+is the launch artwork washed back to `--color-surface`, and it collapses while the keyboard
+is up (`useKeyboardInset`, not `:focus-within`, so a desktop that has focus but no keyboard
+does not animate). Field focus and the band's name are `.auth-field` / `.auth-name` in
+`globals.css`.
+
+| Comp | Shipped | Reason |
+|---|---|---|
+| Placeholder text in a pale grey | `--color-ink-soft` | The pale grey is `--color-muted` territory, and muted is not text (2.89:1). |
+| "Write to us" as a link | A `mailto:` from `NEXT_PUBLIC_SUPPORT_EMAIL`; plain words while it is unset | The feedback sheet asks a signed-out reader to sign in first, which someone who has forgotten their password cannot do. **Open:** which inbox. |
+| Button and fields at a ~16px radius | `--radius-tile` (14px) | The nearest step on the ladder. CTAs elsewhere are `--radius-control` (8px); this one follows the comp and the fields beside it. |
+| Nothing drawn above `lg:` | The same column, capped at `max-w-md`, framed with the hero radius | Comps are phone-only; this keeps the desktop honest without inventing a layout. |
+
 ## The Assistant, 18 Sep 2026
 
 Ten screens (`design_docs/screens/assistant/`), replacing the v1 centre-slot Search. One

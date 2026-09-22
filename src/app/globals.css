@@ -1792,3 +1792,24 @@ html[data-first-run] body > :not(.launch) {
     background: #fff !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Sign in / Create account (designer's comps, 22 Sep 2026).
+
+   A focused field takes the workspace colour as light, not ink: a border mixed
+   halfway to the rule and a soft ring outside it. `--ws-color` rather than a
+   named token because the ring is the workspace's, like the launch halo.
+   --------------------------------------------------------------------------- */
+.auth-field {
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.auth-field:focus {
+  border-color: color-mix(in srgb, var(--ws-color) 55%, var(--color-rule));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ws-color) 14%, transparent);
+}
+/* The app's name across the band — Tiro, a step under the launch title. */
+.auth-name {
+  font-size: 1.375rem;
+  line-height: 1.35;
+}

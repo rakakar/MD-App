@@ -419,6 +419,16 @@ export function ArrowRightIcon({ className }: { className?: string }) {
   );
 }
 
+/** the way back out — the sign-in screen's "Back to reading" */
+export function ArrowLeftIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M19 12H6" />
+      <path d="m12 6-6 6 6 6" />
+    </Svg>
+  );
+}
+
 /**
  * A winding way with a mark on it — the journey's own path.
  *
