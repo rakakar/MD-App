@@ -1194,7 +1194,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     (n: number) => {
       setGotoOpen(false);
       // TOC start/end lookup is client-side (PRD §5); resolver is SSR-only
-      const target = book.chapters.find((c) => c.start_page <= n && c.end_page >= n);
+      const target = book.chapters.find(
+        (c) => c.start_page != null && c.end_page != null && c.start_page <= n && c.end_page >= n
+      );
       if (!target) {
         showToast({ text: `Page ${n} not found in this book.` });
         return;
@@ -1258,7 +1260,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const parsed = currentRef ? parseRef(currentRef) : null;
     const n = parsed ? Number(parsed.page) : NaN;
     if (Number.isSafeInteger(n) && n > 0) return n;
-    return book.chapters.find((c) => c.number === chapterNumber)?.start_page;
+    return book.chapters.find((c) => c.number === chapterNumber)?.start_page ?? undefined;
   })();
   const hasAudio = (chapter?.audio_renditions.length ?? 0) > 0;
   // Without a generated rendition we can still read aloud, but only if this

@@ -130,7 +130,7 @@ export function TocSheet({
             {ch.title_hi}
           </span>
           <span className="shrink-0 text-xs tabular-nums text-(--reader-ink-soft)">
-            {bookType === "print" ? `p. ${ch.start_page}` : ch.start_page}
+            {ch.start_page == null ? "" : bookType === "print" ? `p. ${ch.start_page}` : ch.start_page}
           </span>
         </button>
       </li>

@@ -120,8 +120,12 @@ export interface ChapterTocEntry {
   title_hi: string;
   sequence: number;
   verification_status: string;
-  start_page: number;
-  end_page: number;
+  /** Printed page range. null on front matter — it is labelled i, ii…,
+   *  never numbered, so it owns no printed page. */
+  start_page: number | null;
+  end_page: number | null;
+  /** How many pages the chapter spans (front matter included). */
+  page_count: number | null;
   is_front_matter: boolean;
 }
 

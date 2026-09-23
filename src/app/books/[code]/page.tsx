@@ -356,7 +356,9 @@ export default async function BookDetailPage({
               // Span, not range — the row reads "8 pages", which is what a
               // reader is deciding on. The printed range stays available to
               // anyone who needs it via the reader's own page markers.
-              const pages = ch.end_page - ch.start_page + 1;
+              const pages =
+                ch.page_count ??
+                (ch.start_page != null && ch.end_page != null ? ch.end_page - ch.start_page + 1 : NaN);
               return (
                 <li key={`${ch.is_front_matter}-${ch.number}`}>
                   <ListRow
