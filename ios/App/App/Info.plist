@@ -36,10 +36,6 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>To ask the Assistant a question by speaking it.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>To turn your spoken question into text before it is asked.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>MD Study connects to a development server on your local network.</string>
 	<key>UIApplicationSceneManifest</key>

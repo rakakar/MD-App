@@ -10,20 +10,6 @@ Base path: `/api/v1/` · Interactive schema: `/api/v1/docs/` (drf-spectacular).
 **Production BE:** `https://mdbe.welfareinfo.net` (may change; FE must read the
 base URL from an environment variable, never hardcode it).
 
-> **Changed on 2026-09-23 (Voice, Stage 1).** Additive. Research takes
-> `answer_style: "spoken"` for a question asked by voice, and every answer now
-> carries `answer_style` and `speech_text` (§9.2). New: §9.4 — `GET voice/`,
-> `POST chat/{id}/speech/`, `POST voice/transcribe/`. Why and how:
-> `docs/product/Voice_Assistant.md`. Deploy the BE before an FE that sends
-> `answer_style`.
-
-> **Changed on 2026-08-15 (Shorts).** Additive. `GET /api/v1/shorts/` (§2.7) is
-> now live: the vertical clips for the home rail, mirrored hourly from our own
-> YouTube channels. It is the one endpoint here whose content the BE does not
-> author — nobody files these, the channel does. The FE's `lib/shorts.ts`
-> placeholder can be replaced by a fetch; the field names were chosen to match
-> the `Short` type it already declares.
-
 > **Changed on 2026-08-03 (Catalogue Search).** Additive — nothing existing
 > changes shape. `library/search/` (§13.8) becomes the library's one **find**
 > endpoint: scoped by workspace or by folder, filtered on every sieve axis,
@@ -216,77 +202,6 @@ step back, `offset=1` one step forward. `offset=0` — the default — is *alway
 today's pick, so opening the app twice in a day shows the same sutra however
 far anyone browsed before. Use `has_prev`/`has_next` to enable the arrows; an
 offset past either end is a 404, and a non-numeric offset a 400.
-
----
-
-### 2.7 `GET /api/v1/shorts/` — the home screen's Shorts rail
-
-The vertical clips on Home, **read from our own YouTube channels rather than
-filed by anyone**. A short posted on the channel is in this response within the
-hour and on the home screen after that, with no BE step in between. That is the
-whole feature; everything below is detail.
-
-```json
-[
-  {
-    "id": 1,
-    "video_id": "nsK2GxHn7Lc",
-    "title": "समग्रता में दर्शन होता है",
-    "seconds": 69,
-    "poster": "https://i.ytimg.com/vi/nsK2GxHn7Lc/oardefault.jpg",
-    "published_at": "2026-02-24T13:11:50+05:30",
-    "is_embeddable": true,
-    "watch_url": "https://www.youtube.com/shorts/nsK2GxHn7Lc",
-    "embed_url": "https://www.youtube.com/embed/nsK2GxHn7Lc",
-    "channel": {
-      "title": "Madhyasth Darshan Originals - A. Nagraj",
-      "handle": "@madhyasthorg",
-      "url": "https://www.youtube.com/@madhyasthorg/shorts"
-    }
-  }
-]
-```
-
-A bare array, newest first, `?limit=` (default 24, max 60 — a bad or missing
-value is clamped, never a 400). Anonymous; cached `public, max-age=900`, which is
-also the refresh interval, so the cache can never be staler than the data.
-
-- **`title`, `seconds`, `poster` are named for the FE's existing `Short` type**
-  (`src/lib/shorts.ts`). `id` stays the row's integer id like every other
-  endpoint here — map it to a string for React keys; `video_id` is the stable
-  identity to build a `/shorts/{id}` route on.
-- **`poster` is a YouTube URL, hotlinked, and it is 9:16.** The vertical frame
-  (`oardefault.jpg`) is used where the channel kept one, falling back to the
-  16:9 `hqdefault.jpg` — so a card may occasionally get a letterboxed still, and
-  `object-fit: cover` is the right way to draw it either way. It may be `""`; the
-  card already handles a missing poster by drawing its own gradient. **Never
-  proxy or re-host these** — YouTube's terms allow serving their thumbnails from
-  their servers, which is what a plain `<img src>` does.
-- **`seconds` may be `null`** for a clip YouTube is still processing. The badge
-  should hide rather than render `0:00`.
-- **`title` follows the channel unless an editor has overridden it** in
-  `/panel/shorts/`. The channels title these as catalogue codes
-  (`08 06 301 GT Samagrata Mein…`), so overrides are expected to be common; the
-  FE does not need to know which it got.
-- **`is_embeddable: false`** means the uploader has disallowed off-YouTube
-  playback: such a clip must open `watch_url` in a new tab rather than an
-  in-app player. Everything else can play in place with `embed_url` through the
-  official IFrame API — the same route `VideoView` already uses.
-- **An empty array is the normal empty state**, not an error. The rail draws
-  nothing for an empty list, which is the app's standing rule.
-- **Playback must go through YouTube's own player.** No downloading, extracting
-  or re-hosting the video — the same constraint PRD §3.3 already states for
-  library videos.
-
-**Clips can disappear.** Unlike published book content, an entry can vanish
-between two calls: the hourly sync withdraws anything deleted or made private
-upstream, and an editor can hide one. So this list is not a stable set to cache
-indefinitely against — treat a `video_id` that 404s on YouTube as ordinary.
-
-**Only our channels, and only from the panel.** The mirrored channels are an
-allowlist written by a manager holding `system.configure`. There is no parameter,
-header or path on this endpoint that can introduce a new channel, and no plan to
-add one.
 
 ---
 
@@ -542,13 +457,11 @@ exact shapes; these may still evolve, unlike §§0–8):
 | `GET nodes/` · `GET nodes/{id}/` | The library — every file that is not a book, at any depth. See §13. |
 | `GET topics/` | The विषय browse chips. See §13. |
 | `GET library/search/` | Metadata search over the library. See §13. |
-| `GET events/` · `GET events/{slug}/` · `GET events/filters/` | Connect → Events. Its own contract: **docs/api/Events_API_v1.md**. |
-| `GET centres/` · `GET contacts/` · `GET contacts/states/` · `GET links/` | Connect → Centres, city-wise Contacts and the Links page. Its own contract: **docs/api/Connect_Directory_v1.md**. |
-| `GET shorts/` | The home rail's vertical clips, mirrored hourly from our own YouTube channels. See §2.7. |
+| `GET centers/` · `GET events/` · `POST events/{id}/register/` | Centers, events, event registration. |
 | `GET search` | Hybrid (semantic + keyword) search over published book paragraphs — see §9.1. |
 
 All of these follow the same rules as the reader endpoints: anonymous,
-read-only, published-only, cached.
+read-only (except event register), published-only, cached.
 
 **Not yet built (planned BE work — do not code against these yet):**
 
@@ -741,12 +654,8 @@ verified citations.
 | `mode` | `quick` (default) = **Research**, a few seconds. `deep` = **Deep research**, 30–60 seconds: the question is split into parts, each part searched, the glossary's definitions of its key terms added, and the answer written by the larger model — about 10× the cost of quick. Offer it as a "Deep research" button on an answer that already exists, not as an up-front choice |
 | `continue_from` | id of the answer this follows up on; omit to start a fresh conversation |
 | `books` | list of book codes to answer from, e.g. `["MVD","JVEP"]`; omit or `[]` for every book. Part of the answer-cache identity, so a scoped answer is never served for a different scope |
-| `answer_style` | `text` (default) or `spoken` — the question was asked by voice and the answer will be read aloud: 3–6 short sentences, no headings, lists or tables, sources still cited. `quick` only (`spoken` with `deep` → `400`). A spoken answer is a different answer, so it is cached separately. Counts against the same 30 a day |
 
-Each answer carries `mode`, `books` and `answer_style` back, and
-`speech_text`: the answer as a voice reads it — the same words, without the
-reference markers and Markdown. Hand that (never `answer`) to a speech
-engine. A `deep` answer also carries
+Each answer carries `mode` and `books` back. A `deep` answer also carries
 `plan: {terms: [...], queries: [...]}` — the key terms and the searches the
 question was split into (the first query is the whole question in Hindi) —
 worth showing, so a reader can see how their question was read.
@@ -772,10 +681,6 @@ Every response (and `GET`) carries the reader's quota:
   research after a `not_found` quick answer too; it searches each part of the
   question separately and often finds what one search missed. Managers are
   uncapped (all four values `null`).
-- `off_topic: true` (only with `not_found`) = the question is not one these
-  books could answer at all ("what is the capital of India"). Do **not** offer
-  Deep research for it; it would only search harder for something not there.
-  `false` on every other answer.
 - A request about form ("in a table", "in simple words", "scientifically") is
   never a reason for `not_found`; the answer follows it from what the books say.
 - **Answers served from the cache are free**: a question already answered with
@@ -799,52 +704,6 @@ A reader can make one of their own Research or Deep research answers public.
 Links never expire. The FE page is `/a/{code}`: readable without an account,
 not indexed by search engines for now (one switch when answer quality has
 been measured), with Save as PDF and "Ask your own question".
-
-### 9.4 Voice — `voice/`, `chat/{id}/speech/`, `voice/transcribe/`
-
-Signed-in only. Stage 1 of voice: the reader speaks a question, the answer is
-read back. Nothing here names a provider, a model or a cost.
-
-**`GET voice/`** — what voice mode can do for this reader today:
-
-```json
-{"stt_mode": "browser_first", "max_record_seconds": 60, "cloud_voice": true,
- "voice_label": "शुभ", "cloud_answers_left": 9, "stt_seconds_left": 600}
-```
-
-- `stt_mode`: `browser_first` = use the browser's speech recogniser where it
-  exists and `voice/transcribe/` where it does not (the Android app's WebView
-  has none); `server` = always `voice/transcribe/`.
-- `cloud_answers_left` / `stt_seconds_left` are `null` for managers.
-
-**`POST chat/{id}/speech/`** (no body; own answer, `status: "ok"` only, else
-`404` / `400`) → always `200`, one of two shapes:
-
-```json
-{"mode": "cloud", "audio_url": "https://…/voice/answers/<hash>.mp3",
- "voice_label": "शुभ", "duration_ms": 31200, "from_cache": false}
-{"mode": "device", "text": "<speech_text>", "reason": "user_cap"}
-```
-
-- `cloud`: an absolute mp3 URL that answers byte ranges; play it in the
-  `<audio>` element the send tap unlocked (iOS blocks audio that starts
-  without a tap). `from_cache: true` = a replay, free.
-- `device`: read `text` in the device's own voice (the reader's device-voice
-  path, only when it has a `hi-IN` voice; otherwise leave the answer as text).
-  Not an error — `reason` is one of `disabled`, `too_long`, `user_cap`,
-  `budget`, `busy`, `provider_error`, `empty`, for logging only. Label it
-  "डिवाइस की आवाज़".
-
-**`POST voice/transcribe/`** — multipart, field `audio` (whatever
-`MediaRecorder` produces: webm/opus or mp4/aac), ≤ 60 s, ≤ 2 MB; optional
-`lang`: `hi` (default) or `en` → `{"text": "…", "seconds": 7.4}`. Show the
-text in the box so the reader can fix it before asking. The recording is not
-kept.
-
-- `400 code: "bad_audio" | "no_audio"`, `413 code: "too_long"`,
-  `429 code: "stt_limit"` (reader's minutes used up) or `"budget"`, `503 code:
-  "provider_error"`. `detail` is the reader-facing sentence; show it and fall
-  back to typing.
 
 ---
 
@@ -906,26 +765,11 @@ endpoint, so a later change to a name or order needs no FE deploy.
   own data — notes, bookmarks, reading progress. See §6 (`me/notes/`,
   `me/bookmarks/`, `me/progress/`). It appears in `workspaces/` for
   completeness and nothing is ever filed under it.
-- **Connect** holds three pages of its own: **Events**
-  (**docs/api/Events_API_v1.md**), **Centres** and **Links**
-  (**docs/api/Connect_Directory_v1.md**) — all three now built. None of their
-  models carries a workspace FK, so none of these endpoints is filtered by
-  `?workspace=`; panel-side they are gated on the rbac `events` and `directory`
-  modules instead. The workspace itself still exists in the library tree, so a
-  brochure or a photo set for an event has somewhere to live.
-
-  The Centres endpoints are **not** the old `centers/`: that one listed a
-  library folder per centre and was dropped with `apps.abhiyaan`. Today's
-  `centres/` serves the designed card — address, programmes, contact person,
-  Call and Visit Website — out of `apps.directory`.
-
-  The earlier `centers/` and `POST events/{id}/register/` endpoints are **gone**,
-  along with the `apps.abhiyaan` models behind them. That first pass modelled an
-  event as a title, a type and two dates with an in-app registration form; the
-  designed screens ask for a poster, an invitation note, a prabodhak, contacts,
-  links and a recording playlist, and register readers through the organiser's
-  own Google Form. Nothing was migrated because nothing was ever entered — the
-  module never had a panel form to create a row with.
+- **Connect** is the events and centers module. `Center` and `Event` carry no
+  workspace FK, so `events/` and `centers/` are never filtered by
+  `?workspace=`. Panel-side, editing them is gated on the rbac `events`
+  module. The workspace exists so that a brochure or a photo set for an event
+  has somewhere to live in the library tree.
 
 ### 10.3 Each shelf has its own filter axis
 

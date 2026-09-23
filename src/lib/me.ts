@@ -51,8 +51,7 @@ export async function authedFetch<T>(
   };
   const token = sessionToken();
   if (token) headers["X-Session-Token"] = token;
-  // A FormData body (a voice recording) sets its own multipart boundary.
-  if (init.method && init.method !== "GET" && init.body && !(init.body instanceof FormData)) {
+  if (init.method && init.method !== "GET" && init.body) {
     headers["Content-Type"] = "application/json";
   }
   const res = await fetch(url, { ...init, headers });

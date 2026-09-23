@@ -40,11 +40,7 @@ import { ParibhashaAnswer } from "./ParibhashaAnswer";
 import { IntentScope, QueryBubble } from "./parts";
 import { ResearchAnswer } from "./ResearchAnswer";
 import { useDictionary, useOriginalBooks } from "./useAssistantData";
-import { stopAnswer } from "./answerVoice";
 import { canListen, VoiceSheet } from "./VoiceSheet";
-
-/** "Keep talking" is remembered on this device. */
-const HANDS_FREE_KEY = "md.voice.handsFree";
 
 /**
  * Nothing chosen when the screen opens (designer's recording, 19 Sep): the
@@ -91,29 +87,13 @@ export function AssistantScreen() {
   const [quota, setQuota] = useState<ChatQuota | null>(null);
   const [listening, setListening] = useState(false);
   const [voice, setVoice] = useState(false);
-  const [handsFree, setHandsFree] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const turnRefs = useRef(new Map<string, HTMLElement>());
   const scrollTo = useRef<string | null>(null);
 
   useEffect(() => {
     setVoice(canListen());
-    try {
-      setHandsFree(window.localStorage.getItem(HANDS_FREE_KEY) === "1");
-    } catch {
-      // private mode: it simply starts off
-    }
   }, []);
-  const changeHandsFree = (on: boolean) => {
-    setHandsFree(on);
-    try {
-      window.localStorage.setItem(HANDS_FREE_KEY, on ? "1" : "0");
-    } catch {
-      // not remembered, still on for now
-    }
-  };
-  // Leaving the Assistant stops an answer mid-sentence.
-  useEffect(() => stopAnswer, []);
 
   /**
    * The Assistant always opens ready to type — the cursor in the box and, where
@@ -156,7 +136,7 @@ export function AssistantScreen() {
 
   // ---- asking ----
   const ask = useCallback(
-    (query: string, forced?: Intent, opts: { spoken?: boolean } = {}) => {
+    (query: string, forced?: Intent) => {
       const q = query.trim();
       if (!q) return;
       // The chip decides the question that starts a conversation. Follow-ups
@@ -164,11 +144,7 @@ export function AssistantScreen() {
       // choice made there must not silently turn "explain simply" into a
       // dictionary look-up three turns later.
       const chosen = conv ? null : mode;
-      // A spoken question is a question: with no chip chosen it goes to
-      // Research, which is the answer that can be read back. "अनुभव", said
-      // aloud, means "tell me about अनुभव", not "look the word up".
-      const intent =
-        forced ?? chosen ?? (opts.spoken ? "research" : detectIntent(q, dictionary));
+      const intent = forced ?? chosen ?? detectIntent(q, dictionary);
       // Navigate, chosen, "opens it instead of answering": straight to the
       // best place, no conversation. Only when nothing matches does it become
       // a turn, so the reader is told why nothing happened.
@@ -193,7 +169,6 @@ export function AssistantScreen() {
         // Research keeps to the chosen books for the whole conversation — a
         // follow-up about "these books" must not quietly widen to all of them.
         ...(intent === "research" && scope.length ? { books: scope } : {}),
-        ...(intent === "research" && opts.spoken ? { spoken: true } : {}),
       };
       const now = turn.at;
       // The id is made out here, not in the updater: React may run an updater
@@ -288,7 +263,6 @@ export function AssistantScreen() {
   }, [conv === null]);
 
   const startOver = () => {
-    stopAnswer();
     setConv(null);
     setMode(DEFAULT_MODE);
     setScope([]);
@@ -378,9 +352,6 @@ export function AssistantScreen() {
                         continueFrom={prevResearch}
                         books={t.books}
                         deep={!!t.deep}
-                        spoken={!!t.spoken}
-                        // Hands-free: when the answer has been read out, listen again.
-                        onSpokenEnd={handsFree ? () => setListening(true) : undefined}
                         shelf={books}
                         quota={quota}
                         onDeepen={t.deep || deepened ? undefined : () => deepen(t)}
@@ -424,10 +395,7 @@ export function AssistantScreen() {
         commands={commands}
         onCommand={onCommand}
         canListen={voice}
-        onListen={() => {
-          stopAnswer();
-          setListening(true);
-        }}
+        onListen={() => setListening(true)}
         pill={
           !conv && mode
             ? {
@@ -489,12 +457,10 @@ export function AssistantScreen() {
       <VoiceSheet
         open={listening}
         initialLang="hi"
-        handsFree={handsFree}
-        onHandsFree={changeHandsFree}
         onClose={() => setListening(false)}
         onDone={(heard, send) => {
           setListening(false);
-          if (send) ask(heard, undefined, { spoken: true });
+          if (send) ask(heard);
           else {
             setText(heard);
             inputRef.current?.focus();
