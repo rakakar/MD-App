@@ -34,6 +34,8 @@ export interface Turn {
   deep?: boolean;
   /** Research only — the id of the turn this one answers again, deeper */
   deepens?: string;
+  /** Research only — asked by voice: answered to be read aloud */
+  spoken?: boolean;
   /** Research only — the answer as it arrived, so reopening is free */
   answer?: ChatAnswer;
   /** one line for the conversation list, written when the turn settles */

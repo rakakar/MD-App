@@ -855,6 +855,11 @@ export interface ChatAnswer {
   answer: string;
   citations: ChatCitation[];
   feedback: ChatFeedback | null;
+  /** "spoken" = asked by voice and written to be read aloud (contract §9.2).
+   *  Optional: older BE builds do not send it. */
+  answer_style?: "text" | "spoken";
+  /** the answer as a voice reads it — same words, no refs, no Markdown */
+  speech_text?: string;
 }
 
 /** A shared answer (contract §9.3): the answer, never who asked. */
@@ -869,3 +874,20 @@ export interface ChatSession {
   feedback_categories: { value: string; label: string }[];
   recent: ChatAnswer[];
 }
+
+/** What voice mode can do for this reader today (contract §9.4). */
+export interface VoiceInfo {
+  /** browser_first: the browser's recogniser where it exists, else record and upload */
+  stt_mode: "browser_first" | "server";
+  max_record_seconds: number;
+  cloud_voice: boolean;
+  voice_label: string;
+  /** null for managers */
+  cloud_answers_left: number | null;
+  stt_seconds_left: number | null;
+}
+
+/** POST chat/{id}/speech/ — a cloud clip, or text for the device's own voice. */
+export type AnswerSpeech =
+  | { mode: "cloud"; audio_url: string; voice_label: string; duration_ms: number; from_cache: boolean }
+  | { mode: "device"; text: string; reason: string };

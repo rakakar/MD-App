@@ -56,4 +56,13 @@
         12 and below it is ignored and permission comes with the install.
     -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+        Asking by voice (docs/product/Voice_Assistant.md, Stage 1). The WebView
+        has no speech recogniser, so the app records the question and the
+        server transcribes it; getUserMedia needs both of these declared, and
+        Capacitor's WebChromeClient then asks the reader at the first tap.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 </manifest>

@@ -24,7 +24,13 @@ export const getChatSession = (): Promise<ChatSession> =>
 
 export async function askChat(
   query: string,
-  opts: { mode?: "quick" | "deep"; continueFrom?: number; books?: string[] } = {}
+  opts: {
+    mode?: "quick" | "deep";
+    continueFrom?: number;
+    books?: string[];
+    /** "spoken": asked by voice, answered to be read aloud (quick only) */
+    answerStyle?: "text" | "spoken";
+  } = {}
 ): Promise<{ answer: ChatAnswer; quota: ChatQuota }> {
   return authedFetch(chatUrl(), {
     method: "POST",
@@ -34,6 +40,7 @@ export async function askChat(
       ...(opts.continueFrom !== undefined ? { continue_from: opts.continueFrom } : {}),
       // answer only from these books; omitted means every book
       ...(opts.books?.length ? { books: opts.books } : {}),
+      ...(opts.answerStyle === "spoken" ? { answer_style: "spoken" } : {}),
     }),
   });
 }

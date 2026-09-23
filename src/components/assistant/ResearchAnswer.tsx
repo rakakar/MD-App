@@ -4,7 +4,14 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
+import {
+  ChevronRight,
+  HeadphonesIcon,
+  InfoIcon,
+  PauseIcon,
+  PlayIcon,
+  ShareIcon,
+} from "@/components/shell/icons";
 import { ctaPrimary } from "@/components/ui";
 import { answerAsText, parseAnswer, type Run } from "@/lib/assistant/answer";
 import { glossaryWordsIn } from "@/lib/assistant/related";
@@ -16,8 +23,17 @@ import {
   shareChatAnswer,
 } from "@/lib/chat";
 import { parseRef } from "@/lib/refs";
+import { speakAnswer } from "@/lib/voice";
 import type { BookSummary, ChatAnswer, ChatCitation, ChatQuota, ParibhashaWord } from "@/lib/types";
 import { WORKSPACES } from "@/lib/workspaceConfig";
+import {
+  markLoading,
+  pauseAnswer,
+  playAnswer,
+  resumeAnswer,
+  stopAnswer,
+  useAnswerVoice,
+} from "./answerVoice";
 import { CitationSheet } from "./CitationSheet";
 import { CopyIcon, NoteIcon } from "./icons";
 import { Eyebrow, SuggestionChip, Thinking } from "./parts";
@@ -68,6 +84,8 @@ export function ResearchAnswer({
   onAsk,
   onSettle,
   onQuota,
+  spoken = false,
+  onSpokenEnd,
 }: {
   turnId: string;
   query: string;
@@ -95,6 +113,10 @@ export function ResearchAnswer({
   onAsk: Ask;
   onSettle: (answer: ChatAnswer) => void;
   onQuota: (quota: ChatQuota) => void;
+  /** asked by voice: answered to be read aloud, and read aloud when it lands */
+  spoken?: boolean;
+  /** the answer finished speaking by itself — hands-free listens again */
+  onSpokenEnd?: () => void;
 }) {
   const { user, loading } = useAuth();
   const [answer, setAnswer] = useState<ChatAnswer | null>(stored ?? null);
@@ -103,6 +125,24 @@ export function ResearchAnswer({
   const [open, setOpen] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState<"idle" | "working" | "copied">("idle");
+  const voice = useAnswerVoice(turnId);
+
+  /**
+   * Read the answer aloud: the voice the BE chose, or — when the day's voice
+   * is used up, or the answer did not answer — the device's own, for free.
+   * `speech_text` is the answer's own words without refs and Markdown.
+   */
+  const speak = (a: ChatAnswer) => {
+    const device = { mode: "device" as const, text: a.speech_text ?? "", reason: "local" };
+    if (a.status !== "ok") {
+      playAnswer(turnId, device, onSpokenEnd);
+      return;
+    }
+    markLoading(turnId);
+    speakAnswer(a.id)
+      .then((s) => playAnswer(turnId, s, onSpokenEnd))
+      .catch(() => playAnswer(turnId, device, onSpokenEnd));
+  };
 
   useEffect(() => {
     if (answer || loading) return;
@@ -115,7 +155,12 @@ export function ResearchAnswer({
     const key = `${turnId}:${attempt}`;
     let job = inflight.get(key);
     if (!job) {
-      job = askChat(query, { continueFrom, books, mode: deep ? "deep" : "quick" });
+      job = askChat(query, {
+        continueFrom,
+        books,
+        mode: deep ? "deep" : "quick",
+        ...(spoken && !deep ? { answerStyle: "spoken" as const } : {}),
+      });
       inflight.set(key, job);
     }
     job
@@ -124,6 +169,7 @@ export function ResearchAnswer({
         setAnswer(a);
         onQuota(quota);
         onSettle(a);
+        if (spoken && !deep) speak(a);
       })
       .catch((e: unknown) => {
         inflight.delete(key);
@@ -270,6 +316,17 @@ export function ResearchAnswer({
           {passages.length > 0 && definitions > 0 && " · "}
           {definitions > 0 && `${definitions} ${definitions === 1 ? "definition" : "definitions"}`}
         </p>
+      )}
+
+      {(spoken || answer.answer_style === "spoken") && answer.status !== "error" && (
+        <SpeechBar
+          status={voice.status}
+          label={voice.label}
+          onListen={() => speak(answer)}
+          onPause={pauseAnswer}
+          onResume={resumeAnswer}
+          onStop={stopAnswer}
+        />
       )}
 
       <div className="flex flex-col gap-4 text-lg leading-relaxed">
@@ -487,6 +544,80 @@ export function ResearchAnswer({
         number={(open ?? 0) + 1}
         onClose={() => setOpen(null)}
       />
+    </div>
+  );
+}
+
+/**
+ * The answer's voice: what is playing and in whose voice, with pause and
+ * stop; "Listen" when nothing is. A reopened conversation never speaks by
+ * itself — the reader asks for it, and a replay of a clip costs nothing.
+ */
+function SpeechBar({
+  status,
+  label,
+  onListen,
+  onPause,
+  onResume,
+  onStop,
+}: {
+  status: "idle" | "loading" | "playing" | "paused";
+  label: string;
+  onListen: () => void;
+  onPause: () => void;
+  onResume: () => void;
+  onStop: () => void;
+}) {
+  const btn =
+    "flex h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-rule bg-card px-3 text-sm font-semibold";
+  return (
+    <div
+      className="flex items-center gap-3 rounded-card border px-3 py-2 print:hidden"
+      style={{
+        borderColor: "color-mix(in srgb, var(--color-accent) 30%, transparent)",
+        background: "color-mix(in srgb, var(--color-accent) 8%, var(--color-card))",
+      }}
+    >
+      <HeadphonesIcon className="h-5 w-5 shrink-0" />
+      <p className="min-w-0 flex-1 text-sm" aria-live="polite">
+        {status === "loading" ? (
+          "Getting the voice ready…"
+        ) : status === "idle" ? (
+          "Asked by voice"
+        ) : (
+          <>
+            {status === "paused" ? "Paused" : "Speaking"}
+            {label && (
+              <>
+                {" · "}
+                <span lang="hi" className="hi-note">
+                  {label}
+                </span>
+              </>
+            )}
+          </>
+        )}
+      </p>
+      {status === "idle" && (
+        <button type="button" onClick={onListen} className={btn}>
+          <PlayIcon className="h-4 w-4" /> Listen
+        </button>
+      )}
+      {status === "playing" && (
+        <button type="button" onClick={onPause} aria-label="Pause" className={btn}>
+          <PauseIcon className="h-4 w-4" />
+        </button>
+      )}
+      {status === "paused" && (
+        <button type="button" onClick={onResume} aria-label="Play" className={btn}>
+          <PlayIcon className="h-4 w-4" />
+        </button>
+      )}
+      {(status === "playing" || status === "paused" || status === "loading") && (
+        <button type="button" onClick={onStop} className={btn}>
+          Stop
+        </button>
+      )}
     </div>
   );
 }
