@@ -178,6 +178,9 @@ export interface Paragraph {
   align: Align;
   indent_level: number;
   text_hi: string;
+  /** text_hi with the printed bold/italic as <b>/<i> (contract §3.3). Absent
+   *  on chapters cached before the BE served it — render text_hi then. */
+  text_rich?: string;
   footnote_text: string;
   extra: Partial<FigureExtra & TableExtra> | null;
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
 import { ShareSutraSheet } from "./ShareSutraSheet";
+import { FormattedText } from "@/components/reader/blocks";
 import { ctaPrimaryCompact } from "@/components/ui";
 import { track } from "@/lib/analytics";
 import { dayMonth, parseDay } from "@/lib/dates";
@@ -129,7 +130,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
           lang="hi"
           className="hi mt-3 max-w-[46ch] text-[1.1875rem] leading-[1.75] text-(--sutra-ink) lg:text-2xl"
         >
-          {sutra.text_hi}
+          <FormattedText text={sutra.text_hi} rich={sutra.text_rich} />
         </blockquote>
 
         <div

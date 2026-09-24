@@ -1,4 +1,5 @@
 import type { PaintedSegment } from "@/lib/highlights";
+import { formatRuns, formatSegments, parseRich, type RichRun } from "@/lib/richText";
 import type { HighlightColour } from "@/lib/storage";
 import type { Paragraph } from "@/lib/types";
 
@@ -56,18 +57,28 @@ const HL: Record<HighlightColour, string> = {
  * headword span stays exactly as it was, which is what the delegated tap
  * handler looks for.
  */
-function Text({ text, segments }: { text: string; segments?: PaintedSegment[] | null }) {
-  if (!segments) return <>{text}</>;
+function Text({
+  text,
+  rich,
+  segments,
+}: {
+  text: string;
+  rich?: string;
+  segments?: PaintedSegment[] | null;
+}) {
+  const formatted = formatSegments(text, segments ?? null, formatRuns(text, rich));
+  if (!formatted) return <>{text}</>;
   return (
     <>
-      {segments.map((s, i) => {
-        const inner = s.word ? (
+      {formatted.map((s, i) => {
+        const word = s.word ? (
           <span data-paribhasha={s.word} className="paribhasha-word">
             {s.text}
           </span>
         ) : (
           s.text
         );
+        const inner = <Styled b={s.b} i={s.i}>{word}</Styled>;
         if (!s.hl) return <span key={i}>{inner}</span>;
         return (
           <mark key={i} className={`${HL[s.hl]} text-inherit`}>
@@ -75,6 +86,39 @@ function Text({ text, segments }: { text: string; segments?: PaintedSegment[] | 
           </mark>
         );
       })}
+    </>
+  );
+}
+
+/**
+ * The book's own bold and italic (contract §3.3). Inside the highlight, outside
+ * the headword span — which stays exactly what the delegated tap handler looks
+ * for. Neither element adds characters, so highlight offsets are unaffected.
+ */
+function Styled({ b, i, children }: { b?: boolean; i?: boolean; children: React.ReactNode }) {
+  let out = children;
+  if (i) out = <i className="italic">{out}</i>;
+  if (b) out = <b className="font-bold">{out}</b>;
+  return <>{out}</>;
+}
+
+/** Book text with its printed formatting and nothing else — for surfaces
+ *  outside the reader, like the Sutra card. */
+export function FormattedText({ text, rich }: { text: string; rich?: string }) {
+  return <Text text={text} rich={rich} />;
+}
+
+/** Formatted text with no highlight or headword layer — a table cell, whose
+ *  text is its own (there is no text_hi to measure it against). */
+function RichCell({ rich }: { rich: string }) {
+  const runs: RichRun[] = parseRich(rich);
+  return (
+    <>
+      {runs.map((r, k) => (
+        <Styled key={k} b={r.b} i={r.i}>
+          {r.text}
+        </Styled>
+      ))}
     </>
   );
 }
@@ -89,21 +133,24 @@ export function Block({
 }) {
   const align = ALIGN[para.align] ?? "text-left";
   const indent = indentStyle(para.indent_level);
-  const text = <Text text={para.text_hi} segments={segments} />;
+  const text = <Text text={para.text_hi} rich={para.text_rich} segments={segments} />;
+  // Headings and captions carry no highlight or headword layer, only the
+  // printed formatting.
+  const plainText = <Text text={para.text_hi} rich={para.text_rich} />;
 
   switch (para.block_type) {
     case "heading":
       return (
         <h2 lang="hi" className={`hi mt-8 mb-3 text-[1.35em] font-bold leading-snug ${align}`} style={indent}>
           <Marker marker={para.marker} />
-          {para.text_hi}
+          {plainText}
         </h2>
       );
     case "subheading":
       return (
         <h3 lang="hi" className={`hi mt-6 mb-2 text-[1.15em] font-semibold leading-snug ${align}`} style={indent}>
           <Marker marker={para.marker} />
-          {para.text_hi}
+          {plainText}
         </h3>
       );
     case "list":
@@ -156,7 +203,7 @@ export function Block({
           )}
           {para.text_hi && (
             <figcaption lang="hi" className="hi mt-2 text-[0.85em] text-(--reader-ink-soft)">
-              {para.text_hi}
+              {plainText}
             </figcaption>
           )}
         </figure>
@@ -178,7 +225,7 @@ export function Block({
                       scope="col"
                       className="border border-(--reader-rule) px-3 py-1.5 text-start font-semibold"
                     >
-                      {cell}
+                      <RichCell rich={cell} />
                     </th>
                   ))}
                 </tr>
@@ -189,7 +236,7 @@ export function Block({
                 <tr key={ri}>
                   {row.map((cell, ci) => (
                     <td key={ci} className="border border-(--reader-rule) px-3 py-1.5">
-                      {cell}
+                      <RichCell rich={cell} />
                     </td>
                   ))}
                 </tr>
