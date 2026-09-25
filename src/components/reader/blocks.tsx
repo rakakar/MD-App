@@ -144,18 +144,37 @@ function RichCell({ rich }: { rich: string }) {
  * Only a row whose last cell is a page number or range ("16", "1-3") counts,
  * or a header whose last cell is the page column's own label (पृष्ठ…, पृ.क्र.).
  * Anything else with a pipe in it — a flattened data table in a chapter —
- * stays exactly as it was. Returns where the last separator starts.
+ * stays exactly as it was.
+ *
+ * `lead` is a separator the row *starts* with. A contents page printed as
+ * number | title | page had its number lifted into `marker` and the pipe after
+ * it left behind — "| मौलिक अधिकार | 74" — in 8 of the 13 books with a
+ * contents page (91 rows).
  */
 const TOC_SEP = " | ";
+const TOC_LEAD = /^\s*\|\s*/;
 const TOC_PAGE = /^[0-9०-९]{1,4}(?:\s*[-–]\s*[0-9०-९]{1,4})?$/;
 const TOC_PAGE_HEAD = /^पृ/;
 
-function tocSplit(text: string): number | null {
+function tocSplit(text: string): { lead: number; at: number } | null {
   if (text.includes("\n")) return null;
   const at = text.lastIndexOf(TOC_SEP);
-  if (at <= 0) return null;
+  const lead = text.match(TOC_LEAD)?.[0].length ?? 0;
+  if (at < lead) return null;
   const last = text.slice(at + TOC_SEP.length).trim();
-  return TOC_PAGE.test(last) || TOC_PAGE_HEAD.test(last) ? at : null;
+  return TOC_PAGE.test(last) || TOC_PAGE_HEAD.test(last) ? { lead, at } : null;
+}
+
+/** The title column's ranges, alternating cell / separator / cell… */
+function innerCells(text: string, from: number, to: number): [number, number][] {
+  const out: [number, number][] = [];
+  let start = from;
+  for (let i = text.indexOf(TOC_SEP, from); i !== -1 && i < to; i = text.indexOf(TOC_SEP, start)) {
+    out.push([start, i], [i, i + TOC_SEP.length]);
+    start = i + TOC_SEP.length;
+  }
+  out.push([start, to]);
+  return out;
 }
 
 /** The runs between two offsets of the block's text, cut where they cross. */
@@ -181,10 +200,12 @@ function sliceRuns(runs: FormattedSegment[], from: number, to: number): Formatte
  */
 function TocRow({
   para,
+  lead,
   at,
   segments,
 }: {
   para: Paragraph;
+  lead: number;
   at: number;
   segments?: PaintedSegment[] | null;
 }) {
@@ -204,7 +225,24 @@ function TocRow({
     >
       <Marker marker={para.marker} />
       <span>
-        <Runs runs={sliceRuns(runs, 0, at)} />
+        {lead > 0 && (
+          <span hidden>
+            <Runs runs={sliceRuns(runs, 0, lead)} />
+          </span>
+        )}
+        {innerCells(text, lead, at).map(([from, to], k) =>
+          k % 2 ? (
+            // a separator between two leading cells — "अध्याय | विषय वस्तु |
+            // पृ.क्र." — hidden, with a gap where it stood
+            <span key={k} hidden>
+              <Runs runs={sliceRuns(runs, from, to)} />
+            </span>
+          ) : (
+            <span key={k} className={k ? "ps-[1em]" : undefined}>
+              <Runs runs={sliceRuns(runs, from, to)} />
+            </span>
+          ),
+        )}
       </span>
       <span hidden>
         <Runs runs={sliceRuns(runs, at, cut)} />
@@ -232,8 +270,8 @@ export function Block({
   const plainText = <Text text={para.text_hi} rich={para.text_rich} />;
 
   if (para.block_type === "list" || para.block_type === "para") {
-    const at = tocSplit(para.text_hi);
-    if (at !== null) return <TocRow para={para} at={at} segments={segments} />;
+    const toc = tocSplit(para.text_hi);
+    if (toc) return <TocRow para={para} lead={toc.lead} at={toc.at} segments={segments} />;
   }
 
   switch (para.block_type) {
