@@ -909,6 +909,39 @@ html[data-reader-face="sans"] .reader-surface .hi {
   line-height: 1.35;
 }
 
+/* A chapter's headings. They had `leading-snug`, which the rule above
+   outranks, so a title that wrapped got the body's 2.05 at 1.35em and its
+   second line read as a separate thought. Headings are bold, so they are in
+   Mukta, which sits comfortably at 1.5; they do not follow the reading
+   setting — a heading is one idea, not a page to scan. */
+.reader-surface .hi.reader-heading {
+  line-height: 1.5;
+}
+
+/* **The gap between paragraphs follows the line spacing.** It was a fixed
+   12px, which between 37px lines was barely more than the gap between two
+   lines of the same paragraph, so a page read as one wall of text — and it
+   stayed 12px when the reader turned the text size up. In em, it scales with
+   the text size; tied to the line height, Compact / Relaxed / Airy give
+   0.7 / 0.9 / 1.15em, so the break stays visibly bigger than the leading at
+   every setting. Written on the elements rather than as a token because the
+   em has to resolve in the paragraph's own font size. */
+.reader-content .reader-para {
+  margin-block: calc((var(--reader-line-height, 2.05) - 1.15) * 1em);
+}
+
+/* List items: half a paragraph break apart. Enough that three bullets read as
+   three items rather than one paragraph, not so much that the list stops
+   reading as one group. Margins collapse, so a list after a paragraph still
+   opens with the full paragraph gap. */
+.reader-content .reader-list {
+  margin-block: calc((var(--reader-line-height, 2.05) - 1.15) * 0.5em);
+}
+/* In the hanging layout the grid's column gap is the space after the marker. */
+.reader-list.grid .reader-marker {
+  margin-inline-end: 0;
+}
+
 .reader-surface {
   background: var(--reader-bg);
   color: var(--reader-ink);

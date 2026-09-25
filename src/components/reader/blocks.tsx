@@ -25,7 +25,7 @@ function indentStyle(level: number): React.CSSProperties | undefined {
 function Marker({ marker }: { marker: string }) {
   if (!marker) return null;
   return (
-    <span data-not-text className="me-2 font-semibold text-(--reader-ink-soft)">
+    <span data-not-text className="reader-marker me-2 font-semibold text-(--reader-ink-soft)">
       {marker}
     </span>
   );
@@ -141,23 +141,31 @@ export function Block({
   switch (para.block_type) {
     case "heading":
       return (
-        <h2 lang="hi" className={`hi mt-8 mb-3 text-[1.35em] font-bold leading-snug ${align}`} style={indent}>
+        <h2 lang="hi" className={`hi reader-heading mt-8 mb-3 text-[1.35em] font-bold ${align}`} style={indent}>
           <Marker marker={para.marker} />
           {plainText}
         </h2>
       );
     case "subheading":
       return (
-        <h3 lang="hi" className={`hi mt-6 mb-2 text-[1.15em] font-semibold leading-snug ${align}`} style={indent}>
+        <h3 lang="hi" className={`hi reader-heading mt-6 mb-2 text-[1.15em] font-semibold ${align}`} style={indent}>
           <Marker marker={para.marker} />
           {plainText}
         </h3>
       );
     case "list":
+      // A hanging indent: the marker gets its own column, so a wrapped line
+      // comes back under the text rather than under the bullet. The marker
+      // used to sit inline, one level of indent in — every wrapped line
+      // started 40px into a 369px column and read as a new item.
       return (
-        <p lang="hi" className={`hi my-1.5 ${align}`} style={indentStyle(para.indent_level + 1)}>
+        <p
+          lang="hi"
+          className={`hi reader-list ${para.marker ? "grid grid-cols-[auto_minmax(0,1fr)] gap-x-[0.5em]" : ""} ${align}`}
+          style={{ paddingInlineStart: `calc(${para.indent_level * 1.5}rem + 0.4em)` }}
+        >
           <Marker marker={para.marker} />
-          {text}
+          <span>{text}</span>
         </p>
       );
     case "verse":
@@ -248,7 +256,7 @@ export function Block({
     }
     default:
       return (
-        <p lang="hi" className={`hi my-3 ${align}`} style={indent}>
+        <p lang="hi" className={`hi reader-para ${align}`} style={indent}>
           <Marker marker={para.marker} />
           {text}
           {para.footnote_text && (
