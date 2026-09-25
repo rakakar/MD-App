@@ -1,5 +1,11 @@
 import type { PaintedSegment } from "@/lib/highlights";
-import { formatRuns, formatSegments, parseRich, type RichRun } from "@/lib/richText";
+import {
+  formatRuns,
+  formatSegments,
+  parseRich,
+  type FormattedSegment,
+  type RichRun,
+} from "@/lib/richText";
 import type { HighlightColour } from "@/lib/storage";
 import type { Paragraph } from "@/lib/types";
 
@@ -68,9 +74,13 @@ function Text({
 }) {
   const formatted = formatSegments(text, segments ?? null, formatRuns(text, rich));
   if (!formatted) return <>{text}</>;
+  return <Runs runs={formatted} />;
+}
+
+function Runs({ runs }: { runs: FormattedSegment[] }) {
   return (
     <>
-      {formatted.map((s, i) => {
+      {runs.map((s, i) => {
         const word = s.word ? (
           <span data-paribhasha={s.word} className="paribhasha-word">
             {s.text}
@@ -123,6 +133,89 @@ function RichCell({ rich }: { rich: string }) {
   );
 }
 
+/**
+ * A row of a printed contents page.
+ *
+ * The extractor writes a contents table as one block per row with its cells
+ * joined by " | " (the BE's "rule 8" — its own proofread screen draws them as
+ * columns). Printed as-is the pipe read as a stray mark, the page numbers
+ * never lined up, and a long title pushed its "| 25" onto a line of its own.
+ *
+ * Only a row whose last cell is a page number or range ("16", "1-3") counts,
+ * or a header whose last cell is the page column's own label (पृष्ठ…, पृ.क्र.).
+ * Anything else with a pipe in it — a flattened data table in a chapter —
+ * stays exactly as it was. Returns where the last separator starts.
+ */
+const TOC_SEP = " | ";
+const TOC_PAGE = /^[0-9०-९]{1,4}(?:\s*[-–]\s*[0-9०-९]{1,4})?$/;
+const TOC_PAGE_HEAD = /^पृ/;
+
+function tocSplit(text: string): number | null {
+  if (text.includes("\n")) return null;
+  const at = text.lastIndexOf(TOC_SEP);
+  if (at <= 0) return null;
+  const last = text.slice(at + TOC_SEP.length).trim();
+  return TOC_PAGE.test(last) || TOC_PAGE_HEAD.test(last) ? at : null;
+}
+
+/** The runs between two offsets of the block's text, cut where they cross. */
+function sliceRuns(runs: FormattedSegment[], from: number, to: number): FormattedSegment[] {
+  const out: FormattedSegment[] = [];
+  let offset = 0;
+  for (const r of runs) {
+    const start = Math.max(from, offset);
+    const end = Math.min(to, offset + r.text.length);
+    if (start < end) out.push({ ...r, text: r.text.slice(start - offset, end - offset) });
+    offset += r.text.length;
+  }
+  return out;
+}
+
+/**
+ * Marker · title · page, as three grid columns: the title wraps inside its own
+ * column so the page can never fall onto a line by itself, and every page
+ * number sits flush right where the eye can run down them.
+ *
+ * The separator stays in the DOM, only hidden — highlight offsets are counted
+ * over the text nodes of `text_hi`, and " | " is part of it.
+ */
+function TocRow({
+  para,
+  at,
+  segments,
+}: {
+  para: Paragraph;
+  at: number;
+  segments?: PaintedSegment[] | null;
+}) {
+  const text = para.text_hi;
+  const runs = formatSegments(text, segments ?? null, formatRuns(text, para.text_rich)) ?? [
+    { text },
+  ];
+  const cut = at + TOC_SEP.length;
+  const cols = para.marker
+    ? "grid-cols-[auto_minmax(0,1fr)_auto]"
+    : "grid-cols-[minmax(0,1fr)_auto]";
+  return (
+    <p
+      lang="hi"
+      className={`hi reader-list grid items-baseline gap-x-[0.5em] ${cols}`}
+      style={{ paddingInlineStart: `calc(${para.indent_level * 1.5}rem + 0.4em)` }}
+    >
+      <Marker marker={para.marker} />
+      <span>
+        <Runs runs={sliceRuns(runs, 0, at)} />
+      </span>
+      <span hidden>
+        <Runs runs={sliceRuns(runs, at, cut)} />
+      </span>
+      <span className="whitespace-nowrap text-end text-(--reader-ink-soft) tabular-nums">
+        <Runs runs={sliceRuns(runs, cut, text.length)} />
+      </span>
+    </p>
+  );
+}
+
 /** One paragraph block. Font sizing inherits from the reader root scale. */
 export function Block({
   para,
@@ -137,6 +230,11 @@ export function Block({
   // Headings and captions carry no highlight or headword layer, only the
   // printed formatting.
   const plainText = <Text text={para.text_hi} rich={para.text_rich} />;
+
+  if (para.block_type === "list" || para.block_type === "para") {
+    const at = tocSplit(para.text_hi);
+    if (at !== null) return <TocRow para={para} at={at} segments={segments} />;
+  }
 
   switch (para.block_type) {
     case "heading":
