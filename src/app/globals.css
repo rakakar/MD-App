@@ -1876,3 +1876,19 @@ html[data-sutra-collapsed] .sutra-label-hide,
 html:not([data-sutra-collapsed]) .sutra-label-show {
   visibility: hidden;
 }
+
+/* ---- the Paribhasha sheet ------------------------------------------------
+   Every Devanagari line in it in Mukta — headword, trail, definitions and the
+   terms inside them — at the designer's call (26 Sep 2026), matching the live
+   app. Tiro at 14px was the hardest thing in the sheet to read. Written here
+   because `.hi` is unlayered: a font or leading utility on it is inert. Equal
+   specificity to `.reader-surface .hi` and later in the file, so it also wins
+   over the reader's own line-spacing setting, which is for the page, not for
+   a card over it. */
+.paribhasha-sheet .hi {
+  font-family: var(--font-devanagari-sans);
+  line-height: 1.6;
+}
+.paribhasha-sheet .paribhasha-head {
+  line-height: 1.3;
+}

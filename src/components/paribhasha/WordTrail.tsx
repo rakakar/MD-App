@@ -90,9 +90,6 @@ export function ParibhashaTrailSheet({
   const definitions = entry?.definitions ?? [];
   const segments = useDefinitionSegments(definitions, entry?.hindi ?? current ?? undefined);
 
-  // Back steps within the chain; at the first word there is nothing behind it
-  // in this sheet, so back is the same as closing.
-  const back = () => (pushed.length > 0 ? setPushed((p) => p.slice(0, -1)) : onClose());
   const trimTo = (i: number) => setPushed((p) => p.slice(0, i));
 
   return (
@@ -100,23 +97,41 @@ export function ParibhashaTrailSheet({
       {/* Definitions rendered below reach *this* trail, so following a word
           inside the sheet extends the chain instead of starting a new one. */}
       <TrailContext.Provider value={trailValue}>
-      <div className="px-5 pb-2">
-        {/* The path so far. It appears only once there is a path — a single
-            word has no history worth a row of chrome. */}
+      {/* `paribhasha-sheet` sets every Devanagari line in here in Mukta at a
+          readable leading (globals.css) — the designer's call, 26 Sep 2026,
+          matching the live app. A class rather than utilities because `.hi`
+          is unlayered and outranks any font or leading utility on it. */}
+      <div className="paribhasha-sheet px-5 pb-2 pt-2">
+        <p lang="hi" className="hi paribhasha-head text-2xl font-semibold">
+          {entry?.hindi ?? current}
+        </p>
+        {entry?.hinglish && (
+          <p className="mt-0.5 text-sm text-(--reader-ink-soft)">{entry.hinglish}</p>
+        )}
+
+        {/* The path so far, as the live app draws it: the words behind as
+            chips to step back to, the word on screen filled, and × to go back
+            to the word the reader first tapped. It appears only once there is
+            a path — a single word has no history worth a row of chrome. */}
         {trail.length > 1 && (
           <nav
             aria-label="Words viewed"
-            className="-mt-1 mb-3 flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-(--reader-ink-soft)"
+            className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-card p-2"
+            style={{ background: "color-mix(in srgb, var(--reader-ink) 4%, transparent)" }}
           >
             {trail.map((w, i) => (
-              <span key={`${w}-${i}`} className="flex items-center gap-1">
+              <span key={`${w}-${i}`} className="flex items-center gap-1.5">
                 {i > 0 && (
-                  <span aria-hidden className="opacity-60">
+                  <span aria-hidden className="text-sm text-(--reader-ink-soft) opacity-70">
                     ›
                   </span>
                 )}
                 {i === trail.length - 1 ? (
-                  <span lang="hi" className="hi font-medium text-(--reader-ink)">
+                  <span
+                    lang="hi"
+                    aria-current="true"
+                    className="hi flex min-h-11 items-center rounded-control bg-(--reader-ink) px-3.5 text-lg text-(--reader-bg)"
+                  >
                     {w}
                   </span>
                 ) : (
@@ -124,36 +139,30 @@ export function ParibhashaTrailSheet({
                     type="button"
                     onClick={() => trimTo(i)}
                     lang="hi"
-                    className="hi underline underline-offset-2"
+                    className="hi flex min-h-11 items-center rounded-control px-3.5 text-lg text-(--reader-ink-soft) transition active:brightness-95"
+                    style={{ background: "color-mix(in srgb, var(--reader-ink) 8%, transparent)" }}
                   >
                     {w}
                   </button>
                 )}
               </span>
             ))}
-          </nav>
-        )}
-
-        <div className="flex items-start gap-3">
-          {trail.length > 1 && (
             <button
               type="button"
-              onClick={back}
-              aria-label="Previous word"
-              className="mt-1 shrink-0 rounded-full border border-(--reader-rule) px-2.5 py-1 text-sm leading-none text-(--reader-ink-soft)"
+              onClick={() => trimTo(0)}
+              aria-label="Back to the first word"
+              className="ms-1 flex h-11 w-11 items-center justify-center rounded-full text-(--reader-ink-soft)"
             >
-              ←
+              <span
+                aria-hidden
+                className="flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none"
+                style={{ background: "color-mix(in srgb, var(--reader-ink) 8%, transparent)" }}
+              >
+                ×
+              </span>
             </button>
-          )}
-          <div className="min-w-0">
-            <p lang="hi" className="hi text-2xl font-semibold leading-snug">
-              {entry?.hindi ?? current}
-            </p>
-            {entry?.hinglish && (
-              <p className="mt-0.5 text-sm text-(--reader-ink-soft)">{entry.hinglish}</p>
-            )}
-          </div>
-        </div>
+          </nav>
+        )}
 
         <div className="mt-4">
           {state === "loading" && (
@@ -174,6 +183,7 @@ export function ParibhashaTrailSheet({
               definitions={definitions}
               segments={segments}
               tone="reader"
+              size="md"
             />
           )}
         </div>
@@ -223,8 +233,9 @@ export function DefinitionList({
   definitions: string[];
   segments: ReturnType<typeof useDefinitionSegments>;
   tone?: "page" | "reader";
-  /** `lg` is the word's own page, where the definition is the page */
-  size?: "sm" | "lg";
+  /** `md` is the sheet, where it is read at arm's length; `lg` is the word's
+   *  own page, where the definition is the page */
+  size?: "sm" | "md" | "lg";
 }) {
   const soft = tone === "reader" ? "text-(--reader-ink-soft)" : "text-ink-soft";
   const bullet =
@@ -251,7 +262,7 @@ export function DefinitionList({
           )}
           <p
             lang="hi"
-            className={`hi ${size === "lg" ? "text-xl" : "text-sm"} leading-relaxed ${i === 0 ? "" : soft}`}
+            className={`hi ${size === "lg" ? "text-xl" : size === "md" ? "text-lg" : "text-sm"} leading-relaxed ${i === 0 ? "" : soft}`}
           >
             <DefinitionText text={d} segments={segments[i]} />
           </p>
