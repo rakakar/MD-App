@@ -28,6 +28,7 @@ export function Sheet({
   open,
   onClose,
   title,
+  heading,
   subtitle,
   actions,
   footer,
@@ -38,6 +39,12 @@ export function Sheet({
   open: boolean;
   onClose: () => void;
   title: string;
+  /**
+   * What the header shows in place of `title`, when a line of text is not
+   * enough — the Paribhasha sheet's headword, which is Devanagari in the
+   * reading face. `title` stays the dialog's accessible name either way.
+   */
+  heading?: ReactNode;
   /**
    * A line under the title, in the softer ink — whose account this is, which
    * shelf is being filtered. It belongs to the heading rather than to the body:
@@ -122,7 +129,7 @@ export function Sheet({
           <div className="mx-auto h-1 w-9 rounded-full bg-current opacity-20" aria-hidden />
           <div className={`flex items-center gap-2 border-b px-5 pb-3 pt-3.5 ${rule}`}>
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-title font-semibold tracking-[-0.01em]">{title}</h2>
+              <h2 className="truncate text-title font-semibold tracking-[-0.01em]">{heading ?? title}</h2>
               {subtitle && (
                 <p className="mt-0.5 truncate text-xs text-ink-soft">{subtitle}</p>
               )}

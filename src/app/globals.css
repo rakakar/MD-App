@@ -1889,6 +1889,9 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   font-family: var(--font-devanagari-sans);
   line-height: 1.6;
 }
-.paribhasha-sheet .paribhasha-head {
+/* The headword, as the sheet's title — in the header, so outside the scope
+   above. Same face; tight, because it is one word and a title. */
+.paribhasha-title {
+  font-family: var(--font-devanagari-sans);
   line-height: 1.3;
 }

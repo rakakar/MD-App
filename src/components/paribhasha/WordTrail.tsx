@@ -93,7 +93,21 @@ export function ParibhashaTrailSheet({
   const trimTo = (i: number) => setPushed((p) => p.slice(0, i));
 
   return (
-    <Sheet open={current !== null} onClose={onClose} title="Paribhasha">
+    // The word is the title — the designer's call, 26 Sep 2026. "Paribhasha"
+    // said which sheet this was, which the reader knew, having just tapped a
+    // word; the word itself is what they want to see first. The English
+    // transliteration is the line under it.
+    <Sheet
+      open={current !== null}
+      onClose={onClose}
+      title={`Paribhasha: ${entry?.hindi ?? current ?? ""}`}
+      heading={
+        <span lang="hi" className="hi paribhasha-title text-2xl">
+          {entry?.hindi ?? current}
+        </span>
+      }
+      subtitle={entry?.hinglish}
+    >
       {/* Definitions rendered below reach *this* trail, so following a word
           inside the sheet extends the chain instead of starting a new one. */}
       <TrailContext.Provider value={trailValue}>
@@ -101,14 +115,7 @@ export function ParibhashaTrailSheet({
           readable leading (globals.css) — the designer's call, 26 Sep 2026,
           matching the live app. A class rather than utilities because `.hi`
           is unlayered and outranks any font or leading utility on it. */}
-      <div className="paribhasha-sheet px-5 pb-2 pt-2">
-        <p lang="hi" className="hi paribhasha-head text-2xl font-semibold">
-          {entry?.hindi ?? current}
-        </p>
-        {entry?.hinglish && (
-          <p className="mt-0.5 text-sm text-(--reader-ink-soft)">{entry.hinglish}</p>
-        )}
-
+      <div className="paribhasha-sheet px-5 pb-2 pt-4">
         {/* The path so far, as the live app draws it: the words behind as
             chips to step back to, the word on screen filled, and × to go back
             to the word the reader first tapped. It appears only once there is
@@ -116,7 +123,7 @@ export function ParibhashaTrailSheet({
         {trail.length > 1 && (
           <nav
             aria-label="Words viewed"
-            className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-card p-2"
+            className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-card p-2"
             style={{ background: "color-mix(in srgb, var(--reader-ink) 4%, transparent)" }}
           >
             {trail.map((w, i) => (
@@ -164,7 +171,7 @@ export function ParibhashaTrailSheet({
           </nav>
         )}
 
-        <div className="mt-4">
+        <div>
           {state === "loading" && (
             <p className="py-4 text-sm text-(--reader-ink-soft)">Looking up…</p>
           )}
