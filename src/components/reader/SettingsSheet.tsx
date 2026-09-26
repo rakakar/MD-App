@@ -88,8 +88,8 @@ export function SettingsSheet(p: SettingsSheetProps) {
             each one goes is written on it; and feedback on every press — the
             designer's call, 26 Sep 2026. The page behind moves too, but the
             sheet covers most of it, so the sheet carries its own sample: a
-            line set in the reader's face at the size it will be, with the
-            step and whether it is the default underneath. */}
+            line set in the reader's face at the size it will be, and a dot
+            per step between the buttons. */}
         <div>
           <div
             aria-hidden
@@ -112,14 +112,25 @@ export function SettingsSheet(p: SettingsSheetProps) {
                 A<span className="text-xs">−</span>
               </span>
             </StepBtn>
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-current/15" role="presentation">
-              <div
-                className="h-full rounded-full transition-[width] duration-150"
-                style={{
-                  width: `${((fontIndex + 1) / FONT_SCALES.length) * 100}%`,
-                  background: "var(--ws-color)",
-                }}
-              />
+            {/* One dot per step, filled up to the size in use — the designer's
+                call over a bar and an "N of 9" line: which step you are on
+                and how far there is to go, counted rather than read. */}
+            <div aria-hidden className="flex flex-1 items-center justify-between px-1">
+              {FONT_SCALES.map((s, i) => {
+                const on = i <= fontIndex;
+                return (
+                  <span
+                    key={s}
+                    className={`h-2.5 w-2.5 rounded-full border-2 transition-[background-color,border-color,transform] duration-150 ease-out motion-reduce:transition-none ${
+                      i === fontIndex ? "scale-125" : ""
+                    }`}
+                    style={{
+                      borderColor: on ? "var(--ws-color)" : "color-mix(in srgb, currentColor 22%, transparent)",
+                      background: on ? "var(--ws-color)" : "transparent",
+                    }}
+                  />
+                );
+              })}
             </div>
             <StepBtn
               onClick={() => stepFont(1)}
@@ -131,9 +142,9 @@ export function SettingsSheet(p: SettingsSheetProps) {
               </span>
             </StepBtn>
           </div>
-          <p aria-live="polite" className="mt-2 text-center text-xs text-(--reader-ink-soft)">
+          <p aria-live="polite" className="sr-only">
             Text size {fontIndex + 1} of {FONT_SCALES.length}
-            {p.fontScale === DEFAULT_PREFS.fontScale ? " · Default" : ""}
+            {p.fontScale === DEFAULT_PREFS.fontScale ? ", default" : ""}
           </p>
         </div>
 
