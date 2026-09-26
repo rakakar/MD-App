@@ -6,6 +6,7 @@ import { Sheet } from "@/components/reader/Sheet";
 import { DefinitionText, useDefinitionSegments } from "./DefinitionText";
 import { TrailContext } from "./trail-context";
 import type { ParibhashaWord } from "@/lib/types";
+import { WORKSPACES } from "@/lib/workspaceConfig";
 
 /**
  * Recursive lookup with a trail (अनुभव गम्य › अध्ययन › …).
@@ -113,7 +114,12 @@ export function ParibhashaTrailSheet({
     // said which sheet this was, which the reader knew, having just tapped a
     // word; the word itself is what they want to see first. The English
     // transliteration is the line under it.
+    // In Originals' colours wherever it is opened — the designer's call, 26
+    // Sep 2026. Paribhasha is the Samhita's vocabulary, which belongs to the
+    // source works; the book's paper stays the ground, so it still sits on
+    // the page it was opened from.
     <Sheet
+      accent={WORKSPACES.originals.color}
       open={current !== null}
       onClose={onClose}
       title={`Paribhasha: ${entry?.hindi ?? current ?? ""}`}
@@ -140,12 +146,12 @@ export function ParibhashaTrailSheet({
           <nav
             aria-label="Words viewed"
             className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-card p-2"
-            style={{ background: "color-mix(in srgb, var(--reader-ink) 4%, transparent)" }}
+            style={{ background: "color-mix(in srgb, var(--ws-color) 6%, transparent)" }}
           >
             {trail.map((w, i) => (
               <span key={`${w}-${i}`} className="flex items-center gap-1.5">
                 {i > 0 && (
-                  <span aria-hidden className="text-sm text-(--reader-ink-soft) opacity-70">
+                  <span aria-hidden className="text-sm opacity-70" style={{ color: "var(--ws-ink)" }}>
                     ›
                   </span>
                 )}
@@ -153,7 +159,8 @@ export function ParibhashaTrailSheet({
                   <span
                     lang="hi"
                     aria-current="true"
-                    className="hi flex min-h-11 items-center rounded-control bg-(--reader-ink) px-3.5 text-lg text-(--reader-bg)"
+                    className="hi flex min-h-11 items-center rounded-control px-3.5 text-lg text-white"
+                    style={{ background: "var(--ws-color)" }}
                   >
                     {w}
                   </span>
@@ -162,8 +169,11 @@ export function ParibhashaTrailSheet({
                     type="button"
                     onClick={() => setAt(i)}
                     lang="hi"
-                    className="hi flex min-h-11 items-center rounded-control px-3.5 text-lg text-(--reader-ink-soft) transition active:brightness-95"
-                    style={{ background: "color-mix(in srgb, var(--reader-ink) 8%, transparent)" }}
+                    className="hi flex min-h-11 items-center rounded-control px-3.5 text-lg transition active:brightness-95"
+                    style={{
+                      background: "color-mix(in srgb, var(--ws-color) 12%, transparent)",
+                      color: "var(--ws-ink)",
+                    }}
                   >
                     {w}
                   </button>
@@ -174,12 +184,13 @@ export function ParibhashaTrailSheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="ms-1 flex h-11 w-11 items-center justify-center rounded-full text-(--reader-ink-soft)"
+              className="ms-1 flex h-11 w-11 items-center justify-center rounded-full"
+              style={{ color: "var(--ws-ink)" }}
             >
               <span
                 aria-hidden
                 className="flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none"
-                style={{ background: "color-mix(in srgb, var(--reader-ink) 8%, transparent)" }}
+                style={{ background: "color-mix(in srgb, var(--ws-color) 12%, transparent)" }}
               >
                 ×
               </span>
@@ -261,8 +272,9 @@ export function DefinitionList({
   size?: "sm" | "md" | "lg";
 }) {
   const soft = tone === "reader" ? "text-(--reader-ink-soft)" : "text-ink-soft";
-  const bullet =
-    tone === "reader" ? "bg-(--reader-ink-soft)" : "bg-ink-soft";
+  // In the sheet the markers wear the sheet's accent (Originals); on the
+  // glossary page they stay neutral.
+  const bullet = tone === "reader" ? "bg-(--ws-color)" : "bg-ink-soft";
   const many = definitions.length > 1;
 
   if (definitions.length === 0) {
