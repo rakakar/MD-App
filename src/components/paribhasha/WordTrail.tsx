@@ -145,7 +145,7 @@ export function ParibhashaTrailSheet({
         {trail.length > 1 && (
           <nav
             aria-label="Words viewed"
-            className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-card p-2"
+            className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-tile p-2"
             style={{ background: "color-mix(in srgb, var(--ws-color) 6%, transparent)" }}
           >
             {trail.map((w, i) => (

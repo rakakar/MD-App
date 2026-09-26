@@ -1032,10 +1032,13 @@ html[data-reading="1"] body {
    matras hang below the line, and a tight underline cuts straight through
    them. Colour, not weight, is what makes it recognisable — the mark has to
    survive appearing on a fifth of the words without turning the page grey. */
+/* 1.5px at 85%, from 1px at 55% — the designer's call, 26 Sep 2026: at the
+   old weight the dots read as a texture on the word rather than a mark on it,
+   and on sepia they all but disappeared. */
 .paribhasha-word {
   text-decoration: underline dotted;
-  text-decoration-color: color-mix(in srgb, var(--ws-ink) 55%, transparent);
-  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--ws-ink) 85%, transparent);
+  text-decoration-thickness: 1.5px;
   text-underline-offset: 0.32em;
   cursor: pointer;
 }
