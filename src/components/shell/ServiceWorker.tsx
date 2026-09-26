@@ -23,8 +23,21 @@ export function ServiceWorker() {
       return () => window.removeEventListener("appinstalled", onInstalled);
     }
 
-    // the new worker took over — bring the page onto it, exactly once
+    // the new worker took over — bring the page onto it, exactly once.
+    //
+    // **Only if one was in charge before.** On a device's first visit there is
+    // no controller; the worker installs, activates and `clients.claim()`s
+    // this page, and that fires `controllerchange` too. Reloading then
+    // replaced nothing stale — it restarted the page ~0.7s in, which on a
+    // freshly installed home-screen app played the launch screen's entrance
+    // twice. The first claim is skipped and remembered, so an update accepted
+    // later in that same first session still reloads.
+    let hadController = navigator.serviceWorker.controller !== null;
     const onControllerChange = () => {
+      if (!hadController) {
+        hadController = true;
+        return;
+      }
       if (reloading.current) return;
       reloading.current = true;
       window.location.reload();
