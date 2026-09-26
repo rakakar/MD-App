@@ -391,8 +391,18 @@ export function Block({
       );
     }
     default:
+      // Body paragraphs are justified where the book set them flush left — a
+      // deviation from the comps (design-system.md). Browsers cannot hyphenate
+      // Devanagari, so on a phone column a ragged edge swings by a whole long
+      // word; Hindi print is justified, and readers compared both and chose it.
+      // Only here: headings, lists, contents rows, verse and captions keep
+      // their own alignment, and a centred or right-set paragraph stays so.
       return (
-        <p lang="hi" className={`hi reader-para ${align}`} style={indent}>
+        <p
+          lang="hi"
+          className={`hi reader-para ${para.align === "center" || para.align === "right" ? align : "text-justify"}`}
+          style={indent}
+        >
           <Marker marker={para.marker} />
           {text}
           {para.footnote_text && (
