@@ -59,6 +59,7 @@ export type GaEvent =
   // Whether readers walk past today's verse at all — if nobody uses the
   // arrows, the curated pool is deeper than anyone wants it to be.
   | "sutra_browse"
+  | "sutra_fold"
   | "sutra_share"
   | "sutra_card_download"
   | "event_view"

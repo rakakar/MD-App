@@ -180,6 +180,7 @@ d.setAttribute("data-reader-margin",String(p.margin==null?1:p.margin));
 d.setAttribute("data-reader-face",p.face||"sans");
 if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale));
 if(p.boldText)d.setAttribute("data-bold","1");
+if(p.sutraCollapsed)d.setAttribute("data-sutra-collapsed","1");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
 var bare=reading||/^\\/(login|signup)$|^\\/a\\//.test(location.pathname);

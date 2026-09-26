@@ -207,6 +207,13 @@ export interface Prefs {
    * costs.
    */
   journeyStage: number | null;
+  /**
+   * Home's Sutra card folded to its first line. Sticky: a reader who hid it
+   * does not want it open again on every visit. Painted before hydration as
+   * `data-sutra-collapsed` on <html> (layout.tsx), so a folded card never
+   * opens and snaps shut on load.
+   */
+  sutraCollapsed: boolean;
 }
 
 export const PREFS_KEY = "md.prefs.v1";
@@ -274,6 +281,7 @@ export const DEFAULT_PREFS: Prefs = {
   onboardingSeen: false,
   switcherHintShown: false,
   journeyStage: null,
+  sutraCollapsed: false,
 };
 
 /** Resolve `system` against the OS setting. SSR-safe (assumes light). */

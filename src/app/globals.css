@@ -1853,3 +1853,26 @@ html[data-first-run] body > :not(.launch) {
   font-size: 1.375rem;
   line-height: 1.35;
 }
+
+/* ---- Home's Sutra card, folded ------------------------------------------
+   The resting state lives on <html> rather than in React state, because it is
+   painted by the pre-hydration script (layout.tsx) — a card the reader folded
+   must not render open and then close. The fold itself is animated by
+   SutraCard, which measures both heights and tweens between them; these rules
+   are only where it comes to rest. */
+html[data-sutra-collapsed] .sutra-verse {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+}
+html[data-sutra-collapsed] .sutra-more {
+  display: none;
+}
+/* `visibility`, not `display`: the two words share one grid cell so the
+   button keeps the wider one's width either way. */
+html[data-sutra-collapsed] .sutra-label-hide,
+html:not([data-sutra-collapsed]) .sutra-label-show {
+  visibility: hidden;
+}

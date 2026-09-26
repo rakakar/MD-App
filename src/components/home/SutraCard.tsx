@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
 import { ShareSutraSheet } from "./ShareSutraSheet";
 import { FormattedText } from "@/components/reader/blocks";
 import { ctaPrimaryCompact } from "@/components/ui";
 import { track } from "@/lib/analytics";
+import { setPrefs } from "@/lib/storage";
 import { dayMonth, parseDay } from "@/lib/dates";
 import { SUTRA } from "@/lib/labels";
 import { citationText, refToHref } from "@/lib/refs";
@@ -68,8 +69,84 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
    */
   const [sharing, setSharing] = useState(false);
 
+  /**
+   * **Hide / Show** — the designer's mock, 26 Sep 2026. Folded, the card keeps
+   * its label row and the verse's first line, ending in an ellipsis; the rule,
+   * the book and Share go.
+   *
+   * The resting state is `data-sutra-collapsed` on <html>, not this state:
+   * the pre-hydration script paints it from prefs, so a folded card never
+   * opens and snaps shut on load. This mirror exists for `aria-expanded`, and
+   * starts open to match what the server rendered.
+   *
+   * The fold is measured, not transitioned. Height to and from `auto` is
+   * something CSS can only animate in Chromium, and iOS is where this is read.
+   * Both heights are taken with the page in its real end state, then the body
+   * is tweened between them with the Web Animations API while it clips — so
+   * the verse's lower lines slide under the edge rather than vanishing, and
+   * everything below the card rides up with it.
+   */
+  const [collapsed, setCollapsed] = useState(false);
+  const body = useRef<HTMLDivElement>(null);
+  const more = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setCollapsed(document.documentElement.hasAttribute("data-sutra-collapsed"));
+  }, []);
+
+  const toggle = () => {
+    const root = document.documentElement;
+    const next = !collapsed;
+    const rest = () => {
+      if (next) root.setAttribute("data-sutra-collapsed", "1");
+      else root.removeAttribute("data-sutra-collapsed");
+    };
+    setCollapsed(next);
+    setPrefs({ sutraCollapsed: next });
+    track("sutra_fold", { state: next ? "hidden" : "shown" });
+
+    const el = body.current;
+    const foot = more.current;
+    if (!el || !foot || !el.animate || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      rest();
+      return;
+    }
+
+    // From wherever it is now — mid-fold, if the reader pressed twice.
+    const from = el.getBoundingClientRect().height;
+    el.getAnimations().forEach((a) => a.cancel());
+    foot.getAnimations().forEach((a) => a.cancel());
+
+    // Where it ends: put the page in its end state and read the height.
+    rest();
+    el.style.height = "";
+    const to = el.getBoundingClientRect().height;
+    // Folding, the verse and the footer stay laid out until the edge has
+    // passed them; the clamp and the `display: none` land when it finishes.
+    if (next) root.removeAttribute("data-sutra-collapsed");
+
+    el.style.overflow = "hidden";
+    const fold = el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+      duration: 420,
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+    });
+    foot.animate(
+      next ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 1 }],
+      next
+        ? { duration: 200, easing: "ease-out", fill: "forwards" }
+        : { duration: 260, delay: 140, easing: "ease-out", fill: "backwards" }
+    );
+    fold.onfinish = () => {
+      rest();
+      el.style.overflow = "";
+      foot.getAnimations().forEach((a) => a.cancel());
+    };
+  };
+
+  // 44px targets (design-system.md), laid out smaller: the negative margins
+  // keep the label row the height of its text, and let neighbouring hit areas
+  // overlap sideways so the arrows, date and Hide fit a phone's row in one line.
   const arrow =
-    "flex h-7 w-7 items-center justify-center rounded-full text-(--sutra-soft) transition " +
+    "-mx-3 -my-2 flex h-11 w-11 items-center justify-center rounded-full text-(--sutra-soft) transition " +
     "hover:bg-(--sutra-chip) disabled:opacity-25 disabled:hover:bg-transparent";
 
   return (
@@ -86,18 +163,18 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
         background: "var(--sutra-bg)",
       }}
     >
-      <div className="flex items-center gap-2">
-        <span aria-hidden style={{ color: "var(--color-accent-deep)" }}>
+      <div className="flex items-center gap-1">
+        <span aria-hidden className="me-0.5" style={{ color: "var(--color-accent-deep)" }}>
           <SunIcon />
         </span>
         <figcaption
-          className="text-xs font-bold uppercase tracking-[0.09em]"
+          className="min-w-0 truncate text-xs font-bold uppercase tracking-[0.09em]"
           style={{ color: "var(--color-accent-deep)" }}
         >
           {browsing ? SUTRA : `${SUTRA} of the day`}
         </figcaption>
 
-        <span className="ml-auto flex items-center gap-0.5">
+        <span className="ml-auto flex shrink-0 items-center">
           <button
             type="button"
             onClick={() => go(sutra.offset - 1)}
@@ -105,9 +182,9 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
             aria-label={`Previous ${SUTRA}`}
             className={arrow}
           >
-            <ChevronDown className="h-4 w-4 rotate-90" />
+            <ChevronDown className="h-5 w-5 rotate-90" />
           </button>
-          <span className="text-xs font-semibold text-[#B08968]">
+          <span className="whitespace-nowrap text-xs font-semibold text-[#B08968]">
             {sutraDate(sutra.sutra_date)}
           </span>
           <button
@@ -117,22 +194,49 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
             aria-label={`Next ${SUTRA}`}
             className={arrow}
           >
-            <ChevronDown className="h-4 w-4 -rotate-90" />
+            <ChevronDown className="h-5 w-5 -rotate-90" />
+          </button>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-expanded={!collapsed}
+            aria-controls="sutra-body"
+            className="group relative -my-2 -me-1.5 flex min-h-11 items-center ps-1 pe-1.5"
+          >
+            <span
+              // Both words stacked in one cell, the idle one invisible, so the
+              // pill is the width of the wider word in both states and the
+              // label row does not shift when it is pressed.
+              className="grid rounded-control border border-(--sutra-border) bg-(--sutra-chip) px-2 py-1 text-center text-xs font-semibold transition group-hover:brightness-105"
+              style={{ color: "var(--color-accent-deep)" }}
+            >
+              <span className="sutra-label-hide [grid-area:1/1]">Hide</span>
+              <span className="sutra-label-show [grid-area:1/1]">Show</span>
+            </span>
           </button>
         </span>
       </div>
 
-      <div aria-live="polite" className={busy ? "opacity-50 transition-opacity" : "transition-opacity"}>
+      <div
+        ref={body}
+        id="sutra-body"
+        aria-live="polite"
+        // pt-3 here rather than a margin on the verse: a margin collapses out
+        // through this box while it is plain and stays inside it while the
+        // fold clips it, so the verse jumped 12px at both ends of the fold.
+        className={`pt-3 transition-opacity ${busy ? "opacity-50" : ""}`}
+      >
         {/* On desktop the verse grows but the measure is capped at the spec's
             46ch (1A desktop). Across a 1088px page an uncapped line of
             Devanagari is unreadable however large the type is. */}
         <blockquote
           lang="hi"
-          className="hi mt-3 max-w-[46ch] text-[1.1875rem] leading-[1.75] text-(--sutra-ink) lg:text-2xl"
+          className="hi sutra-verse max-w-[46ch] text-[1.1875rem] leading-[1.75] text-(--sutra-ink) lg:text-2xl"
         >
           <FormattedText text={sutra.text_hi} rich={sutra.text_rich} />
         </blockquote>
 
+        <div ref={more} className="sutra-more">
         <div
           aria-hidden
           className="my-4 h-px"
@@ -183,6 +287,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
             <ShareIcon className="h-3.5 w-3.5" />
             Share
           </button>
+        </div>
         </div>
       </div>
 
