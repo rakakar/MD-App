@@ -108,42 +108,20 @@ export function SettingsSheet(p: SettingsSheetProps) {
           </StepBtn>
         </div>
 
-        {/* The designer's order, 26 Sep 2026: size and face first, then the
-            paper, then whether words are marked, then how the page moves and
-            how dense it is. Margins and the way out to the app's Display
+        {/* The designer's order, 26 Sep 2026: size and line height first,
+            then the paper, whether words are marked, the face, and how the
+            page moves — with the two controls that only mean something in
+            Pages after it. Margins and the way out to the app's Display
             sheet are gone from here — the margin stays at whatever it was
             (Normal for everyone who never touched it), and the app's own
             display settings live in the shell, not in a book. */}
-        <Row label="Typeface">
-          {/* Each option is set in the face it selects — the sample is the
-              only description that actually tells you anything here. */}
-          <div
-            role="radiogroup"
-            aria-label="Typeface"
-            className="flex gap-1 rounded-control bg-current/[0.06] p-1"
-          >
-            {FACES.map((f) => {
-              const active = p.face === f.id;
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={f.label}
-                  onClick={() => p.onFace(f.id)}
-                  className={`min-h-11 flex-1 rounded-control py-1 transition-colors ${
-                    active ? "bg-(--reader-bg) font-semibold shadow-card" : "text-(--reader-ink-soft)"
-                  }`}
-                >
-                  <span lang="hi" className="block text-lg leading-tight" style={{ fontFamily: f.stack }}>
-                    सत्य
-                  </span>
-                  <span className="block text-xs">{f.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <Row label="Line height">
+          <Segmented
+            ariaLabel="Line height"
+            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
+            value={p.lineHeight}
+            onChange={p.onLineHeight}
+          />
         </Row>
 
         <Row label="Theme">
@@ -197,6 +175,38 @@ export function SettingsSheet(p: SettingsSheetProps) {
           onChange={p.onGlossaryUnderline}
         />
 
+        <Row label="Typeface">
+          {/* Each option is set in the face it selects — the sample is the
+              only description that actually tells you anything here. */}
+          <div
+            role="radiogroup"
+            aria-label="Typeface"
+            className="flex gap-1 rounded-control bg-current/[0.06] p-1"
+          >
+            {FACES.map((f) => {
+              const active = p.face === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={f.label}
+                  onClick={() => p.onFace(f.id)}
+                  className={`min-h-11 flex-1 rounded-control py-1 transition-colors ${
+                    active ? "bg-(--reader-bg) font-semibold shadow-card" : "text-(--reader-ink-soft)"
+                  }`}
+                >
+                  <span lang="hi" className="block text-lg leading-tight" style={{ fontFamily: f.stack }}>
+                    सत्य
+                  </span>
+                  <span className="block text-xs">{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Row>
+
         <Row label="Layout">
           <Segmented
             ariaLabel="Reading mode"
@@ -206,15 +216,6 @@ export function SettingsSheet(p: SettingsSheetProps) {
             ]}
             value={p.mode}
             onChange={p.onMode}
-          />
-        </Row>
-
-        <Row label="Line height">
-          <Segmented
-            ariaLabel="Line height"
-            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
-            value={p.lineHeight}
-            onChange={p.onLineHeight}
           />
         </Row>
 
