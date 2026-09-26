@@ -37,15 +37,16 @@ const tiroDevanagariHindi = Tiro_Devanagari_Hindi({
 });
 
 // Devanagari UI labels (chapter rows, tabs) and the alternate reading face
-// (settings → Typeface). Not preloaded: it appears below the fold on most
-// first paints, and preloading both Devanagari faces would cost every first
-// paint a second download.
+// (settings → Typeface), which is now the reader's default. Preloaded since
+// then: without it a chapter paints in the fallback and reflows when Mukta
+// lands, which on a justified page moves every line. Tiro stays preloaded too —
+// it is still the book face everywhere outside the reader.
 const mukta = Mukta({
   variable: "--font-mukta",
   subsets: ["devanagari", "latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
-  preload: false,
+  preload: true,
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://welfareinfo.net";
@@ -176,7 +177,7 @@ var m=document.querySelector('meta[name="theme-color"]');
 if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m)}
 m.setAttribute("content",reading&&rbg?rbg:t==="dark"?"#14110f":t==="sepia"?"#f5ebdc":"#faf7f3");
 d.setAttribute("data-reader-margin",String(p.margin==null?1:p.margin));
-d.setAttribute("data-reader-face",p.face||"serif");
+d.setAttribute("data-reader-face",p.face||"sans");
 if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale));
 if(p.boldText)d.setAttribute("data-bold","1");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
@@ -195,7 +196,7 @@ export default function RootLayout({
       lang="en"
       data-theme="light"
       data-reader-margin="1"
-      data-reader-face="serif"
+      data-reader-face="sans"
       data-reader-theme="original"
       suppressHydrationWarning
       className={`${instrumentSans.variable} ${newsreader.variable} ${tiroDevanagariHindi.variable} ${mukta.variable} h-full antialiased`}

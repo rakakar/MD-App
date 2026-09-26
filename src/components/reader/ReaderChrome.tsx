@@ -102,8 +102,8 @@ export function ReaderTopBar({
     >
       {/* A fixed 16px gutter, not `.reader-content`. The bar used to be laid
           out on the reading measure, which meant its controls moved whenever
-          the reader did: the margin presets set `--reader-pad` to 13.6, 21.6 or
-          36px, so changing the text's margins walked the back button across the
+          the reader did: the margin presets set `--reader-pad` to 12, 16 or
+          28px, so changing the text's margins walked the back button across the
           screen — and on a wide window the whole bar pulled in to the 40rem
           column and left its own corners empty. The chrome is the app's, not
           the page's; it stays put while the page reflows under it. */}

@@ -322,7 +322,8 @@
 
   /* typography, written before first paint by the inline script in layout.tsx
      so a saved font size / spacing never flashes at its default first */
-  --reader-font-scale: 1;
+  /* matches DEFAULT_PREFS.fontScale in storage.ts */
+  --reader-font-scale: 1.05;
   /* 2.05 ≈ the spec's 2.0 (1D), and the value the middle preset already uses.
      Tiro's मात्रा reach further above and below the baseline than the face
      this replaced, so the old 1.85 collided at the default size. */
@@ -343,15 +344,18 @@
 /* Margin presets. On a phone this is mostly gutter width; on a wide screen it
    also tightens the measure, which is what actually controls comfort there. */
 [data-reader-margin="0"] {
-  --reader-pad: 0.85rem;
+  --reader-pad: 0.75rem;
   --reader-measure: 46rem;
 }
+/* Normal is the app's own 16px gutter. It was 21.6px; the default text went up
+   to ~19px for older eyes, and the width given back is about half a word a
+   line on a phone — what keeps justified lines from stretching. */
 [data-reader-margin="1"] {
-  --reader-pad: 1.35rem;
+  --reader-pad: 1rem;
   --reader-measure: 40rem;
 }
 [data-reader-margin="2"] {
-  --reader-pad: 2.25rem;
+  --reader-pad: 1.75rem;
   --reader-measure: 33rem;
 }
 
@@ -953,7 +957,7 @@ html[data-reader-face="sans"] .reader-surface .hi {
 .reader-content {
   margin-inline: auto;
   max-width: var(--reader-measure, 40rem);
-  padding-inline: var(--reader-pad, 1.35rem);
+  padding-inline: var(--reader-pad, 1rem);
 }
 
 /* Avoid one-word last lines in long Devanagari paragraphs. */

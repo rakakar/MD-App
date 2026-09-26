@@ -91,7 +91,7 @@ export const READER_SURFACES: ReaderSurface[] = [
 
 /** Typography steps. Exported so the reader UI, the settings page and the
  *  pre-hydration inline script all agree on the same ladder. */
-export const FONT_SCALES = [0.85, 0.95, 1, 1.1, 1.2, 1.35, 1.5, 1.7];
+export const FONT_SCALES = [0.85, 0.95, 1, 1.05, 1.1, 1.2, 1.35, 1.5, 1.7];
 /**
  * PRD §5 sets a floor of 1.8 for Devanagari — its matras sit above and below
  * the line, so anything tighter collides. The ladder therefore only opens the
@@ -212,8 +212,20 @@ export interface Prefs {
 export const PREFS_KEY = "md.prefs.v1";
 
 export const DEFAULT_PREFS: Prefs = {
-  fontScale: 1,
-  face: "serif",
+  /**
+   * Mukta at ~19px (1.05 × 18) — the designer's call, 26 Sep 2026, for a
+   * readership mostly past 40. Mukta's even stroke holds up where Tiro's
+   * hairlines (matras, anusvara, half-forms in conjuncts) blur first, and its
+   * larger letter body makes 19px read like ~21px of Tiro without costing
+   * words per line — which is what keeps justified lines tight. A deviation
+   * from the comps (design-system.md). Tiro stays one tap away as "Serif".
+   *
+   * Only new readers get these: setPrefs writes the whole merged object, so
+   * anyone who has changed any setting already has fontScale 1 / serif saved.
+   * That is deliberate — some of them chose it.
+   */
+  fontScale: 1.05,
+  face: "sans",
   // matches --reader-line-height in globals.css; the spec asks for 2.0 and
   // this is the nearest preset (LINE_HEIGHTS[1])
   lineHeight: 2.05,

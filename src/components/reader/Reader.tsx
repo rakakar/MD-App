@@ -31,6 +31,7 @@ import {
   nearestStep,
   rememberReadingHome,
   setPrefs,
+  DEFAULT_PREFS,
   FONT_SCALES,
   FONT_FACES,
   LINE_HEIGHTS,
@@ -191,10 +192,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [chapterNumber, setChapterNumber] = useState(initialChapterNumber);
   const [chapterLoading, setChapterLoading] = useState(initialChapter === null);
   const [mode, setMode] = useState<ReadingMode>(book.book_type === "print" ? "page" : "scroll");
-  const [fontScale, setFontScale] = useState(1);
-  const [face, setFace] = useState<ReaderFace>("serif");
-  const [lineHeight, setLineHeight] = useState(1.85);
-  const [margin, setMargin] = useState(1);
+  const [fontScale, setFontScale] = useState(DEFAULT_PREFS.fontScale);
+  const [face, setFace] = useState<ReaderFace>(DEFAULT_PREFS.face);
+  const [lineHeight, setLineHeight] = useState(DEFAULT_PREFS.lineHeight);
+  const [margin, setMargin] = useState(DEFAULT_PREFS.margin);
   const [tapZones, setTapZones] = useState(true);
   const [glossaryUnderline, setGlossaryUnderline] = useState(false);
   /** the word whose definition is open, if any */
@@ -355,7 +356,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   useEffect(() => {
     const p = getPrefs();
     setFontScale(nearestStep(FONT_SCALES, p.fontScale));
-    setFace(FONT_FACES.includes(p.face) ? p.face : "serif");
+    setFace(FONT_FACES.includes(p.face) ? p.face : DEFAULT_PREFS.face);
     setLineHeight(nearestStep(LINE_HEIGHTS, p.lineHeight));
     setMargin(p.margin);
     setTapZones(p.tapZones);
