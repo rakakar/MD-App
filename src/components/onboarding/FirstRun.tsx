@@ -58,6 +58,12 @@ function WorkspaceTag({ ws }: { ws?: WorkspaceId }) {
  * sees it again, which is the correct behaviour for something explaining an
  * interface they are, as far as this device knows, meeting for the first time.
  */
+/** A card's headline — the app's page-title step, as Centres and Connect set
+ *  theirs; not the taller shelf step, since it sits above a paragraph rather
+ *  than over a whole screen — and the sentence under it. */
+const TITLE = "font-display text-2xl font-medium leading-tight tracking-[-0.015em]";
+const BODY = "text-sm leading-relaxed text-ink-soft";
+
 export function FirstRun({ onDone }: { onDone: () => void }) {
   const [i, setI] = useState(0);
   /** live finger offset in px while a drag is in progress, else 0 */
@@ -236,26 +242,32 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
             >
               <WorkspaceTag ws={c.workspace} />
               <Fragment id={c.id} />
-              {/* The app's page-title step — `font-display text-2xl
-                  font-medium`, as Centres and Connect set theirs. Not the
-                  taller shelf step: a card's headline sits above a
-                  paragraph rather than over a whole screen. */}
               {/* Two lines of title and four of body reserved on every card,
                   whatever this one needs — one and three in the desktop panel,
                   where every title fits a line and the space is what a short
-                  window (a 1024×768 iPad) cannot spare. `shrink-0` on both, so
-                  the stage is the only thing that gives way: a min-height is
-                  also a floor the flexbox may shrink the words down to, and a
-                  four-line body then spilled out of a three-line box. The stage gives up height when the
-                  deck is short of room, and it gave up whatever *this* card's
-                  words left over — so on a short window a one-line title sat
-                  a line lower than a two-line one and the heading stepped as
-                  the reader swiped. With the words the same height on all six,
-                  the stage yields the same amount on all six too. */}
-              <h2 className="mt-6 min-h-[2lh] shrink-0 font-display lg:mt-5 lg:min-h-[1lh] text-2xl font-medium leading-tight tracking-[-0.015em]">
-                {c.title}
-              </h2>
-              <p className="mt-2.5 min-h-[4lh] shrink-0 text-sm lg:min-h-[3lh] leading-relaxed text-ink-soft">{c.body}</p>
+                  window (a 1024×768 iPad) cannot spare. The stage gives up
+                  height when the deck is short of room, and it gave up
+                  whatever *this* card's words left over — so a one-line title
+                  sat a line lower than a two-line one and the heading stepped
+                  as the reader swiped. With the words the same height on all
+                  six, the stage yields the same amount on all six too.
+
+                  The reservation is an invisible twin in the same grid cell,
+                  set in the same type, so it is exact at any text size; the
+                  real words sit at the top of it. That puts the slack *under*
+                  the sentence — it used to be a min-height on the title, which
+                  left a blank line between a one-line title and its sentence.
+                  `shrink-0`, so the stage is the only thing that gives way. */}
+              <div className="mt-6 grid shrink-0 lg:mt-5">
+                <div aria-hidden className="invisible [grid-area:1/1]">
+                  <div className={`${TITLE} min-h-[2lh] lg:min-h-[1lh]`} />
+                  <div className={`${BODY} mt-2.5 min-h-[4lh] lg:min-h-[3lh]`} />
+                </div>
+                <div className="[grid-area:1/1]">
+                  <h2 className={TITLE}>{c.title}</h2>
+                  <p className={`${BODY} mt-2.5`}>{c.body}</p>
+                </div>
+              </div>
             </section>
           ))}
         </div>
