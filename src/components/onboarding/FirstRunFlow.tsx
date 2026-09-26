@@ -110,16 +110,18 @@ export function FirstRunFlow({ onDone }: { onDone: () => void }) {
               right. */}
           {started && (
             <div className="launch-panel absolute inset-0 overflow-y-auto bg-surface lg:relative lg:inset-auto lg:flex lg:min-w-0 lg:flex-1 lg:justify-end lg:bg-transparent">
-              {/* 46.5rem, and the number is measured rather than chosen: the deck's
-                  tallest card is 689px in this column and the card's own padding
-                  is 48, so 744 is the first height that holds it. The study drew
-                  724 and that is 15px short — enough for a scrollbar down the
-                  side of a panel nobody should be scrolling. `overflow-hidden`
+              {/* 48.25rem, and the number is measured rather than chosen: it
+                  is the first height at which the stage keeps its full 424px
+                  on all six cards. It was 744 (46.5rem); the workspace tag
+                  above each fragment and the lines every card now reserves for
+                  its words (see `FirstRun`) take 28 more. The study drew 724, which
+                  was already 15px short: enough for a scrollbar down the side
+                  of a panel nobody should be scrolling. `overflow-hidden`
                   rather than `auto` so there is no scrollbar to appear at all;
                   what keeps the controls on screen when the *window* is shorter
                   than that is the stage's ability to give up height, not a
                   scroll. */}
-              <div className="h-full w-full lg:h-[min(92dvh,46.5rem)] lg:max-w-[33.75rem] lg:overflow-hidden lg:rounded-sheet lg:border lg:border-rule lg:bg-card lg:px-7 lg:pb-[1.375rem] lg:pt-[1.625rem] lg:shadow-raised">
+              <div className="h-full w-full lg:h-[min(92dvh,48.25rem)] lg:max-w-[33.75rem] lg:overflow-hidden lg:rounded-sheet lg:border lg:border-rule lg:bg-card lg:px-7 lg:pb-[1.375rem] lg:pt-[1.625rem] lg:shadow-raised">
                 <FirstRun onDone={onDone} />
               </div>
             </div>

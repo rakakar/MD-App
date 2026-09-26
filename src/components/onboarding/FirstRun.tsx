@@ -240,10 +240,22 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
                   font-medium`, as Centres and Connect set theirs. Not the
                   taller shelf step: a card's headline sits above a
                   paragraph rather than over a whole screen. */}
-              <h2 className="mt-6 font-display text-2xl font-medium leading-tight tracking-[-0.015em]">
+              {/* Two lines of title and four of body reserved on every card,
+                  whatever this one needs — one and three in the desktop panel,
+                  where every title fits a line and the space is what a short
+                  window (a 1024×768 iPad) cannot spare. `shrink-0` on both, so
+                  the stage is the only thing that gives way: a min-height is
+                  also a floor the flexbox may shrink the words down to, and a
+                  four-line body then spilled out of a three-line box. The stage gives up height when the
+                  deck is short of room, and it gave up whatever *this* card's
+                  words left over — so on a short window a one-line title sat
+                  a line lower than a two-line one and the heading stepped as
+                  the reader swiped. With the words the same height on all six,
+                  the stage yields the same amount on all six too. */}
+              <h2 className="mt-6 min-h-[2lh] shrink-0 font-display lg:mt-5 lg:min-h-[1lh] text-2xl font-medium leading-tight tracking-[-0.015em]">
                 {c.title}
               </h2>
-              <p className="mt-2.5 text-sm leading-relaxed text-ink-soft">{c.body}</p>
+              <p className="mt-2.5 min-h-[4lh] shrink-0 text-sm lg:min-h-[3lh] leading-relaxed text-ink-soft">{c.body}</p>
             </section>
           ))}
         </div>

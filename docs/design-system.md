@@ -180,11 +180,14 @@ debugging pass:
   and at zero opacity it was still the element under the cursor. It needs
   `pointer-events-none`, not just `opacity-0`.
 - **The panel was 15px too short, and 15px is a scrollbar.** The study draws it at 724
-  and the deck's tallest card is 689 in that column, which with the card's own 48px of
-  padding needs 744. Fixed at 46.5rem, `overflow-hidden` rather than `auto` so there is
+  and the deck's tallest card needed 744. It is 772 now (48.25rem): the workspace tag
+  above each fragment (26 Sep 2026) and the lines every card reserves for its words — one
+  of title and three of body on desktop, so the title lands at the same y on all six
+  whatever the window gives the stage — take 28 more. Fixed at that height, `overflow-hidden` rather than `auto` so there is
   no scrollbar to appear at all. What keeps the controls on screen when the *window* is
-  shorter than 744 is `STAGE_H`'s floor: the stage gives up height down to 336px — 3px on
-  a 1280×800 laptop, 57 on a 1024×768 iPad in landscape — and since it is centred and
+  shorter than 772 is `STAGE_H`'s floor: the stage gives up height down to 336px — 36px on
+  a 1280×800 laptop, the same on all six cards; on a 1024×768 iPad the first card's
+  body wraps to a fourth line and its title sits 23px above the others' — and since it is centred and
   already `overflow-hidden`, it degrades quietly where a clipped control or a scrollbar
   would not.
 - **`opacity-0` cannot fade out an element with a running animation.** The button's
