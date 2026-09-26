@@ -105,6 +105,8 @@ export interface SutraCardInput {
   text: string;
   /** the book it is from */
   source: string;
+  /** the printed page, as the Sutra card shows it; omitted when there is none */
+  page?: string;
   /** which painting to print it on; defaults to the first */
   plate?: SutraPlate;
 }
@@ -197,8 +199,10 @@ function fitVerse(
 export async function renderSutraCard({
   text,
   source,
+  page,
   plate = SUTRA_PLATES[0],
 }: SutraCardInput): Promise<Blob> {
+  const pageLine = page ? `पृष्ठ क्र. ${page}` : "";
   const devanagari = family("--font-tiro-devanagari", "serif");
   const ui = family("--font-mukta", "sans-serif");
 
@@ -209,7 +213,7 @@ export async function renderSutraCard({
     await Promise.all([
       document.fonts.load(`400 62px ${devanagari}`, text),
       document.fonts.load(`600 30px ${ui}`, `${AUTHOR}${EYEBROW}${source}`),
-      document.fonts.load(`400 26px ${ui}`, source),
+      document.fonts.load(`400 26px ${ui}`, `${source}${pageLine}`),
     ]).catch(() => undefined);
     await document.fonts.ready;
   }
@@ -287,6 +291,13 @@ export async function renderSutraCard({
   ctx.fillStyle = MUTED;
   ctx.font = `400 32px ${ui}`;
   ctx.fillText(source, mid, ruleY + 124);
+
+  // The page under the book, a step smaller, as on the card in the app — so a
+  // reader who receives it can find the verse in their own copy.
+  if (pageLine) {
+    ctx.font = `400 28px ${ui}`;
+    ctx.fillText(pageLine, mid, ruleY + 170);
+  }
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

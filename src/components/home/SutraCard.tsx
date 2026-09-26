@@ -259,12 +259,22 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
           <Link
             href={refToHref(sutra.canonical_ref)}
             lang="hi"
-            className="group flex min-w-0 flex-1 flex-col gap-0.5 text-(--sutra-soft)"
+            className="group flex min-w-0 flex-1 flex-col text-(--sutra-soft)"
           >
-            <span className="hi text-[0.9375rem] font-medium leading-snug underline-offset-2 group-hover:underline">
+            {/* `hi-tight`, not `leading-*`: `.hi` is unlayered and outranks
+                any leading utility, so the title was set at the body's 1.85
+                and stood a line's worth of air above the page. */}
+            <span className="hi hi-tight text-[0.9375rem] font-medium underline-offset-2 group-hover:underline">
               {sutra.book_title}
             </span>
-            {page && <span className="hi text-[0.8125rem] leading-snug">पृष्ठ क्र. {page}</span>}
+            {page && (
+              <span
+                className="text-[0.8125rem] leading-tight"
+                style={{ fontFamily: "var(--font-devanagari-sans)" }}
+              >
+                पृष्ठ क्र. {page}
+              </span>
+            )}
           </Link>
 
           {/* Saved is reachable from the account menu, and the bookmark that
@@ -307,6 +317,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
         onClose={() => setSharing(false)}
         text={sutra.text_hi}
         source={sutra.book_title}
+        page={page}
         citation={citationText(sutra.text_hi, sutra.canonical_ref)}
         date={sutra.sutra_date}
       />

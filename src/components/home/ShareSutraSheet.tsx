@@ -31,6 +31,7 @@ export function ShareSutraSheet({
   onClose,
   text,
   source,
+  page,
   citation,
   date,
 }: {
@@ -38,6 +39,8 @@ export function ShareSutraSheet({
   onClose: () => void;
   text: string;
   source: string;
+  /** the printed page, drawn under the book; "" when the verse has none */
+  page: string;
   /**
    * The verse as the app has always written it out — `citationText`. Kept as
    * the payload for a browser that cannot share a file, so that path is
@@ -66,7 +69,7 @@ export function ShareSutraSheet({
     let objectUrl: string | null = null;
     setFailed(false);
 
-    renderSutraCard({ text, source, plate })
+    renderSutraCard({ text, source, page, plate })
       .then((blob) => {
         if (dead) return;
         blobRef.current = blob;
@@ -83,7 +86,7 @@ export function ShareSutraSheet({
       setUrl(null);
       blobRef.current = null;
     };
-  }, [open, text, source, plate]);
+  }, [open, text, source, page, plate]);
 
   const file = () =>
     blobRef.current
