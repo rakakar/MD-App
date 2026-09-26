@@ -87,6 +87,9 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
   },
 ];
 
+/** Beside the mark at the top of every card, so the deck says whose it is. */
+export const DECK_BRAND = "MD Study App";
+
 /** The label on the button that advances — "Start reading" on the last card. */
 export function advanceLabel(index: number): string {
   return index === ONBOARDING_CARDS.length - 1 ? "Start reading" : "Next";

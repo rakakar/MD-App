@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrandMark, ChevronRight } from "@/components/shell/icons";
 import { ctaPrimary } from "@/components/ui";
-import { advanceLabel, ONBOARDING_CARDS } from "@/lib/onboarding";
+import { advanceLabel, DECK_BRAND, ONBOARDING_CARDS } from "@/lib/onboarding";
 import { WORKSPACES, type WorkspaceId } from "@/lib/workspaceConfig";
 import { Fragment } from "./Fragments";
 
@@ -186,8 +186,12 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
        safe-area insets supply on a phone. */
     <div className="mx-auto flex h-full min-h-dvh w-full max-w-lg flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 lg:min-h-0 lg:px-0 lg:pb-0 lg:pt-0">
       <div className="flex items-center justify-between">
-        <span aria-hidden style={{ color: "var(--ws-color)" }}>
-          <BrandMark className="h-7 w-7" />
+        {/* The mark and the app's name, as the sidebar sets them. */}
+        <span className="flex items-center gap-2">
+          <span aria-hidden style={{ color: "var(--ws-color)" }}>
+            <BrandMark className="h-7 w-7" />
+          </span>
+          <span className="text-sm font-semibold tracking-[-0.01em]">{DECK_BRAND}</span>
         </span>
         <button
           ref={closeRef}
