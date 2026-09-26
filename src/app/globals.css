@@ -324,10 +324,12 @@
      so a saved font size / spacing never flashes at its default first */
   /* matches DEFAULT_PREFS.fontScale in storage.ts */
   --reader-font-scale: 1.05;
-  /* 2.05 ≈ the spec's 2.0 (1D), and the value the middle preset already uses.
-     Tiro's मात्रा reach further above and below the baseline than the face
-     this replaced, so the old 1.85 collided at the default size. */
-  --reader-line-height: 2.05;
+  /* Compact (1.85) by default — the designer's call, 26 Sep 2026, alongside
+     the move to Mukta. The spec asks for 2.0; the PRD floor for Devanagari is
+     1.8. Tiro's matras collided at 1.85 when Tiro was the default at 18px;
+     checked again with Mukta and Tiro at ~19px on SBVD ch. 4, neither touches.
+     Matches DEFAULT_PREFS.lineHeight in storage.ts. */
+  --reader-line-height: 1.85;
 
   /* height of the audio player when one is mounted; lets the reader's own
      bottom chrome stack above it without magic numbers */
@@ -900,7 +902,7 @@ html[data-reader-face="sans"] .reader-surface .hi {
 /* While reading, body copy follows the user's line-spacing choice. Scoped to
    the reader so book titles and nav labels elsewhere keep their own rhythm. */
 .reader-surface .hi {
-  line-height: var(--reader-line-height, 2.05);
+  line-height: var(--reader-line-height, 1.85);
 }
 
 /* …but the reader's *chrome* is not body copy, and it was following that
@@ -931,7 +933,7 @@ html[data-reader-face="sans"] .reader-surface .hi {
    every setting. Written on the elements rather than as a token because the
    em has to resolve in the paragraph's own font size. */
 .reader-content .reader-para {
-  margin-block: calc((var(--reader-line-height, 2.05) - 1.15) * 1em);
+  margin-block: calc((var(--reader-line-height, 1.85) - 1.15) * 1em);
 }
 
 /* List items: half a paragraph break apart. Enough that three bullets read as
@@ -939,7 +941,7 @@ html[data-reader-face="sans"] .reader-surface .hi {
    reading as one group. Margins collapse, so a list after a paragraph still
    opens with the full paragraph gap. */
 .reader-content .reader-list {
-  margin-block: calc((var(--reader-line-height, 2.05) - 1.15) * 0.5em);
+  margin-block: calc((var(--reader-line-height, 1.85) - 1.15) * 0.5em);
 }
 /* In the hanging layout the grid's column gap is the space after the marker. */
 .reader-list.grid .reader-marker {

@@ -226,9 +226,9 @@ export const DEFAULT_PREFS: Prefs = {
    */
   fontScale: 1.05,
   face: "sans",
-  // matches --reader-line-height in globals.css; the spec asks for 2.0 and
-  // this is the nearest preset (LINE_HEIGHTS[1])
-  lineHeight: 2.05,
+  // Compact (LINE_HEIGHTS[0]); matches --reader-line-height in globals.css,
+  // where the reasoning is
+  lineHeight: 1.85,
   margin: 1,
   /**
    * Light, not `system`, at the designer's decision.
