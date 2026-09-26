@@ -52,11 +52,6 @@ const SPACING = [
   { label: "Airy", value: LINE_HEIGHTS[2] },
 ];
 
-const MARGINS = [
-  { label: "Narrow", value: 0 },
-  { label: "Normal", value: 1 },
-  { label: "Wide", value: 2 },
-];
 
 interface SettingsSheetProps {
   open: boolean;
@@ -67,8 +62,6 @@ interface SettingsSheetProps {
   onFace: (v: ReaderFace) => void;
   lineHeight: number;
   onLineHeight: (v: number) => void;
-  margin: number;
-  onMargin: (v: number) => void;
   mode: ReadingMode;
   onMode: (v: ReadingMode) => void;
   tapZones: boolean;
@@ -77,8 +70,6 @@ interface SettingsSheetProps {
   glossaryUnderline: boolean;
   onGlossaryUnderline: (v: boolean) => void;
   onGoToPage: () => void;
-  /** out to the app-wide Display sheet — app theme, app text size, bold */
-  onAppDisplay: () => void;
 }
 
 export function SettingsSheet(p: SettingsSheetProps) {
@@ -116,6 +107,44 @@ export function SettingsSheet(p: SettingsSheetProps) {
             <span className="text-xl">A</span>
           </StepBtn>
         </div>
+
+        {/* The designer's order, 26 Sep 2026: size and face first, then the
+            paper, then whether words are marked, then how the page moves and
+            how dense it is. Margins and the way out to the app's Display
+            sheet are gone from here — the margin stays at whatever it was
+            (Normal for everyone who never touched it), and the app's own
+            display settings live in the shell, not in a book. */}
+        <Row label="Typeface">
+          {/* Each option is set in the face it selects — the sample is the
+              only description that actually tells you anything here. */}
+          <div
+            role="radiogroup"
+            aria-label="Typeface"
+            className="flex gap-1 rounded-control bg-current/[0.06] p-1"
+          >
+            {FACES.map((f) => {
+              const active = p.face === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={f.label}
+                  onClick={() => p.onFace(f.id)}
+                  className={`min-h-11 flex-1 rounded-control py-1 transition-colors ${
+                    active ? "bg-(--reader-bg) font-semibold shadow-card" : "text-(--reader-ink-soft)"
+                  }`}
+                >
+                  <span lang="hi" className="block text-lg leading-tight" style={{ fontFamily: f.stack }}>
+                    सत्य
+                  </span>
+                  <span className="block text-xs">{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Row>
 
         <Row label="Theme">
           <div role="radiogroup" aria-label="Reading surface" className="grid grid-cols-3 gap-2.5">
@@ -157,37 +186,16 @@ export function SettingsSheet(p: SettingsSheetProps) {
           </p>
         </Row>
 
-        <Row label="Typeface">
-          {/* Each option is set in the face it selects — the sample is the
-              only description that actually tells you anything here. */}
-          <div
-            role="radiogroup"
-            aria-label="Typeface"
-            className="flex gap-1 rounded-control bg-current/[0.06] p-1"
-          >
-            {FACES.map((f) => {
-              const active = p.face === f.id;
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={f.label}
-                  onClick={() => p.onFace(f.id)}
-                  className={`min-h-11 flex-1 rounded-control py-1 transition-colors ${
-                    active ? "bg-(--reader-bg) font-semibold shadow-card" : "text-(--reader-ink-soft)"
-                  }`}
-                >
-                  <span lang="hi" className="block text-lg leading-tight" style={{ fontFamily: f.stack }}>
-                    सत्य
-                  </span>
-                  <span className="block text-xs">{f.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </Row>
+        {/* Off by default, and it stays wherever the reader leaves it. The
+            hint is the important half: with this off the definitions are
+            still there, just not advertised — so nobody has to accept a
+            marked-up page to get them. */}
+        <Toggle
+          label="Paribhasha overlay"
+          hint="Show word meanings on tap. Even with this off: press and hold any word."
+          checked={p.glossaryUnderline}
+          onChange={p.onGlossaryUnderline}
+        />
 
         <Row label="Layout">
           <Segmented
@@ -210,10 +218,6 @@ export function SettingsSheet(p: SettingsSheetProps) {
           />
         </Row>
 
-        <Row label="Margins">
-          <Segmented ariaLabel="Margins" options={MARGINS} value={p.margin} onChange={p.onMargin} />
-        </Row>
-
         {p.showTapZones && (
           <Toggle
             label="Tap edges to turn pages"
@@ -222,17 +226,6 @@ export function SettingsSheet(p: SettingsSheetProps) {
             onChange={p.onTapZones}
           />
         )}
-
-        {/* Off by default, and it stays wherever the reader leaves it. The
-            hint is the important half: with this off the definitions are
-            still there, just not advertised — so nobody has to accept a
-            marked-up page to get them. */}
-        <Toggle
-          label="Paribhasha overlay"
-          hint="Show word meanings on tap. Even with this off: press and hold any word."
-          checked={p.glossaryUnderline}
-          onChange={p.onGlossaryUnderline}
-        />
 
         {p.showTapZones && (
           <button
@@ -244,19 +237,6 @@ export function SettingsSheet(p: SettingsSheetProps) {
           </button>
         )}
 
-        {/* Everything above sets this book. This sets the app the book is
-            sitting in — and since the two themes became separate axes, that is
-            a different question rather than the same one twice. */}
-        <button
-          type="button"
-          onClick={p.onAppDisplay}
-          className="flex min-h-11 w-full items-center justify-between border-t border-(--reader-rule) pt-4 text-sm"
-        >
-          <span>App display settings</span>
-          <span aria-hidden className="text-(--reader-ink-soft)">
-            →
-          </span>
-        </button>
       </div>
     </Sheet>
   );

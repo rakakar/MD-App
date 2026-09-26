@@ -47,7 +47,6 @@ import { ReaderBottomBar, ReaderTopBar, SelectionBar } from "./ReaderChrome";
 import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
-import { DisplaySheet } from "@/components/shell/DisplaySheet";
 import { Sheet } from "./Sheet";
 import { SettingsSheet } from "./SettingsSheet";
 import { TocSheet } from "./TocSheet";
@@ -201,7 +200,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   /** the word whose definition is open, if any */
   const [defineWord, setDefineWord] = useState<string | null>(null);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
-  const [displayOpen, setDisplayOpen] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [readingSide, setReadingSide] = useState<ReadingSide>("translated");
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -1226,10 +1224,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     setLineHeight(v);
     setPrefs({ lineHeight: v });
   };
-  const changeMargin = (v: number) => {
-    setMargin(v);
-    setPrefs({ margin: v });
-  };
   const changeMode = (m: ReadingMode) => {
     setMode(m);
     setPrefs({ readingMode: m });
@@ -1717,8 +1711,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         onFace={changeFace}
         lineHeight={lineHeight}
         onLineHeight={changeLineHeight}
-        margin={margin}
-        onMargin={changeMargin}
         mode={mode}
         onMode={changeMode}
         tapZones={tapZones}
@@ -1730,16 +1722,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           setSettingsOpen(false);
           setGotoOpen(true);
         }}
-        onAppDisplay={() => {
-          setSettingsOpen(false);
-          setDisplayOpen(true);
-        }}
       />
-
-      {/* The other half of the pair. A reader who has just made the book text
-          as large as it goes is the likeliest person in the app to want the
-          menus larger too, and this is the moment they want it. */}
-      <DisplaySheet open={displayOpen} onClose={() => setDisplayOpen(false)} />
 
       <Sheet
         open={noteOpen && !!noteTarget}
