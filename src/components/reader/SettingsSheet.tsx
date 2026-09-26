@@ -2,6 +2,7 @@
 
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import {
+  DEFAULT_PREFS,
   FONT_SCALES,
   LINE_HEIGHTS,
   READER_SURFACES,
@@ -83,38 +84,59 @@ export function SettingsSheet(p: SettingsSheetProps) {
   return (
     <Sheet open={p.open} onClose={p.onClose} title="Theme & Settings">
       <div className="space-y-6 px-5 pt-4">
-        {/* Size, with a small A and a large A at the ends — the comps' shape,
-            and the one control on this sheet that needs no label because the
-            two letters are the label. */}
-        <div className="flex items-center gap-3">
-          <StepBtn onClick={() => stepFont(-1)} disabled={fontIndex === 0} ariaLabel="Smaller text">
-            <span className="text-sm">A</span>
-          </StepBtn>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-current/15" role="presentation">
-            <div
-              className="h-full rounded-full transition-[width] duration-150"
-              style={{
-                width: `${((fontIndex + 1) / FONT_SCALES.length) * 100}%`,
-                background: "var(--ws-color)",
-              }}
-            />
-          </div>
-          <StepBtn
-            onClick={() => stepFont(1)}
-            disabled={fontIndex === FONT_SCALES.length - 1}
-            ariaLabel="Larger text"
+        {/* Size. A−/A+ rather than a bare small and large A, so which way
+            each one goes is written on it; and feedback on every press — the
+            designer's call, 26 Sep 2026. The page behind moves too, but the
+            sheet covers most of it, so the sheet carries its own sample: a
+            line set in the reader's face at the size it will be, with the
+            step and whether it is the default underneath. */}
+        <div>
+          <div
+            aria-hidden
+            className="mb-3 flex h-14 items-center justify-center overflow-hidden rounded-control bg-current/[0.04] px-3"
           >
-            <span className="text-xl">A</span>
-          </StepBtn>
+            <span
+              lang="hi"
+              className="truncate leading-normal transition-[font-size] duration-150 ease-out motion-reduce:transition-none"
+              style={{
+                fontFamily: (FACES.find((f) => f.id === p.face) ?? FACES[0]).stack,
+                fontSize: `calc(1.125rem * ${p.fontScale})`,
+              }}
+            >
+              अक्षर का आकार
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <StepBtn onClick={() => stepFont(-1)} disabled={fontIndex === 0} ariaLabel="Smaller text">
+              <span className="text-sm font-semibold">
+                A<span className="text-xs">−</span>
+              </span>
+            </StepBtn>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-current/15" role="presentation">
+              <div
+                className="h-full rounded-full transition-[width] duration-150"
+                style={{
+                  width: `${((fontIndex + 1) / FONT_SCALES.length) * 100}%`,
+                  background: "var(--ws-color)",
+                }}
+              />
+            </div>
+            <StepBtn
+              onClick={() => stepFont(1)}
+              disabled={fontIndex === FONT_SCALES.length - 1}
+              ariaLabel="Larger text"
+            >
+              <span className="text-lg font-semibold">
+                A<span className="text-sm">+</span>
+              </span>
+            </StepBtn>
+          </div>
+          <p aria-live="polite" className="mt-2 text-center text-xs text-(--reader-ink-soft)">
+            Text size {fontIndex + 1} of {FONT_SCALES.length}
+            {p.fontScale === DEFAULT_PREFS.fontScale ? " · Default" : ""}
+          </p>
         </div>
 
-        {/* The designer's order, 26 Sep 2026: size and line height first,
-            then the paper, whether words are marked, the face, and how the
-            page moves — with the two controls that only mean something in
-            Pages after it. Margins and the way out to the app's Display
-            sheet are gone from here — the margin stays at whatever it was
-            (Normal for everyone who never touched it), and the app's own
-            display settings live in the shell, not in a book. */}
         <Row label="Line height">
           <Segmented
             ariaLabel="Line height"
