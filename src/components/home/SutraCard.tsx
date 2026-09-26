@@ -36,6 +36,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
   const [sutra, setSutra] = useState(initial);
   const [busy, setBusy] = useState(false);
   const browsing = sutra.offset !== 0;
+  const page = sutra.page_label || (sutra.page_number > 0 ? String(sutra.page_number) : "");
 
   useEffect(() => {
     track("sutra_view");
@@ -249,11 +250,21 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
               digits, at the end of a Devanagari title on the one card that is
               meant to be read rather than navigated. The link still lands on
               the exact verse; it just no longer recites its own coordinates. */}
+          {/* The book, then the printed page it is on — the same label the
+              reader's page divider shows (`page_label`, else `page_number`),
+              so "पृष्ठ क्र. 39" here is the page a reader lands on. None on
+              front matter, which owns no printed page. The title went up
+              from 12px: at that size Devanagari was the hardest thing on the
+              card to read, for a readership mostly past 40. */}
           <Link
             href={refToHref(sutra.canonical_ref)}
-            className="min-w-0 flex-1 text-xs font-medium text-(--sutra-soft) underline-offset-2 hover:underline"
+            lang="hi"
+            className="group flex min-w-0 flex-1 flex-col gap-0.5 text-(--sutra-soft)"
           >
-            <span lang="hi" className="hi">{sutra.book_title}</span>
+            <span className="hi text-[0.9375rem] font-medium leading-snug underline-offset-2 group-hover:underline">
+              {sutra.book_title}
+            </span>
+            {page && <span className="hi text-[0.8125rem] leading-snug">पृष्ठ क्र. {page}</span>}
           </Link>
 
           {/* Saved is reachable from the account menu, and the bookmark that
