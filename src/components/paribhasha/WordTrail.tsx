@@ -37,6 +37,7 @@ export function ParibhashaTrailSheet({
   // Words followed *from* `word`. Seeded rather than owned so the caller
   // stays the authority on whether the sheet is open at all.
   const [pushed, setPushed] = useState<string[]>([]);
+  const [at, setAt] = useState(0);
   const [seed, setSeed] = useState<string | null>(word);
   if (seed !== word) {
     // A new entry word replaces the chain — adjusting state during render is
@@ -44,20 +45,36 @@ export function ParibhashaTrailSheet({
     // the previous word's trail under the new headword.
     setSeed(word);
     setPushed([]);
+    setAt(0);
   }
 
+  /**
+   * Which step of the trail is on screen. The trail is a history, not a
+   * stack: stepping back to an earlier word keeps the words after it, so the
+   * reader can look at where they came from and step forward again — the
+   * designer's call, 26 Sep 2026. It used to cut the trail at the word tapped.
+   */
   const trail = word === null ? [] : [word, ...pushed];
-  const current = trail[trail.length - 1] ?? null;
+  const current = trail[at] ?? null;
 
   const push = useCallback(
     (next: string) => {
       const w = next.normalize("NFC").trim();
       // Tapping the word already on screen is a no-op, not a repeat: it would
-      // put the same headword on the trail twice and make back do nothing.
+      // put the same headword on the trail twice.
       if (w === current) return;
-      setPushed((p) => [...p, w]);
+      // Following the word that is already next on the trail is stepping
+      // forward, not a new branch.
+      if (pushed[at] === w) {
+        setAt(at + 1);
+        return;
+      }
+      // A new word from an earlier step replaces what came after it, as a
+      // browser's history does.
+      setPushed((p) => [...p.slice(0, at), w]);
+      setAt(at + 1);
     },
-    [current]
+    [current, pushed, at]
   );
 
   const trailValue = useMemo(() => ({ open: push }), [push]);
@@ -90,7 +107,6 @@ export function ParibhashaTrailSheet({
   const definitions = entry?.definitions ?? [];
   const segments = useDefinitionSegments(definitions, entry?.hindi ?? current ?? undefined);
 
-  const trimTo = (i: number) => setPushed((p) => p.slice(0, i));
 
   return (
     // The word is the title — the designer's call, 26 Sep 2026. "Paribhasha"
@@ -117,8 +133,8 @@ export function ParibhashaTrailSheet({
           is unlayered and outranks any font or leading utility on it. */}
       <div className="paribhasha-sheet px-5 pb-2 pt-4">
         {/* The path so far, as the live app draws it: the words behind as
-            chips to step back to, the word on screen filled, and × to go back
-            to the word the reader first tapped. It appears only once there is
+            chips to step to, the word on screen filled, and × to close the
+            sheet. Stepping to a chip keeps the whole trail. It appears only once there is
             a path — a single word has no history worth a row of chrome. */}
         {trail.length > 1 && (
           <nav
@@ -133,7 +149,7 @@ export function ParibhashaTrailSheet({
                     ›
                   </span>
                 )}
-                {i === trail.length - 1 ? (
+                {i === at ? (
                   <span
                     lang="hi"
                     aria-current="true"
@@ -144,7 +160,7 @@ export function ParibhashaTrailSheet({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => trimTo(i)}
+                    onClick={() => setAt(i)}
                     lang="hi"
                     className="hi flex min-h-11 items-center rounded-control px-3.5 text-lg text-(--reader-ink-soft) transition active:brightness-95"
                     style={{ background: "color-mix(in srgb, var(--reader-ink) 8%, transparent)" }}
@@ -156,8 +172,8 @@ export function ParibhashaTrailSheet({
             ))}
             <button
               type="button"
-              onClick={() => trimTo(0)}
-              aria-label="Back to the first word"
+              onClick={onClose}
+              aria-label="Close"
               className="ms-1 flex h-11 w-11 items-center justify-center rounded-full text-(--reader-ink-soft)"
             >
               <span
