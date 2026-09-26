@@ -323,11 +323,12 @@
   /* typography, written before first paint by the inline script in layout.tsx
      so a saved font size / spacing never flashes at its default first */
   /* matches DEFAULT_PREFS.fontScale in storage.ts */
-  --reader-font-scale: 1.05;
+  --reader-font-scale: 1.2;
   /* Compact (1.85) by default — the designer's call, 26 Sep 2026, alongside
      the move to Mukta. The spec asks for 2.0; the PRD floor for Devanagari is
      1.8. Tiro's matras collided at 1.85 when Tiro was the default at 18px;
-     checked again with Mukta and Tiro at ~19px on SBVD ch. 4, neither touches.
+     checked again with Mukta and Tiro at ~19px on SBVD ch. 4, neither touches
+     (the default has since gone to ~21.6px, which only gives matras more room).
      Matches DEFAULT_PREFS.lineHeight in storage.ts. */
   --reader-line-height: 1.85;
 
@@ -350,7 +351,7 @@
   --reader-measure: 46rem;
 }
 /* Normal is the app's own 16px gutter. It was 21.6px; the default text went up
-   to ~19px for older eyes, and the width given back is about half a word a
+   to ~21.6px for older eyes, and the width given back is about half a word a
    line on a phone — what keeps justified lines from stretching. */
 [data-reader-margin="1"] {
   --reader-pad: 1rem;

@@ -213,18 +213,19 @@ export const PREFS_KEY = "md.prefs.v1";
 
 export const DEFAULT_PREFS: Prefs = {
   /**
-   * Mukta at ~19px (1.05 × 18) — the designer's call, 26 Sep 2026, for a
+   * Mukta at ~21.6px (1.2 × 18) — the designer's call, 26 Sep 2026, for a
    * readership mostly past 40. Mukta's even stroke holds up where Tiro's
    * hairlines (matras, anusvara, half-forms in conjuncts) blur first, and its
-   * larger letter body makes 19px read like ~21px of Tiro without costing
-   * words per line — which is what keeps justified lines tight. A deviation
+   * larger letter body reads bigger than Tiro at the same size. First set at
+   * 1.05, then raised two steps on device; the cost is fewer words per line
+   * and more loose lines in justified text. A deviation
    * from the comps (design-system.md). Tiro stays one tap away as "Serif".
    *
    * Only new readers get these: setPrefs writes the whole merged object, so
    * anyone who has changed any setting already has fontScale 1 / serif saved.
    * That is deliberate — some of them chose it.
    */
-  fontScale: 1.05,
+  fontScale: 1.2,
   face: "sans",
   // Compact (LINE_HEIGHTS[0]); matches --reader-line-height in globals.css,
   // where the reasoning is
