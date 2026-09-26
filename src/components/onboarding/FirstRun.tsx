@@ -4,7 +4,34 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BrandMark, ChevronRight } from "@/components/shell/icons";
 import { ctaPrimary } from "@/components/ui";
 import { advanceLabel, ONBOARDING_CARDS } from "@/lib/onboarding";
+import { WORKSPACES, type WorkspaceId } from "@/lib/workspaceConfig";
 import { Fragment } from "./Fragments";
+
+/**
+ * Which workspace the card's feature lives in, above its fragment, in that
+ * workspace's own colour — the designer's comps, 26 Sep 2026. The deck is
+ * the tour of the five workspaces, and without it a reader met four hues in
+ * a row and had to work out from the sentence which room each belonged to.
+ *
+ * White on the fill: all five hues clear 4.5:1 against it (the lightest,
+ * Translations and My Journey, measure ~5.3:1). The dot is decoration.
+ *
+ * A card with no workspace keeps the tag's height, invisibly, so the fragment
+ * and the title under it land at the same y on all six — the same reason
+ * `Stage` is a fixed height.
+ */
+function WorkspaceTag({ ws }: { ws?: WorkspaceId }) {
+  if (!ws) return <span aria-hidden className="invisible mb-3 h-6 shrink-0" />;
+  return (
+    <span
+      className="mb-3 inline-flex h-6 shrink-0 items-center gap-1.5 self-start rounded-control px-2.5 text-xs font-bold uppercase tracking-[0.09em] text-white"
+      style={{ background: WORKSPACES[ws].color }}
+    >
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-white/70" />
+      {WORKSPACES[ws].name}
+    </span>
+  );
+}
 
 /**
  * **The first-run deck — six cards, once.**
@@ -207,6 +234,7 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
               className="flex w-full shrink-0 flex-col select-none px-0.5"
               style={{ width: `${100 / ONBOARDING_CARDS.length}%` }}
             >
+              <WorkspaceTag ws={c.workspace} />
               <Fragment id={c.id} />
               {/* The app's page-title step — `font-display text-2xl
                   font-medium`, as Centres and Connect set theirs. Not the

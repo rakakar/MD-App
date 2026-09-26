@@ -9,6 +9,8 @@
 // the switcher goes stale the day a workspace is renamed, and nobody notices
 // until a reader does. See `components/onboarding/Fragments.tsx`.
 
+import type { WorkspaceId } from "./workspaceConfig";
+
 export type OnboardingCardId =
   | "workspaces"
   | "originals"
@@ -25,6 +27,11 @@ export interface OnboardingCard {
   body: string;
   /** what a screen reader is told the fragment above the line is */
   fragmentLabel: string;
+  /**
+   * The workspace the feature lives in, worn as a tag above the fragment in
+   * that workspace's colour. None on the switcher card: it is about all five.
+   */
+  workspace?: WorkspaceId;
 }
 
 export const ONBOARDING_CARDS: OnboardingCard[] = [
@@ -37,6 +44,7 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
   },
   {
     id: "originals",
+    workspace: "originals",
     title: "Originals holds the source works",
     body:
       "Every book, audio recording, video and other work of Shri A. Nagraj, in one place. Nothing here is edited or interpreted — it is the material as it was given.",
@@ -45,6 +53,7 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
   },
   {
     id: "resources",
+    workspace: "resources",
     title: "Resources is what students have built",
     body:
       "Research papers, study guides and yojana material contributed by students sit apart from the originals, so the two are never confused.",
@@ -52,6 +61,7 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
   },
   {
     id: "translations",
+    workspace: "translations",
     title: "Read in English or Kannada",
     body:
       "Translations are available alongside the original. In read mode you can switch between Hindi and your chosen language at any point, without losing your place.",
@@ -60,6 +70,7 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
   },
   {
     id: "highlights",
+    workspace: "journey",
     title: "Highlight a line, keep a note",
     body:
       "Select any passage to highlight it or write against it. Everything you mark is collected in My Journey, with a link back to the page it came from.",
@@ -68,6 +79,7 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
   },
   {
     id: "journey",
+    workspace: "journey",
     title: "My Journey knows where you are",
     body:
       "It lays out the whole path — nine stages across four levels — marks where you stand, and tells you the one thing to do next.",
