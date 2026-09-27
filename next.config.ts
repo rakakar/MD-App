@@ -35,6 +35,19 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["10.0.2.2", "192.168.31.82"],
 
   /**
+   * Book covers through the optimiser — see `lib/coverImage.ts`, whose
+   * `COVER_HOSTS` must list the same hosts. Next 16 requires `qualities`.
+   * The covers never change at an address (the bucket serves them immutable),
+   * so an optimised copy is kept for 31 days rather than the default 4 hours.
+   */
+  images: {
+    remotePatterns: [new URL("https://pub-aff003d28f014aa2ae4c6908c9bea57a.r2.dev/**")],
+    formats: ["image/avif", "image/webp"],
+    qualities: [75],
+    minimumCacheTTL: 2678400,
+  },
+
+  /**
    * Content Model v3 dissolved the audio and video shelves: a recording is a
    * file inside a folder now, and a YouTube link is a file whose kind is
    * `video`. There is no id space left to map the old URLs onto — the series

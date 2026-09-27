@@ -32,10 +32,10 @@ export function BookRail({ books }: { books: BookSummary[] }) {
     // clips; -mb-2 keeps it out of the layout so the gap to the next heading
     // is the heading's margin and nothing else. See ContinueReading.
     <ul className="-mx-4 -mb-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:[&>li:nth-child(n+5)]:hidden">
-      {books.map((b) => (
+      {books.map((b, i) => (
         <li key={b.code} className="w-[7.75rem] shrink-0 snap-start lg:w-full">
           <Link href={`/books/${encodeURIComponent(b.code)}`} className="group block">
-            <CoverTile book={b} size="rail" />
+            <CoverTile book={b} size="rail" eager={i < 3} />
             <span
               lang="hi"
               className="hi hi-tight mt-2.5 block line-clamp-2 text-xs font-semibold group-hover:underline"

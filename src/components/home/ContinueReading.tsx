@@ -228,6 +228,7 @@ export function ContinueReading({
               <CoverTile
                 book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}
                 size="resume"
+                eager
               />
               {/* Both lines are `hi-tight`, and between them that is what
                   squares this column with the cover beside it. At the `.hi`

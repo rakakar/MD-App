@@ -1,4 +1,6 @@
+import Image from "next/image";
 import { bookHue, coverGradient, type BookHue } from "@/lib/bookHue";
+import { optimizableCover } from "@/lib/coverImage";
 import type { BookSummary } from "@/lib/types";
 
 /**
@@ -52,6 +54,18 @@ const BOX: Record<Size, string> = {
   lg: "h-[130px] w-[95px] rounded-cover p-3.5",
 };
 
+/**
+ * How wide each tile is drawn, for the optimiser to pick a width from — the
+ * browser multiplies by the screen's density itself. Rail: 7.75rem on a phone,
+ * a column of the two-up Home grid on a desktop. Grid: two to four across.
+ */
+const SIZES: Record<Size, string> = {
+  resume: "63px",
+  rail: "(min-width: 1024px) 20rem, 7.75rem",
+  grid: "(min-width: 1024px) 14rem, (min-width: 640px) 30vw, 45vw",
+  lg: "95px",
+};
+
 const LETTER: Record<Size, string> = {
   resume: "text-2xl",
   rail: "text-[1.625rem]",
@@ -64,6 +78,7 @@ export function CoverTile({
   size = "rail",
   caption = "dash",
   hue: given,
+  eager = false,
 }: {
   book: Pick<BookSummary, "title_hi" | "cover_image"> & { code?: string };
   size?: Size;
@@ -75,6 +90,12 @@ export function CoverTile({
    * shelf. Omitted everywhere else, and then it is the book's own hue.
    */
   hue?: BookHue;
+  /**
+   * Load now rather than when scrolled near. For the covers on screen when a
+   * page opens — the first of the Home rail, the book being read — where lazy
+   * loading only delays the request until after layout.
+   */
+  eager?: boolean;
 }) {
   const hue = given ?? bookHue(book.code ?? book.title_hi);
   const hasCover = Boolean(book.cover_image);
@@ -101,13 +122,24 @@ export function CoverTile({
            smaller book and spent the tile's height on surround rather than on
            artwork. Filling crops a sliver off the top and foot instead, which
            on these covers is margin: the printed title sits well inside it. */
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={book.cover_image}
-          alt=""
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        optimizableCover(book.cover_image) ? (
+          <Image
+            src={book.cover_image}
+            alt=""
+            fill
+            sizes={SIZES[size]}
+            loading={eager ? "eager" : "lazy"}
+            className="object-cover"
+          />
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={book.cover_image}
+            alt=""
+            loading={eager ? "eager" : "lazy"}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )
       )}
 
       {!hasCover && (
