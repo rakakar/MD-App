@@ -539,10 +539,23 @@ function SkipIcon({ className, seconds, back }: { className?: string; seconds: n
           pushed the whole ring off-centre, which is what made these look
           bent. The label is the reason the ring is open: it sits in the
           middle at a size that can be read, and the gap is cut to clear it. */}
-      <g transform={back ? undefined : "scale(-1,1) translate(-24,0)"}>
-        <path d="M12 4.4a7.6 7.6 0 1 0 6.9 4.4" />
-        <path d="M12.1 1.4 8.6 4.4l3.5 3v-6Z" fill="currentColor" stroke="none" />
-      </g>
+      {/* Forward is the same ring mirrored, drawn as its own coordinates
+          (x → 24 − x, the arc's sweep flag flipped) rather than as a
+          `scale(-1,1)` on a group. iOS Safari did not apply that transform
+          here, so on a phone both buttons curled backwards — seen on the ¶
+          buttons of the device-voice player, the only place this ring shows
+          (the 10s buttons are `Skip10`'s own artwork). */}
+      {back ? (
+        <>
+          <path d="M12 4.4a7.6 7.6 0 1 0 6.9 4.4" />
+          <path d="M12.1 1.4 8.6 4.4l3.5 3v-6Z" fill="currentColor" stroke="none" />
+        </>
+      ) : (
+        <>
+          <path d="M12 4.4a7.6 7.6 0 1 1 -6.9 4.4" />
+          <path d="M11.9 1.4 15.4 4.4l-3.5 3v-6Z" fill="currentColor" stroke="none" />
+        </>
+      )}
       <text
         x="12"
         y="15.9"
