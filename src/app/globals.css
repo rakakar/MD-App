@@ -1892,6 +1892,13 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   font-family: var(--font-devanagari-sans);
   line-height: 1.6;
 }
+/* The Contents sheet's lists — chapter names, and the passages and notes on
+   its Highlights tab — in Mukta, as the Paribhasha sheet is (26 Sep 2026).
+   Only the face: each row keeps its own leading (`hi-tight`). */
+.toc-sheet .hi {
+  font-family: var(--font-devanagari-sans);
+}
+
 /* The headword, as the sheet's title — in the header, so outside the scope
    above. Same face; tight, because it is one word and a title. */
 .paribhasha-title {

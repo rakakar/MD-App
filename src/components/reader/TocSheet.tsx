@@ -238,7 +238,7 @@ export function TocSheet({
         // No "Front matter" heading over the first rows, as on the book page:
         // it labelled a group of one or two against a list of eighteen, and the
         // rows already say what they are.
-        <ul>
+        <ul className="toc-sheet">
           {frontMatter.map(row)}
           {main.map(row)}
         </ul>
@@ -249,7 +249,7 @@ export function TocSheet({
             : "Nothing marked in this book yet. Press and hold any line to paint it, or to write a note against it."}
         </p>
       ) : (
-        <ul>{rows?.map(highlightRow)}</ul>
+        <ul className="toc-sheet">{rows?.map(highlightRow)}</ul>
       )}
     </Sheet>
   );
