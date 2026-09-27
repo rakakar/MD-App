@@ -118,18 +118,23 @@ export function TocSheet({
           }
         >
           <span
-            className="w-6 shrink-0 text-right text-sm font-semibold tabular-nums"
+            className="w-6 shrink-0 text-right text-base font-semibold tabular-nums"
             style={{ color: active ? "var(--ws-ink)" : "var(--reader-ink-soft)" }}
           >
             {ch.number}
           </span>
+          {/* 18px, from 14 — the designer's call, 26 Sep 2026: a chapter's
+              name is what the reader is scanning this list for, and at 14px
+              Devanagari it was the smallest thing on the sheet. `hi-tight`
+              because `.hi` outranks leading utilities, and a name that wraps
+              at the body's 1.85 reads as two entries. */}
           <span
             lang="hi"
-            className={`hi min-w-0 flex-1 text-sm leading-snug ${active ? "font-semibold" : ""}`}
+            className={`hi hi-tight min-w-0 flex-1 text-lg ${active ? "font-semibold" : ""}`}
           >
             {ch.title_hi}
           </span>
-          <span className="shrink-0 text-xs tabular-nums text-(--reader-ink-soft)">
+          <span className="shrink-0 text-sm tabular-nums text-(--reader-ink-soft)">
             {ch.start_page == null ? "" : bookType === "print" ? `p. ${ch.start_page}` : ch.start_page}
           </span>
         </button>
