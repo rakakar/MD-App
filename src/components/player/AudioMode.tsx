@@ -340,10 +340,10 @@ export function AudioMode({
           </TransportBtn>
           <TransportBtn
             onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-            label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
+            label={`Back ${SKIP_SECONDS} seconds`}
             big
           >
-            <SkipBackIcon className="h-6 w-6" seconds={device ? "¶" : SKIP_SECONDS} />
+            <SkipBackIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
           </TransportBtn>
           <button
             type="button"
@@ -366,10 +366,10 @@ export function AudioMode({
           </button>
           <TransportBtn
             onClick={() => player.skipSeconds(SKIP_SECONDS)}
-            label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
+            label={`Forward ${SKIP_SECONDS} seconds`}
             big
           >
-            <SkipForwardIcon className="h-6 w-6" seconds={device ? "¶" : SKIP_SECONDS} />
+            <SkipForwardIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
           </TransportBtn>
           <TransportBtn
             onClick={() => player.chapterNav?.next?.()}

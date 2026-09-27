@@ -104,9 +104,9 @@ interface PlayerState {
   toggle: () => void;
   seekMs: (ms: number) => void;
   /**
-   * Jump by seconds, signed. In device-voice mode there is no timeline to move
-   * along, so the sign is taken as one paragraph back or forward — see
-   * `DeviceSpeaker.jumpParas`.
+   * Jump by seconds, signed. In device-voice mode there is no timeline, so the
+   * seconds are estimated from the voice's measured reading speed and moved
+   * through the text — see `DeviceSpeaker.skipSeconds`.
    */
   skipSeconds: (seconds: number) => void;
   setRate: (rate: number) => void;
@@ -393,7 +393,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const skipSeconds = useCallback(
     (seconds: number) => {
       if (source?.kind === "device") {
-        const seq = speaker.current?.jumpParas(seconds < 0 ? -1 : 1) ?? null;
+        const seq = speaker.current?.skipSeconds(seconds) ?? null;
         if (seq !== null) {
           setDeviceParaSeq(seq);
           setDeviceParaIndex(speaker.current?.paraIndex ?? 0);

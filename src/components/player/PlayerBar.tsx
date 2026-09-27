@@ -214,10 +214,10 @@ function PlayerBarInner({
       <button
         type="button"
         onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-        aria-label={device ? "Previous paragraph" : `Back ${SKIP_SECONDS} seconds`}
+        aria-label={`Back ${SKIP_SECONDS} seconds`}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
       >
-        <SkipBackIcon className="h-5.5 w-5.5" seconds={device ? "\u00b6" : SKIP_SECONDS} />
+        <SkipBackIcon className="h-5.5 w-5.5" seconds={SKIP_SECONDS} />
       </button>
       <button
         type="button"
@@ -239,10 +239,10 @@ function PlayerBarInner({
       <button
         type="button"
         onClick={() => player.skipSeconds(SKIP_SECONDS)}
-        aria-label={device ? "Next paragraph" : `Forward ${SKIP_SECONDS} seconds`}
+        aria-label={`Forward ${SKIP_SECONDS} seconds`}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
       >
-        <SkipForwardIcon className="h-5.5 w-5.5" seconds={device ? "\u00b6" : SKIP_SECONDS} />
+        <SkipForwardIcon className="h-5.5 w-5.5" seconds={SKIP_SECONDS} />
       </button>
       </div>
 
