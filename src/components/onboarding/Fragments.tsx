@@ -226,7 +226,7 @@ function Shelf() {
     <Stage>
       <p className={LABEL}>Books</p>
       <div className="mt-2.5">
-        <BookRail books={books} />
+        <BookRail books={books} rail />
       </div>
 
       <p className={`${LABEL} mt-4`}>Resume</p>

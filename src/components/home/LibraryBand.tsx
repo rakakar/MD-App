@@ -37,7 +37,7 @@ const ON_THE_AV_TAB: FileKind[] = ["audio", "video"];
  * a shelf that is not there — and when Originals holds no folders at all it
  * draws nothing, which is the same rule that took the media cards away.
  */
-export async function LibraryBand() {
+export async function LibraryBand({ className = "" }: { className?: string }) {
   const workspaces = await getWorkspaces().catch(() => []);
   const rootId = workspaces.find((w) => w.code === "originals")?.root_node_id ?? null;
   if (rootId === null) return null;
@@ -67,8 +67,10 @@ export async function LibraryBand() {
   );
   if (doors.length === 0) return null;
 
+  // Its own <section>, so that when there is nothing to show there is no
+  // wrapper left behind as an empty grid cell on Home.
   return (
-    <>
+    <section className={className}>
       <SectionHeading tier="title" action={<SeeAll href="/originals">Open</SeeAll>}>
         Library
       </SectionHeading>
@@ -90,6 +92,6 @@ export async function LibraryBand() {
           </li>
         ))}
       </ul>
-    </>
+    </section>
   );
 }

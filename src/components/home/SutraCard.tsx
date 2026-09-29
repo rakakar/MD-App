@@ -32,7 +32,13 @@ function sutraDate(iso: string): string {
   return d ? dayMonth(d) : "";
 }
 
-export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
+export function SutraCard({
+  sutra: initial,
+  className = "",
+}: {
+  sutra: SutraOfTheDay;
+  className?: string;
+}) {
   const [sutra, setSutra] = useState(initial);
   const [busy, setBusy] = useState(false);
   const browsing = sutra.offset !== 0;
@@ -156,7 +162,9 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
       // in the theme the comp is not drawn in: on the sepia paper the peach
       // ramp sits close enough to the page that without an edge the card stops
       // being a card.
-      className="rounded-card border border-(--sutra-border) p-4"
+      // `sutra-card`: on desktop it fills the row it shares with the shivirs,
+      // with the book and Share pinned to its foot — see globals.css.
+      className={`sutra-card rounded-card border border-(--sutra-border) p-4 lg:p-6 ${className}`}
       style={{
         // the spec's own peach ramp (1A) — a warm surface of its own rather
         // than a wash of the workspace hue, because the sutra belongs to the
@@ -225,7 +233,7 @@ export function SutraCard({ sutra: initial }: { sutra: SutraOfTheDay }) {
         // pt-3 here rather than a margin on the verse: a margin collapses out
         // through this box while it is plain and stays inside it while the
         // fold clips it, so the verse jumped 12px at both ends of the fold.
-        className={`pt-3 transition-opacity ${busy ? "opacity-50" : ""}`}
+        className={`sutra-body pt-3 transition-opacity ${busy ? "opacity-50" : ""}`}
       >
         {/* On desktop the verse grows but the measure is capped at the spec's
             46ch (1A desktop). Across a 1088px page an uncapped line of

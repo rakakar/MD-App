@@ -23,14 +23,16 @@ export function ExploreWorkspaces({ current }: { current: WorkspaceId }) {
     // grid fitted four names and nothing else; a row has space for the line
     // that says what is actually behind the name — which is the difference
     // between a reader guessing what "Resources" holds and knowing.
-    <ul className="flex flex-col gap-2.5">
+    // From lg, the four side by side across the page's foot (Home, desktop
+    // revision) — the glyph top-aligned there, since the taglines wrap.
+    <ul className="flex flex-col gap-2.5 lg:grid lg:grid-cols-4 lg:gap-4">
       {others.map((id) => {
         const ws = WORKSPACES[id];
         return (
           <li key={id}>
             <Link
               href={ws.home}
-              className="flex items-center gap-3.5 rounded-card border border-rule bg-card p-3.5 shadow-card transition-shadow hover:shadow-raised"
+              className="flex h-full items-center gap-3.5 rounded-card border border-rule bg-card p-3.5 shadow-card transition-shadow hover:shadow-raised lg:items-start lg:p-4"
             >
               <span
                 aria-hidden

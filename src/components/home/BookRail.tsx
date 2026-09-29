@@ -14,26 +14,41 @@ import type { BookSummary } from "@/lib/types";
  * and a second title laid over it was both unreadable and redundant — so the
  * caption moved out, and the rail now captions the way 1B's grid already did.
  */
-export function BookRail({ books }: { books: BookSummary[] }) {
+export function BookRail({
+  books,
+  rail = false,
+}: {
+  books: BookSummary[];
+  /** a rail at every width — onboarding's stage, which is phone-sized on desktop too */
+  rail?: boolean;
+}) {
   return (
     // The rail bleeds to the screen edge so covers scroll out of frame rather
     // than stopping short. scroll-pl matches the padding: without it the first
     // snap point sits at the content edge, and the rail silently scrolls its
     // own gutter away on load.
-    // From lg the rail becomes a two-up grid: on desktop it lives in a column
-    // of the Home grid (1A desktop), where covers scrolling sideways out of a
-    // 340px column would hide most of the shelf behind a gesture.
-    //
-    // And there it stops at four. A rail can hold the whole shelf because a
-    // swipe costs nothing; a grid cannot, and fourteen covers stacked 2-up
-    // would run three screens down a column whose neighbours end in one. Four
-    // is what the spec's desktop card shows, with the rest behind "All N →".
+    // From lg the rail becomes one row of covers across the page (Home,
+    // desktop revision, 29 Sep 2026): five, and seven from xl, with the rest
+    // behind "All books →". A single row rather than the whole shelf — a grid
+    // cannot hold fourteen covers the way a swipe can without becoming the
+    // shelf page itself.
     // pb-2 is headroom for the covers' drop shadow, which overflow-x-auto
     // clips; -mb-2 keeps it out of the layout so the gap to the next heading
     // is the heading's margin and nothing else. See ContinueReading.
-    <ul className="-mx-4 -mb-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:[&>li:nth-child(n+5)]:hidden">
+    <ul
+      className={`-mx-4 -mb-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 ${
+        rail ? "" : "lg:grid lg:grid-cols-5 lg:gap-5 lg:overflow-visible xl:grid-cols-7"
+      }`}
+    >
       {books.map((b, i) => (
-        <li key={b.code} className="w-[7.75rem] shrink-0 snap-start lg:w-full">
+        <li
+          key={b.code}
+          className={`w-[7.75rem] shrink-0 snap-start ${
+            rail
+              ? ""
+              : `lg:w-full ${i >= 7 ? "lg:hidden" : i >= 5 ? "lg:hidden xl:block" : ""}`
+          }`}
+        >
           <Link href={`/books/${encodeURIComponent(b.code)}`} className="group block">
             <CoverTile book={b} size="rail" eager={i < 3} />
             <span

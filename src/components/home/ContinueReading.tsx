@@ -46,7 +46,13 @@ export function ContinueReading({
   tier = "title",
   layout = "rail",
   workspace = "originals",
+  className = "mt-5 first:mt-0",
 }: {
+  /**
+   * The section's own spacing. Home replaces it: there the rail is one cell of
+   * a grid whose gap already sets the rhythm, and a margin on top doubled it.
+   */
+  className?: string;
   limit?: number;
   heading?: string;
   /**
@@ -181,7 +187,7 @@ export function ContinueReading({
     // the spacing — and `first:` is still what keeps it from doubling there —
     // but on the Read shelf nothing else was providing it, so the heading sat
     // against the "13 books · … " line as if it were part of it.
-    <section aria-label={heading} className="mt-5 first:mt-0">
+    <section aria-label={heading} className={className}>
       <h2
         className={`mb-3 ${
           tier === "title"

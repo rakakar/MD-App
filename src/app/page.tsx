@@ -12,10 +12,10 @@ import {
   SectionHeading,
   SeeAll,
 } from "@/components/ui";
-import { EventCardView } from "@/components/connect/EventCard";
+import { UpcomingShivirs } from "@/components/home/UpcomingShivirs";
 import { getBooks, getEvents } from "@/lib/api";
 import type { EventCard } from "@/lib/events";
-import { SHIVIRS, byGenre } from "@/lib/labels";
+import { byGenre } from "@/lib/labels";
 import { getShorts, type Short } from "@/lib/shorts";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { BookSummary, SutraOfTheDay } from "@/lib/types";
@@ -73,8 +73,6 @@ export default async function OriginalsHome() {
           all, and the offer would exist without ever being made. */}
       <NotificationBanner />
 
-      {sutra && <SutraCard sutra={sutra} />}
-
       {/*
         The Nagraj-ji's-own-voice door used to sit here, under today's Sutra.
         It is reachable from the resources section, and a second entrance on
@@ -82,35 +80,39 @@ export default async function OriginalsHome() {
       */}
 
       {/*
-        One column on a phone; from lg, the spec's three (1A desktop). Home is
-        a page of short, unrelated sections — stacked at 1088px each one is a
-        stripe with a screenful of dead space beside it, and the shivirs at the
-        bottom fall below the fold on a screen that has room for everything.
+        One column on a phone, in DOM order. From lg, the designer's desktop
+        revision (29 Sep 2026) — rows across the page rather than three
+        columns side by side, which left each column a narrow stripe and the
+        books two covers wide:
 
-        `items-start` so a tall section does not stretch its neighbours, and
-        each child is a plain <section>: the columns are a layout, not a
-        regrouping, so the reading order stays the order on the phone.
+          Sutra (2/3)            | Upcoming shivirs (1/3)
+          Continue Reading, full width — when there is something to resume
+          Books, one row of covers across the page
+          Shorts (2/3)           | Library (1/3)
+          ─────────────────────────────────────────────
+          Explore workspaces, four across
 
-        One gap, everywhere, and it is 20px. `mt-5` is what a SectionHeading
-        puts above itself between two sections, so the stack repeats it here —
-        above Continue Reading, which was reading as part of the Sutra card
-        because a heading first in its own section had its margin collapsed
-        away — and the rails no longer add their shadow headroom on top of it.
-        Change the number in two places (here and SectionHeading) or the page
-        loses its rhythm again.
+        The shivirs are last in the DOM, where the phone has always had them,
+        and are lifted into the top-right cell by placement. Every child is a
+        grid cell directly — a wrapper left empty becomes an empty cell.
+
+        On a phone the gap is 20px, everywhere: `mt-5` is what a SectionHeading
+        puts above itself between two sections, so the stack repeats it. Change
+        the number in two places (here and SectionHeading) or the phone loses
+        its rhythm. The desktop rows take 40px, as drawn.
       */}
-      <div className="mt-5 flex flex-col gap-5 lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-6">
-        {/* Its own <section>, so it is a grid child directly. Wrapped in one,
-            the wrapper stayed behind as a zero-height flex item when there is
-            nothing to resume — and took a 28px gap on each side with it, which
-            is how a reader who has never opened a book got a hole above Books
-            where the rail they do not have would have been. */}
-        <ContinueReading layout="stack" />
+      <div className="mt-5 flex flex-col gap-5 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-10">
+        {sutra && <SutraCard sutra={sutra} className="lg:col-span-2 lg:row-start-1" />}
 
-        <section>
+        {/* Rails at every width, now that it has the page's full width on
+            desktop. `className` replaces the section's own top margin, which
+            doubled the grid's gap. */}
+        <ContinueReading className="lg:col-span-3" />
+
+        <section className="lg:col-span-3">
           <SectionHeading
             tier="title"
-            action={books.length > 0 ? <SeeAll href="/books">All Books</SeeAll> : undefined}
+            action={books.length > 0 ? <SeeAll href="/books">All books</SeeAll> : undefined}
           >
             Books
           </SectionHeading>
@@ -119,24 +121,27 @@ export default async function OriginalsHome() {
           ) : (
             <EmptyState title="No books available yet" hint="Published books will appear here." />
           )}
+        </section>
 
-          {/* Draws nothing until there is something; see lib/shorts, which is
-              where the fact that there is not yet is kept. */}
-          {shorts.length > 0 && (
-            <>
-              <SectionHeading tier="title">Shorts</SectionHeading>
-              <ShortsRail shorts={shorts} />
-            </>
-          )}
+        {/* Draws nothing until there is something; see lib/shorts, which is
+            where the fact that there is not yet is kept. */}
+        {shorts.length > 0 && (
+          <section className="lg:col-span-2">
+            <SectionHeading tier="title">Shorts</SectionHeading>
+            <ShortsRail shorts={shorts} />
+          </section>
+        )}
 
-          {/*
-            The spec's pair of media cards sat here, pointing at the audio and
-            video shelves that Content Model v3 dissolved, and were pulled
-            rather than left pointing at nothing. One of them is back, because
-            the shelf it points at is now real: /av is a tab with forty hours
-            of his voice behind it. The other — a "Photographs" card — is not,
-            for exactly the old reason.
-          */}
+        {/*
+          The spec's pair of media cards sat here, pointing at the audio and
+          video shelves that Content Model v3 dissolved, and were pulled rather
+          than left pointing at nothing. One of them came back once /av was
+          real. The desktop revision leaves it off: there the sidebar's
+          Audio/Video item is always in view, and the band was a second door
+          to the same room. On a phone the tab bar says "Media" and the band
+          still earns its place.
+        */}
+        <section className="lg:hidden">
           <SectionHeading tier="title">Audio &amp; Video</SectionHeading>
           <PromoBand
             href="/av"
@@ -145,46 +150,30 @@ export default async function OriginalsHome() {
           />
         </section>
 
-        <section>
-          {/*
-            The folders Originals actually holds, as three counted tiles. Drawn
-            only when there are some — named-kind cards are what could promise
-            an empty shelf; a folder that exists cannot.
-          */}
-          <LibraryBand />
+        {/*
+          The folders Originals actually holds, as counted tiles. Drawn only
+          when there are some — named-kind cards are what could promise an
+          empty shelf; a folder that exists cannot. Pinned to the right-hand
+          column so it stays there on a day the Shorts feed is empty.
+        */}
+        <LibraryBand className="lg:col-start-3" />
 
+        {/* The rule is desktop-only: it separates "this workspace" from "the
+            others", which on a phone the stack's order already says. */}
+        <section className="lg:col-span-3 lg:border-t lg:border-rule lg:pt-8">
           <SectionHeading tier="title">Explore workspaces</SectionHeading>
           <ExploreWorkspaces current="originals" />
-
-          {shivirs.length > 0 && (
-            <>
-              <SectionHeading tier="title" action={<SeeAll href="/connect">See all</SeeAll>}>
-                Upcoming {SHIVIRS}
-              </SectionHeading>
-              {/* A rail, not a stack — the same one the books and the shorts
-                  ride in, down to the full-bleed and the snap. Three cards is
-                  what `shivirs` slices to, and three is the number the app bar
-                  used to promise before the chip moved here: enough that the
-                  next one is visibly not the only one, few enough that the
-                  home page does not turn into the Connect list.
-
-                  `items-stretch` and `h-full` on the card, so three cards of
-                  different title lengths are one height rather than three —
-                  in a row you scroll sideways, ragged bottoms read as a
-                  rendering fault. */}
-              <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
-                {shivirs.map((e) => (
-                  <li
-                    key={e.slug}
-                    className="w-[17.5rem] shrink-0 snap-start sm:w-[20rem]"
-                  >
-                    <EventCardView event={e} compact />
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
         </section>
+
+        {/* Three: enough that the next one is visibly not the only one, few
+            enough that Home does not turn into the Connect list. Beside the
+            Sutra on desktop; with no Sutra to sit beside, a full row. */}
+        <UpcomingShivirs
+          shivirs={shivirs}
+          className={
+            sutra ? "lg:col-start-3 lg:row-start-1" : "lg:col-span-3 lg:row-start-1"
+          }
+        />
       </div>
     </PageContainer>
   );

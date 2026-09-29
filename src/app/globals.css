@@ -1880,6 +1880,30 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   visibility: hidden;
 }
 
+/* Desktop Home puts the card beside Upcoming shivirs, one row, one height
+   (desktop revision, 29 Sep 2026). Open, it stretches to that row and pins the
+   book and Share to its foot; folded, it gives the height back rather than
+   standing as a tall card holding one line. The fold still animates the
+   verse, but on desktop the card's outline settles at the end rather than
+   tracking it — the row, not the card, owns the height there. */
+@media (min-width: 64rem) {
+  html:not([data-sutra-collapsed]) .sutra-card {
+    display: flex;
+    flex-direction: column;
+  }
+  html:not([data-sutra-collapsed]) .sutra-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+  html:not([data-sutra-collapsed]) .sutra-more {
+    margin-top: auto;
+  }
+  html[data-sutra-collapsed] .sutra-card {
+    align-self: start;
+  }
+}
+
 /* ---- the Paribhasha sheet ------------------------------------------------
    Every Devanagari line in it in Mukta — headword, trail, definitions and the
    terms inside them — at the designer's call (26 Sep 2026), matching the live

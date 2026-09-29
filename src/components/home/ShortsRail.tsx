@@ -28,11 +28,19 @@ export function ShortsRail({ shorts }: { shorts: Short[] }) {
   if (shorts.length === 0) return null;
 
   return (
-    <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
-      {shorts.map((s) => {
+    // From lg, one row that fits its two-thirds of the page — four, five from
+    // xl — as the desktop revision draws it; the player is a feed, so the rest
+    // are a swipe away once one is open.
+    <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:grid-cols-4 lg:overflow-visible xl:grid-cols-5">
+      {shorts.map((s, i) => {
         const t = contentLang(s.title);
         return (
-          <li key={s.id} className="w-[9.5rem] shrink-0 snap-start">
+          <li
+            key={s.id}
+            className={`w-[9.5rem] shrink-0 snap-start lg:w-full ${
+              i >= 5 ? "lg:hidden" : i >= 4 ? "lg:hidden xl:block" : ""
+            }`}
+          >
             <Link
               href={s.href}
               className="group relative flex aspect-9/16 flex-col justify-end overflow-hidden rounded-card p-2.5 text-white shadow-card transition-shadow hover:shadow-raised"
