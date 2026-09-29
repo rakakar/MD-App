@@ -1098,6 +1098,17 @@ html[data-reading="1"] body {
 .ws-sheet-backdrop {
   animation: fade-in 0.22s ease-out 1;
 }
+/* the centred desktop modal (`Dialog`) — rises a little and fades, rather
+   than travelling the whole screen height the way a sheet does */
+.ws-dialog {
+  animation: dialog-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
 @keyframes sheet-up {
   from {
     transform: translateY(100%);
@@ -1668,6 +1679,7 @@ html[data-first-run] body > :not(.launch) {
   :target,
   .ws-sheet,
   .ws-sheet-backdrop,
+  .ws-dialog,
   .audio-mode-in,
   .audio-mode-out,
   .player-pill-in,

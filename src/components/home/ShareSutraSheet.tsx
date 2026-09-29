@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { DownloadIcon, ShareIcon } from "@/components/shell/icons";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ChatIcon,
+  CheckIcon,
+  CloseIcon,
+  CopyIcon,
+  DownloadIcon,
+  ShareIcon,
+} from "@/components/shell/icons";
+import { Dialog, useIsDesktop } from "@/components/ui/Dialog";
 import { Sheet } from "@/components/ui/Sheet";
 import { ctaPrimaryBar } from "@/components/ui";
 import { track } from "@/lib/analytics";
@@ -59,7 +67,10 @@ export function ShareSutraSheet({
    * which is the thing having several of them is meant to avoid.
    */
   const [plate, setPlate] = useState<SutraPlate>(SUTRA_PLATES[0]);
+  const [showSource, setShowSource] = useState(true);
+  const sourceLine = page ? `${source} · पृष्ठ क्र. ${page}` : source;
   const blobRef = useRef<Blob | null>(null);
+  const desktop = useIsDesktop();
 
   // Drawn when the sheet opens, not on mount: most readers never press Share,
   // and this loads a 75KB plate and two font faces to do its job.
@@ -69,7 +80,12 @@ export function ShareSutraSheet({
     let objectUrl: string | null = null;
     setFailed(false);
 
-    renderSutraCard({ text, source, page, plate })
+    renderSutraCard({
+      text,
+      source: showSource ? source : "",
+      page: showSource ? page : "",
+      plate,
+    })
       .then((blob) => {
         if (dead) return;
         blobRef.current = blob;
@@ -86,7 +102,7 @@ export function ShareSutraSheet({
       setUrl(null);
       blobRef.current = null;
     };
-  }, [open, text, source, page, plate]);
+  }, [open, text, source, page, plate, showSource]);
 
   const file = () =>
     blobRef.current
@@ -139,6 +155,26 @@ export function ShareSutraSheet({
     a.click();
     a.remove();
   };
+
+  if (desktop) {
+    return (
+      <ShareSutraDialog
+        open={open}
+        onClose={onClose}
+        url={url}
+        failed={failed}
+        blob={() => blobRef.current}
+        alt={`${text} — ${source}`}
+        plate={plate}
+        setPlate={setPlate}
+        showSource={showSource}
+        setShowSource={setShowSource}
+        sourceLine={sourceLine}
+        citation={citation}
+        download={download}
+      />
+    );
+  }
 
   /* The two buttons belong to the sheet's footer, not to its body. `Sheet`
      keeps the footer outside the scroller for exactly this reason — "a sheet
@@ -193,7 +229,9 @@ export function ShareSutraSheet({
       {/* `Sheet` gives its body no padding of its own — every caller sets the
           comps' px-5 for itself. */}
       <div className="px-5 py-4">
-        <div className="mx-auto aspect-3/4 h-[min(44dvh,26rem)] max-w-full overflow-hidden rounded-card border border-rule bg-inset">
+        {/* Less 5rem since the "Show book & page" row joined the picker under
+            it: at 375×667 that row sat 75px under the footer otherwise. */}
+        <div className="mx-auto aspect-3/4 h-[min(calc(44dvh-5rem),26rem)] max-w-full overflow-hidden rounded-card border border-rule bg-inset">
           {url ? (
             /* eslint-disable-next-line @next/next/no-img-element -- an object URL
                for a bitmap this browser just drew: there is nothing for a loader
@@ -251,10 +289,293 @@ export function ShareSutraSheet({
             );
           })}
         </div>
+
+        <SourceToggle
+          on={showSource}
+          set={setShowSource}
+          line={sourceLine}
+          className="mt-4 border-t border-rule pt-4"
+        />
       </div>
     </Sheet>
   );
 }
+
+/**
+ * **Share sutra on desktop** — a centred modal, the card on the left at the
+ * size it will be seen, the choices on the right (desktop revision, 29 Sep
+ * 2026).
+ *
+ * Not the phone sheet widened. A desktop browser has no share sheet to hand a
+ * file to — `navigator.share` with files is a phone thing — so "Share" there
+ * fell back to a line of text and the picture never left the page. What a
+ * desktop *can* do is put the picture on the clipboard, and WhatsApp Web and
+ * every mail client take a pasted image. So the primary action is Copy image,
+ * bound to ⌘C as well, with Download beside it and the verse as text below
+ * for the chats that want words.
+ */
+function ShareSutraDialog({
+  open,
+  onClose,
+  url,
+  failed,
+  blob,
+  alt,
+  plate,
+  setPlate,
+  showSource,
+  setShowSource,
+  sourceLine,
+  citation,
+  download,
+}: {
+  open: boolean;
+  onClose: () => void;
+  url: string | null;
+  failed: boolean;
+  blob: () => Blob | null;
+  alt: string;
+  plate: SutraPlate;
+  setPlate: (p: SutraPlate) => void;
+  showSource: boolean;
+  setShowSource: (on: boolean) => void;
+  sourceLine: string;
+  citation: string;
+  download: () => void;
+}) {
+  const [done, setDone] = useState<"image" | "text" | "failed" | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flash = (what: "image" | "text" | "failed") => {
+    setDone(what);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setDone(null), 2000);
+  };
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  const copyImage = useCallback(async () => {
+    const b = blob();
+    if (!b) return;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": b })]);
+      track("sutra_card_copy");
+      flash("image");
+    } catch {
+      flash("failed");
+    }
+  }, [blob]);
+
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(citation);
+      track("sutra_share_text", { via: "copy" });
+      flash("text");
+    } catch {
+      // nothing sensible to say that the unchanged button does not already
+    }
+  };
+
+  const whatsapp = () => {
+    track("sutra_share_text", { via: "whatsapp" });
+    window.open(`https://wa.me/?text=${encodeURIComponent(citation)}`, "_blank", "noopener");
+  };
+
+  // ⌘C / Ctrl+C copies the card — unless the reader has selected some text,
+  // in which case the keys mean what they always mean.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "c") return;
+      if (window.getSelection()?.toString()) return;
+      e.preventDefault();
+      void copyImage();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, copyImage]);
+
+  const eyebrow = "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft";
+  const quiet =
+    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-rule bg-card px-3 text-xs font-semibold text-ink transition-colors hover:bg-inset disabled:opacity-50";
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      label="Share sutra"
+      accent={APP_ACCENT}
+      className="flex w-full max-w-[57rem]"
+    >
+      {/* The card, as large as the screen allows and never cropped: sized
+          from the height, 3:4, like the phone sheet's preview. */}
+      <div className="flex min-w-0 flex-1 items-center justify-center bg-inset p-10">
+        <div className="aspect-3/4 h-[min(32rem,calc(100dvh-8rem))] max-w-full overflow-hidden rounded-control bg-card shadow-raised">
+          {url ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- an object URL
+               for a bitmap this browser just drew; see the sheet above. */
+            <img src={url} alt={alt} className="h-full w-full object-cover" />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center text-sm text-ink-soft"
+              role="status"
+            >
+              {failed ? "Could not draw the card" : "Preparing…"}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex w-[19rem] shrink-0 flex-col">
+        <div className="flex items-center justify-between gap-3 px-5 pt-5">
+          <h2 className="text-title font-semibold tracking-[-0.01em]">Share sutra</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="-me-1 flex h-11 w-11 items-center justify-center rounded-control transition-colors hover:bg-inset"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-control border border-rule">
+              <CloseIcon className="h-4 w-4" />
+            </span>
+          </button>
+        </div>
+
+        <div className="flex-1 px-5">
+          <p className={`${eyebrow} mt-4`}>Background</p>
+          <div role="radiogroup" aria-label="Background" className="mt-2.5 flex gap-2">
+            {SUTRA_PLATES.map((p) => {
+              const on = p.id === plate.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={p.label}
+                  onClick={() => setPlate(p)}
+                  className="min-w-0 flex-1 rounded-tile p-0.5 transition-colors"
+                  style={{ background: on ? "var(--ws-color)" : "transparent" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- a
+                      fixed local 3KB thumbnail. */}
+                  <img
+                    src={p.thumb}
+                    alt=""
+                    width={168}
+                    height={224}
+                    className="aspect-3/4 w-full rounded-tile border border-rule object-cover"
+                  />
+                </button>
+              );
+            })}
+          </div>
+
+          <SourceToggle
+            on={showSource}
+            set={setShowSource}
+            line={sourceLine}
+            className="mt-5"
+          />
+
+          <div className="mt-5 border-t border-rule pt-5">
+            <p className={eyebrow}>Send as text</p>
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <button type="button" onClick={whatsapp} className={quiet}>
+                <ChatIcon className="h-4 w-4" />
+                WhatsApp
+              </button>
+              <button type="button" onClick={copyText} className={quiet}>
+                {done === "text" ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+                {done === "text" ? "Copied" : "Copy text"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 border-t border-rule px-5 pb-5 pt-4">
+          <button
+            type="button"
+            onClick={copyImage}
+            disabled={!url}
+            className={`${ctaPrimaryBar} w-full disabled:opacity-50`}
+            style={{ background: "var(--ws-color)" }}
+          >
+            {done === "image" ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+            {done === "image" ? "Copied" : "Copy image"}
+            {done !== "image" && (
+              <kbd className="ms-1 rounded-md border border-white/40 px-1.5 font-sans text-xs font-medium">
+                {IS_MAC ? "⌘C" : "Ctrl C"}
+              </kbd>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={download}
+            disabled={!url}
+            className="mt-2 inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-control border border-rule bg-card px-4 text-sm font-semibold text-ink transition-colors hover:bg-inset disabled:opacity-50"
+          >
+            <DownloadIcon className="h-4 w-4" />
+            Download PNG
+          </button>
+          <p className="mt-3 text-center text-xs text-ink-soft" role="status">
+            {done === "failed"
+              ? "This browser would not copy the image — download it instead."
+              : "Copied images paste straight into WhatsApp Web or email."}
+          </p>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/**
+ * "Show book & page" — whether the card prints where the verse is from. On by
+ * default: a verse that arrives with its book is one a reader can find in
+ * their own copy. Off is for sending the words alone.
+ */
+function SourceToggle({
+  on,
+  set,
+  line,
+  className = "",
+}: {
+  on: boolean;
+  set: (on: boolean) => void;
+  /** what will be printed — the book, and its page when it has one */
+  line: string;
+  className?: string;
+}) {
+  return (
+    <label className={`flex cursor-pointer items-center gap-3 ${className}`}>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">Show book &amp; page</span>
+        <span lang="hi" className="hi hi-tight mt-0.5 block truncate text-xs text-ink-soft">
+          {line}
+        </span>
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Show book & page"
+        onClick={() => set(!on)}
+        className={`relative h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-[''] ${
+          on ? "" : "bg-ink/20"
+        }`}
+        style={on ? { background: "var(--ws-color)" } : undefined}
+      >
+        <span
+          className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            on ? "translate-x-5" : ""
+          }`}
+        />
+      </button>
+    </label>
+  );
+}
+
+const IS_MAC =typeof navigator !== "undefined" && /Mac/.test(navigator.userAgent);
 
 /**
  * A user-agent test, and there is no better one available: nothing in the

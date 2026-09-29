@@ -723,6 +723,24 @@ export function DownloadIcon({ className }: { className?: string }) {
   );
 }
 
+export function CopyIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <rect x="8" y="8" width="12" height="12" rx="2" />
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+    </Svg>
+  );
+}
+
+/** A speech bubble — "send as a message", for WhatsApp without its logo. */
+export function ChatIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4A8 8 0 1 1 20 11.5Z" />
+    </Svg>
+  );
+}
+
 // ---- reader chrome ----
 
 export function BackIcon({ className }: { className?: string }) {

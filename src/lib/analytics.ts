@@ -62,6 +62,10 @@ export type GaEvent =
   | "sutra_fold"
   | "sutra_share"
   | "sutra_card_download"
+  // Desktop's share modal: the card to the clipboard, or the verse as text
+  // (`via`: whatsapp | copy).
+  | "sutra_card_copy"
+  | "sutra_share_text"
   | "event_view"
   | "event_register"
   | "login"
