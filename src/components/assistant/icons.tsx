@@ -262,3 +262,19 @@ export const MenuGlyph = ({ className }: P) => (
     <path d="M4 7h16M4 12h11M4 17h7" />
   </Svg>
 );
+
+/** a window with a column ruled off at the left — the conversations panel */
+export const PanelLeftGlyph = ({ className }: P) => (
+  <Svg className={className}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <path d="M9 4.5v15" />
+  </Svg>
+);
+
+/** the same, ruled off at the right — the source panel */
+export const PanelRightGlyph = ({ className }: P) => (
+  <Svg className={className}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <path d="M15 4.5v15" />
+  </Svg>
+);

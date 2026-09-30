@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CheckIcon } from "@/components/shell/icons";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CheckIcon, CloseIcon } from "@/components/shell/icons";
 import { Sheet, SheetAction, SheetTextAction } from "@/components/ui";
 import { getBookGenres } from "@/lib/api";
 import type { BookGenre, BookSummary } from "@/lib/types";
@@ -25,20 +25,11 @@ let genres: Promise<BookGenre[]> | null = null;
  * Choices are a draft until Done: closing the sheet any other way leaves the
  * search as it was, which is what a reader backing out of a sheet expects.
  */
-export function BookPickerSheet({
-  open,
-  shelf,
-  scope,
-  onClose,
-  onApply,
-}: {
-  open: boolean;
-  shelf: BookSummary[];
-  /** the books chosen now; empty means all of them */
-  scope: string[];
-  onClose: () => void;
-  onApply: (codes: string[]) => void;
-}) {
+/**
+ * The picker's state, shared by the phone's sheet and the desktop tray: the
+ * draft (applied only on Done), and the shelf grouped into its series.
+ */
+function useBookPicker(open: boolean, shelf: BookSummary[], scope: string[]) {
   const [draft, setDraft] = useState<string[]>(scope);
   const [series, setSeries] = useState<BookGenre[]>([]);
 
@@ -77,9 +68,26 @@ export function BookPickerSheet({
       const whole = codes.every((c) => d.includes(c));
       return whole ? d.filter((c) => !codes.includes(c)) : [...new Set([...d, ...codes])];
     });
-
-  // Every book ticked is the same search as none — say so, and send it as none.
+  // Every book ticked is the same search as none — send it as none.
   const everything = draft.length === shelf.length;
+  return { draft, setDraft, groups, all, everything, toggle, toggleGroup };
+}
+
+export function BookPickerSheet({
+  open,
+  shelf,
+  scope,
+  onClose,
+  onApply,
+}: {
+  open: boolean;
+  shelf: BookSummary[];
+  /** the books chosen now; empty means all of them */
+  scope: string[];
+  onClose: () => void;
+  onApply: (codes: string[]) => void;
+}) {
+  const { draft, setDraft, groups, all, everything, toggle, toggleGroup } = useBookPicker(open, shelf, scope);
   const done = all || everything ? "Search all books" : `Search ${draft.length === 1 ? "1 book" : `${draft.length} books`}`;
 
   return (
@@ -187,6 +195,151 @@ function Row({
         lang={hindi ? "hi" : undefined}
         className={`${hindi ? "hi-note" : ""} min-w-0 flex-1 text-lg ${checked ? "font-semibold" : ""}`}
       >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+/**
+ * The same choice on desktop (desktop revision, 30 Sep 2026): a tray standing
+ * on the box rather than a sheet rising from the floor of a wide window. A row
+ * per series, its books as chips, so all of them are in view at once without
+ * a scroll — eight titles fit where the sheet needed a screenful.
+ *
+ * Still a draft until Done; × and Escape leave the search as it was.
+ */
+export function BookPickerTray({
+  shelf,
+  scope,
+  onClose,
+  onDraft,
+  onApply,
+}: {
+  shelf: BookSummary[];
+  scope: string[];
+  onClose: () => void;
+  /** the ticks as they change, before Done — for the pill in the box */
+  onDraft?: (codes: string[]) => void;
+  onApply: (codes: string[]) => void;
+}) {
+  const { draft, setDraft, groups, all, everything, toggle } = useBookPicker(true, shelf, scope);
+  useEffect(() => {
+    onDraft?.(draft);
+  }, [draft, onDraft]);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    // A click anywhere else puts it away, as a menu would — except on the
+    // pill that opened it, which toggles it itself.
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Element;
+      if (ref.current?.contains(t) || t.closest?.("[data-book-picker-toggle]")) return;
+      onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onDown);
+    };
+  }, [onClose]);
+
+  const chosen = everything ? shelf.length : draft.length;
+
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      aria-label="Search in"
+      className="assistant-fade-in overflow-hidden rounded-card border border-rule bg-card shadow-raised"
+    >
+      <div className="flex items-center gap-3 px-4 pt-3">
+        <p className="w-20 shrink-0 text-sm font-semibold text-ink-soft">Search in</p>
+        <div className="min-w-0 flex-1">
+          <Chip label="All books" on={all} onClick={() => setDraft([])} />
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close without changing"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule bg-card"
+        >
+          <CloseIcon className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="max-h-[50vh] overflow-y-auto px-4 pb-3">
+        {groups.map((g) => (
+          <div key={g.key} role="group" aria-label={g.name} className="mt-3 flex items-start gap-3">
+            <p className="flex min-h-11 w-20 shrink-0 items-center text-sm font-semibold text-ink-soft">
+              {g.name}
+            </p>
+            <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+              {g.books.map((b) => (
+                <Chip key={b.code} label={b.title_hi} hindi on={draft.includes(b.code)} onClick={() => toggle(b.code)} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between gap-3 border-t border-rule px-4 py-3">
+        <p className="text-sm text-ink-soft">
+          {all ? `All ${shelf.length} books` : `${chosen} of ${shelf.length} books selected`}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            onApply(everything ? [] : draft);
+            onClose();
+          }}
+          className="inline-flex min-h-11 items-center rounded-control px-5 text-sm font-semibold text-white"
+          style={{ background: WORKSPACES.connect.color }}
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** A book, or "All books", in the tray — Connect's teal when chosen, as the pill in the box is. */
+function Chip({
+  label,
+  on,
+  onClick,
+  hindi = false,
+}: {
+  label: string;
+  on: boolean;
+  onClick: () => void;
+  hindi?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      data-ws
+      className={`inline-flex min-h-11 items-center rounded-full border px-3.5 text-sm transition-colors ${
+        on ? "font-semibold" : "border-rule bg-card text-ink hover:bg-inset"
+      }`}
+      style={{
+        ["--ws-color" as string]: "var(--color-ws-connect)",
+        ...(on
+          ? {
+              color: "var(--ws-ink)",
+              borderColor: "color-mix(in srgb, var(--ws-color) 55%, var(--color-card))",
+              background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+            }
+          : {}),
+      }}
+    >
+      <span lang={hindi ? "hi" : undefined} className={hindi ? "hi-note" : ""}>
         {label}
       </span>
     </button>

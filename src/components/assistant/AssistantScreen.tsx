@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PlusIcon } from "@/components/shell/icons";
+import { useIsDesktop } from "@/components/ui/Dialog";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { track } from "@/lib/analytics";
 import { firstSentence } from "@/lib/assistant/answer";
@@ -30,15 +31,17 @@ import {
   type Intent,
 } from "@/lib/assistant/intent";
 import type { ChatQuota } from "@/lib/types";
-import { BookPickerSheet } from "./BookPickerSheet";
+import { BookPickerSheet, BookPickerTray } from "./BookPickerSheet";
 import { BookSearchAnswer } from "./BookSearchAnswer";
 import { Composer } from "./Composer";
-import { MenuGlyph } from "./icons";
+import { ConversationsPanel } from "./ConversationsPanel";
+import { MenuGlyph, PanelLeftGlyph, PanelRightGlyph } from "./icons";
 import { Landing } from "./Landing";
 import { NavigateAnswer } from "./NavigateAnswer";
 import { ParibhashaAnswer } from "./ParibhashaAnswer";
 import { IntentScope, QueryBubble } from "./parts";
 import { ResearchAnswer } from "./ResearchAnswer";
+import { SourcePanel, SourcePanelContext, type OpenSource } from "./SourcePanel";
 import { useDictionary, useOriginalBooks } from "./useAssistantData";
 import { canListen, VoiceSheet } from "./VoiceSheet";
 
@@ -49,6 +52,9 @@ import { canListen, VoiceSheet } from "./VoiceSheet";
  * Assistant can do.
  */
 const DEFAULT_MODE: Intent | null = null;
+
+/** whether the reader hid the desktop conversations panel */
+const PANEL_KEY = "md.assistant.panel";
 
 /**
  * The Assistant — one box, four kinds of answer (designer's comps, 18 Sep).
@@ -77,17 +83,54 @@ export function AssistantScreen() {
   /** The books chosen above the box, for Book search and Research; empty is all of them */
   const [scope, setScope] = useState<string[]>([]);
   const [picking, setPicking] = useState(false);
+  /**
+   * Desktop: what is ticked in the open tray, before Done. The pill in the box
+   * follows it as the reader picks — a pill still reading "All books" under a
+   * tray with one book lit reads as the click not having taken. Null when the
+   * tray is shut, so a tray closed without Done leaves the pill as it was.
+   */
+  const [draftScope, setDraftScope] = useState<string[] | null>(null);
+  const shownScope = draftScope ?? scope;
   const scopeLabel =
-    scope.length === 0
+    shownScope.length === 0 || (books && shownScope.length === books.length)
       ? "All books"
-      : scope.length === 1
-        ? (books?.find((b) => b.code === scope[0])?.title_hi ?? "1 book")
-        : `${scope.length} books`;
+      : shownScope.length === 1
+        ? (books?.find((b) => b.code === shownScope[0])?.title_hi ?? "1 book")
+        : `${shownScope.length} books`;
   const [text, setText] = useState("");
   const [quota, setQuota] = useState<ChatQuota | null>(null);
   const [listening, setListening] = useState(false);
   const [voice, setVoice] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const desktop = useIsDesktop();
+  /**
+   * Desktop: the conversations panel, open unless the reader has hidden it —
+   * and hidden stays hidden next time, since it is a preference about the
+   * room rather than about any one conversation.
+   */
+  const [convPanel, setConvPanel] = useState(true);
+  /** no slide until the remembered state has been applied — see the panel */
+  const [panelAnimates, setPanelAnimates] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(PANEL_KEY) === "hidden") setConvPanel(false);
+    } catch {
+      // storage refused: the panel just opens
+    }
+    const id = requestAnimationFrame(() => setPanelAnimates(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const showConvPanel = (open: boolean) => {
+    setConvPanel(open);
+    try {
+      localStorage.setItem(PANEL_KEY, open ? "shown" : "hidden");
+    } catch {
+      // as above
+    }
+  };
+  /** Desktop: the source open in the right-hand column, and the last one shown there */
+  const [source, setSource] = useState<OpenSource | null>(null);
+  const [lastSource, setLastSource] = useState<OpenSource | null>(null);
   const turnRefs = useRef(new Map<string, HTMLElement>());
   const scrollTo = useRef<string | null>(null);
 
@@ -185,6 +228,8 @@ export function AssistantScreen() {
       }
       scrollTo.current = turn.id;
       setText("");
+      setPicking(false);
+      setDraftScope(null);
       track("assistant_ask", { intent, chosen: forced || chosen ? "chip" : "auto", length: q.length });
     },
     [conv, mode, scope, dictionary, router, books]
@@ -279,6 +324,32 @@ export function AssistantScreen() {
   };
 
   const turns = conv?.turns ?? [];
+  // A different conversation, a different set of sources.
+  const convId = conv?.id ?? null;
+  const [sourcesOf, setSourcesOf] = useState(convId);
+  if (sourcesOf !== convId) {
+    setSourcesOf(convId);
+    setSource(null);
+    setLastSource(null);
+  }
+  /** the newest answer's sources — what the header's panel button opens */
+  const latestCites = [...turns].reverse().find((t) => t.answer?.citations.length)?.answer?.citations ?? [];
+  const openSource = useCallback((s: OpenSource) => {
+    setSource(s);
+    setLastSource(s);
+  }, []);
+  const clearMode = () => {
+    closePicker();
+    setMode(null);
+    setScope([]);
+    setText("");
+    inputRef.current?.focus();
+  };
+  const canPickBooks = !!books && books.length > 1;
+  const closePicker = useCallback(() => {
+    setPicking(false);
+    setDraftScope(null);
+  }, []);
   const placeholder = conv
     ? turns[turns.length - 1]?.intent === "books"
       ? "Narrow this, or ask about it"
@@ -287,10 +358,39 @@ export function AssistantScreen() {
 
   return (
     <AppAccent>
-      <Header active={conv !== null} onNew={startOver} />
+    <SourcePanelContext.Provider value={desktop ? openSource : null}>
+      {/* Desktop (desktop revision, 30 Sep 2026): three columns under the
+          app's own sidebar — conversations, the chat, and the source being
+          read — held to the window, each scrolling on its own. A phone keeps
+          the one scrolling page with the box fixed at its foot. */}
+      <div className="lg:fixed lg:inset-y-0 lg:left-64 lg:right-0 lg:flex">
+      <ConversationsPanel
+        open={convPanel}
+        animate={panelAnimates}
+        current={conv?.id ?? null}
+        onNew={startOver}
+        onCollapse={() => showConvPanel(false)}
+      />
+      <div className="flex min-w-0 flex-1 flex-col lg:h-full">
+      <Header
+        active={conv !== null}
+        onNew={startOver}
+        panelHidden={!convPanel}
+        onShowPanel={() => showConvPanel(true)}
+        source={
+          source || latestCites.length > 0
+            ? {
+                open: source !== null,
+                toggle: () =>
+                  source ? setSource(null) : openSource(lastSource ?? { cites: latestCites, index: 0 }),
+              }
+            : null
+        }
+      />
 
+      <div className={conv ? "lg:min-h-0 lg:flex-1 lg:overflow-y-auto" : ""}>
       {conv && (
-        <div className="mx-auto w-full max-w-3xl px-4 pb-40 sm:px-6">
+        <div className="mx-auto w-full max-w-3xl px-4 pb-40 sm:px-6 lg:pb-10">
           <div className="flex flex-col gap-8 pt-6">
             {turns.map((t, i) => {
               // A deeper answer is the same question asked again, so its
@@ -385,8 +485,11 @@ export function AssistantScreen() {
           </div>
         </div>
       )}
+      </div>
 
       <Composer
+        docked={conv !== null}
+        className={conv ? "" : "lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:pb-24"}
         inputRef={inputRef}
         value={text}
         onChange={setText}
@@ -400,22 +503,32 @@ export function AssistantScreen() {
           !conv && mode
             ? {
                 label: INTENT_LABEL[mode],
-                onClear: () => {
-                  setMode(null);
-                  setScope([]);
-                  setText("");
-                  inputRef.current?.focus();
-                },
+                onClear: clearMode,
                 option:
-                  (mode === "books" || mode === "research") && books && books.length > 1
+                  (mode === "books" || mode === "research") && canPickBooks
                     ? {
                         label: scopeLabel,
-                        hindi: scope.length === 1,
-                        onClick: () => setPicking(true),
+                        hindi: shownScope.length === 1 && scopeLabel !== "All books",
+                        onClick: () => (picking ? closePicker() : setPicking(true)),
+                        open: picking && desktop,
                       }
                     : undefined,
               }
             : null
+        }
+        tray={
+          picking && desktop && books ? (
+            <BookPickerTray
+              shelf={books}
+              scope={scope}
+              onClose={closePicker}
+              onDraft={setDraftScope}
+              onApply={(codes) => {
+                setScope(codes);
+                inputRef.current?.focus();
+              }}
+            />
+          ) : null
         }
         above={
           landing === "gone" ? null : (
@@ -440,10 +553,14 @@ export function AssistantScreen() {
           )
         }
       />
+      </div>
+
+      {source && <SourcePanel source={source} onClose={() => setSource(null)} />}
+      </div>
 
       {books && (
         <BookPickerSheet
-          open={picking}
+          open={picking && !desktop}
           shelf={books}
           scope={scope}
           onClose={() => setPicking(false)}
@@ -467,6 +584,7 @@ export function AssistantScreen() {
           }
         }}
       />
+    </SourcePanelContext.Provider>
     </AppAccent>
   );
 }
@@ -492,18 +610,50 @@ function AiBadge() {
  * so both doors stay in reach down a long answer — which is what the old
  * compact bar that appeared on scroll was for.
  */
-function Header({ active, onNew }: { active: boolean; onNew: () => void }) {
+function Header({
+  active,
+  onNew,
+  panelHidden,
+  onShowPanel,
+  source,
+}: {
+  active: boolean;
+  onNew: () => void;
+  /** desktop: the conversations panel is hidden, so its button is here */
+  panelHidden: boolean;
+  onShowPanel: () => void;
+  /** desktop: the source panel's button — absent until there is a source to show */
+  source: { open: boolean; toggle: () => void } | null;
+}) {
   return (
-    <header className="sticky top-0 z-30 border-b border-rule bg-surface">
+    <header className="sticky top-0 z-30 shrink-0 border-b border-rule bg-surface lg:static">
       <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
         <Link
           href="/assistant/conversations"
           aria-label="Past conversations"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card lg:hidden"
         >
           <MenuGlyph className="h-5 w-5" />
         </Link>
-        <h1 className="flex min-w-0 flex-1 items-center justify-center gap-2">
+        {/* Desktop: the two sides are the same width, so the name sits in the
+            middle of the column whatever stands either side of it. */}
+        <div className="hidden min-w-0 flex-1 lg:flex">
+          {/* Always there, faded in as the panel leaves and out as it
+              returns, so it does not pop in ahead of the slide. */}
+          <button
+            type="button"
+            onClick={onShowPanel}
+            aria-label="Show conversations"
+            tabIndex={panelHidden ? undefined : -1}
+            aria-hidden={!panelHidden || undefined}
+            className={`flex h-11 w-11 items-center justify-center rounded-control border border-rule bg-card transition-opacity duration-300 motion-reduce:transition-none ${
+              panelHidden ? "opacity-100 delay-100" : "pointer-events-none opacity-0"
+            }`}
+          >
+            <PanelLeftGlyph className="h-5 w-5" />
+          </button>
+        </div>
+        <h1 className="flex min-w-0 flex-1 items-center justify-center gap-2 lg:flex-none">
           <span className="font-display text-2xl font-medium leading-tight tracking-[-0.015em]">
             Assistant
           </span>
@@ -514,10 +664,45 @@ function Header({ active, onNew }: { active: boolean; onNew: () => void }) {
           onClick={onNew}
           aria-label="New conversation"
           disabled={!active}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card disabled:opacity-40"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card disabled:opacity-40 lg:hidden"
         >
           <PlusIcon className="h-5 w-5" />
         </button>
+        <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 lg:flex">
+          {source && (
+            <button
+              type="button"
+              onClick={source.toggle}
+              aria-pressed={source.open}
+              aria-label={source.open ? "Hide the source" : "Show the sources"}
+              className="flex h-11 w-11 items-center justify-center rounded-control border bg-card transition-colors"
+              style={
+                source.open
+                  ? {
+                      borderColor: "color-mix(in srgb, var(--color-accent-deep) 45%, var(--color-rule))",
+                      background: "color-mix(in srgb, var(--color-accent) 10%, var(--color-card))",
+                      color: "var(--color-accent-deep)",
+                    }
+                  : { borderColor: "var(--color-rule)" }
+              }
+            >
+              <PanelRightGlyph className="h-5 w-5" />
+            </button>
+          )}
+          {/* Just the + while a source is open: the column is at its narrowest
+              then, and the label is what would push into the name. */}
+          <button
+            type="button"
+            onClick={onNew}
+            aria-label="New chat"
+            className={`inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-control border border-rule bg-card text-sm font-semibold ${
+              source?.open ? "w-11" : "px-3.5"
+            }`}
+          >
+            <PlusIcon className="h-4 w-4" />
+            {!source?.open && "New chat"}
+          </button>
+        </div>
       </div>
     </header>
   );

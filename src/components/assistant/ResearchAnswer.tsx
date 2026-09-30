@@ -19,6 +19,7 @@ import { parseRef } from "@/lib/refs";
 import type { BookSummary, ChatAnswer, ChatCitation, ChatQuota, ParibhashaWord } from "@/lib/types";
 import { WORKSPACES } from "@/lib/workspaceConfig";
 import { CitationSheet } from "./CitationSheet";
+import { useSourcePanel } from "./SourcePanel";
 import { CopyIcon, NoteIcon } from "./icons";
 import { Eyebrow, SuggestionChip, Thinking } from "./parts";
 import type { Ask } from "./types";
@@ -100,7 +101,9 @@ export function ResearchAnswer({
   const [answer, setAnswer] = useState<ChatAnswer | null>(stored ?? null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [open, setOpen] = useState<number | null>(null);
+  const [open, setOpenSheet] = useState<number | null>(null);
+  /** on desktop a source opens in the Assistant's side panel, not a sheet */
+  const panel = useSourcePanel();
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState<"idle" | "working" | "copied">("idle");
 
@@ -169,6 +172,10 @@ export function ResearchAnswer({
   }
 
   const cites = answer.citations;
+  const setOpen = (i: number | null) => {
+    if (i !== null && panel) panel({ cites, index: i });
+    else setOpenSheet(i);
+  };
   const passages = cites.filter((c) => c.kind !== "definition");
   const definitions = cites.length - passages.length;
   const citedBooks = new Set(passages.map((c) => c.book).filter(Boolean)).size;
@@ -347,8 +354,14 @@ export function ResearchAnswer({
           missed, and a deep answer that finds nothing does not use up one.
           Not for a question the books could never answer ("the capital of
           India"): searching harder cannot find what is not there. */}
+      {/* Deep research and the answer's own actions: stacked on a phone, one
+          row when the column has room for it (desktop revision, 30 Sep
+          2026) — measured on the column rather than the window, so opening the
+          source panel beside it puts them back on two lines. */}
+      <div className="@container print:hidden">
+      <div className="flex flex-col gap-3 @2xl:flex-row">
       {onDeepen && answer.status !== "error" && !answer.off_topic && (
-        <div className="flex flex-col gap-1.5 print:hidden">
+        <div className="flex flex-col gap-1.5 @2xl:flex-1">
           <button
             type="button"
             onClick={onDeepen}
@@ -362,7 +375,7 @@ export function ResearchAnswer({
           >
             <span aria-hidden>✦</span> {answer.status === "not_found" ? "Try Deep research" : "Deep research"}
           </button>
-          <p className="text-center text-xs text-ink-soft">
+          <p className="text-center text-xs text-ink-soft @2xl:hidden">
             {deepLeft === 0
               ? "Today’s deep research is used up"
               : answer.status === "not_found"
@@ -376,13 +389,13 @@ export function ResearchAnswer({
         </div>
       )}
 
-      <div className="flex gap-3 print:hidden">
+      <div className="flex gap-3 @2xl:self-start">
         {!readOnly && (
         <button
           type="button"
           aria-pressed={saved}
           onClick={onToggleSaved}
-          className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-control border border-rule bg-card px-4 text-title font-semibold"
+          className="flex min-h-12 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-control border border-rule bg-card px-4 text-title font-semibold lg:flex-none"
         >
           <span style={{ color: WORKSPACES.translations.color }}>
             <NoteIcon className="h-5 w-5" />
@@ -421,6 +434,23 @@ export function ResearchAnswer({
             </>
           )}
         </button>
+      </div>
+      </div>
+      {/* In one row the button has no room for its explanation, so it moves
+          under the whole row. */}
+      {onDeepen && answer.status !== "error" && !answer.off_topic && (
+        <p className="mt-1.5 hidden text-xs text-ink-soft @2xl:block">
+          {deepLeft === 0
+            ? "Today’s deep research is used up"
+            : answer.status === "not_found"
+              ? `Deep research searches each part of your question on its own and reads more passages · about a minute · not counted if it finds nothing${
+                  deepLeft !== null ? ` · ${deepLeft} left today` : ""
+                }`
+              : `Deep research: definitions, each part of the question searched, a fuller answer · about a minute${
+                  deepLeft !== null ? ` · ${deepLeft} left today` : ""
+                }`}
+        </p>
+      )}
       </div>
 
       {cites.length > 0 && (

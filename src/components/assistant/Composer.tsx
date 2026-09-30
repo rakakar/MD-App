@@ -17,7 +17,7 @@ export interface ComposerPill {
    * A second control beside the pill, for a mode with a setting of its own —
    * Book search's "All books ▾", which opens the book picker.
    */
-  option?: { label: string; hindi?: boolean; onClick: () => void };
+  option?: { label: string; hindi?: boolean; onClick: () => void; open?: boolean };
 }
 
 /**
@@ -44,6 +44,9 @@ export function Composer({
   onListen,
   pill,
   above,
+  docked = true,
+  tray,
+  className = "",
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
   value: string;
@@ -61,6 +64,19 @@ export function Composer({
    * the chips stay where the thumb already is.
    */
   above?: ReactNode;
+  /**
+   * At the foot of a conversation (true) or standing in the middle of the
+   * landing (false). Desktop only: there the box is in the page's flow rather
+   * than fixed, and on the landing it has no rule or ground of its own.
+   */
+  docked?: boolean;
+  /** placement in the desktop column */
+  className?: string;
+  /**
+   * Desktop: a panel standing on the box — the book picker — as wide as the
+   * box and not over the send button beside it.
+   */
+  tray?: ReactNode;
 }) {
   const keyboard = useKeyboardInset();
   const [hi, setHi] = useState(0);
@@ -80,13 +96,13 @@ export function Composer({
 
   return (
     <div
-      className="fixed inset-x-0 z-30 lg:left-64"
+      className={`fixed inset-x-0 z-30 lg:static lg:z-auto ${className}`}
       // On the keyboard when it is up, on the tab bar when it is down — the
       // keyboard covers the tab bar, so the box must not wait above it.
       style={{ bottom: keyboard > 0 ? keyboard : "var(--bottom-nav-h, 0px)" }}
     >
       {above}
-      <div className="border-t border-rule bg-surface">
+      <div className={`border-t border-rule bg-surface ${docked ? "" : "lg:border-t-0 lg:bg-transparent"}`}>
       <div className="mx-auto max-w-3xl px-4 pb-3 pt-3 sm:px-6">
         {showCommands && (
           <div
@@ -133,7 +149,7 @@ export function Composer({
         )}
 
         <form
-          className="flex items-end gap-3"
+          className="relative flex items-end gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             if (showCommands) onCommand(commands[hi]);
@@ -183,8 +199,23 @@ export function Composer({
                     type="button"
                     onClick={pill.option.onClick}
                     aria-haspopup="dialog"
+                    aria-expanded={pill.option.open ?? undefined}
                     aria-label={`Books to search: ${pill.option.label}. Change`}
-                    className="mt-3 inline-flex min-h-9 min-w-0 items-center gap-0.5 rounded-full border border-rule bg-card pl-3 pr-2 text-sm font-semibold text-ink"
+                    data-book-picker-toggle
+                    data-ws
+                    className={`mt-3 inline-flex min-h-9 min-w-0 items-center gap-0.5 rounded-full border pl-3 pr-2 text-sm font-semibold ${
+                      pill.option.open ? "" : "border-rule bg-card text-ink"
+                    }`}
+                    style={
+                      pill.option.open
+                        ? {
+                            ["--ws-color" as string]: "var(--color-ws-connect)",
+                            color: "var(--ws-ink)",
+                            borderColor: "color-mix(in srgb, var(--ws-color) 55%, var(--color-card))",
+                            background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+                          }
+                        : undefined
+                    }
                   >
                     <span
                       lang={pill.option.hindi ? "hi" : undefined}
@@ -192,7 +223,9 @@ export function Composer({
                     >
                       {pill.option.label}
                     </span>
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-ink-soft" />
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 shrink-0 transition-transform ${pill.option.open ? "rotate-180" : "text-ink-soft"}`}
+                    />
                   </button>
                 )}
               </div>
@@ -264,6 +297,9 @@ export function Composer({
           >
             <ArrowUpIcon className="h-5 w-5" />
           </button>
+          {tray && (
+            <div className="absolute bottom-full left-0 right-[4.25rem] z-20 mb-3 hidden lg:block">{tray}</div>
+          )}
         </form>
       </div>
       </div>

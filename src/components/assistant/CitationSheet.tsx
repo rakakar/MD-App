@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { BookmarkIcon } from "@/components/shell/icons";
+import { BookmarkIcon, CloseIcon, ShareIcon } from "@/components/shell/icons";
 import { Sheet } from "@/components/ui";
 import { getParibhashaWord, resolvePara } from "@/lib/api";
 import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
@@ -25,8 +25,96 @@ export function CitationSheet(props: {
   citation: ChatCitation | null;
   number: number;
   onClose: () => void;
+  /** where it is drawn — the phone's bottom sheet unless told otherwise */
+  frame?: Frame;
 }) {
-  return props.citation?.kind === "definition" ? <DefinitionSheet {...props} /> : <PassageSheet {...props} />;
+  const p = { ...props, frame: props.frame ?? SheetFrame };
+  return props.citation?.kind === "definition" ? <DefinitionSheet {...p} /> : <PassageSheet {...p} />;
+}
+
+/**
+ * What a source is drawn inside. The same heading, passage and actions go in
+ * a bottom sheet on a phone and in the side panel on desktop (`SourcePanel`),
+ * so the two cannot drift apart — only the frame differs.
+ */
+export type Frame = (p: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  subtitle: string;
+  footer: ReactNode;
+  /** the page this source lives on, for the panel's share button */
+  href: string | null;
+  children: ReactNode;
+}) => ReactNode;
+
+const SheetFrame: Frame = ({ open, onClose, title, subtitle, footer, children }) => (
+  <Sheet
+    open={open}
+    onClose={onClose}
+    title={title}
+    subtitle={subtitle}
+    accent={WORKSPACES.originals.color}
+    footer={footer}
+  >
+    {children}
+  </Sheet>
+);
+
+/**
+ * The desktop frame: a column at the right of the Assistant, beside the
+ * answer rather than over it, so the reader can check a claim against its
+ * passage with the answer still in view (desktop revision, 30 Sep 2026).
+ */
+export const PanelFrame: Frame = (props) => <PanelFrameView {...props} />;
+
+/** "Source 2 of 5" — set by the panel around the frame. */
+export const SourceLabel = createContext("Source");
+
+function PanelFrameView({ open, onClose, footer, href, children }: Parameters<Frame>[0]) {
+    const label = useContext(SourceLabel);
+    const [copied, setCopied] = useState(false);
+    if (!open) return null;
+    const share = async () => {
+      if (!href) return;
+      const url = `${window.location.origin}${href}`;
+      if (navigator.share) {
+        await navigator.share({ url }).catch(() => {});
+        return;
+      }
+      await navigator.clipboard?.writeText(url).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    };
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="flex shrink-0 items-center gap-2 border-b border-rule px-5 py-3">
+          <p className="min-w-0 flex-1 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+            {label}
+          </p>
+          {href && (
+            <button
+              type="button"
+              onClick={() => void share()}
+              aria-label={copied ? "Link copied" : "Share this source"}
+              className="flex h-11 w-11 items-center justify-center rounded-control border border-rule bg-card"
+            >
+              {copied ? <span className="text-xs font-semibold">Copied</span> : <ShareIcon className="h-4 w-4" />}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close the source"
+            className="flex h-11 w-11 items-center justify-center rounded-control border border-rule bg-card"
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto pb-6">{children}</div>
+        {footer && <div className="shrink-0 border-t border-rule px-5 py-3">{footer}</div>}
+      </div>
+    );
 }
 
 /**
@@ -38,10 +126,12 @@ function DefinitionSheet({
   citation,
   number,
   onClose,
+  frame: Frame,
 }: {
   citation: ChatCitation | null;
   number: number;
   onClose: () => void;
+  frame: Frame;
 }) {
   const id = citation?.word_id ?? null;
   const [word, setWord] = useState<ParibhashaWord | null>(null);
@@ -62,12 +152,12 @@ function DefinitionSheet({
   }, [id]);
 
   return (
-    <Sheet
+    <Frame
       open={citation !== null}
       onClose={onClose}
       title={`Source ${number}`}
       subtitle="Official definition"
-      accent={WORKSPACES.originals.color}
+      href={id !== null ? `/paribhasha/${id}` : null}
       footer={
         id !== null ? (
           <Link
@@ -99,7 +189,7 @@ function DefinitionSheet({
           )}
         </div>
       </div>
-    </Sheet>
+    </Frame>
   );
 }
 
@@ -107,10 +197,12 @@ function PassageSheet({
   citation,
   number,
   onClose,
+  frame: Frame,
 }: {
   citation: ChatCitation | null;
   number: number;
   onClose: () => void;
+  frame: Frame;
 }) {
   const { user } = useAuth();
   const ref = citation?.canonical_ref ?? null;
@@ -142,12 +234,12 @@ function PassageSheet({
     .join(" · ");
 
   return (
-    <Sheet
+    <Frame
       open={citation !== null}
       onClose={onClose}
       title={`Source ${number}`}
       subtitle="Cited in the answer"
-      accent={WORKSPACES.originals.color}
+      href={ref ? refToHref(ref) : null}
       footer={
         ref ? (
           <div className="flex gap-3">
@@ -217,6 +309,6 @@ function PassageSheet({
         </div>
         <p className="mt-2 text-xs text-ink-soft">{ref}</p>
       </div>
-    </Sheet>
+    </Frame>
   );
 }

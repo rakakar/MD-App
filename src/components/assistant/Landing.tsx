@@ -59,10 +59,12 @@ export function Landing({
         aria-hidden={mode !== null || undefined}
         className={`transition-opacity duration-300 ease-out ${mode ? "opacity-0" : "opacity-100 delay-100"}`}
       >
-        <h2 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-3xl">
+        {/* Centred on desktop, where the landing stands in the middle of the
+            page rather than on a phone's thumb (desktop revision, 30 Sep). */}
+        <h2 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-center lg:text-4xl">
           What are you looking for?
         </h2>
-        <p className="mt-1 text-sm text-ink-soft">
+        <p className="mt-1 text-sm text-ink-soft lg:mt-2 lg:text-center">
           Answers from {books ? `${books} original books` : "the original books"}
         </p>
       </div>
@@ -80,7 +82,7 @@ export function Landing({
           role="group"
           aria-label="What do you need"
           inert={mode !== null || undefined}
-          className={`col-start-1 row-start-1 flex min-w-0 flex-wrap content-end gap-2.5 transition-[opacity,transform] ease-out motion-reduce:transform-none ${
+          className={`col-start-1 row-start-1 flex min-w-0 flex-wrap content-end gap-2.5 transition-[opacity,transform] lg:justify-center ease-out motion-reduce:transform-none ${
             mode ? "translate-y-1 opacity-0 duration-150" : "translate-y-0 opacity-100 delay-150 duration-300"
           }`}
         >
@@ -158,3 +160,4 @@ export function Landing({
     </div>
   );
 }
+
