@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DownloadIcon } from "@/components/shell/icons";
+import { CheckIcon, DownloadIcon } from "@/components/shell/icons";
+import { HERO_PILL } from "@/components/ui/CollectionHero";
 import { track } from "@/lib/analytics";
 import { getChapter, getParibhashaIndex } from "@/lib/api";
 import { ensureFullGlossary } from "@/lib/glossary";
@@ -25,8 +26,9 @@ export function DownloadButton({
   variant = "pill",
 }: {
   book: BookDetail;
-  /** `hero` is the 46px icon square inside the tinted book header (design 1C) */
-  variant?: "pill" | "hero";
+  /** `hero` is the 46px icon square inside the tinted book header (design 1C);
+   *  `heroPill` the labelled one in the desktop hero's action row */
+  variant?: "pill" | "hero" | "heroPill";
 }) {
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
@@ -76,6 +78,31 @@ export function DownloadButton({
     await removeDownload(book.code);
     setStatus("idle");
   };
+
+  if (variant === "heroPill") {
+    // The desktop book hero's row, where the buttons carry words. "Offline"
+    // rather than "Download": what it does is keep the book readable with no
+    // connection, not hand over a file.
+    const label =
+      status === "done"
+        ? "Saved for offline reading — press to remove"
+        : status === "downloading"
+          ? `Saving for offline reading, ${progress}%`
+          : "Save for offline reading";
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        onClick={status === "done" ? remove : download}
+        disabled={status === "downloading"}
+        className={`${HERO_PILL} disabled:opacity-70`}
+      >
+        {status === "done" ? <CheckIcon className="h-4 w-4" /> : <DownloadIcon className="h-4 w-4" />}
+        {status === "downloading" ? <span className="tabular-nums">{progress}%</span> : "Offline"}
+      </button>
+    );
+  }
 
   if (variant === "hero") {
     // On the hero the button is an icon square, so its state has to be legible

@@ -258,6 +258,14 @@ export function HeroAction({
   );
 }
 
+/**
+ * A labelled secondary control on a tinted hero — the desktop book hero's row
+ * of Translations · PDF · Share under Start reading. Translucent like
+ * `HeroIconButton`, with words, because on desktop there is the width for them.
+ */
+export const HERO_PILL =
+  "inline-flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-control border border-white/25 bg-white/10 px-3 text-sm font-semibold text-white transition-colors hover:bg-white/20";
+
 /** The square neighbour beside it — download, share. Translucent, not white:
  *  two white buttons side by side have no primary. */
 export function HeroIconButton({

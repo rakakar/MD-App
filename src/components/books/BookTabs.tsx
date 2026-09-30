@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { BookAside } from "@/components/books/BookAside";
 import { HighlightsPanel } from "@/components/books/HighlightsPanel";
 import { CountTabs } from "@/components/ui";
 import { localHighlights, syncPersonal, type Highlight } from "@/lib/personal";
-import type { ChapterTocEntry } from "@/lib/types";
+import type { ChapterTocEntry, TranslationRef } from "@/lib/types";
 
 /**
  * The book's two tabs, and whichever one is open.
@@ -27,9 +28,11 @@ export function BookTabs({
   chaptersHref,
   highlightsHref,
   tab,
+  translations,
   children,
 }: {
   bookCode: string;
+  translations: TranslationRef[];
   chapters: ChapterTocEntry[];
   chapterCount: number;
   chaptersHref: string;
@@ -49,11 +52,16 @@ export function BookTabs({
   }, [user, loading, reload]);
 
   return (
-    <>
+    // From lg, two columns: the chapters, and beside them the highlights and
+    // translations (`BookAside`). There the highlights are always in view, so
+    // the tab bar is phone-only and a `?tab=highlights` link still shows the
+    // chapters in the main column.
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10">
+      <div className="min-w-0">
       {/* 16px above the tab bar, the same as the page's own side gutter — the
           hero is full-bleed on a phone, so this gap and the gutter meet at the
           bar's top-left corner and any difference between them shows there. */}
-      <div className="mt-4">
+      <div className="mt-4 lg:hidden">
         <CountTabs
           label="This book"
           value={tab}
@@ -78,10 +86,18 @@ export function BookTabs({
       </div>
 
       {tab === "highlights" ? (
-        <HighlightsPanel rows={rows} chapters={chapters} />
+        <>
+          <div className="lg:hidden">
+            <HighlightsPanel rows={rows} chapters={chapters} />
+          </div>
+          <div className="hidden lg:block">{children}</div>
+        </>
       ) : (
         children
       )}
-    </>
+      </div>
+
+      <BookAside rows={rows} translations={translations} />
+    </div>
   );
 }

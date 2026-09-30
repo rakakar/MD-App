@@ -34,7 +34,7 @@ import type { BookSummary } from "@/lib/types";
  * 612×834 loses a sliver instead of sitting in bars. If the BE ever starts
  * serving mixed shapes, that is the line to revisit, not this ratio.
  */
-type Size = "resume" | "rail" | "grid" | "lg";
+type Size = "resume" | "rail" | "grid" | "lg" | "hero";
 
 /** 612×834, the shape of every cover the BE has. Written as a fraction rather
  *  than a decimal so the source of it is legible at the call site. */
@@ -52,6 +52,9 @@ const BOX: Record<Size, string> = {
   rail: `${COVER} w-full rounded-cover p-3`,
   grid: `${COVER} w-full rounded-cover p-3`,
   lg: "h-[130px] w-[95px] rounded-cover p-3.5",
+  // the desktop book hero's cover, beside a 48px title (Book preview, desktop
+  // revision 29 Sep 2026)
+  hero: `${COVER} w-[11.5rem] rounded-cover p-4`,
 };
 
 /**
@@ -64,6 +67,7 @@ const SIZES: Record<Size, string> = {
   rail: "(min-width: 1024px) 20rem, 7.75rem",
   grid: "(min-width: 1024px) 14rem, (min-width: 640px) 30vw, 45vw",
   lg: "95px",
+  hero: "184px",
 };
 
 const LETTER: Record<Size, string> = {
@@ -71,6 +75,7 @@ const LETTER: Record<Size, string> = {
   rail: "text-[1.625rem]",
   grid: "text-2xl",
   lg: "text-3xl",
+  hero: "text-5xl",
 };
 
 export function CoverTile({

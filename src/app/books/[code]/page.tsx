@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { BookHeroActions } from "@/components/books/BookHeroActions";
+import { BookHeroDesktop } from "@/components/books/BookHeroDesktop";
+import { ChapterTable } from "@/components/books/ChapterTable";
 import { BookTabs } from "@/components/books/BookTabs";
 import { PdfView } from "@/components/library/PdfView";
 import { CoverTile } from "@/components/shelf/CoverTile";
@@ -172,7 +174,31 @@ export default async function BookDetailPage({
     numberOfPages: book.page_count ?? undefined,
   };
 
+  const chips = [
+    ...(book.is_pdf_only ? ["PDF-only"] : []),
+    ...(book.translation_of ? [] : ["Original"]),
+    ...(genreChip ? [genreChip] : []),
+    ...(book.edition ? [book.edition] : []),
+    ...(book.publication_year ? [String(book.publication_year)] : []),
+  ];
+  const firstChapterHref = firstChapter
+    ? `/books/${encodeURIComponent(book.code)}/${firstChapter.number}`
+    : null;
+
   return (
+    <>
+    {/* Desktop only: a band across the whole content area, outside the
+        page's max-width box (Book preview, desktop revision 29 Sep 2026). */}
+    <BookHeroDesktop
+      book={book}
+      tone={hue.to}
+      back={backLink(ws)}
+      crumb={genreChip}
+      chips={chips}
+      chapterCount={mainChapters.length}
+      firstChapterHref={firstChapterHref}
+      translationsHref={translationsHref}
+    />
     <PageContainer size="shelf">
       <WorkspaceScope ws={ws} />
       <script
@@ -180,14 +206,8 @@ export default async function BookDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/*
-        One column on a phone, the spec's two from lg (1C desktop): the hero
-        becomes a fixed 340px rail and the chapter list becomes the page's main
-        content. Stacked at this width the hero would be a 1088px band with a
-        book's worth of empty colour in it, and the chapters — the thing anyone
-        came here to choose from — would start below the fold.
-      */}
-      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start lg:gap-8">
+      {/* The phone's hero. From lg, `BookHeroDesktop` above takes its place. */}
+      <div className="lg:hidden">
       {/* The book's own hero, on the shared CollectionHero (design 1C and the
           finished Book preview). Still the cover's colour rather than the
           workspace accent: the comps draw an orange book on an orange panel and
@@ -262,13 +282,7 @@ export default async function BookDetailPage({
            rather than a hidden one. PDF-only comes first because it changes
            what this page even is (§13.9): a reader who expects the reflowable
            reader should learn that from the chip, not from its absence. */
-        chips={[
-          ...(book.is_pdf_only ? ["PDF-only"] : []),
-          ...(book.translation_of ? [] : ["Original"]),
-          ...(genreChip ? [genreChip] : []),
-          ...(book.edition ? [book.edition] : []),
-          ...(book.publication_year ? [String(book.publication_year)] : []),
-        ]}
+        chips={chips}
         actions={
           book.is_pdf_only ? (
             /*
@@ -286,19 +300,14 @@ export default async function BookDetailPage({
           ) : (
             <BookHeroActions
               book={book}
-              firstChapterHref={
-                firstChapter
-                  ? `/books/${encodeURIComponent(book.code)}/${firstChapter.number}`
-                  : null
-              }
+              firstChapterHref={firstChapterHref}
             />
           )
         }
       />
+      </div>
 
-      {/* In two columns this column starts at the top, so whatever happens to
-          be first in it drops its stacked-layout top margin. */}
-      <div className="min-w-0 lg:[&>*:first-child]:mt-0">
+      <div className="min-w-0 lg:pt-4 lg:[&>*:first-child]:mt-0">
       {book.description && (
         <p lang="hi" className="hi mt-6 text-sm leading-relaxed text-ink-soft">
           {book.description}
@@ -344,8 +353,14 @@ export default async function BookDetailPage({
         chaptersHref={`/books/${encodeURIComponent(book.code)}`}
         highlightsHref={`/books/${encodeURIComponent(book.code)}?tab=highlights`}
         tab={tab}
+        translations={book.translations}
       >
-        <div className="mt-2">
+        <ChapterTable
+          bookCode={book.code}
+          chapters={[...frontMatter, ...mainChapters]}
+          count={mainChapters.length}
+        />
+        <div className="mt-2 lg:hidden">
           {/* No "Front matter" heading over the first rows. It labelled a group
               of one or two against a list of eighteen, and the rows already say
               what they are — a front-matter row is called "Front-matters" and
@@ -380,8 +395,8 @@ export default async function BookDetailPage({
         </>
       )}
       </div>
-      </div>
     </PageContainer>
+    </>
   );
 }
 

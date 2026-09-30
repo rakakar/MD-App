@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ShareIcon } from "@/components/shell/icons";
-import { HeroIconButton } from "./CollectionHero";
+import { HERO_PILL, HeroIconButton } from "./CollectionHero";
 
 /**
  * The share button in the corner of a hero — a book, an album, a folder.
@@ -16,7 +16,14 @@ import { HeroIconButton } from "./CollectionHero";
  * phone this app is used on has it, and every desktop browser does not. A
  * cancelled share sheet is not an error and says nothing.
  */
-export function ShareButton({ title }: { title: string }) {
+export function ShareButton({
+  title,
+  variant = "icon",
+}: {
+  title: string;
+  /** `pill`: icon and the word, for the desktop book hero's action row */
+  variant?: "icon" | "pill";
+}) {
   const [copied, setCopied] = useState(false);
 
   const share = async () => {
@@ -33,6 +40,15 @@ export function ShareButton({ title }: { title: string }) {
       // cancelled, or a browser that refuses both — neither is worth a dialog
     }
   };
+
+  if (variant === "pill") {
+    return (
+      <button type="button" onClick={share} className={HERO_PILL}>
+        <ShareIcon className="h-4 w-4" />
+        {copied ? "Copied" : "Share"}
+      </button>
+    );
+  }
 
   return (
     <HeroIconButton onClick={share} aria-label={copied ? "Link copied" : `Share ${title}`}>
