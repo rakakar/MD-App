@@ -223,8 +223,14 @@ export function FilterChips({
 
        The `-mx-4 px-4` here and the one inside `ChipRow` are both wanted and
        do different jobs: this one takes the background to the screen edge, and
-       that one lets the chips scroll to it. */
-    <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 pt-2 sm:mx-0 sm:px-0 lg:top-0">
+       that one lets the chips scroll to it.
+
+       From sm the background still runs out through the page gutter (the
+       container's own px-6 / px-8), not just to the grid's edge: a cover's drop
+       shadow spreads ~20px past its column, and a bar exactly as wide as the
+       grid left those shadows showing either side of it as they scrolled
+       under. */
+    <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
       <ChipRow label={label}>
         <Chip label="All" href={allHref} selected={!active} variant="tint" />
         {options.map((o) => (

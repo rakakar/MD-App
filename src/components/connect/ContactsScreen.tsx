@@ -80,7 +80,7 @@ export function ContactsScreen({
           a larger `top` would leave a strip of moving list showing above it —
           and `-mx-4 px-4` bleeds the page's own ground to the gutters so the
           rows pass behind it rather than beside it. */}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:mx-0 sm:px-0 lg:top-0">
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
       <button
         type="button"
         onClick={() => setSheetOpen(true)}

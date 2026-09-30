@@ -140,7 +140,7 @@ export function AvShelf({
           Videos should not mean scrolling back up to find the chips. The
           app's one sticky-row recipe — the air is padding inside the box, and
           the box is opaque, so nothing scrolls through a gap above it. */}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 pt-2 sm:mx-0 sm:px-0 lg:top-0">
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
         <FindBar
           basePath={basePath}
           state={state}

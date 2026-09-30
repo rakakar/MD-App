@@ -194,7 +194,7 @@ export function PersonalHeader({
           row, and the list scrolls up through it in the clear. Opaque
           `bg-surface`, because this stops directly under a bar that is already
           blurring what passes behind it. */}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-2 bg-surface px-4 pb-2 pt-2 sm:mx-0 sm:px-0 lg:top-0">
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-2 bg-surface px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
         <CountTabs
           label="Highlights and notes"
           surface="page"

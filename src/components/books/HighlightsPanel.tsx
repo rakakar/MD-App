@@ -130,7 +130,7 @@ export function HighlightsPanel({
           the app bar's translucency — this row stops directly under that bar,
           and two blurred layers over one another is a smear rather than a
           material. `z-30` keeps it under the bar (z-40) and over the cards. */}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 py-2 sm:mx-0 sm:px-0 lg:top-0">
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 py-2 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
         <ChipRow label="Filter highlights">
           <Chip
             label={`All ${tagged.length}`}

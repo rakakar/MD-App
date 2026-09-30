@@ -151,7 +151,7 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
           `mt-1` rather than `mt-3` to pay for it: unstuck, the padding and the
           margin stack, and the tabs would otherwise sit further from the box
           than they did before it gained any room. */}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-1 bg-surface px-4 pb-2 pt-2 sm:mx-0 sm:px-0 lg:top-0">
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-1 bg-surface px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
         <FindRow
           search={
             <SearchField
