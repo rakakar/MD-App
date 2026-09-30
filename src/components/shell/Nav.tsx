@@ -154,7 +154,14 @@ export function Sidebar() {
                     <Icon name={item.icon} className="h-4.5 w-4.5" />
                     {item.label}
                     {item.isSearch && (
-                      <kbd className="ml-auto rounded border border-rule px-1.5 py-0.5 text-xs text-ink-soft">
+                      // On the active row it sits on the workspace fill, where
+                      // soft ink on terracotta all but vanished — white, like
+                      // the label beside it.
+                      <kbd
+                        className={`ml-auto rounded border px-1.5 py-0.5 text-xs ${
+                          active ? "border-white/40 text-white" : "border-rule text-ink-soft"
+                        }`}
+                      >
                         ⌘K
                       </kbd>
                     )}
