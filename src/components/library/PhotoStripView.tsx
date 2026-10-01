@@ -22,6 +22,13 @@ import type { LibraryFile, LibrarySearchRow } from "@/lib/types";
  * every photograph on the shelf is reachable by swiping, without the page
  * paying for 171 thumbnails nobody may look at.
  */
+/**
+ * Tiles on desktop: the big one and eight beside it, over six columns. At the
+ * phone's three columns across a 1000px page the big tile was two-thirds of
+ * the page wide — a photograph the size of the screen, standing in for a door.
+ */
+const SHOWN_WIDE = 9;
+
 /** how many more to ask for each time */
 const PAGE = 60;
 /** how close to the end of what is loaded before the next page is asked for */
@@ -108,10 +115,15 @@ export function PhotoStripView({
     return () => control.abort();
   }, [openAt, photos.length, total, scope, first, firstKey]);
 
-  const strip = first.slice(0, shown);
+  // The phone's tiles, then the desktop's extra ones after them — hidden under
+  // lg — so the same first three lead the mosaic at every width.
+  const strip = first.slice(0, Math.max(shown, SHOWN_WIDE));
+  const narrow = Math.min(shown, strip.length);
+  const wide = strip.length;
   // The last tile is a photograph *and* the counter, so what is left over is
-  // everything but the ones fully on show.
-  const rest = total - (strip.length - 1);
+  // everything but the ones fully on show — at each width, its own last tile.
+  const restNarrow = total - (narrow - 1);
+  const restWide = total - (wide - 1);
 
   return (
     <>
@@ -150,20 +162,20 @@ export function PhotoStripView({
         it is counting. Which is also why it says `total - 2`: two photographs
         are fully on show, and this one is the third with the rest behind it.
       */}
-      <div className="grid grid-cols-3 grid-rows-2 gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-3 grid-rows-2 gap-1.5 sm:gap-2 lg:grid-cols-6">
         {strip.map((photo, i) => {
           const big = i === 0;
-          const last = i === strip.length - 1;
-          const hidden = last && rest > 0;
+          const lastNarrow = i === narrow - 1 && restNarrow > 0;
+          const lastWide = i === wide - 1 && restWide > 0;
           return (
             <button
               key={photo.id}
               type="button"
               onClick={() => setOpenAt(i)}
-              aria-label={hidden ? `${rest} more photographs` : photo.title}
-              className={`relative block overflow-hidden rounded-xl border border-rule bg-canvas ${
+              aria-label={photo.title}
+              className={`relative overflow-hidden rounded-xl border border-rule bg-canvas ${
                 big ? "col-span-2 row-span-2" : ""
-              }`}
+              } ${i >= narrow ? "hidden lg:block" : "block"}`}
             >
               {/* Plain <img>: these are library media on a host the image
                   optimiser is not configured for, and a broken optimiser here
@@ -172,14 +184,21 @@ export function PhotoStripView({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photo.thumbnail_url ?? photo.url}
-                alt={hidden ? "" : photo.title}
+                alt=""
                 loading="lazy"
                 decoding="async"
                 className={`w-full object-cover ${big ? "h-full" : "aspect-square"}`}
               />
-              {hidden && (
-                <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-sm font-bold text-white tabular-nums">
-                  +{rest}
+              {lastNarrow && (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-sm font-bold text-white tabular-nums lg:hidden">
+                  +{restNarrow}
+                  <span className="sr-only"> more photographs</span>
+                </span>
+              )}
+              {lastWide && (
+                <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-sm font-bold text-white tabular-nums lg:flex">
+                  +{restWide}
+                  <span className="sr-only"> more photographs</span>
                 </span>
               )}
             </button>
