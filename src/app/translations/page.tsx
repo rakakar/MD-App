@@ -31,8 +31,14 @@ export default async function TranslationsHome({
   const pages = all.reduce((n, b) => n + (b.page_count ?? 0), 0);
 
   return (
-    <PageContainer>
-      <h1 className="font-display text-2xl font-medium">Translations</h1>
+    // The Books shelf's frame and title (designer's call, 1 Oct 2026): the
+    // same width, so four covers are the same size on both shelves, and the
+    // same title step. In the text column the covers were two-thirds the size
+    // of the originals they translate, which read as a lesser shelf.
+    <PageContainer size="shelf">
+      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
+        Translations
+      </h1>
       {/* Two sentences became one. "read in the same reader" was an
           implementation fact wearing a reader's clothes — nobody arrives here
           wondering which component renders the page — and "each edition names
