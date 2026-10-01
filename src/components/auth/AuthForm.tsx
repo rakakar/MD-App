@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useKeyboardInset } from "@/components/assistant/useKeyboardInset";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ArrowLeftIcon, BrandMark, InfoIcon } from "@/components/shell/icons";
+import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { track } from "@/lib/analytics";
 import { googleLoginUrl, login, primeSession, signup } from "@/lib/me";
 import { LAUNCH } from "@/lib/onboarding";
@@ -92,12 +93,22 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   };
 
   return (
-    <div className="min-h-dvh bg-surface lg:py-10">
-      <div className="mx-auto w-full max-w-md">
+    // The app's own terracotta, whichever shelf the reader came from: signing
+    // in is to the app, not to a workspace, and a green Sign in button after
+    // Translations made it look like an account for that shelf alone.
+    <AppAccent>
+    <div className="min-h-dvh bg-surface lg:flex lg:items-center lg:justify-center lg:px-8 lg:py-10">
+      {/* On a phone a band over the form; on a desktop one card of two halves
+          — the launch artwork as its own panel on the left, the form on the
+          right (designer's call, 1 Oct 2026). A phone's column alone in the
+          middle of a wide window read as a page that had failed to load its
+          layout. */}
+      <div className="mx-auto w-full max-w-md lg:grid lg:max-w-4xl lg:grid-cols-2 lg:overflow-hidden lg:rounded-hero lg:border lg:border-rule lg:bg-card lg:shadow-card">
         {/* The band. Its height is the one thing the keyboard changes, so it
-            is the one thing that transitions. */}
+            is the one thing that transitions. On a desktop it is the left
+            panel, as tall as the form beside it. */}
         <header
-          className={`relative overflow-hidden border-b border-rule transition-[height] duration-300 ease-out lg:rounded-t-hero lg:border-x ${
+          className={`relative overflow-hidden border-b border-rule transition-[height] duration-300 ease-out lg:h-auto lg:min-h-[36rem] lg:border-b-0 lg:border-r ${
             keyboard
               ? "h-[calc(max(env(safe-area-inset-top),1rem)+6rem)]"
               : "h-[calc(max(env(safe-area-inset-top),1rem)+14rem)]"
@@ -110,16 +121,28 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             src="/brand/launch-mobile.webp"
             alt=""
             aria-hidden
-            className="absolute inset-0 h-full w-full object-cover object-[50%_36%]"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_36%] lg:object-center"
           />
           {/* Washed back to paper, and fully paper at the foot, so the band
               ends in the page rather than on an edge of photograph. */}
           <div
             aria-hidden
-            className="absolute inset-0"
+            className="absolute inset-0 lg:hidden"
             style={{
               background:
                 "linear-gradient(to bottom, color-mix(in srgb, var(--color-surface) 62%, transparent) 0%, color-mix(in srgb, var(--color-surface) 66%, transparent) 55%, color-mix(in srgb, var(--color-surface) 92%, transparent) 100%)",
+            }}
+          />
+
+          {/* Desktop: the picture at full strength, with paper rising only
+              behind the name at its foot — enough for the Devanagari to read,
+              and no more. As a panel of its own it has no page to fade into. */}
+          <div
+            aria-hidden
+            className="absolute inset-0 hidden lg:block"
+            style={{
+              background:
+                "linear-gradient(to bottom, transparent 0%, transparent 60%, color-mix(in srgb, var(--color-surface) 72%, transparent) 80%, color-mix(in srgb, var(--color-surface) 90%, transparent) 100%)",
             }}
           />
 
@@ -146,11 +169,12 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           </div>
         </header>
 
-        <div className="px-6 pb-12 lg:rounded-b-hero lg:border-x lg:border-b lg:border-rule lg:bg-surface lg:px-8">
+        <div className="px-6 pb-12 lg:flex lg:flex-col lg:justify-center lg:px-12 lg:py-12">
           {/* The mark sits on the band's edge — half on the picture, half on
-              the page — with the launch screen's halo, held still. */}
+              the page — with the launch screen's halo, held still. On a
+              desktop there is no edge to sit on, so it heads the form. */}
           <div
-            className={`relative shrink-0 transition-[width,height,margin] duration-300 ${
+            className={`relative shrink-0 transition-[width,height,margin] duration-300 lg:mt-0 ${
               keyboard ? "-mt-[1.125rem] h-9 w-9" : "-mt-[1.375rem] h-11 w-11"
             }`}
           >
@@ -298,5 +322,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </div>
       </div>
     </div>
+    </AppAccent>
   );
 }
