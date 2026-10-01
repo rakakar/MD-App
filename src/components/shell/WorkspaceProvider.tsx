@@ -198,7 +198,18 @@ export function AccentScope({
 
 export function NavScope({ href }: { href: string }) {
   const { claimTab } = useWorkspace();
-  const path = usePathname() ?? "/";
+  /**
+   * The path this page was mounted on — kept, not followed.
+   *
+   * Following it was the bug that left Home unlit. Leaving a folder for Home,
+   * the folder is still on screen while Home loads, and `usePathname` already
+   * answers "/" inside it; the claim re-filed itself under "/", naming the
+   * folder's tab, and Home then read that claim and lit nothing. A page
+   * remounts when its own address changes (`/library/58` → `/library/60`), so
+   * the path it was born on is the only one it can speak for.
+   */
+  const current = usePathname() ?? "/";
+  const [path] = useState(current);
   useEffect(() => {
     claimTab({ path, href });
   }, [claimTab, path, href]);
