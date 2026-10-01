@@ -18,6 +18,11 @@ import { InfoIcon } from "@/components/shell/icons";
  * sentence to read, not a menu to pick from, and a popover over the controls
  * would hide the very search box a reader who just learnt what the page holds
  * is about to use.
+ *
+ * **Phone only.** Both savings were for a phone's height; a desktop has the
+ * room, so there the title keeps its larger step and the description is simply
+ * printed under it, with no `i` to press, and the count under that
+ * (designer's call, 1 Oct 2026).
  */
 export function ShelfTitle({
   title,
@@ -39,7 +44,7 @@ export function ShelfTitle({
             `text-2xl` is what Centres and Connect set theirs at; Media stood a
             size above every other page title in the app for no reason the
             page itself gave. */}
-        <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-3xl">
+        <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
           {title}
         </h1>
         {/* 24px of glyph in a 44px target: the ring is small because it sits
@@ -52,12 +57,12 @@ export function ShelfTitle({
           aria-expanded={open}
           aria-controls={id}
           aria-label={open ? `Hide what ${title} holds` : `What ${title} holds`}
-          className="-m-2.5 inline-flex items-center justify-center p-2.5 text-ink-soft transition-colors hover:text-ink"
+          className="-m-2.5 inline-flex items-center justify-center p-2.5 text-ink-soft transition-colors hover:text-ink lg:hidden"
         >
           <InfoIcon className="h-6 w-6" />
         </button>
         {meta && (
-          <p className="ml-auto whitespace-nowrap text-sm tabular-nums text-ink-soft">
+          <p className="ml-auto whitespace-nowrap text-sm tabular-nums text-ink-soft lg:hidden">
             {meta}
           </p>
         )}
@@ -67,12 +72,18 @@ export function ShelfTitle({
           cards open with — so it arrives rather than appears, and is `inert`
           while shut so a screen reader does not read a sentence that is not
           on screen. */}
-      <div className="disclosure" data-open={open} inert={!open}>
+      <div className="disclosure lg:hidden" data-open={open} inert={!open}>
         <div>
           <p id={id} className="pt-1.5 text-sm text-ink-soft">
             {description}
           </p>
         </div>
+      </div>
+      {/* Desktop: the description, and the count on its own line under it —
+          what the page holds, then how much of it. */}
+      <div className="hidden lg:block">
+        <p className="mt-1 text-sm text-ink-soft">{description}</p>
+        {meta && <p className="mt-1 text-sm tabular-nums text-ink-soft">{meta}</p>}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { SearchField } from "@/components/SearchField";
 import { FindRow } from "@/components/ui";
+import { useIsDesktop } from "@/components/ui/Dialog";
 import { findHref, MIN_QUERY_CHARS, type FindState } from "@/lib/find";
 
 /**
@@ -86,6 +87,7 @@ export function FindBar({
   filters?: React.ReactNode;
 }) {
   const router = useRouter();
+  const desktop = useIsDesktop();
   /**
    * What is in the box. The only owner of it while the reader is typing —
    * `state.q` is what has been *asked*, which is a different thing and only
@@ -142,7 +144,9 @@ export function FindBar({
               commit("");
               inputRef.current?.focus();
             }}
-            placeholder={placeholder ?? `Search ${scope}…`}
+            // The short placeholder is a phone's, where it stands in for the
+            // caption; a desktop names the scope as every other box does.
+            placeholder={(desktop ? null : placeholder) ?? `Search ${scope}…`}
             label={`Search ${scope}`}
             unasked={q.trim() !== state.q}
             pending={pending}

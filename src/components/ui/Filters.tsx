@@ -32,9 +32,9 @@ export function FilterButton({
   count?: number;
   onClick: () => void;
   /**
-   * The glyph without the word — Media's comps, where the box beside it has
-   * to carry "Search by name, topic, year…" and the labelled button cost it
-   * the last word. The name is still in `aria-label`; the tint and the count
+   * The glyph without the word, below lg — Media's comps, where the box beside
+   * it has to carry "Search by name, topic, year…" and the labelled button
+   * cost it the last word. A desktop has the width, so the word comes back. The name is still in `aria-label`; the tint and the count
    * badge still say when filters are on, which is the part a sighted reader
    * needs the word for least.
    */
@@ -48,7 +48,7 @@ export function FilterButton({
       aria-haspopup="dialog"
       aria-label={on ? `Filters, ${count} applied` : "Filters"}
       className={`flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-control border text-sm font-medium transition-colors ${
-        iconOnly ? (on ? "px-3" : "w-12") : "px-4"
+        iconOnly ? (on ? "px-3 lg:px-4" : "w-12 lg:w-auto lg:px-4") : "px-4"
       }`}
       style={
         on
@@ -60,8 +60,8 @@ export function FilterButton({
           : { borderColor: "var(--color-rule)", background: "var(--color-card)" }
       }
     >
-      <FilterIcon className={iconOnly ? "h-5 w-5" : "h-4 w-4"} />
-      {!iconOnly && "Filters"}
+      <FilterIcon className={iconOnly ? "h-5 w-5 lg:h-4 lg:w-4" : "h-4 w-4"} />
+      {iconOnly ? <span className="hidden lg:inline">Filters</span> : "Filters"}
       {on && (
         <span
           aria-hidden
