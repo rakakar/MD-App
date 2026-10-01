@@ -1098,6 +1098,29 @@ html[data-reading="1"] body {
 .ws-sheet-backdrop {
   animation: fade-in 0.22s ease-out 1;
 }
+/* The photo viewer (`Lightbox`): the next photograph slides in from the side
+   the reader is moving towards, and fades up as it comes, so stepping through
+   a set reads as moving along it rather than as one picture being swapped
+   for another. Short — a reader flicking through forty should never wait. */
+.lightbox-from-next {
+  animation: lightbox-from-next 0.32s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+.lightbox-from-prev {
+  animation: lightbox-from-prev 0.32s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes lightbox-from-next {
+  from {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+}
+@keyframes lightbox-from-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+}
+
 /* the centred desktop modal (`Dialog`) — rises a little and fades, rather
    than travelling the whole screen height the way a sheet does */
 .ws-dialog {
@@ -1680,6 +1703,8 @@ html[data-first-run] body > :not(.launch) {
   .ws-sheet,
   .ws-sheet-backdrop,
   .ws-dialog,
+  .lightbox-from-next,
+  .lightbox-from-prev,
   .audio-mode-in,
   .audio-mode-out,
   .player-pill-in,

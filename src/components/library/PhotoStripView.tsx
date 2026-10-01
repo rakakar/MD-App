@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CountedHeading } from "@/components/library/CollectionShell";
 import { Lightbox } from "@/components/library/Lightbox";
+import { GridIcon } from "@/components/shell/icons";
 import { findLibrary } from "@/lib/api";
 import { EMPTY_FIND, type FindState } from "@/lib/find";
 import type { LibraryFile, LibrarySearchRow } from "@/lib/types";
@@ -23,11 +24,11 @@ import type { LibraryFile, LibrarySearchRow } from "@/lib/types";
  * paying for 171 thumbnails nobody may look at.
  */
 /**
- * Tiles on desktop: the big one and eight beside it, over six columns. At the
- * phone's three columns across a 1000px page the big tile was two-thirds of
- * the page wide — a photograph the size of the screen, standing in for a door.
+ * Tiles on desktop: the big one and four beside it in a 2×2, over four
+ * columns (the designer's reference, 1 Oct 2026). At the phone's three columns
+ * across a 1000px page the big tile was two-thirds of the page wide.
  */
-const SHOWN_WIDE = 9;
+const SHOWN_WIDE = 5;
 
 /** how many more to ask for each time */
 const PAGE = 60;
@@ -119,11 +120,6 @@ export function PhotoStripView({
   // lg — so the same first three lead the mosaic at every width.
   const strip = first.slice(0, Math.max(shown, SHOWN_WIDE));
   const narrow = Math.min(shown, strip.length);
-  const wide = strip.length;
-  // The last tile is a photograph *and* the counter, so what is left over is
-  // everything but the ones fully on show — at each width, its own last tile.
-  const restNarrow = total - (narrow - 1);
-  const restWide = total - (wide - 1);
 
   return (
     <>
@@ -147,34 +143,27 @@ export function PhotoStripView({
       </div>
 
       {/*
-        **A mosaic, not a row of stamps.**
+        **A mosaic, not a row of stamps** — one photograph large and the next
+        ones beside it, after the designer's reference (1 Oct 2026): hairline
+        gaps, the corners rounded only on the outside of the whole block, so it
+        reads as one picture wall rather than a grid of cards. Three tiles on a
+        phone, five over four columns on a desktop, held to a fixed height so
+        the big tile can never grow to fill the screen.
 
-        Five 67px squares said "there are photographs in here" and showed
-        nobody a photograph: at that size a shivir snapshot, a chart and a
-        scanned letter are three grey rectangles. Three tiles instead — one
-        large, two stacked beside it — which is enough for the big one to be
-        worth looking at, and the whole point of this section is that a picture
-        is cheaper to understand than any label written about it.
-
-        The counter rides the bottom-right *photograph* rather than taking a
-        tile of its own: a solid accent square in a mosaic of pictures reads as
-        a picture that failed to load, and the count means more over the thing
-        it is counting. Which is also why it says `total - 2`: two photographs
-        are fully on show, and this one is the third with the rest behind it.
+        "Show all" rides the bottom-right corner instead of a "+N" over the
+        last photograph: the wall is all photographs, and the way into the rest
+        is a control on top of it.
       */}
-      <div className="grid grid-cols-3 grid-rows-2 gap-1.5 sm:gap-2 lg:grid-cols-6">
-        {strip.map((photo, i) => {
-          const big = i === 0;
-          const lastNarrow = i === narrow - 1 && restNarrow > 0;
-          const lastWide = i === wide - 1 && restWide > 0;
-          return (
+      <div className="relative">
+        <div className="grid aspect-3/2 grid-cols-3 grid-rows-2 gap-0.75 overflow-hidden rounded-card lg:aspect-auto lg:h-80 lg:grid-cols-4">
+          {strip.map((photo, i) => (
             <button
               key={photo.id}
               type="button"
               onClick={() => setOpenAt(i)}
               aria-label={photo.title}
-              className={`relative overflow-hidden rounded-xl border border-rule bg-canvas ${
-                big ? "col-span-2 row-span-2" : ""
+              className={`group relative min-h-0 overflow-hidden bg-canvas ${
+                i === 0 ? "col-span-2 row-span-2" : ""
               } ${i >= narrow ? "hidden lg:block" : "block"}`}
             >
               {/* Plain <img>: these are library media on a host the image
@@ -187,23 +176,19 @@ export function PhotoStripView({
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className={`w-full object-cover ${big ? "h-full" : "aspect-square"}`}
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none"
               />
-              {lastNarrow && (
-                <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-sm font-bold text-white tabular-nums lg:hidden">
-                  +{restNarrow}
-                  <span className="sr-only"> more photographs</span>
-                </span>
-              )}
-              {lastWide && (
-                <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-sm font-bold text-white tabular-nums lg:flex">
-                  +{restWide}
-                  <span className="sr-only"> more photographs</span>
-                </span>
-              )}
             </button>
-          );
-        })}
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpenAt(0)}
+          className="absolute bottom-3 right-3 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-black/60 px-3.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:bg-black/75"
+        >
+          <GridIcon className="h-4 w-4" />
+          Show all <span className="tabular-nums text-white/75">{total}</span>
+        </button>
       </div>
 
       {openAt !== null && (

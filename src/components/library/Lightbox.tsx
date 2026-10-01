@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CloseIcon } from "@/components/shell/icons";
+import { ChevronDown, CloseIcon } from "@/components/shell/icons";
 import type { LibraryFile } from "@/lib/types";
 
 /**
@@ -20,9 +20,10 @@ import type { LibraryFile } from "@/lib/types";
  * the page's own pinch gesture does nothing on most phones.
  *
  * Four ways to the next picture, because four kinds of reader arrive here: a
- * swipe, the arrow keys, the buttons, and the reel along the foot. The reel is
- * the one that says how many there are and where you are in them without
- * anybody having to read a number.
+ * swipe, the arrow keys, the round buttons at the sides, and the reel along
+ * the foot — which also says how many there are and where you are in them.
+ * Styled after the designer's reference (1 Oct 2026). Manual only: nothing
+ * moves on its own, so a chart being studied is never taken away.
  */
 const MAX_SCALE = 6;
 /** how far a flat drag must travel to count as a swipe rather than a tap */
@@ -102,6 +103,16 @@ export function Lightbox({
   // an effect to reset it on `index` — a second render, and a frame of the new
   // photograph wearing the old one's "ready".
   const [loaded, setLoaded] = useState<string | null>(null);
+
+  /**
+   * Which way the last move went, so the next photograph arrives from that
+   * side — from the right going forward, from the left going back — however
+   * the move was made: swipe, arrow, key or reel. Worked out during render
+   * rather than in an effect, so the new photograph's first frame already
+   * knows its direction.
+   */
+  const [moved, setMoved] = useState({ index, dir: 0 });
+  if (moved.index !== index) setMoved({ index, dir: index > moved.index ? 1 : -1 });
   const ready = !item.thumbnail_url || loaded === item.url;
   useEffect(() => {
     if (!item.thumbnail_url) return;
@@ -253,6 +264,8 @@ export function Lightbox({
     }
   };
 
+  const count = total ?? items.length;
+
   return (
     <div
       role="dialog"
@@ -260,103 +273,122 @@ export function Lightbox({
       aria-label={item.title}
       // Padded for the notch like `VideoStage`: this overlay covers the app's
       // own header, so without the inset the title sits under the status bar.
-      className="fixed inset-0 z-50 flex flex-col bg-black/95 pt-[env(safe-area-inset-top)]"
+      className="fixed inset-0 z-50 flex flex-col bg-black pt-[env(safe-area-inset-top)] text-white"
     >
-      <div className="flex items-start gap-3 p-3 text-white">
-        <div className="min-w-0 flex-1">
-          <p lang="hi" className="hi hi-tight truncate text-sm font-semibold">
-            {item.title}
-          </p>
-          <p className="mt-0.5 text-xs text-white/60">
-            {index + 1} / {total ?? items.length}
-            {view.scale > 1.05 && ` · ${view.scale.toFixed(1)}×`}
-            {/* Said out loud, because until the original lands the picture on
-                screen is a 480px thumbnail: a reader who pinches into a chart
-                and finds it soft should know it is still arriving rather than
-                conclude the scan is bad. */}
-            {!ready && <> · <span>Loading full image…</span></>}
-          </p>
+      {/* The count and the photograph's name, the close button opposite —
+          after the designer's reference (1 Oct 2026). */}
+      <div className="px-4 pt-3 sm:px-6">
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold tabular-nums tracking-[0.12em] text-white/70">
+              {String(index + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
+              {/* Said out loud while the original is still arriving: until it
+                  lands the picture is a 480px thumbnail, and a reader who
+                  pinches into a chart and finds it soft should know it is
+                  coming rather than conclude the scan is bad. */}
+              {!ready && <span className="tracking-normal"> · Loading full image…</span>}
+              {ready && view.scale > 1.05 && (
+                <span className="tracking-normal"> · {view.scale.toFixed(1)}×</span>
+              )}
+            </p>
+            <p lang="hi" className="hi hi-tight mt-0.5 truncate text-base font-semibold">
+              {item.title}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/40 transition-colors hover:bg-white/10"
+          >
+            <CloseIcon className="h-5 w-5" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-white/10 text-white"
+      </div>
+
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 py-4 sm:px-20">
+        <div
+          ref={stageRef}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={endPointer}
+          onWheel={(e) => zoomAbout(view.scale * (e.deltaY < 0 ? 1.15 : 0.87), e.clientX, e.clientY)}
+          // The browser's own gestures are turned off here on purpose: inside a
+          // scroll-locked overlay they do nothing useful and they steal the
+          // pointer stream this zoom is built on.
+          className="flex h-full w-full touch-none select-none items-center justify-center overflow-hidden"
         >
-          <CloseIcon />
-        </button>
-      </div>
+          {/* Keyed by the photograph, so each one mounts fresh and plays its
+              entrance; the zoom's transform stays on the <img> inside, so the
+              two never fight over one `transform`. */}
+          <div
+            key={item.id}
+            className={`flex h-full w-full items-center justify-center ${
+              moved.dir > 0 ? "lightbox-from-next" : moved.dir < 0 ? "lightbox-from-prev" : ""
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={ready ? item.url : (item.thumbnail_url ?? item.url)}
+              alt={item.title}
+              draggable={false}
+              className="max-h-full max-w-full rounded-card object-contain"
+              style={{
+                transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+                transformOrigin: "center",
+              }}
+            />
+          </div>
+        </div>
 
-      <div
-        ref={stageRef}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={endPointer}
-        onWheel={(e) => zoomAbout(view.scale * (e.deltaY < 0 ? 1.15 : 0.87), e.clientX, e.clientY)}
-        // The browser's own gestures are turned off here on purpose: inside a
-        // scroll-locked overlay they do nothing useful and they steal the
-        // pointer stream this zoom is built on.
-        className="flex min-h-0 flex-1 touch-none select-none items-center justify-center overflow-hidden"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={ready ? item.url : (item.thumbnail_url ?? item.url)}
-          alt={item.title}
-          draggable={false}
-          className="max-h-full max-w-full object-contain"
-          style={{
-            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
-            transformOrigin: "center",
-          }}
-        />
-      </div>
-
-      {/* Arrows flanking the reel rather than a row of their own: on a desktop
-          there is no swipe, and a pointer wants somewhere to click that is not
-          a thumbnail. Hidden from a screen reader — the reel below is the same
-          set of destinations, named. */}
-      <div className="flex items-center gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+        {/* Round, at the sides, over the dark ground beside the photograph: a
+            pointer's way on, where a phone swipes. */}
         <NavButton
           label="Previous photo"
-          glyph="‹"
+          side="left"
           onClick={() => onIndex(index - 1)}
           disabled={index === 0}
         />
-        <div
-          ref={reelRef}
-          className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none]"
-        >
-          {items.map((thumb, i) => (
-            <button
-              key={thumb.id}
-              type="button"
-              data-current={i === index}
-              onClick={() => onIndex(i)}
-              aria-label={thumb.title}
-              aria-current={i === index ? "true" : undefined}
-              className={`h-12 w-12 shrink-0 overflow-hidden rounded-control border-2 transition-opacity ${
-                i === index ? "opacity-100" : "border-transparent opacity-45"
-              }`}
-              style={i === index ? { borderColor: "var(--ws-color)" } : undefined}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={thumb.thumbnail_url ?? thumb.url}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="h-full w-full object-cover"
-              />
-            </button>
-          ))}
-        </div>
         <NavButton
           label="Next photo"
-          glyph="›"
+          side="right"
           onClick={() => onIndex(index + 1)}
           disabled={index === items.length - 1}
         />
+      </div>
+
+      {/* The reel: every photograph that has arrived, the current one ringed
+          and kept in view. It says how many there are and where you are in
+          them without anybody having to read a number, and it is the way to
+          jump anywhere among them. */}
+      <div
+        ref={reelRef}
+        className="flex gap-1.5 overflow-x-auto px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 [scrollbar-width:none] sm:px-6"
+      >
+        {items.map((thumb, i) => (
+          <button
+            key={thumb.id}
+            type="button"
+            data-current={i === index}
+            onClick={() => onIndex(i)}
+            aria-label={thumb.title}
+            aria-current={i === index ? "true" : undefined}
+            className={`h-14 w-14 shrink-0 overflow-hidden rounded-control border-2 transition-opacity ${
+              i === index ? "opacity-100" : "border-transparent opacity-45 hover:opacity-80"
+            }`}
+            style={i === index ? { borderColor: "var(--ws-color)" } : undefined}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={thumb.thumbnail_url ?? thumb.url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -364,12 +396,12 @@ export function Lightbox({
 
 function NavButton({
   label,
-  glyph,
+  side,
   onClick,
   disabled,
 }: {
   label: string;
-  glyph: string;
+  side: "left" | "right";
   onClick: () => void;
   disabled: boolean;
 }) {
@@ -379,9 +411,11 @@ function NavButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex h-12 w-9 shrink-0 items-center justify-center rounded-control bg-white/10 text-lg text-white transition-opacity disabled:opacity-25"
+      className={`absolute top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white transition-opacity hover:bg-white/10 disabled:opacity-0 sm:flex ${
+        side === "left" ? "left-4" : "right-4"
+      }`}
     >
-      <span aria-hidden>{glyph}</span>
+      <ChevronDown className={`h-5 w-5 ${side === "left" ? "rotate-90" : "-rotate-90"}`} />
     </button>
   );
 }
