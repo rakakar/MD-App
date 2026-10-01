@@ -8,7 +8,7 @@ import { filesSummary, formatDuration } from "./format";
 import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState, KindTile } from "@/components/ui";
 import type { TileKind } from "@/components/ui/KindTile";
-import { Chip } from "@/components/ui/Segmented";
+import { KindChips, type KindChoice } from "./KindChips";
 import {
   CollectionViewProvider,
   ProvidedView,
@@ -167,7 +167,7 @@ export function AvShelf({
             layout to choose — a search draws each match grouped under its
             folder, which has one shape. */}
         <div className="mt-2.5 flex items-center gap-2">
-          <KindChips facets={facets} chosen={chosen} state={state} basePath={basePath} />
+          <AvKindChips facets={facets} chosen={chosen} state={state} basePath={basePath} />
           {!asked && groups.length > 0 && (
             <div className="ml-auto">
               <ProvidedViewToggle />
@@ -244,21 +244,8 @@ export function AvShelf({
   );
 }
 
-/**
- * All · Audios · Videos — **the Type axis, promoted**, as chips.
- *
- * It is the same `kind` selection the sieve draws everywhere else, moved to the
- * top of the page, because here it is not one filter among six: it is which of
- * the two things this page is about the reader wants. Counts come from the
- * facet, which the endpoint computes ignoring the axis's own selection — so
- * "Audios 35" stays honest while Videos is the one showing.
- *
- * Chips rather than the segmented control it was: the designer's call, and it
- * frees the row's far end for the layout toggle, which a full-width segment
- * could not share a line with. Solid for the chosen one, since something is
- * always chosen here and "All" is a real option rather than the absence of one.
- */
-function KindChips({
+/** All · Audios · Videos — see `KindChips`, which the Library shelves share. */
+function AvKindChips({
   facets,
   chosen,
   state,
@@ -273,46 +260,17 @@ function KindChips({
     (facets.kind ?? []).map((chip) => [chip.value, chip.count] as const)
   );
   const total = AV_KINDS.reduce((n, kind) => n + (counts.get(kind) ?? 0), 0);
-  const options = [
-    { key: "all", label: "All", count: total, kinds: undefined as FileKind[] | undefined },
-    { key: "audio", label: "Audios", count: counts.get("audio") ?? 0, kinds: ["audio"] as FileKind[] },
-    { key: "video", label: "Videos", count: counts.get("video") ?? 0, kinds: ["video"] as FileKind[] },
+  const choices: KindChoice[] = [
+    // "All" writes no `kind` at all rather than both values — the page
+    // supplies the lock, and a bare `/av` is the address worth sharing.
+    { key: "all", label: "All", count: total, kinds: undefined },
+    { key: "audio", label: "Audios", count: counts.get("audio") ?? 0, kinds: ["audio"] },
+    { key: "video", label: "Videos", count: counts.get("video") ?? 0, kinds: ["video"] },
   ];
-  // One option is not a choice. A workspace holding only recordings and no
-  // video should not be asked which of the two it wants.
-  if (options.filter((o) => o.key !== "all" && o.count > 0).length < 2) return null;
-
   const active =
     chosen.length === AV_KINDS.length ? "all" : chosen.includes("audio") ? "audio" : "video";
-
   return (
-    /* Scrolls sideways rather than wrapping. At the largest text size three
-       counted chips and the toggle do not fit a phone, and a second row of
-       chips would push the first collection down by the height this whole
-       redesign was trying to give back. */
-    <div
-      role="group"
-      aria-label="Audio or video"
-      className="-my-1 flex min-w-0 flex-1 gap-1 overflow-x-auto py-1 [scrollbar-width:none]"
-    >
-      {options.map((o) => (
-        <Chip
-          key={o.key}
-          label={o.label}
-          count={o.count}
-          selected={active === o.key}
-          variant="solid"
-          // Links, not state: a filtered shelf that is a real URL can be shared,
-          // bookmarked and prerendered. "All" writes no `kind` at all rather
-          // than both values — the page supplies the lock, and a bare `/av` is
-          // the address worth sharing.
-          href={findHref(basePath, {
-            ...state,
-            selection: { ...state.selection, kind: o.kinds },
-          })}
-        />
-      ))}
-    </div>
+    <KindChips label="Audio or video" choices={choices} active={active} state={state} basePath={basePath} />
   );
 }
 

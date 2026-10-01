@@ -2,9 +2,10 @@ import { FileList } from "./FileList";
 import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
-import { shelfTotals } from "./format";
-import { CollectionViewport } from "./CollectionViewport";
-import { CountedHeading, DoorCard, DoorRow } from "./CollectionShell";
+import { CollectionViewProvider, ProvidedView, ProvidedViewToggle } from "./CollectionLayout";
+import { DoorCard, DoorRow } from "./CollectionShell";
+import { KIND_ORDER, KIND_PLURAL } from "./format";
+import { KindChips, type KindChoice } from "./KindChips";
 import { PhotoStrip } from "./PhotoStrip";
 import { RailFacets } from "./RailFacets";
 import { RailSlot } from "@/components/shell/Rail";
@@ -142,13 +143,13 @@ export async function WorkspaceShelf({
   // filter panels print in their footer, and neither is a count the browse can
   // produce — `child_count` is shallow by contract.
   //
-  // Counted off the Type facet where the shelf hides a kind, and by
-  // `scopeSize`'s widest-axis estimate where it does not. Type is the one axis
-  // every file answers exactly once, which makes its total the true file count
-  // — and the only way to subtract what has moved to another tab without the
-  // estimate's slack turning the difference into a number that is wrong rather
-  // than merely cautious. A find is left alone either way: its `count` is of
-  // rows actually returned.
+  // Counted off the Type facet, with `scopeSize`'s widest-axis estimate only
+  // as the fallback when there is no facet. Type is the one axis every file
+  // answers exactly once, which makes its total the true file count — and the
+  // only way to subtract what has moved to another tab without the estimate's
+  // slack turning the difference into a number that is wrong rather than merely
+  // cautious. A find is left alone either way: its `count` is of rows actually
+  // returned.
   const kindCounts = find?.facets.kind ?? [];
   const countable = kindCounts.filter(
     (chip) => !hideKinds.includes(chip.value as FileKind)
@@ -165,11 +166,37 @@ export async function WorkspaceShelf({
     hideKinds.length > 0 && find
       ? { ...find.facets, kind: countable }
       : (find?.facets ?? {});
+  // The Type facet's total wherever it is there, not only where a kind is
+  // hidden: `scopeSize`'s widest axis counts folders as well as files, so on
+  // Student Materials it said 1499 over chips adding up to 1396, and the "All"
+  // chip and the page's count must be the same number as the chips beside it.
   const inScope =
-    hideKinds.length > 0 && kindCounts.length > 0
+    kindCounts.length > 0
       ? countable.reduce((n, chip) => n + chip.count, 0)
       : scopeSize(find?.facets ?? {});
   const itemCount = finding ? find.count : inScope;
+
+  // The Category axis as a row of chips under the search, as Media has its
+  // Audio · Video (designer's call, 1 Oct 2026). Only the kinds this shelf
+  // actually shows, in the app's kind order; "All" is the shelf's own total.
+  const kindChoices: KindChoice[] = KIND_ORDER.flatMap((kind) => {
+    const count = countable.find((c) => c.value === kind)?.count ?? 0;
+    return count > 0 ? [{ key: kind, label: KIND_PLURAL[kind], count, kinds: [kind] }] : [];
+  });
+  const chipsShown = kindChoices.length >= 2;
+  const chosenKinds = state.selection.kind ?? [];
+  const kindRow = chipsShown ? (
+    <KindChips
+      label="Category"
+      choices={[{ key: "all", label: "All", count: inScope, kinds: undefined }, ...kindChoices]}
+      active={chosenKinds.length === 1 ? chosenKinds[0] : chosenKinds.length === 0 ? "all" : ""}
+      state={state}
+      basePath={basePath}
+    />
+  ) : null;
+  // With the chips standing under the search, a Category group in the rail
+  // and in the Filters sheet would be the same choice offered three times.
+  const filterAxes: FindAxis[] = chipsShown ? [...hideAxes, "kind"] : hideAxes;
 
   if (finding) {
     return (
@@ -192,17 +219,18 @@ export async function WorkspaceShelf({
               state={state}
               basePath={basePath}
               itemCount={itemCount}
-              hideAxes={hideAxes}
+              hideAxes={filterAxes}
             />
           }
         />
+        {kindRow && <div className="mt-2.5 flex items-center gap-2">{kindRow}</div>}
         <div className="lg:hidden">
           <ActiveFindFilters
             topics={topics}
             facets={facets}
             state={state}
             basePath={basePath}
-            hideAxes={hideAxes}
+            hideAxes={filterAxes}
           />
         </div>
         <RailSlot>
@@ -211,7 +239,7 @@ export async function WorkspaceShelf({
             topics={topics}
             state={state}
             basePath={basePath}
-            hideAxes={hideAxes}
+            hideAxes={filterAxes}
           />
         </RailSlot>
         <FindResults
@@ -241,19 +269,22 @@ export async function WorkspaceShelf({
     // the page until it is asked for. See `FindFilters`. The desktop's copy of
     // the filters is standing chrome in the left rail, so this block is only
     // ever the box there.
+    <CollectionViewProvider fallback="grid">
     <div className="flex flex-col">
-      {/* On a desktop the box joins the page's own header line, right-aligned
-          against the shelf's weight, as the design draws it — a full-width
-          search field over a 3-up grid is a form, not a page header. */}
-      <div className="lg:mb-1 lg:flex lg:items-center lg:justify-between lg:gap-6 lg:border-b lg:border-rule lg:pb-4">
-        <p className="hidden shrink-0 text-xs text-ink-soft lg:block">
+      {/* On a desktop, as on Media (designer's call, 1 Oct 2026): the count on
+          its own line under the description, then the search across the page
+          with its labelled Filters beside it. Squeezed to 320px on the title's
+          row, the box cut its own placeholder short — "Search Student Mat" —
+          on the one shelf whose name is long. */}
+      <div className="lg:mb-1 lg:border-b lg:border-rule lg:pb-4">
+        <p className="mt-1 hidden text-sm text-ink-soft lg:block">
           {itemCount > 0 && <span className="tabular-nums">{itemCount} items</span>}
           {itemCount > 0 && doors.length > 0 && " · "}
           {doors.length > 0 && (
             <span className="tabular-nums">{doors.length} collections</span>
           )}
         </p>
-        <div className="lg:w-80 lg:shrink-0">
+        <div className="lg:mt-4">
           <FindBar
             basePath={basePath}
             state={state}
@@ -274,12 +305,24 @@ export async function WorkspaceShelf({
                   state={state}
                   basePath={basePath}
                   itemCount={itemCount}
-                  hideAxes={hideAxes}
+                  hideAxes={filterAxes}
                 />
               )
             }
           />
         </div>
+        {/* The kinds and the layout toggle on one row, as on Media: one says
+            which things, the other how to lay them out. */}
+        {(kindRow || doors.length > 0) && (
+          <div className="mt-2.5 flex items-center gap-2">
+            {kindRow ?? <div className="flex-1" />}
+            {doors.length > 0 && (
+              <div className="ml-auto">
+                <ProvidedViewToggle />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="lg:hidden">
@@ -289,7 +332,7 @@ export async function WorkspaceShelf({
             facets={facets}
             state={state}
             basePath={basePath}
-            hideAxes={hideAxes}
+            hideAxes={filterAxes}
           />
         )}
       </div>
@@ -301,8 +344,8 @@ export async function WorkspaceShelf({
              much is in it — and a reader crosses between the two tabs in one
              tap; the grid is right when the tiles differ from one another, and
              the list is right when the names are what is being scanned. */
-          <CollectionViewport
-            summary={<ShelfHeading doors={doors} rollup={rollup} />}
+          <div className="mt-4">
+          <ProvidedView
             grid={
               /* Two per row from the smallest phone up. A tile carries an icon,
                  a name and a weight — all of which survive half a screen — and
@@ -326,6 +369,7 @@ export async function WorkspaceShelf({
               </ul>
             }
           />
+          </div>
         ) : (
           <div className="mt-5">
             <EmptyState title={emptyTitle} hint={emptyHint} />
@@ -353,11 +397,12 @@ export async function WorkspaceShelf({
             topics={topics}
             state={state}
             basePath={basePath}
-            hideAxes={hideAxes}
+            hideAxes={filterAxes}
           />
         </RailSlot>
       )}
     </div>
+    </CollectionViewProvider>
   );
 }
 
@@ -379,41 +424,6 @@ export async function WorkspaceShelf({
 export function hidesDoor(kinds: FileKind[] | undefined, hidden: FileKind[]): boolean {
   if (hidden.length === 0 || !kinds || kinds.length === 0) return false;
   return kinds.every((kind) => hidden.includes(kind));
-}
-
-/**
- * What the grid below is, and how much of it there is.
- *
- * The total is summed from the rollups rather than taken from `count`, which
- * counts folders and files together: a reader reading "247 items" means
- * files, and folders are the furniture they are filed in.
- */
-function ShelfHeading({
-  doors,
-  rollup,
-}: {
-  doors: NodeCard[];
-  rollup: LibraryRollup;
-}) {
-  const total = shelfTotals(doors.map((d) => rollup[String(d.id)]));
-  const hours = Math.round(total.duration / 3600);
-  return (
-    <CountedHeading>
-      {total.items > 0 && (
-        <>
-          <span className="tabular-nums">{total.items}</span>{" "}
-          {total.items === 1 ? "item" : "items"}
-        </>
-      )}
-      {total.items > 0 && doors.length > 0 && " · "}
-      {doors.length > 0 && (
-        <>
-          <span className="tabular-nums">{doors.length}</span> collections
-        </>
-      )}
-      {hours > 0 && ` · ${hours} ${hours === 1 ? "hour" : "hours"}`}
-    </CountedHeading>
-  );
 }
 
 /**

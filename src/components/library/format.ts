@@ -11,7 +11,7 @@ export const KIND_LABEL: Record<FileKind, string> = {
 };
 
 /** the same kinds in the plural, for the count lines below */
-const KIND_PLURAL: Record<FileKind, string> = {
+export const KIND_PLURAL: Record<FileKind, string> = {
   pdf: "PDFs",
   audio: "Audio",
   video: "Videos",

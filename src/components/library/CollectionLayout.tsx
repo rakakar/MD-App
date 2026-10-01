@@ -109,11 +109,9 @@ export function ViewToggle({
  * **The same choice, for a page that puts the toggle somewhere other than
  * directly above the collections.**
  *
- * `CollectionViewport` keeps the toggle and the content in one box, which is
- * right when the toggle shares a row with a count. Media puts it at the end of
- * its filter chips instead, inside a sticky block that also holds the search,
- * so the toggle and the content it switches are no longer neighbours — and the
- * cards and rows between them are server-rendered. A context is the smallest
+ * Media and the Library shelves put the toggle at the end of their kind chips,
+ * under the search, so the toggle and the content it switches are no longer
+ * neighbours — and the cards and rows between them are server-rendered. A context is the smallest
  * thing that lets two separate client islands agree on one value.
  */
 const ViewContext = createContext<[CollectionView, (v: CollectionView) => void] | null>(
