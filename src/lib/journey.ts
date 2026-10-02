@@ -182,6 +182,118 @@ export const STAGES: Stage[] = [
   },
 ];
 
+/**
+ * One thing a stage points the reader to besides its books.
+ *
+ * `href` is either a path inside the app — a library folder, which is where
+ * the PDFs and recordings live — or an `https:` address, which is handed to
+ * the browser in a new tab. The library is the first choice and an external
+ * address the exception: a PDF that is in the library keeps the reader's page
+ * and opens in our own viewer, where a pCloud link would not.
+ */
+export interface StageResource {
+  title: string;
+  href: string;
+  /** which tile and which verb: a folder of files, a recording, or a page elsewhere */
+  kind: "folder" | "pdf" | "audio" | "video" | "link";
+  /** one short line on what is behind it */
+  note?: string;
+}
+
+/** `true` for an address that leaves the app. */
+export function isExternalHref(href: string): boolean {
+  return /^https?:\/\//i.test(href);
+}
+
+const YT = "https://www.youtube.com";
+
+/**
+ * Each stage's resources, from A. Nagraj ji's study roadmap as one student
+ * set it out (the "विस्तृत मार्गदर्शिका", which is itself in the library at
+ * `/library/144`).
+ *
+ * **Editorial, like the stages.** The guide's own links are pCloud folders; a
+ * folder here is the library's equivalent where the library has one. The
+ * ids are library folders on the live BE, so a folder that is unpublished
+ * stops opening rather than breaking the stage.
+ *
+ * **Stages 2 and 5 have no library folder of their own yet.** The guide's
+ * अध्ययन बिंदु and गोष्ठी reading packs exist only on pCloud; they belong
+ * here the day the library has them. Stages 7–9 have none by design — the
+ * guide itself names only a single book there.
+ */
+const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
+  1: [
+    { title: "परिचयात्मक संकलन", href: "/library/77", kind: "folder", note: "Introductory reading · PDF" },
+    { title: "जीवन विद्या: एक परिचय", href: "/library/26", kind: "audio", note: "Nagraj ji's introductory talks" },
+    { title: "जीवन विद्या: एक परिचय", href: "/library/54", kind: "video", note: "Introductory videos" },
+    {
+      title: "परिचय शिविर वीडियो",
+      href: `${YT}/@jeevanvidyaofficialprogram6848`,
+      kind: "link",
+      note: "Jeevan Vidya official channel",
+    },
+  ],
+  2: [],
+  3: [
+    { title: "अवलोकन पठन सामग्री", href: "/library/77", kind: "folder", note: "The reading for this stage · PDF" },
+    {
+      title: "पूर्व अवलोकन शिविर",
+      href: `${YT}/playlist?list=PLhtsoZtN-o_FFV-rI8Ry2kqvO1JaGD8qK`,
+      kind: "link",
+      note: "Recordings of earlier camps",
+    },
+  ],
+  4: [
+    { title: "संवाद — नागराजजी के साथ", href: "/library/51", kind: "folder", note: "Samvad · PDF" },
+    {
+      title: "१२ पुस्तक — 400 घंटे पठन शिविर",
+      href: `${YT}/playlist?list=PLnQVMclfMfocbwKBl85w5QqZ0rPTBuz_J`,
+      kind: "link",
+      note: "Lectures on the twelve books",
+    },
+    {
+      title: "अध्ययन स्थली",
+      href: "https://madhyasth-darshan.info/about/study-locations/",
+      kind: "link",
+      note: "Where the camps are held, and how to register",
+    },
+  ],
+  5: [
+    { title: "अध्ययन विधि सम्बंधित लेख", href: "/library/117", kind: "folder", note: "On how to study · PDF" },
+    {
+      title: "अध्ययन विधि परिचय",
+      href: `${YT}/watch?v=Em7QUw9jdgg&list=PLnQVMclfMfocWa-E1G4zzxGwoWmKbPizG`,
+      kind: "link",
+      note: "Part 1",
+    },
+    {
+      title: "अध्ययन विधि परिचय",
+      href: `${YT}/watch?v=VYdR5-B09H8&list=PLnQVMclfMfofgqDBbkZS9v_gdH4Nf4i-z`,
+      kind: "link",
+      note: "Part 2, Sadhan bhai",
+    },
+    {
+      title: "अध्ययन-अभ्यास प्रक्रिया",
+      href: `${YT}/playlist?list=PLnQVMclfMfoeRBF05EgkBekuCuyPK3F64`,
+      kind: "link",
+      note: "30 hours of lectures",
+    },
+  ],
+  6: [
+    { title: "सम्पूर्ण ग्रंथालय", href: "/originals", kind: "folder", note: "Everything published, with the audio and video" },
+    { title: "संवाद — नागराजजी के साथ", href: "/library/51", kind: "folder", note: "Including the unpublished Samvad · PDF" },
+    { title: "विद्यार्थी लिखित पुस्तक एवं लेख", href: "/library/115", kind: "folder", note: "Students' compilations and research · PDF" },
+  ],
+  7: [],
+  8: [],
+  9: [],
+};
+
+export function stageResources(stage: Stage): StageResource[] {
+  return STAGE_RESOURCES[stage.id];
+}
+
 /** The source's own caveat, quoted wherever the path is drawn. */
 export const PATH_CAVEAT =
   "“यह मेरे अब तक के व्यतिलगत अध्ययन यात्रा एवं सर्वेक्षण पर आधारित अनुमान मात्र है।”";

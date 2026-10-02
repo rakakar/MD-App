@@ -4,7 +4,8 @@ import Link from "next/link";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { ChevronRight, PathIcon } from "@/components/shell/icons";
 import { chapterLine } from "@/lib/chapter";
-import { LEVELS, STAGES, levelOf, stageBooks, type Stage } from "@/lib/journey";
+import { StageResources } from "@/components/journey/StageResources";
+import { LEVELS, STAGES, levelOf, stageBooks, stageResources, type Stage } from "@/lib/journey";
 import { parseRef, refToHref } from "@/lib/refs";
 import { contentLang } from "@/lib/script";
 import type { BookSummary } from "@/lib/types";
@@ -49,6 +50,7 @@ export function StageCard({
 }) {
   const level = levelOf(stage);
   const reading = stageBooks(stage, books);
+  const resources = stageResources(stage);
 
   /**
    * The next step, resolved against what the reader has actually opened.
@@ -213,6 +215,14 @@ export function StageCard({
             ? "No reading list for this stage — the app keeps out of the way here."
             : "This stage is met in a shivir rather than in a book. The whole library stays open to you meanwhile."}
         </p>
+      )}
+
+      {/* The stage's PDFs, recordings and pages, under its next step. Nothing
+          at all for a stage that has none — see `StageResources`. */}
+      {resources.length > 0 && (
+        <div className="mt-4">
+          <StageResources resources={resources} />
+        </div>
       )}
 
       {/* The card's own way to correct itself. A stage is declared, never

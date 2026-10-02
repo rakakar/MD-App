@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BackIcon, ChevronDown } from "@/components/shell/icons";
+import { StageResources } from "@/components/journey/StageResources";
+import { BackIcon, ChevronDown, ChevronRight } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
-import { LEVELS, PATH_CAVEAT, STAGES, stageById } from "@/lib/journey";
+import { LEVELS, PATH_CAVEAT, STAGES, stageById, stageResources } from "@/lib/journey";
+import { documentHref } from "@/lib/routes";
 import { getPrefs } from "@/lib/storage";
 
 /**
@@ -133,6 +135,7 @@ export default function FullPathPage() {
                   {level.stages.map((id) => {
                     const stage = STAGES.find((s) => s.id === id)!;
                     const current = stage.id === stageId;
+                    const resources = stageResources(stage);
                     return (
                       <li
                         key={id}
@@ -173,6 +176,14 @@ export default function FullPathPage() {
                           {stage.note}
                         </p>
                         <p className="mt-1.5 text-xs text-ink-soft">{stage.duration}</p>
+                        {/* Open for every stage rather than only the reader's
+                            own: the path screen exists to see the whole shape,
+                            and what a later stage asks for is part of it. */}
+                        {resources.length > 0 && (
+                          <div className="mt-3">
+                            <StageResources resources={resources} />
+                          </div>
+                        )}
                       </li>
                     );
                   })}
@@ -191,6 +202,16 @@ export default function FullPathPage() {
       <p className="mt-1 text-xs text-ink-soft">
         The path as one student estimates it — not doctrine.
       </p>
+      {/* The guide this whole screen is drawn from, as the PDF the library
+          holds. */}
+      <Link
+        href={documentHref(144, 532)}
+        className="mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-semibold"
+        style={{ color: "var(--ws-ink)" }}
+      >
+        Read the full study guide (PDF)
+        <ChevronRight className="h-4 w-4" />
+      </Link>
     </PageContainer>
   );
 }
