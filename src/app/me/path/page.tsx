@@ -6,7 +6,7 @@ import { StageResources } from "@/components/journey/StageResources";
 import { BackIcon, ChevronDown, ChevronRight } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
 import { LEVELS, PATH_CAVEAT, STAGES, stageById, stageResources } from "@/lib/journey";
-import { documentHref } from "@/lib/routes";
+import { journeyDocumentHref } from "@/lib/routes";
 import { getPrefs } from "@/lib/storage";
 
 /**
@@ -205,7 +205,7 @@ export default function FullPathPage() {
       {/* The guide this whole screen is drawn from, as the PDF the library
           holds. */}
       <Link
-        href={documentHref(144, 532)}
+        href={journeyDocumentHref(144, 532)}
         className="mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-semibold"
         style={{ color: "var(--ws-ink)" }}
       >

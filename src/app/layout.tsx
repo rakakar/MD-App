@@ -168,7 +168,7 @@ var d=document.documentElement;
 d.setAttribute("data-theme",t);
 var rt=p.readerTheme||"original";
 d.setAttribute("data-reader-theme",rt);
-var reading=/^\\/books\\/[^/]+\\/\\d+$|^\\/library\\/\\d+\\/read\\/\\d+$/.test(location.pathname);
+var reading=/^\\/books\\/[^/]+\\/\\d+$|^\\/(?:library\\/\\d+|me\\/resources\\/\\d+)\\/read\\/\\d+$/.test(location.pathname);
 if(reading)d.setAttribute("data-reading","1");
 var rbg={paper:"#ededed",calm:"#f4e1c5",focus:"#fefcf2",quiet:"#1f1f21"}[rt];
 var dark=reading&&rbg?rt==="quiet":t==="dark";

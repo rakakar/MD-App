@@ -15,8 +15,12 @@ export const READER_ROUTE = /^\/books\/[^/]+\/\d+$/;
  * worse than the browser's own full-screen viewer it replaced — which made
  * saving the reader's place a trade nobody would take. A document is reading,
  * and reading owns the screen here.
+ *
+ * Two prefixes, one rule: the library's own, and My Journey's copy of it
+ * (`journeyDocumentHref`), which exists so that a stage's reading opens without
+ * the reader leaving the workspace they are in.
  */
-export const PDF_READER_ROUTE = /^\/library\/\d+\/read\/\d+$/;
+export const PDF_READER_ROUTE = /^\/(?:library\/\d+|me\/resources\/\d+)\/read\/\d+$/;
 
 /**
  * One short, and the swipe feed it sits in.
@@ -41,6 +45,25 @@ export const SHORTS_ROUTE = /^\/shorts\/[^/]+$/;
  */
 export function documentHref(node: number, item: number, page?: number): string {
   const base = `/library/${node}/read/${item}`;
+  return page === undefined ? base : `${base}?page=${page}`;
+}
+
+/**
+ * A folder of the library, opened **inside My Journey**.
+ *
+ * The library's own address belongs to whichever shelf the folder lives on, so
+ * following it from a stage switched the reader to Resources and took My
+ * Journey's chrome with it. These routes show the same folders and the same
+ * files under `/me`, where the workspace — its colour, its tabs, its Back — is
+ * the one the reader was already in.
+ */
+export function journeyFolderHref(node: number): string {
+  return `/me/resources/${node}`;
+}
+
+/** One document of such a folder, read on the whole screen as `documentHref` is. */
+export function journeyDocumentHref(node: number, item: number, page?: number): string {
+  const base = `${journeyFolderHref(node)}/read/${item}`;
   return page === undefined ? base : `${base}?page=${page}`;
 }
 

@@ -23,6 +23,7 @@
  *    this is one student's estimate — is quoted where the path is shown.
  */
 
+import { journeyFolderHref } from "./routes";
 import type { BookSummary } from "./types";
 
 export type StageId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
@@ -185,11 +186,17 @@ export const STAGES: Stage[] = [
 /**
  * One thing a stage points the reader to besides its books.
  *
- * `href` is either a path inside the app — a library folder, which is where
- * the PDFs and recordings live — or an `https:` address, which is handed to
- * the browser in a new tab. The library is the first choice and an external
- * address the exception: a PDF that is in the library keeps the reader's page
- * and opens in our own viewer, where a pCloud link would not.
+ * `href` is either a path inside My Journey — a library folder opened under
+ * `/me/resources`, so the reader never leaves the workspace — or an `https:`
+ * address, which is handed to the browser in a new tab. A PDF that is in the
+ * library keeps the reader's page and opens in our own viewer, where a pCloud
+ * link would not.
+ *
+ * **Never a plain `/library/…` address.** That belongs to whichever shelf the
+ * folder lives on and swaps the reader into another workspace mid-stage.
+ * Recordings are the cost of that rule: the library's players are not part of
+ * this workspace, so a stage's audio and video are listed only where the
+ * roadmap points at YouTube.
  */
 export interface StageResource {
   title: string;
@@ -224,9 +231,7 @@ const YT = "https://www.youtube.com";
  */
 const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
   1: [
-    { title: "परिचयात्मक संकलन", href: "/library/77", kind: "folder", note: "Introductory reading · PDF" },
-    { title: "जीवन विद्या: एक परिचय", href: "/library/26", kind: "audio", note: "Nagraj ji's introductory talks" },
-    { title: "जीवन विद्या: एक परिचय", href: "/library/54", kind: "video", note: "Introductory videos" },
+    { title: "परिचयात्मक संकलन", href: journeyFolderHref(77), kind: "folder", note: "Introductory reading · PDF" },
     {
       title: "परिचय शिविर वीडियो",
       href: `${YT}/@jeevanvidyaofficialprogram6848`,
@@ -236,7 +241,7 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
   ],
   2: [],
   3: [
-    { title: "अवलोकन पठन सामग्री", href: "/library/77", kind: "folder", note: "The reading for this stage · PDF" },
+    { title: "अवलोकन पठन सामग्री", href: journeyFolderHref(77), kind: "folder", note: "The reading for this stage · PDF" },
     {
       title: "पूर्व अवलोकन शिविर",
       href: `${YT}/playlist?list=PLhtsoZtN-o_FFV-rI8Ry2kqvO1JaGD8qK`,
@@ -245,7 +250,7 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
     },
   ],
   4: [
-    { title: "संवाद — नागराजजी के साथ", href: "/library/51", kind: "folder", note: "Samvad · PDF" },
+    { title: "संवाद — नागराजजी के साथ", href: journeyFolderHref(51), kind: "folder", note: "Samvad · PDF" },
     {
       title: "१२ पुस्तक — 400 घंटे पठन शिविर",
       href: `${YT}/playlist?list=PLnQVMclfMfocbwKBl85w5QqZ0rPTBuz_J`,
@@ -260,7 +265,7 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
     },
   ],
   5: [
-    { title: "अध्ययन विधि सम्बंधित लेख", href: "/library/117", kind: "folder", note: "On how to study · PDF" },
+    { title: "अध्ययन विधि सम्बंधित लेख", href: journeyFolderHref(117), kind: "folder", note: "On how to study · PDF" },
     {
       title: "अध्ययन विधि परिचय",
       href: `${YT}/watch?v=Em7QUw9jdgg&list=PLnQVMclfMfocWa-E1G4zzxGwoWmKbPizG`,
@@ -281,9 +286,8 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
     },
   ],
   6: [
-    { title: "सम्पूर्ण ग्रंथालय", href: "/originals", kind: "folder", note: "Everything published, with the audio and video" },
-    { title: "संवाद — नागराजजी के साथ", href: "/library/51", kind: "folder", note: "Including the unpublished Samvad · PDF" },
-    { title: "विद्यार्थी लिखित पुस्तक एवं लेख", href: "/library/115", kind: "folder", note: "Students' compilations and research · PDF" },
+    { title: "संवाद — नागराजजी के साथ", href: journeyFolderHref(51), kind: "folder", note: "Including the unpublished Samvad · PDF" },
+    { title: "विद्यार्थी लिखित पुस्तक एवं लेख", href: journeyFolderHref(115), kind: "folder", note: "Students' compilations and research · PDF" },
   ],
   7: [],
   8: [],

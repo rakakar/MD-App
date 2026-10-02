@@ -41,8 +41,15 @@ const HEAVY_BYTES = 20 * 1024 * 1024;
 export function PdfCard({
   file,
   folderProvenance,
+  readHref: readHrefOverride,
 }: {
   file: LibraryFile | LocatedFile;
+  /**
+   * Where the row opens, when that is not the library's own address — My
+   * Journey passes its copy of the route so the reader stays in the workspace.
+   * Left alone, the row opens `/library/<node>/read/<id>`.
+   */
+  readHref?: string;
   /** the folder's own, so a row can stay silent when it agrees — see below */
   folderProvenance?: Provenance;
 }) {
@@ -59,7 +66,7 @@ export function PdfCard({
 
   if (file.reading) return <ReadingCard file={file} reading={file.reading} />;
 
-  const readHref = `/library/${file.node}/read/${file.id}`;
+  const readHref = readHrefOverride ?? `/library/${file.node}/read/${file.id}`;
   const href = place ? `${readHref}?page=${place.page}` : readHref;
   const heavy = (file.file_size ?? 0) >= HEAVY_BYTES;
 
