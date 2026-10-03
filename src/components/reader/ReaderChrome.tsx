@@ -557,7 +557,7 @@ export function ReaderDesktopBar({
   /** this book's highlights — the count on the pencil */
   highlightCount: number;
   /** which side panel is open, for the lit button */
-  panel: "contents" | "highlights" | null;
+  panel: "contents" | "highlights" | "notes" | null;
   onContents: () => void;
   onHighlights: () => void;
   /** the position itself — "Go to printed page" (the chapters on a digital book) */
@@ -607,10 +607,10 @@ export function ReaderDesktopBar({
               type="button"
               onClick={onHighlights}
               aria-label={`Highlights and notes, ${highlightCount}`}
-              aria-pressed={panel === "highlights"}
+              aria-pressed={panel === "highlights" || panel === "notes"}
               title="Highlights & notes"
-              className={seg(panel === "highlights")}
-              style={panel === "highlights" ? lit : undefined}
+              className={seg(panel === "highlights" || panel === "notes")}
+              style={panel === "highlights" || panel === "notes" ? lit : undefined}
             >
               <Icon name="highlights" className="h-4 w-4" />
               {highlightCount > 0 && <span className="tabular-nums">{highlightCount}</span>}

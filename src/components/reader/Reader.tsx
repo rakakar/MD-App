@@ -57,6 +57,7 @@ import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
 import { Sheet } from "./Sheet";
 import { SettingsSheet } from "./SettingsSheet";
+import { ReaderSidePanel, type PanelTab } from "./ReaderSidePanel";
 import { TocSheet } from "./TocSheet";
 import { useReaderChrome } from "./useReaderChrome";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
@@ -228,6 +229,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 
   const contentRef = useRef<HTMLDivElement>(null);
   const pendingPage = useRef<string | null>(null);
+  /** the paragraph on `pendingPage`, when a passage rather than a page was asked for */
+  const pendingPara = useRef<number | null>(null);
   const pageTurns = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -242,8 +245,25 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    */
   const desktop = useIsDesktop();
   const [focus, setFocus] = useState(false);
-  /** which tab the contents sheet opens on — the desktop bar has a button for each */
-  const [tocTab, setTocTab] = useState<"contents" | "highlights">("contents");
+  /**
+   * The desktop's docked left panel. Open and tab are kept apart so the panel
+   * keeps showing what it showed while it slides away.
+   */
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelTab, setPanelTab] = useState<PanelTab>("contents");
+  const showPanel = panelOpen && !focus;
+  /** the bar's two doors: open on that tab, or close it if it is already showing */
+  const togglePanel = (t: PanelTab) => {
+    if (showPanel && (panelTab === t || (t === "highlights" && panelTab === "notes"))) {
+      setPanelOpen(false);
+      return;
+    }
+    setPanelTab(t);
+    setPanelOpen(true);
+    setFocus(false);
+  };
+  /** bumped whenever a highlight or note is written, so the lists re-read */
+  const [personalRevision, setPersonalRevision] = useState(0);
   useEffect(() => {
     if (!focus) return;
     const onKey = (e: KeyboardEvent) => {
@@ -476,11 +496,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const goToChapter = useCallback(
     async (
       n: number,
-      opts: { targetPage?: string; push?: boolean } = {}
+      opts: { targetPage?: string; targetPara?: number; push?: boolean } = {}
     ): Promise<ChapterPayload | null> => {
       setChapterLoading(true);
       setSelection(null);
       pendingPage.current = opts.targetPage ?? null;
+      pendingPara.current = opts.targetPara ?? null;
       const result = await loadChapter(n);
       if (!result.ok) {
         setChapterLoading(false);
@@ -578,8 +599,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // first page and dropped the 20.
     if (restored.current) {
       if (pendingPage.current) {
-        jumpToPage(pendingPage.current);
+        jumpToPage(pendingPage.current, pendingPara.current ?? undefined);
         pendingPage.current = null;
+        pendingPara.current = null;
       }
       return;
     }
@@ -592,8 +614,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     }
     // 2. pending go-to-page target from cross-chapter navigation
     if (pendingPage.current) {
-      jumpToPage(pendingPage.current);
+      jumpToPage(pendingPage.current, pendingPara.current ?? undefined);
       pendingPage.current = null;
+      pendingPara.current = null;
       return;
     }
     // 3. saved position
@@ -1220,6 +1243,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       !!user
     );
     confirmSaved("Note saved");
+    setPersonalRevision((r) => r + 1);
     setNoteOpen(false);
     setNoteText("");
     setNoteTarget(null);
@@ -1307,7 +1331,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [highlightCount, setHighlightCount] = useState(0);
   useEffect(() => {
     setHighlightCount(localHighlights(book.code).length);
-  }, [book.code, painted]);
+  }, [book.code, painted, personalRevision]);
   const progress =
     mode === "page"
       ? pages.length > 0
@@ -1388,6 +1412,34 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     </>
   );
 
+  /**
+   * The passage a "New note on this page" is written against: the line at the
+   * top of the screen, or on a turned page the first line of reading on it —
+   * never a heading, which is a title and not something said.
+   */
+  const noteHere = ((): { canonical_ref: string; text_hi: string } | null => {
+    const body = (p: Paragraph) => p.block_type !== "heading" && p.block_type !== "subheading";
+    const at = currentRef ? paraByRef.get(currentRef) : undefined;
+    if (at && body(at) && (mode === "scroll" || page?.paragraphs.includes(at))) return at;
+    const onPage = mode === "page" ? page : (at && pages.find((pg) => pg.paragraphs.includes(at))) || pages[0];
+    const first = onPage?.paragraphs.find(body);
+    return first ?? null;
+  })();
+
+  /** a highlight or note, picked in the panel: this chapter scrolls, another loads */
+  const goToRef = (ref: string) => {
+    const p = parseRef(ref);
+    if (!p) return;
+    const para = Number(p.para) || undefined;
+    const target =
+      p.chapter === "fm"
+        ? book.chapters.find((c) => c.is_front_matter)?.number
+        : Number(p.chapter);
+    if (target === undefined || Number.isNaN(target)) return;
+    if (target === chapterNumber) jumpToPage(p.page, para);
+    else void goToChapter(target, { targetPage: p.page, targetPara: para });
+  };
+
   const pageChrome = (p: ReaderPage) =>
     isFrontMatter || p.label !== String(Number(p.label)) ? (
       <span className="text-xs tracking-widest text-(--reader-ink-soft)">{p.label}</span>
@@ -1452,15 +1504,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         progress={progress}
         pagesHref={home ? documentHref(home.at.node, home.at.item, pagesAt) : undefined}
         highlightCount={highlightCount}
-        panel={tocOpen ? tocTab : null}
-        onContents={() => {
-          setTocTab("contents");
-          setTocOpen(true);
-        }}
-        onHighlights={() => {
-          setTocTab("highlights");
-          setTocOpen(true);
-        }}
+        panel={showPanel ? panelTab : null}
+        onContents={() => togglePanel("contents")}
+        onHighlights={() => togglePanel("highlights")}
         // The position is where a reader goes to *change* it — the phone's
         // bottom bar opened "Go to printed page" from its page number, and this
         // is that number. A digital-first book has no printed page to ask for,
@@ -1468,8 +1514,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         onWhere={() => {
           if (book.book_type === "print") setGotoOpen(true);
           else {
-            setTocTab("contents");
-            setTocOpen(true);
+            setPanelTab("contents");
+            setPanelOpen(true);
           }
         }}
         onSettings={() => setSettingsOpen(true)}
@@ -1491,10 +1537,51 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       />
       {focus && <ExitFocus onExit={() => setFocus(false)} />}
 
+      <ReaderSidePanel
+        open={showPanel}
+        tab={panelTab}
+        onTab={setPanelTab}
+        onClose={() => setPanelOpen(false)}
+        bookCode={book.code}
+        bookTitle={book.title_hi}
+        bookType={book.book_type}
+        pageCount={book.page_count}
+        chapters={book.chapters}
+        current={chapterNumber}
+        isFrontMatter={isFrontMatter}
+        chapterProgress={progress}
+        revision={personalRevision}
+        onChapter={(n) => {
+          if (n !== chapterNumber) void goToChapter(n);
+          else window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onGoToRef={goToRef}
+        onGoToPage={goToPrintedPage}
+        noteHere={noteHere}
+        onSaveNote={(target, text) => {
+          track("note_add");
+          saveNote(
+            { canonical_ref: target.canonical_ref, book_code: book.code, book_title: book.title_hi, text_hi: target.text_hi },
+            text,
+            !!user
+          );
+          confirmSaved("Note saved");
+          setPersonalRevision((r) => r + 1);
+        }}
+      />
+
       {/* ---- content ---- */}
       {/* padding matches the top bar exactly, so revealing chrome never
           covers the line you are reading */}
-      <div className="pt-[calc(4rem+env(safe-area-inset-top))]">
+      {/* The column steps aside for the docked panel. Below 1280px that
+          leaves no room in the margin, so the page labels and dots give way
+          while the panel is open (`data-panel`, read in ParaWrap). */}
+      <div
+        data-panel={showPanel ? "open" : undefined}
+        className={`group/reader pt-[calc(4rem+env(safe-area-inset-top))] transition-[padding] duration-300 ease-out motion-reduce:transition-none ${
+          showPanel ? "lg:pl-90" : ""
+        }`}
+      >
         {/* **The resume suggestion, as one floating pill.**
 
             It was a bordered box in the flow of the page with a round ✕ loose
@@ -1847,7 +1934,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         chapters={book.chapters}
         current={chapterNumber}
         bookType={book.book_type}
-        initialTab={tocTab}
         onSelect={(n) => void goToChapter(n)}
         /* Only when the passage is in the chapter already open: anywhere else
            the link is a real navigation and the reader remounts, which runs
@@ -2151,7 +2237,7 @@ function ParaWrap({
         <p
           aria-hidden
           lang="hi"
-          className="hi hi-tight absolute -left-32 top-[0.55em] hidden w-20 text-right text-xs tracking-wide text-(--reader-ink-soft) lg:block"
+          className="hi hi-tight absolute -left-32 top-[0.55em] hidden w-20 text-right text-xs tracking-wide text-(--reader-ink-soft) lg:block max-xl:group-data-[panel=open]/reader:hidden"
         >
           {gutter}
         </p>
@@ -2159,8 +2245,8 @@ function ParaWrap({
       {dot && (
         <span
           aria-hidden
-          className="absolute -left-[2.25rem] top-[0.85em] hidden h-2 w-2 rounded-full lg:block"
-          style={{ background: `color-mix(in srgb, var(--color-hl-${dot}), #000 28%)` }}
+          className="absolute -left-[2.25rem] top-[0.85em] hidden h-2 w-2 rounded-full lg:block max-xl:group-data-[panel=open]/reader:hidden"
+          style={{ background: `var(--color-hl-${dot}-mark)` }}
         />
       )}
       <Block para={para} segments={segments} />

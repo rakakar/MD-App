@@ -195,6 +195,15 @@
   --color-hl-sage: #dcebd9;
   --color-hl-sky: #dce8f7;
 
+  /* The same three as a *mark* rather than a fill — the dot beside a painted
+     paragraph, the bar on a highlight card, the colour chips. The fills are
+     washes made to sit under text, and at 2–8px a wash is no colour at all;
+     these are the comps' mid-tones, saturated enough to read on any of the
+     six papers, light or dark, so they are not restated per theme. */
+  --color-hl-amber-mark: #e49a4a;
+  --color-hl-sage-mark: #6aad7a;
+  --color-hl-sky-mark: #6a9bd6;
+
   /* Type scale, set for this audience rather than for the comp.
 
      Most readers here are over forty, and the sizes a design tool makes look

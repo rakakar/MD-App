@@ -31,7 +31,7 @@ const SWATCH: Record<HighlightColour, string> = {
   sky: "bg-hl-sky",
 };
 
-export type Tab = "contents" | "highlights";
+type Tab = "contents" | "highlights";
 
 export function TocSheet({
   open,
@@ -43,10 +43,7 @@ export function TocSheet({
   bookType,
   onSelect,
   onSelectRef,
-  initialTab = "contents",
 }: {
-  /** which tab it opens on — the desktop bar has a button for each */
-  initialTab?: Tab;
   open: boolean;
   onClose: () => void;
   bookCode: string;
@@ -64,15 +61,7 @@ export function TocSheet({
 }) {
   const { user, loading } = useAuth();
   const activeRef = useRef<HTMLAnchorElement | HTMLButtonElement>(null);
-  const [tab, setTab] = useState<Tab>(initialTab);
-  // Each opening starts on the tab that was asked for.
-  const [openedOn, setOpenedOn] = useState<Tab | null>(null);
-  if (open && openedOn !== initialTab) {
-    setOpenedOn(initialTab);
-    setTab(initialTab);
-  } else if (!open && openedOn !== null) {
-    setOpenedOn(null);
-  }
+  const [tab, setTab] = useState<Tab>("contents");
   const [rows, setRows] = useState<Highlight[] | null>(null);
 
   const reload = useCallback(() => setRows(localHighlights(bookCode)), [bookCode]);

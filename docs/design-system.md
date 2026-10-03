@@ -390,6 +390,11 @@ because four pale tiles on a near-black card are four lamps.
 `--color-hl-amber` · `--color-hl-sage` · `--color-hl-sky`. Book ink lands 13.9–14.5:1 on
 all three, and 8.3–9.5:1 on their deepened forms inside Quiet.
 
+`--color-hl-amber-mark` · `--color-hl-sage-mark` · `--color-hl-sky-mark` are the same three
+as a mark rather than a fill: the desktop reader's margin dot, the bar on a highlight card,
+the colour chips. A fill is a wash made to sit under text and reads as no colour at 2–8px.
+One set for every paper — they are mid-tones, not restated per theme.
+
 ### Radius — five, where there were eleven
 
 `--radius-control` 8px (**every CTA button**, and the small square: a 36px kind tile, a
