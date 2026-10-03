@@ -1990,6 +1990,16 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
 
 /* The headword, as the sheet's title — in the header, so outside the scope
    above. Same face; tight, because it is one word and a title. */
+/* The desktop popover, opened over the page rather than across the foot of
+   it: more air between lines and between definitions, so the dotted
+   underlines on the vocabulary have room and the card does not read as a
+   block (the designer's call, 3 Oct 2026). */
+.paribhasha-pop li .hi {
+  line-height: 1.95;
+}
+.paribhasha-pop ul {
+  gap: 1.25rem;
+}
 .paribhasha-title {
   font-family: var(--font-devanagari-sans);
   line-height: 1.3;

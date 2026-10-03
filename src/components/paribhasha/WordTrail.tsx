@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useGlossary } from "@/components/reader/GlossaryProvider";
+import { BackIcon, CloseIcon } from "@/components/shell/icons";
+import { AccentScope } from "@/components/shell/WorkspaceProvider";
+import { useIsDesktop } from "@/components/ui/Dialog";
 import { Sheet } from "@/components/reader/Sheet";
 import { DefinitionText, useDefinitionSegments } from "./DefinitionText";
 import { TrailContext } from "./trail-context";
@@ -25,15 +29,29 @@ import { WORKSPACES } from "@/lib/workspaceConfig";
  * keep the open word in its own state (it drives the reader's chrome) while
  * still rendering this component.
  */
+/** where the word that was clicked sits, in page coordinates */
+export interface WordAnchor {
+  left: number;
+  top: number;
+  bottom: number;
+}
+
 export function ParibhashaTrailSheet({
   word,
   onClose,
+  anchor,
 }: {
   /** the headword to open; null closes the sheet */
   word: string | null;
   onClose: () => void;
+  /**
+   * Desktop: the word on the page it was opened from. With one, the card is a
+   * popover beside the word rather than a sheet over the bottom of the window.
+   */
+  anchor?: WordAnchor | null;
 }) {
   const { lookup } = useGlossary();
+  const desktop = useIsDesktop();
 
   // Words followed *from* `word`. Seeded rather than owned so the caller
   // stays the authority on whether the sheet is open at all.
@@ -107,6 +125,37 @@ export function ParibhashaTrailSheet({
 
   const definitions = entry?.definitions ?? [];
   const segments = useDefinitionSegments(definitions, entry?.hindi ?? current ?? undefined);
+
+  const status =
+    state === "loading" ? (
+      <p className="py-4 text-sm text-(--reader-ink-soft)">Looking up…</p>
+    ) : state === "missing" ? (
+      <p className="py-2 text-sm text-(--reader-ink-soft)">No definition is available for this word.</p>
+    ) : state === "error" ? (
+      <p className="py-2 text-sm text-(--reader-ink-soft)">
+        Couldn&apos;t load the definition — you may be offline.
+      </p>
+    ) : null;
+
+  if (desktop && anchor && current !== null) {
+    return (
+      <ParibhashaPopover
+        anchor={anchor}
+        onClose={onClose}
+        word={entry?.hindi ?? current}
+        hinglish={entry?.hinglish}
+        trail={trail}
+        at={at}
+        onStep={setAt}
+      >
+        <TrailContext.Provider value={trailValue}>
+          {status ?? (
+            <DefinitionList definitions={definitions} segments={segments} tone="reader" size="lg" />
+          )}
+        </TrailContext.Provider>
+      </ParibhashaPopover>
+    );
+  }
 
 
   return (
@@ -267,8 +316,8 @@ export function DefinitionList({
   definitions: string[];
   segments: ReturnType<typeof useDefinitionSegments>;
   tone?: "page" | "reader";
-  /** `md` is the sheet, where it is read at arm's length; `lg` is the word's
-   *  own page, where the definition is the page */
+  /** `md` is the sheet; `lg` is the desktop popover and the word's own page,
+   *  read beside 21px body text */
   size?: "sm" | "md" | "lg";
 }) {
   const soft = tone === "reader" ? "text-(--reader-ink-soft)" : "text-ink-soft";
@@ -313,5 +362,169 @@ export function DefinitionCount({ n }: { n: number }) {
     <span className="rounded-full border border-rule px-1.5 py-0.5 text-xs font-medium text-ink-soft">
       {n} definitions
     </span>
+  );
+}
+
+/**
+ * **The desktop's Paribhasha card** (designer's comp, 3 Oct 2026): a popover
+ * hanging from the word that was clicked, instead of a sheet across the foot
+ * of the window. A pointer is already at the word; the meaning should arrive
+ * there too, with the line it came from still in view.
+ *
+ * Below the word, or above it when there is not room underneath. Placed in
+ * page coordinates, so it scrolls with the paragraph it belongs to. The same
+ * trail as the sheet: following an underlined word inside it extends the
+ * chain, ‹ steps back along it, and the chips step anywhere in it.
+ *
+ * A click outside or Escape closes it. `data-reader-chrome` keeps a click in
+ * here from being read by the reader as a tap on the page.
+ */
+const POP_W = 460;
+const POP_GAP = 8;
+
+function ParibhashaPopover({
+  anchor,
+  onClose,
+  word,
+  hinglish,
+  trail,
+  at,
+  onStep,
+  children,
+}: {
+  anchor: WordAnchor;
+  onClose: () => void;
+  word: string;
+  hinglish?: string;
+  trail: string[];
+  at: number;
+  onStep: (i: number) => void;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [place, setPlace] = useState<{ left: number; top?: number; bottom?: number; maxH: number } | null>(null);
+
+  // Where it goes is decided once per word clicked, against the window as it
+  // is at that moment.
+  useLayoutEffect(() => {
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const left = Math.min(Math.max(16, anchor.left - 24), vw - POP_W - 16) + window.scrollX;
+    const below = vh - (anchor.bottom - window.scrollY) - POP_GAP - 16;
+    const above = anchor.top - window.scrollY - POP_GAP - 80;
+    if (below >= 320 || below >= above) {
+      setPlace({ left, top: anchor.bottom + POP_GAP, maxH: Math.min(480, Math.max(240, below)) });
+    } else {
+      const docH = document.documentElement.scrollHeight;
+      setPlace({ left, bottom: docH - anchor.top + POP_GAP, maxH: Math.min(480, above) });
+    }
+  }, [anchor]);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <AccentScope color={WORKSPACES.originals.color}>
+      <div
+        ref={ref}
+        role="dialog"
+        aria-label={`Paribhasha: ${word}`}
+        data-reader-chrome
+        className="reader-surface paribhasha-sheet paribhasha-pop absolute z-50 flex flex-col overflow-hidden rounded-card border border-(--reader-rule) bg-(--reader-bg) text-(--reader-ink) shadow-raised"
+        style={{
+          width: POP_W,
+          left: place?.left ?? -9999,
+          top: place?.top,
+          bottom: place?.bottom,
+          maxHeight: place?.maxH,
+          visibility: place ? "visible" : "hidden",
+        }}
+      >
+        <div className="flex shrink-0 items-start gap-2 border-b border-(--reader-rule) pb-4 pe-3 ps-6 pt-5">
+          {at > 0 && (
+            <button
+              type="button"
+              onClick={() => onStep(at - 1)}
+              aria-label="Back to the previous word"
+              className="-ms-2.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-(--reader-ink-soft) transition-colors hover:bg-current/5 hover:text-(--reader-ink)"
+            >
+              <BackIcon className="h-5.5 w-5.5" />
+            </button>
+          )}
+          <div className="min-w-0 flex-1">
+            <p lang="hi" className="hi paribhasha-title text-2xl font-semibold">
+              {word}
+            </p>
+            {hinglish && <p className="text-xs text-(--reader-ink-soft)">{hinglish}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-(--reader-ink-soft) transition-colors hover:bg-current/5 hover:text-(--reader-ink)"
+          >
+            <CloseIcon className="h-5.5 w-5.5" />
+          </button>
+        </div>
+
+        {trail.length > 1 && (
+          <nav
+            aria-label="Words viewed"
+            className="flex shrink-0 flex-wrap items-center gap-x-1 gap-y-1 border-b border-(--reader-rule) px-4 py-2"
+            style={{ background: "color-mix(in srgb, var(--ws-color) 6%, transparent)" }}
+          >
+            {trail.map((w, i) => (
+              <span key={`${w}-${i}`} className="flex items-center gap-1">
+                {i > 0 && (
+                  <span aria-hidden className="text-xs opacity-60" style={{ color: "var(--ws-ink)" }}>
+                    ›
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onStep(i)}
+                  aria-current={i === at ? "true" : undefined}
+                  lang="hi"
+                  className={`hi rounded-md px-2.5 py-1 text-sm transition-colors ${
+                    i === at ? "font-semibold" : "hover:bg-current/5"
+                  }`}
+                  style={
+                    i === at
+                      ? { background: "color-mix(in srgb, var(--ws-color) 14%, transparent)", color: "var(--reader-ink)" }
+                      : { color: "var(--ws-ink)" }
+                  }
+                >
+                  {w}
+                </button>
+              </span>
+            ))}
+          </nav>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5">{children}</div>
+
+        <p className="shrink-0 border-t border-(--reader-rule) bg-current/[0.03] px-6 py-3 text-xs text-(--reader-ink-soft)">
+          Click an underlined word to look it up · Esc to close
+        </p>
+      </div>
+    </AccentScope>,
+    document.body
   );
 }

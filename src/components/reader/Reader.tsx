@@ -53,7 +53,7 @@ import {
   SelectionBar,
 } from "./ReaderChrome";
 import { useIsDesktop } from "@/components/ui/Dialog";
-import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
+import { ParibhashaTrailSheet, type WordAnchor } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
 import { Sheet } from "./Sheet";
@@ -210,6 +210,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [glossaryUnderline, setGlossaryUnderline] = useState(false);
   /** the word whose definition is open, if any */
   const [defineWord, setDefineWord] = useState<string | null>(null);
+  /** desktop: where that word is on the page, so its card can open beside it */
+  const [defineAnchor, setDefineAnchor] = useState<WordAnchor | null>(null);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [readingSide, setReadingSide] = useState<ReadingSide>("translated");
@@ -844,6 +846,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const word = mark.getAttribute("data-paribhasha");
     if (!word) return;
     track("paribhasha_lookup", { source: "underline" });
+    const r = mark.getBoundingClientRect();
+    setDefineAnchor({ left: r.left, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY });
     setDefineWord(word);
   }, []);
 
@@ -1981,6 +1985,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             selectedHeadword
               ? () => {
                   track("paribhasha_lookup", { source: "selection" });
+                  const r = window.getSelection()?.getRangeAt(0)?.getBoundingClientRect();
+                  setDefineAnchor(
+                    r ? { left: r.left, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY } : null
+                  );
                   setDefineWord(selectedHeadword);
                   clearSelection();
                 }
@@ -2009,7 +2017,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {/* The same Paribhasha card the glossary uses — recursive underlines and
           the trail included, so a word means the same thing wherever it is
           tapped. */}
-      <ParibhashaTrailSheet word={defineWord} onClose={() => setDefineWord(null)} />
+      <ParibhashaTrailSheet
+        word={defineWord}
+        anchor={defineAnchor}
+        onClose={() => {
+          setDefineWord(null);
+          setDefineAnchor(null);
+        }}
+      />
 
       <TocSheet
         open={tocOpen}
