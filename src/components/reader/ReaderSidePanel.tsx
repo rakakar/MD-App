@@ -331,7 +331,7 @@ function byPosition(a: [number, number, number, number], b: [number, number, num
 const rtf = typeof Intl !== "undefined" ? new Intl.RelativeTimeFormat("hi", { numeric: "auto" }) : null;
 
 /** "आज", "कल", "3 दिन पहले" — the book's language, as the page label beside it */
-function when(iso: string): string {
+export function when(iso: string): string {
   const then = new Date(iso);
   if (Number.isNaN(then.getTime()) || !rtf) return "";
   const day = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
@@ -341,7 +341,7 @@ function when(iso: string): string {
   return rtf.format(Math.round(days / 365), "year");
 }
 
-function pageOf(ref: string, bookType: "print" | "digital"): string {
+export function pageOf(ref: string, bookType: "print" | "digital"): string {
   const p = parseRef(ref)?.page;
   if (!p) return "";
   return bookType === "print" && p === String(Number(p)) ? `पृष्ठ ${p}` : p;

@@ -516,13 +516,13 @@ function SelectionAction({
  *
  * A phone splits the chrome between a top and a bottom bar because the thumb
  * lives at the bottom; a desktop has a pointer and a window's width, so it all
- * goes in one row that stays put while the reader reads:
+ * goes in one row:
  *
- *     back · [contents | highlights 3]  ·  book / अध्याय 1 · पृष्ठ 1 / 110 ▾  ·  palette · Listen · focus
+ *     back · [contents | highlights 3]  ·  book / अध्याय 1 · पृष्ठ 1 / 110 ▾  ·  palette · Listen
  *
- * Always shown — on a desktop nothing is gained by hiding it as the page
- * scrolls, and much is lost hunting for it. Focus mode is the deliberate way
- * to put it away.
+ * It comes and goes as the phone's bars do — away as the page scrolls on, back
+ * on a click anywhere in it — rather than staying up behind a focus mode (the
+ * designer's call, 3 Oct 2026). A docked panel holds it up; see the reader.
  */
 export function ReaderDesktopBar({
   hidden,
@@ -542,7 +542,6 @@ export function ReaderDesktopBar({
   onListen,
   canListen,
   listening,
-  onFocus,
   languages,
 }: {
   hidden: boolean;
@@ -567,7 +566,6 @@ export function ReaderDesktopBar({
   onListen: () => void;
   canListen: boolean;
   listening: boolean;
-  onFocus: () => void;
   languages?: LanguageToggle;
 }) {
   const seg = (on: boolean) =>
@@ -675,15 +673,6 @@ export function ReaderDesktopBar({
               Listen
             </button>
           )}
-          <button
-            type="button"
-            onClick={onFocus}
-            aria-label="Focus — hide everything but the text"
-            title="Focus"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition-colors hover:bg-current/5"
-          >
-            <FocusIcon className="h-5 w-5" />
-          </button>
         </div>
       </div>
 
@@ -698,43 +687,5 @@ export function ReaderDesktopBar({
         />
       </div>
     </div>
-  );
-}
-
-/** four corners — "make the text the whole window" */
-function FocusIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4" />
-    </svg>
-  );
-}
-
-/**
- * Focus mode's only control: a quiet pill in the corner that says how to get
- * back. Escape does the same.
- */
-export function ExitFocus({ onExit }: { onExit: () => void }) {
-  return (
-    <button
-      type="button"
-      data-reader-chrome
-      onClick={onExit}
-      className="fixed right-5 top-4 z-40 hidden min-h-10 items-center gap-2 rounded-full border border-(--reader-rule) bg-(--reader-bg) pe-2 ps-4 text-sm font-semibold shadow-card transition-colors hover:bg-current/5 lg:flex"
-    >
-      Exit focus
-      <kbd className="rounded-md border border-(--reader-rule) px-1.5 py-0.5 font-sans text-xs font-semibold">
-        Esc
-      </kbd>
-    </button>
   );
 }

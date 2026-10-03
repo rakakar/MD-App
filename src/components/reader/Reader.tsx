@@ -22,6 +22,8 @@ import {
   saveNote,
   saveProgress as savePersonalProgress,
   syncPersonal,
+  unsaveNote,
+  type Highlight,
 } from "@/lib/personal";
 import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
 import { citationText, paraAnchorId, parseRef } from "@/lib/refs";
@@ -45,7 +47,6 @@ import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import type { Matcher } from "@/lib/paribhasha";
 import { Block } from "./blocks";
 import {
-  ExitFocus,
   ReaderBottomBar,
   ReaderDesktopBar,
   ReaderTopBar,
@@ -56,8 +57,9 @@ import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
 import { Sheet } from "./Sheet";
-import { SettingsSheet } from "./SettingsSheet";
-import { ReaderSidePanel, type PanelTab } from "./ReaderSidePanel";
+import { SettingsPanel, SettingsSheet } from "./SettingsSheet";
+import { MarginNote } from "./MarginNote";
+import { ReaderSidePanel, pageOf, when, type PanelTab } from "./ReaderSidePanel";
 import { TocSheet } from "./TocSheet";
 import { useReaderChrome } from "./useReaderChrome";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
@@ -234,24 +236,24 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const pageTurns = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // any modal surface pins the chrome open
-  const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
-  const chrome = useReaderChrome(mode, modalOpen);
-  /**
-   * Desktop: one bar that stays up, and focus mode as the deliberate way to
-   * put it away (desktop revision, 3 Oct 2026). The phone's chrome still
-   * comes and goes with taps and scrolling; on a desktop that only made a
-   * reader hunt for controls that had slid off the screen.
-   */
   const desktop = useIsDesktop();
-  const [focus, setFocus] = useState(false);
   /**
    * The desktop's docked left panel. Open and tab are kept apart so the panel
    * keeps showing what it showed while it slides away.
    */
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>("contents");
-  const showPanel = panelOpen && !focus;
+  const showPanel = panelOpen;
+  /** the desktop's Theme & Settings, docked on the right — one docked panel at a time */
+  const [deskSettings, setDeskSettings] = useState(false);
+  const showSettings = deskSettings;
+
+  // Any modal surface pins the chrome open — and so does a docked panel, which
+  // hangs from the bar. Otherwise the desktop bar comes and goes exactly as
+  // the phone's does: away as you scroll down, back on a click anywhere in the
+  // page (the designer's call, 3 Oct 2026, replacing a focus mode).
+  const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
+  const chrome = useReaderChrome(mode, modalOpen || showPanel || showSettings);
   /** the bar's two doors: open on that tab, or close it if it is already showing */
   const togglePanel = (t: PanelTab) => {
     if (showPanel && (panelTab === t || (t === "highlights" && panelTab === "notes"))) {
@@ -260,18 +262,21 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     }
     setPanelTab(t);
     setPanelOpen(true);
-    setFocus(false);
+    setDeskSettings(false);
   };
-  /** bumped whenever a highlight or note is written, so the lists re-read */
-  const [personalRevision, setPersonalRevision] = useState(0);
+  // Escape puts a docked panel away.
   useEffect(() => {
-    if (!focus) return;
+    if (!panelOpen && !deskSettings) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFocus(false);
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      setPanelOpen(false);
+      setDeskSettings(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [focus]);
+  }, [panelOpen, deskSettings]);
+  /** bumped whenever a highlight or note is written, so the lists re-read */
+  const [personalRevision, setPersonalRevision] = useState(0);
 
   const allPages: ReaderPage[] = useMemo(
     () => (chapter ? groupPages(chapter.paragraphs) : []),
@@ -1076,8 +1081,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         return;
       }
       const node = sel.anchorNode;
-      const host = (node?.nodeType === Node.TEXT_NODE ? node.parentElement : (node as HTMLElement | null))
-        ?.closest?.("[data-ref]");
+      const el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : (node as HTMLElement | null);
+      // A margin note sits inside its paragraph's box but is not the book.
+      const host = el?.closest?.("[data-margin]") ? null : el?.closest?.("[data-ref]");
       if (!host || !contentRef.current?.contains(host)) {
         setSelection(null);
         return;
@@ -1328,10 +1334,25 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // after mount (the store is the browser's, so the server's first render
   // cannot know it) and again whenever the chapter's own painting changes,
   // which is when a highlight is made or removed.
-  const [highlightCount, setHighlightCount] = useState(0);
+  const [personalRows, setPersonalRows] = useState<Highlight[]>([]);
   useEffect(() => {
-    setHighlightCount(localHighlights(book.code).length);
+    setPersonalRows(localHighlights(book.code));
   }, [book.code, painted, personalRevision]);
+  const highlightCount = personalRows.length;
+  /**
+   * What the right margin says beside each marked passage: its colour, its
+   * note, and when it was made. The first span stands for a paragraph with
+   * several — the note belongs to the paragraph, not to any one of them.
+   */
+  const marks = useMemo(() => {
+    const m = new Map<string, { colour?: HighlightColour; note?: string; at: string }>();
+    for (const r of personalRows) {
+      if (!m.has(r.canonical_ref)) m.set(r.canonical_ref, { colour: r.colour, note: r.note, at: r.created_at });
+    }
+    return m;
+  }, [personalRows]);
+  /** the passage whose margin note is open for writing */
+  const [marginEditing, setMarginEditing] = useState<string | null>(null);
   const progress =
     mode === "page"
       ? pages.length > 0
@@ -1426,6 +1447,44 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     return first ?? null;
   })();
 
+  /**
+   * The right margin's note beside a marked passage — only while nothing is
+   * docked, since a docked panel takes the width it would sit in.
+   */
+  const marginFor =
+    showPanel || showSettings
+      ? undefined
+      : (p: Paragraph) => {
+          const m = marks.get(p.canonical_ref);
+          if (!m) return null;
+          const ref = p.canonical_ref;
+          return (
+            <MarginNote
+              colour={m.colour}
+              label={[pageOf(ref, book.book_type), when(m.at)].filter(Boolean).join(" · ")}
+              note={m.note}
+              editing={marginEditing === ref}
+              onEdit={() => setMarginEditing(ref)}
+              onCancel={() => setMarginEditing(null)}
+              onSave={(text) => {
+                setMarginEditing(null);
+                if (text) {
+                  track("note_add");
+                  saveNote(
+                    { canonical_ref: ref, book_code: book.code, book_title: book.title_hi, text_hi: p.text_hi },
+                    text,
+                    !!user
+                  );
+                  confirmSaved("Note saved");
+                } else {
+                  unsaveNote(ref, !!user);
+                }
+                setPersonalRevision((r) => r + 1);
+              }}
+            />
+          );
+        };
+
   /** a highlight or note, picked in the panel: this chapter scrolls, another loads */
   const goToRef = (ref: string) => {
     const p = parseRef(ref);
@@ -1496,7 +1555,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       />
 
       <ReaderDesktopBar
-        hidden={focus}
+        hidden={!chrome.visible}
         backHref={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
         backLabel={home?.backLabel ?? "Back to book"}
         book={book.title_hi}
@@ -1516,14 +1575,18 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           else {
             setPanelTab("contents");
             setPanelOpen(true);
+            setDeskSettings(false);
           }
         }}
-        onSettings={() => setSettingsOpen(true)}
-        settingsOpen={settingsOpen}
+        onSettings={() => {
+          if (!desktop) return setSettingsOpen(true);
+          setDeskSettings((o) => !o);
+          setPanelOpen(false);
+        }}
+        settingsOpen={showSettings}
         onListen={openListening}
         canListen={canListen}
         listening={listening}
-        onFocus={() => setFocus(true)}
         languages={
           sides
             ? {
@@ -1535,7 +1598,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             : undefined
         }
       />
-      {focus && <ExitFocus onExit={() => setFocus(false)} />}
 
       <ReaderSidePanel
         open={showPanel}
@@ -1573,13 +1635,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {/* ---- content ---- */}
       {/* padding matches the top bar exactly, so revealing chrome never
           covers the line you are reading */}
-      {/* The column steps aside for the docked panel. Below 1280px that
-          leaves no room in the margin, so the page labels and dots give way
-          while the panel is open (`data-panel`, read in ParaWrap). */}
+      {/* The column steps aside for a docked panel. Below 1280px that leaves
+          no room in the margin, so the page labels and dots give way while one
+          is open (`data-panel`, read in ParaWrap). With nothing docked, from
+          1280px it sits left of centre to leave the right margin for notes —
+          always, not only when a chapter has some, so the page does not move
+          the moment a reader makes their first. */}
       <div
-        data-panel={showPanel ? "open" : undefined}
+        data-panel={showPanel || showSettings ? "open" : undefined}
         className={`group/reader pt-[calc(4rem+env(safe-area-inset-top))] transition-[padding] duration-300 ease-out motion-reduce:transition-none ${
-          showPanel ? "lg:pl-90" : ""
+          showPanel ? "lg:pl-90" : showSettings ? "lg:pr-80" : "xl:pr-36"
         }`}
       >
         {/* **The resume suggestion, as one floating pill.**
@@ -1680,6 +1745,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 activeSeq={activeSeq}
                 selectedRef={selection?.para.canonical_ref}
                 painted={painted}
+                margin={marginFor}
               />
               {/* Forward is the filled one, back is the outline — the same pair
                   as the chapter nav below, so "the accent is the way on" holds
@@ -1756,6 +1822,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     activeSeq={activeSeq}
                     selectedRef={selection?.para.canonical_ref}
                     painted={painted}
+                    margin={marginFor}
                     chapterLabel={pi === 0 && !isFrontMatter ? `अध्याय ${chapterNumber}` : undefined}
                     pageLabel={
                       book.book_type === "print" && pg.label === String(Number(pg.label))
@@ -1946,6 +2013,25 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         }}
       />
 
+      <SettingsPanel
+        open={showSettings}
+        onClose={() => setDeskSettings(false)}
+        fontScale={fontScale}
+        onFontScale={changeFontScale}
+        face={face}
+        onFace={changeFace}
+        lineHeight={lineHeight}
+        onLineHeight={changeLineHeight}
+        mode={mode}
+        onMode={changeMode}
+        tapZones={tapZones}
+        onTapZones={changeTapZones}
+        showTapZones={mode === "page"}
+        glossaryUnderline={glossaryUnderline}
+        onGlossaryUnderline={changeGlossaryUnderline}
+        onGoToPrintedPage={book.book_type === "print" ? goToPrintedPage : undefined}
+      />
+
       <SettingsSheet
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -2105,7 +2191,10 @@ function PageParas({
   painted,
   chapterLabel,
   pageLabel,
+  margin,
 }: {
+  /** desktop: what the right margin carries beside a paragraph, if anything */
+  margin?: (p: Paragraph) => React.ReactNode;
   /** desktop margin: the chapter's number, beside the chapter's first line */
   chapterLabel?: string;
   /** desktop margin: the page, beside its first line of body text */
@@ -2172,6 +2261,7 @@ function PageParas({
           segments={painting[i] ?? null}
           highlighted={(painted.get(p.canonical_ref)?.length ?? 0) > 0}
           dot={painted.get(p.canonical_ref)?.[0]?.colour}
+          aside={margin?.(p)}
         />
       ))}
     </>
@@ -2202,7 +2292,10 @@ function ParaWrap({
   highlighted,
   dot,
   gutter,
+  aside,
 }: {
+  /** desktop, from 1280px: the margin note beside this paragraph */
+  aside?: React.ReactNode;
   /** desktop: what the left margin says beside this paragraph */
   gutter?: React.ReactNode;
   para: Paragraph;
@@ -2248,6 +2341,9 @@ function ParaWrap({
           className="absolute -left-[2.25rem] top-[0.85em] hidden h-2 w-2 rounded-full lg:block max-xl:group-data-[panel=open]/reader:hidden"
           style={{ background: `var(--color-hl-${dot}-mark)` }}
         />
+      )}
+      {aside && (
+        <div className="absolute left-full top-[0.4em] ml-14 hidden w-64 xl:block">{aside}</div>
       )}
       <Block para={para} segments={segments} />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import {
   DEFAULT_PREFS,
@@ -75,78 +76,11 @@ interface SettingsSheetProps {
 
 export function SettingsSheet(p: SettingsSheetProps) {
   const { readerTheme, setReaderTheme } = useDisplay();
-  const fontIndex = Math.max(0, FONT_SCALES.indexOf(p.fontScale));
-  const stepFont = (delta: number) => {
-    const next = FONT_SCALES[Math.min(FONT_SCALES.length - 1, Math.max(0, fontIndex + delta))];
-    if (next !== p.fontScale) p.onFontScale(next);
-  };
 
   return (
     <Sheet open={p.open} onClose={p.onClose} title="Theme & Settings">
       <div className="space-y-6 px-5 pt-4">
-        {/* Size. A−/A+ rather than a bare small and large A, so which way
-            each one goes is written on it; and feedback on every press — the
-            designer's call, 26 Sep 2026. The page behind moves too, but the
-            sheet covers most of it, so the sheet carries its own sample: a
-            line set in the reader's face at the size it will be, and a dot
-            per step between the buttons. */}
-        <div>
-          <div
-            aria-hidden
-            className="mb-3 flex h-14 items-center justify-center overflow-hidden rounded-control bg-current/[0.04] px-3"
-          >
-            <span
-              lang="hi"
-              className="truncate leading-normal transition-[font-size] duration-150 ease-out motion-reduce:transition-none"
-              style={{
-                fontFamily: (FACES.find((f) => f.id === p.face) ?? FACES[0]).stack,
-                fontSize: `calc(1.125rem * ${p.fontScale})`,
-              }}
-            >
-              अक्षर का आकार
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <StepBtn onClick={() => stepFont(-1)} disabled={fontIndex === 0} ariaLabel="Smaller text">
-              <span className="text-sm font-semibold">
-                A<span className="text-xs">−</span>
-              </span>
-            </StepBtn>
-            {/* One dot per step, filled up to the size in use — the designer's
-                call over a bar and an "N of 9" line: which step you are on
-                and how far there is to go, counted rather than read. */}
-            <div aria-hidden className="flex flex-1 items-center justify-between px-1">
-              {FONT_SCALES.map((s, i) => {
-                const on = i <= fontIndex;
-                return (
-                  <span
-                    key={s}
-                    className={`h-2.5 w-2.5 rounded-full border-2 transition-[background-color,border-color,transform] duration-150 ease-out motion-reduce:transition-none ${
-                      i === fontIndex ? "scale-125" : ""
-                    }`}
-                    style={{
-                      borderColor: on ? "var(--ws-color)" : "color-mix(in srgb, currentColor 22%, transparent)",
-                      background: on ? "var(--ws-color)" : "transparent",
-                    }}
-                  />
-                );
-              })}
-            </div>
-            <StepBtn
-              onClick={() => stepFont(1)}
-              disabled={fontIndex === FONT_SCALES.length - 1}
-              ariaLabel="Larger text"
-            >
-              <span className="text-lg font-semibold">
-                A<span className="text-sm">+</span>
-              </span>
-            </StepBtn>
-          </div>
-          <p aria-live="polite" className="sr-only">
-            Text size {fontIndex + 1} of {FONT_SCALES.length}
-            {p.fontScale === DEFAULT_PREFS.fontScale ? ", default" : ""}
-          </p>
-        </div>
+        <FontSize fontScale={p.fontScale} face={p.face} onFontScale={p.onFontScale} />
 
         <Row label="Line height">
           <Segmented
@@ -276,6 +210,90 @@ export function SettingsSheet(p: SettingsSheetProps) {
   );
 }
 
+/**
+ * Text size: a sample line set at the size it will be, then A− · one dot per
+ * step · A+. Shared by the sheet and the docked panel — the designer asked for
+ * the phone's dots on the desktop too (3 Oct 2026).
+ */
+function FontSize({
+  fontScale,
+  face,
+  onFontScale,
+}: {
+  fontScale: number;
+  face: ReaderFace;
+  onFontScale: (v: number) => void;
+}) {
+  const fontIndex = Math.max(0, FONT_SCALES.indexOf(fontScale));
+  const stepFont = (delta: number) => {
+    const next = FONT_SCALES[Math.min(FONT_SCALES.length - 1, Math.max(0, fontIndex + delta))];
+    if (next !== fontScale) onFontScale(next);
+  };
+  // A−/A+ rather than a bare small and large A, so which way each one goes
+  // is written on it; and feedback on every press — the designer's call, 26
+  // Sep 2026. The sheet covers most of the page, so it carries its own
+  // sample: a line set in the reader's face at the size it will be.
+  return (
+    <div>
+      <div
+        aria-hidden
+        className="mb-3 flex h-14 items-center justify-center overflow-hidden rounded-control bg-current/[0.04] px-3"
+      >
+        <span
+          lang="hi"
+          className="truncate leading-normal transition-[font-size] duration-150 ease-out motion-reduce:transition-none"
+          style={{
+            fontFamily: (FACES.find((f) => f.id === face) ?? FACES[0]).stack,
+            fontSize: `calc(1.125rem * ${fontScale})`,
+          }}
+        >
+          अक्षर का आकार
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <StepBtn onClick={() => stepFont(-1)} disabled={fontIndex === 0} ariaLabel="Smaller text">
+          <span className="text-sm font-semibold">
+            A<span className="text-xs">−</span>
+          </span>
+        </StepBtn>
+        {/* One dot per step, filled up to the size in use — the designer's
+            call over a bar and an "N of 9" line: which step you are on
+            and how far there is to go, counted rather than read. */}
+        <div aria-hidden className="flex flex-1 items-center justify-between px-1">
+          {FONT_SCALES.map((s, i) => {
+            const on = i <= fontIndex;
+            return (
+              <span
+                key={s}
+                className={`h-2.5 w-2.5 rounded-full border-2 transition-[background-color,border-color,transform] duration-150 ease-out motion-reduce:transition-none ${
+                  i === fontIndex ? "scale-125" : ""
+                }`}
+                style={{
+                  borderColor: on ? "var(--ws-color)" : "color-mix(in srgb, currentColor 22%, transparent)",
+                  background: on ? "var(--ws-color)" : "transparent",
+                }}
+              />
+            );
+          })}
+        </div>
+        <StepBtn
+          onClick={() => stepFont(1)}
+          disabled={fontIndex === FONT_SCALES.length - 1}
+          ariaLabel="Larger text"
+        >
+          <span className="text-lg font-semibold">
+            A<span className="text-sm">+</span>
+          </span>
+        </StepBtn>
+      </div>
+      <p aria-live="polite" className="sr-only">
+        Text size {fontIndex + 1} of {FONT_SCALES.length}
+        {fontScale === DEFAULT_PREFS.fontScale ? ", default" : ""}
+      </p>
+    </div>
+  );
+}
+
 function Toggle({
   label,
   hint,
@@ -360,17 +378,20 @@ function Segmented<T extends string | number>({
   value,
   onChange,
   ariaLabel,
+  compact,
 }: {
   options: { label: string; value: T }[];
   value: T;
   onChange: (v: T) => void;
   ariaLabel: string;
+  /** the docked panel's size: a 36px row beside its label */
+  compact?: boolean;
 }) {
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className="flex gap-1 rounded-control bg-current/[0.06] p-1"
+      className={`flex rounded-control bg-current/[0.06] ${compact ? "gap-0.5 p-0.5" : "gap-1 p-1"}`}
     >
       {options.map((o) => {
         const active = o.value === value;
@@ -386,7 +407,7 @@ function Segmented<T extends string | number>({
                is the accent shouting over the settings it is describing. The
                sheet is also the one place a reader is *comparing* options
                rather than switching between two views. */
-            className={`min-h-11 flex-1 rounded-control text-sm transition-colors ${
+            className={`flex-1 rounded-control px-2 text-sm transition-colors ${compact ? "min-h-9" : "min-h-11"} ${
               active
                 ? "bg-(--reader-bg) font-semibold shadow-card"
                 : "text-(--reader-ink-soft)"
@@ -396,6 +417,192 @@ function Segmented<T extends string | number>({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * **Theme & Settings, docked** — the desktop's version of the sheet above, as
+ * a panel on the right that stays open while the page changes behind it. The
+ * same settings in the comp's three groups (Text · Theme · Reading), each
+ * row a label with its control beside it rather than under it: at 320px wide
+ * there is room, and a panel read top to bottom is shorter that way.
+ */
+export function SettingsPanel(
+  p: Omit<SettingsSheetProps, "onGoToPage"> & {
+    /** print editions only: go straight to a printed page from the panel */
+    onGoToPrintedPage?: (n: number) => void;
+  }
+) {
+  const { readerTheme, setReaderTheme } = useDisplay();
+  const [page, setPage] = useState("");
+
+  return (
+    <aside
+      aria-label="Theme & Settings"
+      inert={!p.open}
+      data-reader-chrome
+      className={`fixed bottom-0 right-0 top-16 z-30 hidden w-80 flex-col border-l border-(--reader-rule) bg-(--reader-bg) transition-transform duration-300 ease-out motion-reduce:transition-none lg:flex ${
+        p.open ? "translate-x-0" : "translate-x-full"
+      }`}
+    >
+      <div className="flex items-center justify-between border-b border-(--reader-rule) py-3 pl-5 pr-3">
+        <h2 className="text-sm font-semibold">Theme &amp; Settings</h2>
+        <button
+          type="button"
+          onClick={p.onClose}
+          aria-label="Close settings"
+          className="flex h-9 w-9 items-center justify-center rounded-md text-(--reader-ink-soft) transition-colors hover:bg-current/5"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 divide-y divide-(--reader-rule) overflow-y-auto overscroll-contain">
+        <PanelGroup title="Text">
+          <FontSize fontScale={p.fontScale} face={p.face} onFontScale={p.onFontScale} />
+          <PanelRow label="Line height">
+            <Segmented
+              compact
+              ariaLabel="Line height"
+              options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
+              value={p.lineHeight}
+              onChange={p.onLineHeight}
+            />
+          </PanelRow>
+          <PanelRow label="Typeface">
+            <Segmented
+              compact
+              ariaLabel="Typeface"
+              options={FACES.map((f) => ({ label: f.label, value: f.id }))}
+              value={p.face}
+              onChange={p.onFace}
+            />
+          </PanelRow>
+        </PanelGroup>
+
+        <PanelGroup title="Theme">
+          <div role="radiogroup" aria-label="Reading surface" className="grid grid-cols-3 gap-2">
+            {READER_SURFACES.map((id) => {
+              const s = SURFACES[id];
+              const active = readerTheme === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={`${s.label} reading surface`}
+                  onClick={() => setReaderTheme(id)}
+                  className="flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-tile border-2 transition-colors"
+                  style={{
+                    background: s.bg,
+                    color: s.ink,
+                    borderColor: active ? "var(--ws-color)" : "var(--reader-rule)",
+                  }}
+                >
+                  <span aria-hidden className={`text-lg leading-none ${s.bold ? "font-bold" : ""}`}>
+                    Aa
+                  </span>
+                  <span className={`text-xs ${active ? "font-semibold" : ""}`}>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2.5 text-xs text-(--reader-ink-soft)">
+            The book&apos;s own paper. Original follows the app&apos;s theme, so it goes dark at
+            night with everything else.
+          </p>
+        </PanelGroup>
+
+        <PanelGroup title="Reading">
+          <PanelRow label="Layout">
+            <Segmented
+              compact
+              ariaLabel="Reading mode"
+              options={[
+                { label: "Pages", value: "page" as const },
+                { label: "Scroll", value: "scroll" as const },
+              ]}
+              value={p.mode}
+              onChange={p.onMode}
+            />
+          </PanelRow>
+          <Toggle
+            label="Paribhasha overlay"
+            hint="Show word meanings on tap. Even with this off: press and hold any word."
+            checked={p.glossaryUnderline}
+            onChange={p.onGlossaryUnderline}
+          />
+          {p.showTapZones && (
+            <Toggle
+              label="Tap edges to turn pages"
+              hint="Off: swipe to turn, tap anywhere for controls."
+              checked={p.tapZones}
+              onChange={p.onTapZones}
+            />
+          )}
+          {p.onGoToPrintedPage && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const n = Number(page);
+                if (n > 0) p.onGoToPrintedPage?.(n);
+              }}
+              className="flex items-center gap-2"
+            >
+              <label htmlFor="settings-goto" className="flex-1 text-sm">
+                Go to printed page
+              </label>
+              <input
+                id="settings-goto"
+                inputMode="numeric"
+                value={page}
+                onChange={(e) => setPage(e.target.value.replace(/\D/g, ""))}
+                placeholder="—"
+                className="h-9 w-16 rounded-md border border-(--reader-rule) bg-transparent text-center text-sm tabular-nums outline-none focus:border-(--ws-ink)"
+              />
+              <button
+                type="submit"
+                disabled={!page}
+                className="h-9 rounded-md border border-(--reader-rule) px-3 text-sm font-semibold transition-colors hover:bg-current/5 disabled:opacity-40"
+              >
+                Go
+              </button>
+            </form>
+          )}
+        </PanelGroup>
+      </div>
+    </aside>
+  );
+}
+
+function PanelGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4 px-5 py-5">
+      <h3 className="text-xs font-bold uppercase tracking-[0.09em] text-(--reader-ink-soft)">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function PanelRow({
+  label,
+  hindi,
+  children,
+}: {
+  label: string;
+  hindi?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    // Label over control rather than beside it: beside a label, three
+    // options had about 55px each and "Compact" touched its neighbours.
+    <div>
+      <p lang={hindi ? "hi" : undefined} className={`mb-2 text-sm ${hindi ? "hi hi-tight" : ""}`}>
+        {label}
+      </p>
+      {children}
     </div>
   );
 }
