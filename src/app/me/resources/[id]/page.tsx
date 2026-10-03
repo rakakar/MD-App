@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FileList } from "@/components/library/FileList";
 import { PdfCard } from "@/components/library/PdfCard";
 import { BackIcon, ChevronRight } from "@/components/shell/icons";
 import { KindTile, PageContainer } from "@/components/ui";
@@ -48,11 +49,14 @@ export async function generateMetadata({
  * in, and opens each file in the same PDF reader through
  * `journeyDocumentHref`.
  *
- * **PDFs only, and one level of folders.** That is all a stage's reading is.
- * The library's full browser — find, filters, the player for recordings, the
- * gallery — is the library's, and a reader who wants it has the Resources
- * workspace for it. A file that has a text edition is drawn as a plain PDF row
- * for the same reason: the text reader's way back is the library.
+ * **The folder's files, and nothing of the library's browser.** PDFs are our
+ * own rows, opening in our own route; audio, video and pictures are the
+ * library's `FileList`, which plays them through the app's one player and
+ * embeds the video where it stands — neither links anywhere, so nothing in
+ * here leaves the workspace. The library's find, filters and shelves are the
+ * library's, and a reader who wants them has the Resources workspace. A file
+ * that has a text edition is drawn as a plain PDF row for the same reason:
+ * the text reader's way back is the library.
  */
 export default async function JourneyFolderPage({
   params,
@@ -64,6 +68,10 @@ export default async function JourneyFolderPage({
   if (!node) notFound();
 
   const pdfs = [...node.items, ...node.linked_items].filter((f) => f.kind === "pdf");
+  // Everything that is not a PDF, split the way `FileList` wants it.
+  const recordings = node.items.filter((f) => f.kind !== "pdf");
+  const linkedRecordings = node.linked_items.filter((f) => f.kind !== "pdf");
+  const hasOthers = recordings.length + linkedRecordings.length > 0;
   const folders = node.children.filter((c) => c.child_count + c.item_count > 0);
   const name = contentLang(node.name);
 
@@ -99,7 +107,10 @@ export default async function JourneyFolderPage({
                   href={journeyFolderHref(c.id)}
                   className="flex min-h-11 items-center gap-3 rounded-card border border-rule bg-card p-2.5 transition-shadow hover:shadow-md"
                 >
-                  <KindTile kind="folder" size="sm" />
+                  {/* A folder of one kind of recording wears that kind's tile,
+                      so a reader can tell the audio from the PDFs before
+                      opening either. */}
+                  <KindTile kind={c.kinds.length === 1 ? c.kinds[0] : "folder"} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span
                       lang={lang.lang}
@@ -107,6 +118,11 @@ export default async function JourneyFolderPage({
                     >
                       {c.name}
                     </span>
+                    {c.item_count > 0 && (
+                      <span className="mt-0.5 block truncate text-xs text-ink-soft">
+                        {c.item_count} {c.item_count === 1 ? "file" : "files"}
+                      </span>
+                    )}
                   </span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-ink-soft" />
                 </Link>
@@ -116,7 +132,7 @@ export default async function JourneyFolderPage({
         </ul>
       )}
 
-      {pdfs.length > 0 ? (
+      {pdfs.length > 0 && (
         <ul className="mt-3 divide-y divide-rule">
           {pdfs.map((file) => (
             <li key={file.id}>
@@ -129,12 +145,26 @@ export default async function JourneyFolderPage({
             </li>
           ))}
         </ul>
-      ) : (
-        folders.length === 0 && (
-          <p className="mt-6 text-sm leading-relaxed text-ink-soft">
-            There are no PDFs in this folder yet.
-          </p>
-        )
+      )}
+
+      {hasOthers && (
+        <FileList
+          files={recordings}
+          linked={linkedRecordings}
+          albumTitle={node.name}
+          coverUrl={node.cover_url}
+          /* The shared portrait of Nagraj ji stands in for a still only where
+             the recording is him — the same rule the library's own folder page
+             applies. */
+          audioArt={node.workspace === "originals" ? "portrait" : "glyph"}
+          folderProvenance={node.provenance}
+        />
+      )}
+
+      {folders.length === 0 && pdfs.length === 0 && !hasOthers && (
+        <p className="mt-6 text-sm leading-relaxed text-ink-soft">
+          There is nothing in this folder yet.
+        </p>
       )}
     </PageContainer>
   );

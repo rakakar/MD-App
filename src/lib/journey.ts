@@ -194,9 +194,8 @@ export const STAGES: Stage[] = [
  *
  * **Never a plain `/library/…` address.** That belongs to whichever shelf the
  * folder lives on and swaps the reader into another workspace mid-stage.
- * Recordings are the cost of that rule: the library's players are not part of
- * this workspace, so a stage's audio and video are listed only where the
- * roadmap points at YouTube.
+ * Recordings included: the folder page plays audio and video in place, so a
+ * stage's recordings are listed as folders like its PDFs are.
  */
 export interface StageResource {
   title: string;
@@ -232,6 +231,8 @@ const YT = "https://www.youtube.com";
 const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
   1: [
     { title: "परिचयात्मक संकलन", href: journeyFolderHref(77), kind: "folder", note: "Introductory reading · PDF" },
+    { title: "जीवन विद्या: एक परिचय", href: journeyFolderHref(26), kind: "audio", note: "Nagraj ji's introductory talks · 1997" },
+    { title: "जीवन विद्या: एक परिचय", href: journeyFolderHref(54), kind: "video", note: "Introductory videos" },
     {
       title: "परिचय शिविर वीडियो",
       href: `${YT}/@jeevanvidyaofficialprogram6848`,
@@ -242,6 +243,7 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
   2: [],
   3: [
     { title: "अवलोकन पठन सामग्री", href: journeyFolderHref(77), kind: "folder", note: "The reading for this stage · PDF" },
+    { title: "सहअस्तित्ववादी विज्ञान (1999)", href: journeyFolderHref(59), kind: "video", note: "Nagraj ji's 1999 video series" },
     {
       title: "पूर्व अवलोकन शिविर",
       href: `${YT}/playlist?list=PLhtsoZtN-o_FFV-rI8Ry2kqvO1JaGD8qK`,
@@ -251,6 +253,7 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
   ],
   4: [
     { title: "संवाद — नागराजजी के साथ", href: journeyFolderHref(51), kind: "folder", note: "Samvad · PDF" },
+    { title: "सम्मेलन — मसूरी 2005", href: journeyFolderHref(55), kind: "video", note: "On why and how to study" },
     {
       title: "१२ पुस्तक — 400 घंटे पठन शिविर",
       href: `${YT}/playlist?list=PLnQVMclfMfocbwKBl85w5QqZ0rPTBuz_J`,
