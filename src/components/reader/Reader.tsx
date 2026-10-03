@@ -16,6 +16,7 @@ import {
   PERSONAL_SYNCED,
   flushProgress,
   localBookmarks,
+  localHighlights,
   localProgressFor,
   saveBookmark,
   saveNote,
@@ -43,7 +44,14 @@ import {
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import type { Matcher } from "@/lib/paribhasha";
 import { Block } from "./blocks";
-import { ReaderBottomBar, ReaderTopBar, SelectionBar } from "./ReaderChrome";
+import {
+  ExitFocus,
+  ReaderBottomBar,
+  ReaderDesktopBar,
+  ReaderTopBar,
+  SelectionBar,
+} from "./ReaderChrome";
+import { useIsDesktop } from "@/components/ui/Dialog";
 import { ParibhashaTrailSheet } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
@@ -226,6 +234,24 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // any modal surface pins the chrome open
   const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
   const chrome = useReaderChrome(mode, modalOpen);
+  /**
+   * Desktop: one bar that stays up, and focus mode as the deliberate way to
+   * put it away (desktop revision, 3 Oct 2026). The phone's chrome still
+   * comes and goes with taps and scrolling; on a desktop that only made a
+   * reader hunt for controls that had slid off the screen.
+   */
+  const desktop = useIsDesktop();
+  const [focus, setFocus] = useState(false);
+  /** which tab the contents sheet opens on — the desktop bar has a button for each */
+  const [tocTab, setTocTab] = useState<"contents" | "highlights">("contents");
+  useEffect(() => {
+    if (!focus) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFocus(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focus]);
 
   const allPages: ReaderPage[] = useMemo(
     () => (chapter ? groupPages(chapter.paragraphs) : []),
@@ -544,7 +570,19 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // cannot overwrite the place we are about to jump to.
   const restored = useRef(false);
   useEffect(() => {
-    if (pages.length === 0 || restored.current) return;
+    if (pages.length === 0) return;
+    // A go-to target that crossed into another chapter, once that chapter's
+    // pages have arrived. Checked on every chapter, not only the first: the
+    // reader stays mounted as it moves between chapters, and gating this on
+    // `restored` meant "Go to page 20" from chapter 1 opened chapter 2 at its
+    // first page and dropped the 20.
+    if (restored.current) {
+      if (pendingPage.current) {
+        jumpToPage(pendingPage.current);
+        pendingPage.current = null;
+      }
+      return;
+    }
     restored.current = true;
     // 1. explicit deep link #p-{page}-{para}
     const hash = window.location.hash.match(/^#p-([^-]+)-(.+)$/);
@@ -1262,6 +1300,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // device has a Hindi voice — an English engine on Devanagari is gibberish.
   const deviceFallback = !hasAudio && player.deviceVoiceAvailable;
   const canListen = hasAudio || deviceFallback;
+  // This book's highlights, for the count on the desktop bar's pencil. Read
+  // after mount (the store is the browser's, so the server's first render
+  // cannot know it) and again whenever the chapter's own painting changes,
+  // which is when a highlight is made or removed.
+  const [highlightCount, setHighlightCount] = useState(0);
+  useEffect(() => {
+    setHighlightCount(localHighlights(book.code).length);
+  }, [book.code, painted]);
   const progress =
     mode === "page"
       ? pages.length > 0
@@ -1301,6 +1347,25 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    * saying it twice on one screen was the other half of what made it hard to
    * read — three numbers up here and the same three down there.
    */
+  /**
+   * The desktop bar's position line: the chapter's number and the printed
+   * page, on the book's own scale — the same "30 / 178" the phone's bottom
+   * bar gives, in the book's words.
+   */
+  const deskPage = mode === "page" ? page?.label : currentRef ? parseRef(currentRef)?.page : undefined;
+  const desktopWhere = (
+    <span lang="hi" className="hi hi-tight">
+      {isFrontMatter ? "प्रस्तावना" : `अध्याय ${chapterNumber}`}
+      {deskPage && (
+        <>
+          {" · पृष्ठ "}
+          {deskPage}
+          {book.page_count && deskPage === String(Number(deskPage)) ? ` / ${book.page_count}` : ""}
+        </>
+      )}
+    </span>
+  );
+
   const topBarMeta = (
     <>
       {/* The chapter names itself, in its own script. "Chapter 2 · अध्याय 2 :
@@ -1377,6 +1442,54 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         // almost never the question being asked.
         assistantHref="/assistant"
       />
+
+      <ReaderDesktopBar
+        hidden={focus}
+        backHref={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
+        backLabel={home?.backLabel ?? "Back to book"}
+        book={book.title_hi}
+        where={desktopWhere}
+        progress={progress}
+        pagesHref={home ? documentHref(home.at.node, home.at.item, pagesAt) : undefined}
+        highlightCount={highlightCount}
+        panel={tocOpen ? tocTab : null}
+        onContents={() => {
+          setTocTab("contents");
+          setTocOpen(true);
+        }}
+        onHighlights={() => {
+          setTocTab("highlights");
+          setTocOpen(true);
+        }}
+        // The position is where a reader goes to *change* it — the phone's
+        // bottom bar opened "Go to printed page" from its page number, and this
+        // is that number. A digital-first book has no printed page to ask for,
+        // so there it opens the chapters.
+        onWhere={() => {
+          if (book.book_type === "print") setGotoOpen(true);
+          else {
+            setTocTab("contents");
+            setTocOpen(true);
+          }
+        }}
+        onSettings={() => setSettingsOpen(true)}
+        settingsOpen={settingsOpen}
+        onListen={openListening}
+        canListen={canListen}
+        listening={listening}
+        onFocus={() => setFocus(true)}
+        languages={
+          sides
+            ? {
+                side: readingSide,
+                originalLabel: SCRIPT_LABEL[sides.original],
+                translatedLabel: SCRIPT_LABEL[sides.translated],
+                onChange: chooseSide,
+              }
+            : undefined
+        }
+      />
+      {focus && <ExitFocus onExit={() => setFocus(false)} />}
 
       {/* ---- content ---- */}
       {/* padding matches the top bar exactly, so revealing chrome never
@@ -1537,9 +1650,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 
           {!chapterLoading && chapter && mode === "scroll" && (
             <div>
-              {pages.map((pg) => (
-                <section key={pg.key} id={`page-${pg.key}`} aria-label={`Page ${pg.label}`}>
-                  <div className="my-6 flex items-center gap-3">
+              {pages.map((pg, pi) => (
+                <section
+                  key={pg.key}
+                  id={`page-${pg.key}`}
+                  aria-label={`Page ${pg.label}`}
+                  className="lg:mt-8 lg:first:mt-2"
+                >
+                  {/* Phone: a rule across the column with the page on it. */}
+                  <div className="my-6 flex items-center gap-3 lg:hidden">
                     <span className="h-px flex-1 bg-(--reader-rule)" />
                     {pageChrome(pg)}
                     <span className="h-px flex-1 bg-(--reader-rule)" />
@@ -1550,6 +1669,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     activeSeq={activeSeq}
                     selectedRef={selection?.para.canonical_ref}
                     painted={painted}
+                    chapterLabel={pi === 0 && !isFrontMatter ? `अध्याय ${chapterNumber}` : undefined}
+                    pageLabel={
+                      book.book_type === "print" && pg.label === String(Number(pg.label))
+                        ? `पृष्ठ ${pg.label}`
+                        : pg.label
+                    }
                   />
                 </section>
               ))}
@@ -1559,9 +1684,41 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                   button took all the shrinking there was and broke its title a
                   character to a line. `flex-1` on the wrappers splits the row;
                   `truncate` ends the name rather than stacking it. */}
+              {/* Desktop: the way on as a card under a rule, named in the
+                  book's words. Back is the contents, one click away in the
+                  bar. */}
+              {chapter.next && (
+                <div className="mt-12 hidden border-t border-(--reader-rule) pt-6 lg:block">
+                  <button
+                    type="button"
+                    onClick={() => void goToChapter(chapter.next!.number)}
+                    className="group flex w-full items-center gap-4 rounded-card border border-(--reader-rule) px-5 py-4 text-left transition-colors hover:bg-current/[0.03]"
+                    style={{ borderColor: "color-mix(in srgb, var(--ws-color) 30%, var(--reader-rule))" }}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span
+                        lang="hi"
+                        className="hi hi-tight block text-xs font-semibold"
+                        style={{ color: "var(--ws-ink)" }}
+                      >
+                        अगला अध्याय
+                      </span>
+                      <span lang="hi" className="hi hi-tight mt-1 block truncate font-semibold">
+                        अध्याय {chapter.next.number} : {chapter.next.title_hi}
+                      </span>
+                    </span>
+                    <span
+                      aria-hidden
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) transition-transform group-hover:translate-x-0.5"
+                    >
+                      →
+                    </span>
+                  </button>
+                </div>
+              )}
               <nav
                 aria-label="Chapter navigation"
-                className="mt-12 flex items-stretch justify-between gap-3 text-sm"
+                className="mt-12 flex items-stretch justify-between gap-3 text-sm lg:hidden"
               >
                 <span className="min-w-0 flex-1">
                   {chapter.prev && (
@@ -1623,7 +1780,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       />
 
       {/* one-time coach mark */}
-      {hint && !chrome.visible && (
+      {hint && !chrome.visible && !desktop && (
         <div className="pointer-events-none fixed inset-x-0 top-1/2 z-30 flex justify-center px-8">
           <p className="rounded-full bg-black/75 px-4 py-2 text-center text-xs text-white">
             Tap the middle of the page for controls
@@ -1690,6 +1847,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         chapters={book.chapters}
         current={chapterNumber}
         bookType={book.book_type}
+        initialTab={tocTab}
         onSelect={(n) => void goToChapter(n)}
         /* Only when the passage is in the chapter already open: anywhere else
            the link is a real navigation and the reader remounts, which runs
@@ -1859,7 +2017,13 @@ function PageParas({
   activeSeq,
   selectedRef,
   painted,
+  chapterLabel,
+  pageLabel,
 }: {
+  /** desktop margin: the chapter's number, beside the chapter's first line */
+  chapterLabel?: string;
+  /** desktop margin: the page, beside its first line of body text */
+  pageLabel?: string;
   page: ReaderPage;
   /** null when the reader has underlining off, or the index has not arrived */
   matcher: Matcher | null;
@@ -1893,10 +2057,27 @@ function PageParas({
     [page, segments, painted]
   );
 
+  // The page's label goes beside its first line of *body* — after any heading,
+  // so a page that opens on the chapter's title has "अध्याय 1" beside the
+  // title and "पृष्ठ 1" beside the words actually printed on the page, as the
+  // desktop comp draws it. A page of nothing but headings labels its first.
+  const bodyAt = Math.max(
+    0,
+    page.paragraphs.findIndex((p) => p.block_type !== "heading" && p.block_type !== "subheading")
+  );
+
   return (
     <>
       {page.paragraphs.map((p, i) => (
         <ParaWrap
+          gutter={
+            (i === 0 && chapterLabel) || (i === bodyAt && pageLabel) ? (
+              <>
+                {i === 0 && chapterLabel && <span className="block">{chapterLabel}</span>}
+                {i === bodyAt && pageLabel && <span className="block">{pageLabel}</span>}
+              </>
+            ) : undefined
+          }
           key={p.canonical_ref}
           para={p}
           pageKey={page.key}
@@ -1904,6 +2085,7 @@ function PageParas({
           selectedRef={selectedRef}
           segments={painting[i] ?? null}
           highlighted={(painted.get(p.canonical_ref)?.length ?? 0) > 0}
+          dot={painted.get(p.canonical_ref)?.[0]?.colour}
         />
       ))}
     </>
@@ -1932,7 +2114,11 @@ function ParaWrap({
   selectedRef,
   segments,
   highlighted,
+  dot,
+  gutter,
 }: {
+  /** desktop: what the left margin says beside this paragraph */
+  gutter?: React.ReactNode;
   para: Paragraph;
   pageKey: string;
   activeSeq: number | null;
@@ -1940,6 +2126,8 @@ function ParaWrap({
   segments?: PaintedSegment[] | null;
   /** whether anything in this paragraph is painted — for the selection rule */
   highlighted?: boolean;
+  /** desktop: the colour of the margin dot beside a painted paragraph */
+  dot?: HighlightColour;
 }) {
   const isActive = activeSeq === para.sequence;
   const isSelected = selectedRef === para.canonical_ref;
@@ -1952,10 +2140,29 @@ function ParaWrap({
       /* The fill is on the words now, not on the block. What is left here is
          the selection wash, which stays a block tint because it is about the
          passage the reader is acting on rather than about any words. */
-      className={`-mx-1 rounded-md px-1 ${isActive ? "para-active" : ""} ${
+      className={`relative -mx-1 rounded-md px-1 ${isActive ? "para-active" : ""} ${
         isSelected ? "bg-(--ws-color)/8" : ""
       }`}
     >
+      {/* Desktop: a dot in the margin for a painted paragraph, in its colour
+          taken deeper — the painted words say the same, and the dot lets a
+          reader find them down a long page at a glance. */}
+      {gutter && (
+        <p
+          aria-hidden
+          lang="hi"
+          className="hi hi-tight absolute -left-32 top-[0.55em] hidden w-20 text-right text-xs tracking-wide text-(--reader-ink-soft) lg:block"
+        >
+          {gutter}
+        </p>
+      )}
+      {dot && (
+        <span
+          aria-hidden
+          className="absolute -left-[2.25rem] top-[0.85em] hidden h-2 w-2 rounded-full lg:block"
+          style={{ background: `color-mix(in srgb, var(--color-hl-${dot}), #000 28%)` }}
+        />
+      )}
       <Block para={para} segments={segments} />
     </div>
   );

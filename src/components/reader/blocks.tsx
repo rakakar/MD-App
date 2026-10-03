@@ -254,6 +254,12 @@ function TocRow({
   );
 }
 
+/**
+ * How long a centred paragraph may be and still be a deliberate centred line
+ * rather than prose the extraction centred — about one line of the column.
+ */
+const SHORT_LINE = 60;
+
 /** One paragraph block. Font sizing inherits from the reader root scale. */
 export function Block({
   para,
@@ -396,11 +402,22 @@ export function Block({
       // Devanagari, so on a phone column a ragged edge swings by a whole long
       // word; Hindi print is justified, and readers compared both and chose it.
       // Only here: headings, lists, contents rows, verse and captions keep
-      // their own alignment, and a centred or right-set paragraph stays so.
+      // their own alignment.
+      //
+      // A *long* centred paragraph is justified too (designer's call, 3 Oct
+      // 2026). The extraction marks whole opening paragraphs centred — JVEP's
+      // first page is four of them — and a block of centred prose reads as a
+      // poem it is not. A short centred line keeps its centring, because there
+      // the printer meant it: a closing "जय हो, मंगल हो, कल्याण हो।", an
+      // "अध्याय – एक". Right-set lines (a signature, a date) stay right.
       return (
         <p
           lang="hi"
-          className={`hi reader-para ${para.align === "center" || para.align === "right" ? align : "text-justify"}`}
+          className={`hi reader-para ${
+            para.align === "right" || (para.align === "center" && para.text_hi.length <= SHORT_LINE)
+              ? align
+              : "text-justify"
+          }`}
           style={indent}
         >
           <Marker marker={para.marker} />

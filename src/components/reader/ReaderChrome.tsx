@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   BackIcon,
+  ChevronDown,
   HeadphonesIcon,
   Icon,
   PaletteIcon,
@@ -98,7 +99,7 @@ export function ReaderTopBar({
     <div
       data-reader-chrome
       data-hidden={hidden}
-      className="reader-chrome reader-chrome-top fixed inset-x-0 top-0 z-40 bg-(--reader-bg) pt-[env(safe-area-inset-top)]"
+      className="reader-chrome reader-chrome-top fixed inset-x-0 top-0 z-40 bg-(--reader-bg) pt-[env(safe-area-inset-top)] lg:hidden"
     >
       {/* A fixed 16px gutter, not `.reader-content`. The bar used to be laid
           out on the reading measure, which meant its controls moved whenever
@@ -316,7 +317,7 @@ export function ReaderBottomBar({
          Tailwind scans comments as well as code, so a class name spelt in a
          comment with an ellipsis inside its brackets is emitted as a real rule
          — and an elided CSS function does not parse. It cost a build.) */
-      className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg) pb-[env(safe-area-inset-bottom)]"
+      className="reader-chrome reader-chrome-bottom fixed inset-x-0 z-40 border-t border-(--reader-rule) bg-(--reader-bg) pb-[env(safe-area-inset-bottom)] lg:hidden"
       style={{ bottom }}
     >
       {/* Above the row with the page number in it, and under its own hairline
@@ -506,6 +507,234 @@ function SelectionAction({
       className="inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-sm font-medium transition-colors active:bg-white/15"
     >
       {children}
+    </button>
+  );
+}
+
+/**
+ * **The desktop reader's one bar** (Reader, desktop revision, 3 Oct 2026).
+ *
+ * A phone splits the chrome between a top and a bottom bar because the thumb
+ * lives at the bottom; a desktop has a pointer and a window's width, so it all
+ * goes in one row that stays put while the reader reads:
+ *
+ *     back · [contents | highlights 3]  ·  book / अध्याय 1 · पृष्ठ 1 / 110 ▾  ·  palette · Listen · focus
+ *
+ * Always shown — on a desktop nothing is gained by hiding it as the page
+ * scrolls, and much is lost hunting for it. Focus mode is the deliberate way
+ * to put it away.
+ */
+export function ReaderDesktopBar({
+  hidden,
+  backHref,
+  backLabel,
+  book,
+  where,
+  progress,
+  pagesHref,
+  highlightCount,
+  panel,
+  onContents,
+  onHighlights,
+  onWhere,
+  onSettings,
+  settingsOpen,
+  onListen,
+  canListen,
+  listening,
+  onFocus,
+  languages,
+}: {
+  hidden: boolean;
+  backHref: string;
+  backLabel: string;
+  /** the book's title, small, over the position */
+  book: string;
+  /** "अध्याय 1 · पृष्ठ 1 / 110" */
+  where: React.ReactNode;
+  progress: number;
+  pagesHref?: string;
+  /** this book's highlights — the count on the pencil */
+  highlightCount: number;
+  /** which side panel is open, for the lit button */
+  panel: "contents" | "highlights" | null;
+  onContents: () => void;
+  onHighlights: () => void;
+  /** the position itself — "Go to printed page" (the chapters on a digital book) */
+  onWhere: () => void;
+  onSettings: () => void;
+  settingsOpen: boolean;
+  onListen: () => void;
+  canListen: boolean;
+  listening: boolean;
+  onFocus: () => void;
+  languages?: LanguageToggle;
+}) {
+  const seg = (on: boolean) =>
+    `flex h-9 min-w-9 items-center justify-center gap-1 rounded-md px-2 text-xs font-bold transition-colors ${
+      on ? "" : "hover:bg-current/5"
+    }`;
+  const lit = {
+    background: "color-mix(in srgb, var(--ws-color) 12%, transparent)",
+    color: "var(--ws-ink)",
+  };
+  return (
+    <div
+      data-reader-chrome
+      data-hidden={hidden}
+      className="reader-chrome reader-chrome-top fixed inset-x-0 top-0 z-40 hidden bg-(--reader-bg) lg:block"
+    >
+      <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-(--reader-rule) px-5">
+        <div className="flex min-w-0 items-center gap-2">
+          <SquareBtn href={backHref} label={backLabel}>
+            <BackIcon className="h-5 w-5" />
+          </SquareBtn>
+          {/* Two doors into the same side panel, in one bordered group: the
+              book's map, and what the reader has marked in it. */}
+          <div className="flex items-center gap-0.5 rounded-control border border-(--reader-rule) p-0.5">
+            <button
+              type="button"
+              onClick={onContents}
+              aria-label="Contents"
+              aria-pressed={panel === "contents"}
+              title="Contents"
+              className={seg(panel === "contents")}
+              style={panel === "contents" ? lit : undefined}
+            >
+              <TocIcon className="h-4.5 w-4.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onHighlights}
+              aria-label={`Highlights and notes, ${highlightCount}`}
+              aria-pressed={panel === "highlights"}
+              title="Highlights & notes"
+              className={seg(panel === "highlights")}
+              style={panel === "highlights" ? lit : undefined}
+            >
+              <Icon name="highlights" className="h-4 w-4" />
+              {highlightCount > 0 && <span className="tabular-nums">{highlightCount}</span>}
+            </button>
+          </div>
+          {languages && (
+            <div className="w-56 [&>div]:p-0">
+              <ReaderLanguageBar {...languages} />
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={onWhere}
+          aria-label="Go to a page"
+          title="Go to a page"
+          className="flex min-h-11 min-w-0 max-w-[32rem] items-center gap-2 rounded-control px-3 text-center transition-colors hover:bg-current/5"
+        >
+          <span className="min-w-0">
+            <span lang="hi" className="hi hi-tight block truncate text-xs text-(--reader-ink-soft)">
+              {book}
+            </span>
+            <span className="hi-tight block truncate text-sm font-semibold">{where}</span>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-(--reader-ink-soft)" />
+        </button>
+
+        <div className="flex items-center justify-end gap-2">
+          {pagesHref && (
+            <Link
+              href={pagesHref}
+              title="Read the original pages"
+              className="flex h-11 shrink-0 items-center rounded-control border border-(--reader-rule) px-3 text-xs font-semibold hover:bg-current/5"
+            >
+              Pages
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={onSettings}
+            aria-label="Theme and settings"
+            aria-pressed={settingsOpen}
+            title="Theme & settings"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) transition-colors hover:bg-current/5"
+            style={settingsOpen ? lit : undefined}
+          >
+            <PaletteIcon className="h-5 w-5" />
+          </button>
+          {canListen && (
+            <button
+              type="button"
+              onClick={onListen}
+              className="flex h-11 shrink-0 items-center gap-2 rounded-control px-4 text-sm font-semibold transition-opacity hover:opacity-90"
+              style={
+                listening
+                  ? { ...lit, border: "1px solid color-mix(in srgb, var(--ws-color) 30%, transparent)" }
+                  : { background: "var(--ws-color)", color: "white" }
+              }
+            >
+              <HeadphonesIcon className="h-4.5 w-4.5" />
+              Listen
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onFocus}
+            aria-label="Focus — hide everything but the text"
+            title="Focus"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition-colors hover:bg-current/5"
+          >
+            <FocusIcon className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* The chapter, as a line under the bar. */}
+      <div className="h-0.5" aria-hidden>
+        <div
+          className="h-full transition-[width] duration-200"
+          style={{
+            width: `${Math.min(100, Math.max(0, progress * 100))}%`,
+            background: "var(--ws-color)",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** four corners — "make the text the whole window" */
+function FocusIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4" />
+    </svg>
+  );
+}
+
+/**
+ * Focus mode's only control: a quiet pill in the corner that says how to get
+ * back. Escape does the same.
+ */
+export function ExitFocus({ onExit }: { onExit: () => void }) {
+  return (
+    <button
+      type="button"
+      data-reader-chrome
+      onClick={onExit}
+      className="fixed right-5 top-4 z-40 hidden min-h-10 items-center gap-2 rounded-full border border-(--reader-rule) bg-(--reader-bg) pe-2 ps-4 text-sm font-semibold shadow-card transition-colors hover:bg-current/5 lg:flex"
+    >
+      Exit focus
+      <kbd className="rounded-md border border-(--reader-rule) px-1.5 py-0.5 font-sans text-xs font-semibold">
+        Esc
+      </kbd>
     </button>
   );
 }
