@@ -953,6 +953,27 @@ html[data-reader-face="sans"] .reader-surface .hi {
 .reader-content .reader-list {
   margin-block: calc((var(--reader-line-height, 1.85) - 1.15) * 0.5em);
 }
+
+/* Desktop: every Line height setting 0.2 tighter — the default lands at 1.65,
+   close to the live app's. 1.85 was set for a phone held close, where the
+   matras need the room; at a desk and a wider measure the same leading read
+   as double-spaced (the designer's call, 3 Oct 2026). The paragraph gaps
+   follow, since they are measured from the leading. */
+@media (min-width: 64rem) {
+  .reader-surface .hi {
+    line-height: calc(var(--reader-line-height, 1.85) - 0.2);
+  }
+  /* restated, since this block comes after it: chrome stays tight */
+  .reader-surface .hi-tight {
+    line-height: 1.35;
+  }
+  .reader-content .reader-para {
+    margin-block: calc((var(--reader-line-height, 1.85) - 0.2 - 1.15) * 1em);
+  }
+  .reader-content .reader-list {
+    margin-block: calc((var(--reader-line-height, 1.85) - 0.2 - 1.15) * 0.5em);
+  }
+}
 /* In the hanging layout the grid's column gap is the space after the marker. */
 .reader-list.grid .reader-marker {
   margin-inline-end: 0;
@@ -970,6 +991,16 @@ html[data-reader-face="sans"] .reader-surface .hi {
   margin-inline: auto;
   max-width: var(--reader-measure, 40rem);
   padding-inline: var(--reader-pad, 1rem);
+}
+/* Desktop: the measure follows the text size, so a line holds the same
+   number of words whatever size the reader picks. In rem it stayed put
+   while the text grew, and at the default 1.2 a desktop line carried about
+   ten words where the live app's carried thirteen — the designer's call,
+   3 Oct 2026. On a phone the screen is the limit long before this is. */
+@media (min-width: 64rem) {
+  .reader-content {
+    max-width: calc(var(--reader-measure, 40rem) * var(--reader-font-scale, 1));
+  }
 }
 
 /* Avoid one-word last lines in long Devanagari paragraphs. */

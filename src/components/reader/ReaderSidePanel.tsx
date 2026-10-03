@@ -15,7 +15,7 @@ import type { ChapterTocEntry } from "@/lib/types";
  * while the reader moves through the book: pick a chapter, a highlight, a note,
  * and the page changes with the panel still open, which is how a reader
  * working through their marks actually uses it. The column moves over to make
- * room; below 1280px the margin labels give way to it (see the reader).
+ * room; below 1440px the margin labels give way to it (see the reader).
  *
  * The rows are device-local, like every personal row in this app, and re-read
  * whenever `revision` changes — the reader bumps it when it paints or writes.

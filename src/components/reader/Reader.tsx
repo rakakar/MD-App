@@ -1657,12 +1657,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {/* ---- content ---- */}
       {/* padding matches the top bar exactly, so revealing chrome never
           covers the line you are reading */}
-      {/* The column steps aside for a docked panel. Below 1280px that leaves
+      {/* The column steps aside for a docked panel. Below 1440px that leaves
           no room in the margin, so the page labels and dots give way while one
           is open (`data-panel`, read in ParaWrap). With nothing docked it is
           centred on the window, as the audio pill is — the designer's call
-          over the comp's left-of-centre column (3 Oct 2026); the margin notes
-          are sized to fit beside it from 1280px. */}
+          over the comp's left-of-centre column (3 Oct 2026). The column
+          widens with the text size on a desktop (globals.css), so the margin
+          notes need 1440px to fit beside it. */}
       <div
         data-panel={showPanel || showSettings ? "open" : undefined}
         className={`group/reader pt-[calc(4rem+env(safe-area-inset-top))] transition-[padding] duration-300 ease-out motion-reduce:transition-none ${
@@ -2327,7 +2328,7 @@ function ParaWrap({
   gutter,
   aside,
 }: {
-  /** desktop, from 1280px: the margin note beside this paragraph */
+  /** desktop, from 1440px: the margin note beside this paragraph */
   aside?: React.ReactNode;
   /** desktop: what the left margin says beside this paragraph */
   gutter?: React.ReactNode;
@@ -2363,7 +2364,7 @@ function ParaWrap({
         <p
           aria-hidden
           lang="hi"
-          className="hi hi-tight absolute -left-32 top-[0.55em] hidden w-20 text-right text-xs tracking-wide text-(--reader-ink-soft) lg:block max-xl:group-data-[panel=open]/reader:hidden"
+          className="hi hi-tight absolute -left-32 top-[0.55em] hidden w-20 text-right text-xs tracking-wide text-(--reader-ink-soft) lg:block max-[90rem]:group-data-[panel=open]/reader:hidden"
         >
           {gutter}
         </p>
@@ -2371,12 +2372,12 @@ function ParaWrap({
       {dot && (
         <span
           aria-hidden
-          className="absolute -left-[2.25rem] top-[0.85em] hidden h-2 w-2 rounded-full lg:block max-xl:group-data-[panel=open]/reader:hidden"
+          className="absolute -left-[2.25rem] top-[0.85em] hidden h-2 w-2 rounded-full lg:block max-[90rem]:group-data-[panel=open]/reader:hidden"
           style={{ background: `var(--color-hl-${dot}-mark)` }}
         />
       )}
       {aside && (
-        <div className="absolute left-full top-[0.4em] ml-12 hidden w-60 xl:block">{aside}</div>
+        <div className="absolute left-full top-[0.4em] ml-12 hidden w-60 min-[90rem]:block">{aside}</div>
       )}
       <Block para={para} segments={segments} />
     </div>
