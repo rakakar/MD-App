@@ -566,7 +566,7 @@ function DesktopAudioMode({
 
   const at = lines.findIndex((p) => p.sequence === activeSeq);
   const activePage = at >= 0 ? parseRef(lines[at].canonical_ref)?.page : undefined;
-  const pageLabel = (pg?: string) => (pg && pg === String(Number(pg)) ? `पृष्ठ ${pg}` : pg ?? "");
+  const pageLabel = (pg?: string) => (pg && pg === String(Number(pg)) ? `Page ${pg}` : pg ?? "");
   const where = [
     lines.length ? `Para ${Math.max(1, at + 1)} / ${lines.length}` : "",
     pageLabel(activePage),
@@ -624,7 +624,7 @@ function DesktopAudioMode({
             {source.chapterTitle}
           </p>
           {where && (
-            <p lang="hi" className="hi-tight mt-2 text-sm tabular-nums text-audio-ink/55">
+            <p className="hi-tight mt-2 text-sm tabular-nums text-audio-ink/55">
               {where}
             </p>
           )}
@@ -645,7 +645,7 @@ function DesktopAudioMode({
               return (
                 <div key={p.canonical_ref}>
                   {newPage && page && (
-                    <p lang="hi" className="hi-tight mb-2 mt-6 text-xs text-audio-ink/40 first:mt-0">
+                    <p className="hi-tight mb-2 mt-6 text-xs text-audio-ink/40 first:mt-0">
                       {pageLabel(page)}
                     </p>
                   )}

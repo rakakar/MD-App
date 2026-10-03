@@ -1863,7 +1863,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     chapterLabel={pi === 0 && !isFrontMatter ? `अध्याय ${chapterNumber}` : undefined}
                     pageLabel={
                       book.book_type === "print" && pg.label === String(Number(pg.label))
-                        ? `पृष्ठ ${pg.label}`
+                        ? `Page ${pg.label}`
                         : pg.label
                     }
                   />
@@ -2282,7 +2282,7 @@ function PageParas({
 
   // The page's label goes beside its first line of *body* — after any heading,
   // so a page that opens on the chapter's title has "अध्याय 1" beside the
-  // title and "पृष्ठ 1" beside the words actually printed on the page, as the
+  // title and "Page 1" beside the words actually printed on the page, as the
   // desktop comp draws it. A page of nothing but headings labels its first.
   const bodyAt = Math.max(
     0,
@@ -2378,7 +2378,7 @@ function ParaWrap({
         <p
           aria-hidden
           lang="hi"
-          className="hi hi-tight absolute -left-32 top-[0.55em] hidden w-20 text-right text-xs tracking-wide text-(--reader-ink-soft) lg:block max-[90rem]:group-data-[panel=open]/reader:hidden"
+          className="hi hi-tight absolute -left-32 top-[0.5em] hidden w-20 text-right text-sm tracking-wide text-(--reader-ink-soft) lg:block max-[90rem]:group-data-[panel=open]/reader:hidden"
         >
           {gutter}
         </p>
