@@ -101,7 +101,7 @@ tap जान-बूझकर से ज़्यादा ग़लती स�
 | `fontScale` | 8 steps, `0.85` से `1.7` |
 | `lineHeight` | `1.85 · 2.05 · 2.3` |
 | `margin` | 0 (सँकरा) · 1 · 2 (चौड़ा) |
-| `readingMode` | `page` · `scroll` · `null` = अपने आप (print → page, digital → scroll) |
+| `readingMode` | `page` · `scroll` · `null` = scroll for every book (3 Oct 2026; was print → page, digital → scroll) |
 | `tapZones` | Pages mode में किनारे पर tap से page पलटना |
 | `glossaryUnderline` | default **off** |
 

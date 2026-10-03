@@ -136,7 +136,7 @@ export interface Prefs {
    * synthesized bold. Book text is deliberately left alone — see globals.css.
    */
   boldText: boolean;
-  /** user override of the print→page / digital→scroll default; null = automatic */
+  /** the reader's own choice of layout; null = the default, which is scroll */
   readingMode: ReadingMode | null;
   /** tapping the left/right edge turns the page (Pages mode only) */
   tapZones: boolean;

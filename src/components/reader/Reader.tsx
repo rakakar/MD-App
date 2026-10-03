@@ -201,7 +201,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [chapter, setChapter] = useState<ChapterPayload | null>(initialChapter);
   const [chapterNumber, setChapterNumber] = useState(initialChapterNumber);
   const [chapterLoading, setChapterLoading] = useState(initialChapter === null);
-  const [mode, setMode] = useState<ReadingMode>(book.book_type === "print" ? "page" : "scroll");
+  // Scroll for every book, phone and desktop, until the reader picks Pages —
+  // the designer's call, 3 Oct 2026. It was Pages for a print edition.
+  const [mode, setMode] = useState<ReadingMode>("scroll");
   const [fontScale, setFontScale] = useState(DEFAULT_PREFS.fontScale);
   const [face, setFace] = useState<ReaderFace>(DEFAULT_PREFS.face);
   const [lineHeight, setLineHeight] = useState(DEFAULT_PREFS.lineHeight);
@@ -1404,15 +1406,27 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    * bar gives, in the book's words.
    */
   const deskPage = mode === "page" ? page?.label : currentRef ? parseRef(currentRef)?.page : undefined;
+  // The chapter by number and name, in the book's script, then the page in
+  // English as the phone's bar writes it — the designer's call, 3 Oct 2026.
+  // The name gives way first when the bar runs short; the page never does.
+  const chapterTitle = book.chapters.find(
+    (c) => c.number === chapterNumber && c.is_front_matter === isFrontMatter
+  )?.title_hi;
   const desktopWhere = (
-    <span lang="hi" className="hi hi-tight">
-      {isFrontMatter ? "प्रस्तावना" : `अध्याय ${chapterNumber}`}
+    <span className="flex min-w-0 items-baseline justify-center gap-1.5">
+      <span lang="hi" className="hi hi-tight min-w-0 truncate">
+        {isFrontMatter
+          ? chapterTitle ?? "प्रस्तावना"
+          : chapterTitle
+            ? `अध्याय ${chapterNumber} : ${chapterTitle}`
+            : `अध्याय ${chapterNumber}`}
+      </span>
       {deskPage && (
-        <>
-          {" · पृष्ठ "}
+        <span className="shrink-0 tabular-nums">
+          {"· Page "}
           {deskPage}
           {book.page_count && deskPage === String(Number(deskPage)) ? ` / ${book.page_count}` : ""}
-        </>
+        </span>
       )}
     </span>
   );
