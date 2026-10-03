@@ -247,13 +247,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   /** the desktop's Theme & Settings, docked on the right — one docked panel at a time */
   const [deskSettings, setDeskSettings] = useState(false);
   const showSettings = deskSettings;
+  /** the desktop's go-to-page popover, under the position in the bar */
+  const [gotoPop, setGotoPop] = useState(false);
 
   // Any modal surface pins the chrome open — and so does a docked panel, which
   // hangs from the bar. Otherwise the desktop bar comes and goes exactly as
   // the phone's does: away as you scroll down, back on a click anywhere in the
   // page (the designer's call, 3 Oct 2026, replacing a focus mode).
   const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
-  const chrome = useReaderChrome(mode, modalOpen || showPanel || showSettings);
+  const chrome = useReaderChrome(mode, modalOpen || showPanel || showSettings || gotoPop);
   /** the bar's two doors: open on that tab, or close it if it is already showing */
   const togglePanel = (t: PanelTab) => {
     if (showPanel && (panelTab === t || (t === "highlights" && panelTab === "notes"))) {
@@ -1571,13 +1573,29 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         // is that number. A digital-first book has no printed page to ask for,
         // so there it opens the chapters.
         onWhere={() => {
-          if (book.book_type === "print") setGotoOpen(true);
+          if (book.book_type === "print") {
+            if (desktop) setGotoPop(true);
+            else setGotoOpen(true);
+          }
           else {
             setPanelTab("contents");
             setPanelOpen(true);
             setDeskSettings(false);
           }
         }}
+        goto={
+          book.book_type === "print"
+            ? {
+                open: gotoPop,
+                pageCount: book.page_count,
+                onGo: (n) => {
+                  setGotoPop(false);
+                  goToPrintedPage(n);
+                },
+                onClose: () => setGotoPop(false),
+              }
+            : undefined
+        }
         onSettings={() => {
           if (!desktop) return setSettingsOpen(true);
           setDeskSettings((o) => !o);
@@ -1637,14 +1655,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           covers the line you are reading */}
       {/* The column steps aside for a docked panel. Below 1280px that leaves
           no room in the margin, so the page labels and dots give way while one
-          is open (`data-panel`, read in ParaWrap). With nothing docked, from
-          1280px it sits left of centre to leave the right margin for notes —
-          always, not only when a chapter has some, so the page does not move
-          the moment a reader makes their first. */}
+          is open (`data-panel`, read in ParaWrap). With nothing docked it is
+          centred on the window, as the audio pill is — the designer's call
+          over the comp's left-of-centre column (3 Oct 2026); the margin notes
+          are sized to fit beside it from 1280px. */}
       <div
         data-panel={showPanel || showSettings ? "open" : undefined}
         className={`group/reader pt-[calc(4rem+env(safe-area-inset-top))] transition-[padding] duration-300 ease-out motion-reduce:transition-none ${
-          showPanel ? "lg:pl-90" : showSettings ? "lg:pr-80" : "xl:pr-36"
+          showPanel ? "lg:pl-90" : showSettings ? "lg:pr-80" : ""
         }`}
       >
         {/* **The resume suggestion, as one floating pill.**
@@ -2343,7 +2361,7 @@ function ParaWrap({
         />
       )}
       {aside && (
-        <div className="absolute left-full top-[0.4em] ml-14 hidden w-64 xl:block">{aside}</div>
+        <div className="absolute left-full top-[0.4em] ml-12 hidden w-60 xl:block">{aside}</div>
       )}
       <Block para={para} segments={segments} />
     </div>

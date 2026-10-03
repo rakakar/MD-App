@@ -16,7 +16,9 @@ import {
   renditionBytes,
   saveAudio,
 } from "@/lib/audioCache";
+import { useIsDesktop } from "@/components/ui/Dialog";
 import { bookHue } from "@/lib/bookHue";
+import { parseRef } from "@/lib/refs";
 import type { AudioRendition, Paragraph } from "@/lib/types";
 import {
   CoverArt,
@@ -74,6 +76,7 @@ export function AudioMode({
   nextChapterTitle,
 }: AudioModeProps) {
   const player = usePlayer();
+  const desktop = useIsDesktop();
   const [menu, setMenu] = useState<"rate" | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement | null>(null);
@@ -114,7 +117,7 @@ export function AudioMode({
   // stops feeling like it is following the voice.
   useEffect(() => {
     const el = activeRef.current;
-    if (!el || !listRef.current) return;
+    if (!el) return;
     el.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [activeSeq]);
 
@@ -143,6 +146,21 @@ export function AudioMode({
   const paraProgress = device
     ? `${Math.min(player.deviceParaIndex + 1, source.paras.length)} / ${source.paras.length}`
     : null;
+
+  if (desktop) {
+    return (
+      <DesktopAudioMode
+        lines={lines}
+        activeSeq={activeSeq}
+        onSeekPara={onSeekPara}
+        onCollapse={collapse}
+        sheetProps={sheetProps}
+        activeRef={activeRef}
+        prevChapterTitle={prevChapterTitle}
+        nextChapterTitle={nextChapterTitle}
+      />
+    );
+  }
 
   return (
     <div
@@ -507,5 +525,260 @@ export function SaveChapterButton({
     <FootBtn onClick={onClick} active={state === "saved" || state === "confirm" || state === "removing"}>
       {label}
     </FootBtn>
+  );
+}
+
+/**
+ * **Audio mode on a desktop** (desktop revision, 3 Oct 2026): two columns
+ * instead of one tall phone screen. What is playing on the left — the cover,
+ * the chapter, how far in — and the chapter's text on the right, the line
+ * being spoken lit, every line a place to listen from. The transport runs the
+ * width of the window underneath, the way a desktop player's does, with speed
+ * and Stop at its end rather than up in a header a pointer has to travel to.
+ *
+ * Same rules as the phone's: ⌄ "Back to reading" leaves the voice playing;
+ * Stop is the one control that silences it, and it says so.
+ */
+function DesktopAudioMode({
+  lines,
+  activeSeq,
+  onSeekPara,
+  onCollapse,
+  sheetProps,
+  activeRef,
+  prevChapterTitle,
+  nextChapterTitle,
+}: {
+  lines: Paragraph[];
+  activeSeq: number | null;
+  onSeekPara: (p: Paragraph) => void;
+  onCollapse: () => void;
+  sheetProps: ReturnType<typeof useSheetDismiss>["sheetProps"];
+  activeRef: React.RefObject<HTMLButtonElement | null>;
+  prevChapterTitle?: string | null;
+  nextChapterTitle?: string | null;
+}) {
+  const player = usePlayer();
+  const [rateOpen, setRateOpen] = useState(false);
+  const source = player.source;
+  if (!source || source.kind === "track") return null;
+  const device = source.kind === "device";
+
+  const at = lines.findIndex((p) => p.sequence === activeSeq);
+  const activePage = at >= 0 ? parseRef(lines[at].canonical_ref)?.page : undefined;
+  const pageLabel = (pg?: string) => (pg && pg === String(Number(pg)) ? `पृष्ठ ${pg}` : pg ?? "");
+  const where = [
+    lines.length ? `Para ${Math.max(1, at + 1)} / ${lines.length}` : "",
+    pageLabel(activePage),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  // the page each line is on, and whether it opens one — for the labels
+  const pages = lines.map((p) => parseRef(p.canonical_ref)?.page);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Audio mode"
+      {...sheetProps}
+      className={`fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink ${sheetProps.className}`}
+      style={{
+        ...sheetProps.style,
+        backgroundImage: "linear-gradient(180deg, var(--color-audio-top), var(--color-audio-bg) 30%)",
+      }}
+    >
+      {/* ---- header ---- */}
+      <div className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 pt-5">
+        <div>
+          <button
+            type="button"
+            onClick={onCollapse}
+            className="inline-flex h-10 items-center gap-2 rounded-control bg-audio-ink/10 pe-4 ps-3 text-sm font-semibold transition-colors hover:bg-audio-ink/15"
+          >
+            <ChevronDown className="h-4.5 w-4.5" />
+            Back to reading
+          </button>
+        </div>
+        <div className="min-w-0 text-center">
+          <p className="text-xs font-semibold tracking-[0.18em] text-audio-accent">AUDIO MODE</p>
+          <p lang="hi" className="hi hi-tight truncate text-xs text-audio-ink/70">
+            {source.bookTitle}
+          </p>
+        </div>
+        <div />
+      </div>
+
+      {/* ---- what is playing · the text ---- */}
+      <div className="mt-4 grid min-h-0 flex-1 grid-cols-[minmax(20rem,26rem)_1fr]">
+        <div className="flex flex-col items-center justify-center border-r border-audio-ink/10 px-10 pb-10">
+          <CoverArt
+            large
+            src={source.coverImage}
+            hue={bookHue(source.bookCode)}
+            fallback={source.bookTitle?.[0] ?? "\u0917\u094D\u0930"}
+          />
+          <p lang="hi" className="hi hi-tight mt-6 line-clamp-2 text-center text-xl font-semibold">
+            {source.chapterNumber > 0 ? `अध्याय ${source.chapterNumber} · ` : ""}
+            {source.chapterTitle}
+          </p>
+          {where && (
+            <p lang="hi" className="hi-tight mt-2 text-sm tabular-nums text-audio-ink/55">
+              {where}
+            </p>
+          )}
+          {device && (
+            <p className="mt-4 text-center text-sm text-audio-accent/90">
+              Device voice. Stops when the screen locks.
+            </p>
+          )}
+        </div>
+
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-12">
+          <div className="max-w-3xl py-10">
+            <p className="mb-6 text-xs text-audio-ink/45">Click any paragraph to listen from there</p>
+            {lines.map((p, i) => {
+              const on = p.sequence === activeSeq;
+              const page = pages[i];
+              const newPage = i === 0 || page !== pages[i - 1];
+              return (
+                <div key={p.canonical_ref}>
+                  {newPage && page && (
+                    <p lang="hi" className="hi-tight mb-2 mt-6 text-xs text-audio-ink/40 first:mt-0">
+                      {pageLabel(page)}
+                    </p>
+                  )}
+                  <button
+                    ref={on ? activeRef : undefined}
+                    type="button"
+                    onClick={() => onSeekPara(p)}
+                    aria-current={on ? "true" : undefined}
+                    lang="hi"
+                    className={`hi mb-2 block w-full rounded-r-card border-l-2 px-4 py-3 text-start text-lg leading-[1.85] transition-colors ${
+                      on
+                        ? "border-audio-accent text-audio-ink"
+                        : "border-transparent text-audio-ink/50 hover:text-audio-ink/80"
+                    }`}
+                    style={on ? { background: "color-mix(in srgb, var(--color-audio-accent) 14%, transparent)" } : undefined}
+                  >
+                    {p.text_hi}
+                  </button>
+                </div>
+              );
+            })}
+            {lines.length === 0 && (
+              <p className="py-10 text-sm text-audio-ink/60">The text of this chapter isn&apos;t here.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ---- transport ---- */}
+      <div className="shrink-0 border-t border-audio-ink/10 px-8 pb-5 pt-3">
+        {device ? (
+          <div className="flex h-6 items-center">
+            <div
+              className="h-1 w-full overflow-hidden rounded-full bg-audio-ink/12"
+              role="progressbar"
+              aria-label="Listening progress"
+              aria-valuemin={0}
+              aria-valuemax={source.paras.length}
+              aria-valuenow={player.deviceParaIndex + 1}
+            >
+              <div
+                className="h-full rounded-full bg-audio-accent"
+                style={{
+                  width: `${source.paras.length ? ((player.deviceParaIndex + 1) / source.paras.length) * 100 : 0}%`,
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <ScrubBar positionMs={player.positionMs} durationMs={player.durationMs} onSeek={player.seekMs} />
+        )}
+
+        <div className="relative mt-2 flex items-center justify-center gap-4">
+          <TransportBtn
+            onClick={() => player.chapterNav?.prev?.()}
+            disabled={!player.chapterNav?.prev}
+            label={prevChapterTitle ? `Previous chapter: ${prevChapterTitle}` : "Previous chapter"}
+          >
+            <PrevChapterIcon />
+          </TransportBtn>
+          <TransportBtn onClick={() => player.skipSeconds(-SKIP_SECONDS)} label={`Back ${SKIP_SECONDS} seconds`} big>
+            <SkipBackIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
+          </TransportBtn>
+          <button
+            type="button"
+            onClick={player.toggle}
+            aria-label={player.playing ? "Pause" : "Play"}
+            className={`flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full shadow-lg transition-colors active:scale-95 ${
+              player.playing ? "bg-audio-ink text-audio-bg" : "text-white"
+            }`}
+            style={player.playing ? undefined : { background: "var(--ws-color)" }}
+          >
+            {player.playing ? <PauseIcon className="h-7 w-7" /> : <PlayIcon className="ms-0.5 h-7 w-7" />}
+          </button>
+          <TransportBtn onClick={() => player.skipSeconds(SKIP_SECONDS)} label={`Forward ${SKIP_SECONDS} seconds`} big>
+            <SkipForwardIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
+          </TransportBtn>
+          <TransportBtn
+            onClick={() => player.chapterNav?.next?.()}
+            disabled={!player.chapterNav?.next}
+            label={nextChapterTitle ? `Next chapter: ${nextChapterTitle}` : "Next chapter"}
+          >
+            <NextChapterIcon />
+          </TransportBtn>
+
+          <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-3">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setRateOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={rateOpen}
+                aria-label={`Playback speed ${player.rate}x`}
+                className="flex h-10 min-w-12 items-center justify-center rounded-control border border-audio-ink/20 px-3 text-sm font-semibold tabular-nums transition-colors hover:bg-audio-ink/10"
+              >
+                {player.rate}×
+              </button>
+              {rateOpen && (
+                <div
+                  role="menu"
+                  className="absolute bottom-full end-0 z-10 mb-2 w-24 overflow-hidden rounded-tile bg-audio-raised py-1 shadow-2xl ring-1 ring-audio-ink/10"
+                >
+                  {RATES.map((r) => (
+                    <button
+                      key={r}
+                      role="menuitem"
+                      type="button"
+                      onClick={() => {
+                        player.setRate(r);
+                        setRateOpen(false);
+                      }}
+                      className={`block w-full px-4 py-2 text-start text-sm tabular-nums ${
+                        r === player.rate ? "font-bold text-audio-accent" : "text-audio-ink/85"
+                      }`}
+                    >
+                      {r}×
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Stop, in words: the one control here that silences the voice,
+                beside "Back to reading", which does not. */}
+            <button
+              type="button"
+              onClick={player.close}
+              className="h-10 rounded-control px-3 text-sm font-semibold text-audio-ink/75 transition-colors hover:bg-audio-ink/10 hover:text-audio-ink"
+            >
+              Stop
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

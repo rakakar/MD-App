@@ -108,15 +108,20 @@ export function CoverArt({
   src,
   hue,
   fallback,
+  large,
 }: {
   src?: string | null;
   hue: BookHue;
   /** first letter, shown when there is no cover at all */
   fallback: string;
+  /** desktop Audio mode: a book's proportions at a size worth looking at */
+  large?: boolean;
 }) {
   return (
     <div
-      className="relative h-[38vw] max-h-44 w-[38vw] max-w-44 shrink-0 overflow-hidden rounded-hero shadow-raised ring-1 ring-audio-ink/10"
+      className={`relative shrink-0 overflow-hidden shadow-raised ring-1 ring-audio-ink/10 ${
+        large ? "aspect-3/4 w-56 rounded-cover" : "h-[38vw] max-h-44 w-[38vw] max-w-44 rounded-hero"
+      }`}
       style={{ background: coverGradient(hue) }}
     >
       {src ? (

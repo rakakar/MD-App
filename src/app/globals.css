@@ -1034,6 +1034,25 @@ html[data-reading="1"] body {
   border-radius: 0.375rem;
   transition: background 0.3s ease;
 }
+/* Desktop: the comp's lit passage — the tint reaching a little past the
+   words, with an accent edge on the left. Drawn on a pseudo-element so the
+   paragraph's own box, and with it the words and the margin labels hung off
+   it, does not move when the voice arrives. */
+@media (min-width: 64rem) {
+  .para-active {
+    background: transparent;
+  }
+  .para-active::before {
+    content: "";
+    position: absolute;
+    inset: -0.25rem -1rem;
+    border-radius: 0 0.75rem 0.75rem 0;
+    border-left: 2px solid var(--ws-color);
+    background: color-mix(in srgb, var(--ws-color) 10%, transparent);
+    pointer-events: none;
+    transition: background 0.3s ease;
+  }
+}
 
 /* Paribhasha — a word the glossary can define (contract §14).
 

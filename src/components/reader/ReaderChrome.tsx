@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import {
   BackIcon,
   ChevronDown,
@@ -537,6 +538,7 @@ export function ReaderDesktopBar({
   onContents,
   onHighlights,
   onWhere,
+  goto,
   onSettings,
   settingsOpen,
   onListen,
@@ -561,6 +563,8 @@ export function ReaderDesktopBar({
   onHighlights: () => void;
   /** the position itself — "Go to printed page" (the chapters on a digital book) */
   onWhere: () => void;
+  /** print editions: the popover under the position that "onWhere" opens */
+  goto?: { open: boolean; pageCount?: number | null; onGo: (n: number) => void; onClose: () => void };
   onSettings: () => void;
   settingsOpen: boolean;
   onListen: () => void;
@@ -621,21 +625,27 @@ export function ReaderDesktopBar({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={onWhere}
-          aria-label="Go to a page"
-          title="Go to a page"
-          className="flex min-h-11 min-w-0 max-w-[32rem] items-center gap-2 rounded-control px-3 text-center transition-colors hover:bg-current/5"
-        >
-          <span className="min-w-0">
-            <span lang="hi" className="hi hi-tight block truncate text-xs text-(--reader-ink-soft)">
-              {book}
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            onClick={goto?.open ? goto.onClose : onWhere}
+            aria-label="Go to a page"
+            aria-expanded={goto ? goto.open : undefined}
+            title="Go to a page"
+            className="flex min-h-11 min-w-0 max-w-[32rem] items-center gap-2 rounded-control px-3 text-center transition-colors hover:bg-current/5"
+          >
+            <span className="min-w-0">
+              <span lang="hi" className="hi hi-tight block truncate text-xs text-(--reader-ink-soft)">
+                {book}
+              </span>
+              <span className="hi-tight block truncate text-sm font-semibold">{where}</span>
             </span>
-            <span className="hi-tight block truncate text-sm font-semibold">{where}</span>
-          </span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-(--reader-ink-soft)" />
-        </button>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-(--reader-ink-soft) transition-transform ${goto?.open ? "rotate-180" : ""}`}
+            />
+          </button>
+          {goto?.open && <GoToPopover {...goto} />}
+        </div>
 
         <div className="flex items-center justify-end gap-2">
           {pagesHref && (
@@ -687,5 +697,85 @@ export function ReaderDesktopBar({
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * "Go to printed page", as a popover hanging from the position it changes —
+ * the desktop's version of the phone's sheet (designer's comp, 3 Oct 2026).
+ * A click outside it or Escape puts it away; Enter goes.
+ */
+function GoToPopover({
+  pageCount,
+  onGo,
+  onClose,
+}: {
+  pageCount?: number | null;
+  onGo: (n: number) => void;
+  onClose: () => void;
+}) {
+  const [value, setValue] = useState("");
+  const ref = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      // the trigger toggles it itself; everything else outside closes it
+      const t = e.target as Node;
+      if (!ref.current?.parentElement?.contains(t)) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  const n = Number(value);
+  const valid = n > 0 && (!pageCount || n <= pageCount);
+
+  return (
+    <form
+      ref={ref}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (valid) onGo(n);
+      }}
+      className="absolute left-1/2 top-full z-10 mt-2 w-72 -translate-x-1/2 rounded-card border border-(--reader-rule) bg-(--reader-bg) p-4 text-left shadow-raised"
+    >
+      <div className="mb-3 flex items-baseline justify-between">
+        <label htmlFor="bar-goto" className="text-sm font-semibold">
+          Go to printed page
+        </label>
+        {pageCount ? (
+          <span className="text-xs tabular-nums text-(--reader-ink-soft)">1–{pageCount}</span>
+        ) : null}
+      </div>
+      <div className="flex gap-2">
+        <input
+          id="bar-goto"
+          autoFocus
+          inputMode="numeric"
+          value={value}
+          onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
+          placeholder="e.g. 42"
+          className="h-11 min-w-0 flex-1 rounded-control border border-(--reader-rule) bg-transparent px-3 text-sm tabular-nums outline-none focus:border-(--ws-ink)"
+        />
+        <button
+          type="submit"
+          disabled={!valid}
+          className="h-11 shrink-0 rounded-control px-4 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+          style={{ background: "var(--ws-color)" }}
+        >
+          Go
+        </button>
+      </div>
+    </form>
   );
 }

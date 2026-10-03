@@ -9,9 +9,16 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
 } from "@/components/shell/icons";
-import { fmt } from "./audioChrome";
+import { useIsDesktop } from "@/components/ui/Dialog";
+import { RATES, fmt } from "./audioChrome";
 import { ownsViewport } from "@/lib/routes";
-import { SKIP_SECONDS, usePlayer, type PlayerSource } from "./PlayerProvider";
+import {
+  SKIP_SECONDS,
+  activeRendition,
+  paraAtPosition,
+  usePlayer,
+  type PlayerSource,
+} from "./PlayerProvider";
 
 /**
  * How long the pill takes to leave — the same 280ms its entrance takes, and
@@ -73,6 +80,7 @@ function PlayerBarInner({
   // Only where it sits differs now: inside a book it clears the reader's own
   // bottom bar, everywhere else the tab bar.
   const reader = ownsViewport(usePathname());
+  const desktop = useIsDesktop();
 
   useEffect(() => {
     const el = barRef.current;
@@ -137,6 +145,17 @@ function PlayerBarInner({
         player.openAudioMode();
       }
     : () => player.openAudioMode();
+
+  if (reader && desktop && source.kind !== "track") {
+    return (
+      <DesktopReaderPill
+        barRef={barRef}
+        source={source}
+        leaving={leaving}
+        onExpand={expand}
+      />
+    );
+  }
 
   /**
    * Inside a book: **the overlay pill** (comp "Read mode - Audio widget
@@ -334,5 +353,135 @@ function PillProgress({
         <span className="shrink-0 text-xs font-medium tabular-nums text-white/70">{end}</span>
       )}
     </div>
+  );
+}
+
+/**
+ * **The desktop reader's mini player** (desktop revision, 3 Oct 2026): one
+ * row floating at the foot of the page, centred under the reading column.
+ * A desktop has the width the phone's pill lacks, so it carries what the
+ * phone sends you to Audio mode for — the clock, the paragraph, the speed —
+ * and keeps Audio mode one click away on ⤢. Speed steps through the rates on
+ * each click; a menu for six values in a 40px button is a click too many.
+ */
+function DesktopReaderPill({
+  barRef,
+  source,
+  leaving,
+  onExpand,
+}: {
+  barRef: React.RefObject<HTMLDivElement | null>;
+  source: Extract<PlayerSource, { kind: "tts" | "device" }>;
+  leaving: boolean;
+  onExpand: () => void;
+}) {
+  const player = usePlayer();
+  const device = source.kind === "device";
+
+  let para: { at: number; of: number } | null = null;
+  if (source.kind === "device") {
+    para = { at: Math.min(player.deviceParaIndex + 1, source.paras.length), of: source.paras.length };
+  } else {
+    const r = activeRendition(source);
+    if (r) {
+      const seqs = Object.keys(r.para_timings).map(Number).sort((a, b) => a - b);
+      const seq = paraAtPosition(r.para_timings, player.positionMs);
+      para = { at: seq === null ? 1 : seqs.indexOf(seq) + 1, of: seqs.length };
+    }
+  }
+  const percent = device
+    ? para && para.of
+      ? (para.at / para.of) * 100
+      : 0
+    : player.durationMs
+      ? (player.positionMs / player.durationMs) * 100
+      : 0;
+  const nextRate = RATES[(RATES.indexOf(player.rate) + 1) % RATES.length] ?? 1;
+
+  const btn =
+    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/10";
+
+  return (
+    <div
+      ref={barRef}
+      role="region"
+      aria-label="Audio player"
+      inert={leaving || undefined}
+      // Centred by its margins, not a translate: the pill's entrance and exit
+      // animate `transform`, which would replace a -50% and push it right.
+      className={`player-pill ${
+        leaving ? "player-pill-out" : "player-pill-in"
+      } fixed inset-x-0 bottom-6 z-40 mx-auto flex w-[min(40rem,calc(100%-2rem))] items-center gap-2 rounded-2xl py-2.5 pe-3 ps-2.5 text-white shadow-raised`}
+    >
+      <button
+        type="button"
+        onClick={player.toggle}
+        aria-label={player.playing ? "Pause" : "Play"}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95 ${
+          player.playing ? "bg-audio-ink text-overlay" : "text-white"
+        }`}
+        style={player.playing ? undefined : { background: "var(--ws-color)" }}
+      >
+        {player.playing ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="ms-0.5 h-5 w-5" />}
+      </button>
+      <button type="button" onClick={() => player.skipSeconds(-SKIP_SECONDS)} aria-label={`Back ${SKIP_SECONDS} seconds`} className={btn}>
+        <SkipBackIcon className="h-5 w-5" seconds={SKIP_SECONDS} />
+      </button>
+      <button type="button" onClick={() => player.skipSeconds(SKIP_SECONDS)} aria-label={`Forward ${SKIP_SECONDS} seconds`} className={btn}>
+        <SkipForwardIcon className="h-5 w-5" seconds={SKIP_SECONDS} />
+      </button>
+
+      <button type="button" onClick={onExpand} aria-label="Open audio mode" className="mx-2 min-w-0 flex-1 text-left">
+        <span className="flex items-baseline gap-2">
+          <span lang="hi" className="hi hi-tight min-w-0 truncate text-sm font-semibold">
+            {source.chapterTitle}
+          </span>
+          {para && (
+            <span className="shrink-0 text-xs tabular-nums text-white/55">
+              Para {para.at} / {para.of}
+            </span>
+          )}
+          {!device && player.durationMs > 0 && (
+            <span className="ml-auto shrink-0 text-xs tabular-nums text-white/70">
+              {fmt(player.positionMs)} / {fmt(player.durationMs)}
+            </span>
+          )}
+        </span>
+        <span
+          role="progressbar"
+          aria-label="Playback position"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(percent)}
+          className="mt-1.5 block h-1 overflow-hidden rounded-full bg-white/20"
+        >
+          <span className="block h-full rounded-full bg-audio-accent" style={{ width: `${Math.min(100, percent)}%` }} />
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => player.setRate(nextRate)}
+        aria-label={`Playback speed ${player.rate}x — change to ${nextRate}x`}
+        className="flex h-8 min-w-10 shrink-0 items-center justify-center rounded-full border border-white/25 px-2 text-xs font-semibold tabular-nums transition-colors hover:bg-white/10"
+      >
+        {player.rate}×
+      </button>
+      <button type="button" onClick={onExpand} aria-label="Open audio mode" className={btn}>
+        <ExpandIcon className="h-4.5 w-4.5" />
+      </button>
+      <button type="button" onClick={player.close} aria-label="Stop listening" className={btn}>
+        <CloseIcon className="h-4.5 w-4.5" />
+      </button>
+    </div>
+  );
+}
+
+/** two corners pulling apart — "open this larger" */
+function ExpandIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />
+    </svg>
   );
 }

@@ -114,17 +114,21 @@ export function ReaderSidePanel({
         <div
           role="tablist"
           aria-label={bookTitle}
-          className="flex flex-1 items-stretch gap-0.5 rounded-control bg-current/[0.06] p-1"
+          className="flex flex-1 items-stretch gap-1 rounded-control border border-(--reader-rule) bg-current/[0.06] p-1"
         >
-          <PanelTabButton selected={tab === "contents"} onClick={() => onTab("contents")}>
-            Contents
-          </PanelTabButton>
-          <PanelTabButton selected={tab === "highlights"} onClick={() => onTab("highlights")}>
-            Highlights{highlights.length > 0 && <span className="tabular-nums">·{highlights.length}</span>}
-          </PanelTabButton>
-          <PanelTabButton selected={tab === "notes"} onClick={() => onTab("notes")}>
-            Notes{notes.length > 0 && <span className="tabular-nums">·{notes.length}</span>}
-          </PanelTabButton>
+          <PanelTabButton selected={tab === "contents"} onClick={() => onTab("contents")} label="Contents" />
+          <PanelTabButton
+            selected={tab === "highlights"}
+            onClick={() => onTab("highlights")}
+            label="Highlights"
+            count={highlights.length || undefined}
+          />
+          <PanelTabButton
+            selected={tab === "notes"}
+            onClick={() => onTab("notes")}
+            label="Notes"
+            count={notes.length || undefined}
+          />
         </div>
         <button
           type="button"
@@ -168,14 +172,22 @@ export function ReaderSidePanel({
   );
 }
 
+/**
+ * One tab, in the phone sheet's clothes (`TocSheet`'s TabButton): the accent
+ * filled with white on the selected one, and the count as a small badge
+ * beside the label rather than run into it — "Highlights·3" read as a
+ * stray dot in front of the number.
+ */
 function PanelTabButton({
   selected,
   onClick,
-  children,
+  label,
+  count,
 }: {
   selected: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  label: string;
+  count?: number;
 }) {
   return (
     <button
@@ -183,12 +195,21 @@ function PanelTabButton({
       role="tab"
       aria-selected={selected}
       onClick={onClick}
-      className={`flex min-h-9 flex-1 items-center justify-center rounded-md px-2 text-sm transition-colors ${
-        selected ? "bg-(--reader-bg) font-semibold shadow-sm" : "text-(--reader-ink-soft) hover:text-(--reader-ink)"
+      className={`flex min-h-9 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-control px-2 text-sm transition-colors ${
+        selected ? "font-semibold text-white" : "text-(--reader-ink-soft) hover:text-(--reader-ink)"
       }`}
-      style={selected ? { color: "var(--ws-ink)" } : undefined}
+      style={selected ? { background: "var(--ws-color)" } : undefined}
     >
-      {children}
+      <span className="truncate">{label}</span>
+      {count !== undefined && (
+        <span
+          className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
+            selected ? "bg-white/20" : "opacity-70"
+          }`}
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }
