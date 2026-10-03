@@ -255,7 +255,7 @@ function ContentsTab({
         {ordered.map((ch) => {
           const active = ch.is_front_matter ? isFrontMatter : !isFrontMatter && ch.number === current;
           const pageLabel =
-            ch.start_page == null ? "" : bookType === "print" ? `पृ. ${ch.start_page}` : String(ch.start_page);
+            ch.start_page == null ? "" : bookType === "print" ? `p. ${ch.start_page}` : String(ch.start_page);
           return (
             <li key={`${ch.is_front_matter}-${ch.number}`}>
               <button
@@ -349,9 +349,13 @@ function byPosition(a: [number, number, number, number], b: [number, number, num
   return 0;
 }
 
-const rtf = typeof Intl !== "undefined" ? new Intl.RelativeTimeFormat("hi", { numeric: "auto" }) : null;
+const rtf = typeof Intl !== "undefined" ? new Intl.RelativeTimeFormat("en", { numeric: "auto" }) : null;
 
-/** "आज", "कल", "3 दिन पहले" — the book's language, as the page label beside it */
+/**
+ * "today", "yesterday", "3 days ago" — in English, like the page beside it:
+ * the phone's Contents sheet writes these places as "p. 12", and the desktop
+ * says them the same way (the designer's call, 3 Oct 2026).
+ */
 export function when(iso: string): string {
   const then = new Date(iso);
   if (Number.isNaN(then.getTime()) || !rtf) return "";
@@ -365,7 +369,7 @@ export function when(iso: string): string {
 export function pageOf(ref: string, bookType: "print" | "digital"): string {
   const p = parseRef(ref)?.page;
   if (!p) return "";
-  return bookType === "print" && p === String(Number(p)) ? `पृष्ठ ${p}` : p;
+  return bookType === "print" && p === String(Number(p)) ? `p. ${p}` : p;
 }
 
 function HighlightsTab({
@@ -456,7 +460,7 @@ function HighlightsTab({
                     </span>
                   </span>
                   <span className="mt-3 flex items-center gap-1 text-xs text-(--reader-ink-soft)">
-                    <span lang="hi" className="hi-tight">
+                    <span className="hi-tight">
                       {[pageOf(h.canonical_ref, bookType), when(h.created_at)].filter(Boolean).join(" · ")}
                     </span>
                     {h.note && (
@@ -619,7 +623,7 @@ function NotesTab({
                         <span lang="hi" className="hi hi-tight line-clamp-2">{n.text_hi}</span>
                       </span>
                     )}
-                    <span lang="hi" className="hi-tight mt-2.5 block text-xs text-(--reader-ink-soft)">
+                    <span className="hi-tight mt-2.5 block text-xs text-(--reader-ink-soft)">
                       {[pageOf(n.canonical_ref, bookType), when(n.updated_at)].filter(Boolean).join(" · ")}
                     </span>
                   </button>

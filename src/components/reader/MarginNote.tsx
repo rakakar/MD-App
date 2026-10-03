@@ -24,7 +24,7 @@ export function MarginNote({
   onCancel,
 }: {
   colour?: HighlightColour;
-  /** "पृष्ठ 1 · आज" */
+  /** "p. 1 · today" */
   label: string;
   note?: string;
   editing: boolean;
@@ -40,7 +40,7 @@ export function MarginNote({
       className="border-l-2 pl-3.5"
       style={{ borderColor: colour ? `var(--color-hl-${colour}-mark)` : "var(--reader-rule)" }}
     >
-      <p lang="hi" className="hi-tight text-xs text-(--reader-ink-soft)">
+      <p className="hi-tight text-xs text-(--reader-ink-soft)">
         {label}
       </p>
       {editing ? (

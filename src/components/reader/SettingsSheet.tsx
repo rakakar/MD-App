@@ -424,9 +424,8 @@ function Segmented<T extends string | number>({
 /**
  * **Theme & Settings, docked** — the desktop's version of the sheet above, as
  * a panel on the right that stays open while the page changes behind it. The
- * same settings in the comp's three groups (Text · Theme · Reading), each
- * row a label with its control beside it rather than under it: at 320px wide
- * there is room, and a panel read top to bottom is shorter that way.
+ * same settings in the same order as the sheet, so a reader who knows one
+ * knows the other; the controls are a size smaller, to suit a pointer.
  */
 export function SettingsPanel(
   p: Omit<SettingsSheetProps, "onGoToPage"> & {
@@ -458,30 +457,23 @@ export function SettingsPanel(
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 divide-y divide-(--reader-rule) overflow-y-auto overscroll-contain">
-        <PanelGroup title="Text">
-          <FontSize fontScale={p.fontScale} face={p.face} onFontScale={p.onFontScale} />
-          <PanelRow label="Line height">
-            <Segmented
-              compact
-              ariaLabel="Line height"
-              options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
-              value={p.lineHeight}
-              onChange={p.onLineHeight}
-            />
-          </PanelRow>
-          <PanelRow label="Typeface">
-            <Segmented
-              compact
-              ariaLabel="Typeface"
-              options={FACES.map((f) => ({ label: f.label, value: f.id }))}
-              value={p.face}
-              onChange={p.onFace}
-            />
-          </PanelRow>
-        </PanelGroup>
+      {/* The phone sheet's order, one list with no group headings — the
+          designer's call, 3 Oct 2026: size, spacing, paper, the overlay,
+          face, layout, then the ways of moving through the book. */}
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-5 py-5">
+        <FontSize fontScale={p.fontScale} face={p.face} onFontScale={p.onFontScale} />
 
-        <PanelGroup title="Theme">
+        <Row label="Line height">
+          <Segmented
+            compact
+            ariaLabel="Line height"
+            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
+            value={p.lineHeight}
+            onChange={p.onLineHeight}
+          />
+        </Row>
+
+        <Row label="Theme">
           <div role="radiogroup" aria-label="Reading surface" className="grid grid-cols-3 gap-2">
             {READER_SURFACES.map((id) => {
               const s = SURFACES[id];
@@ -513,35 +505,47 @@ export function SettingsPanel(
             The book&apos;s own paper. Original follows the app&apos;s theme, so it goes dark at
             night with everything else.
           </p>
-        </PanelGroup>
+        </Row>
 
-        <PanelGroup title="Reading">
-          <PanelRow label="Layout">
-            <Segmented
-              compact
-              ariaLabel="Reading mode"
-              options={[
-                { label: "Pages", value: "page" as const },
-                { label: "Scroll", value: "scroll" as const },
-              ]}
-              value={p.mode}
-              onChange={p.onMode}
-            />
-          </PanelRow>
-          <Toggle
-            label="Paribhasha overlay"
-            hint="Show word meanings on tap. Even with this off: press and hold any word."
-            checked={p.glossaryUnderline}
-            onChange={p.onGlossaryUnderline}
+        <Toggle
+          label="Paribhasha overlay"
+          hint="Show word meanings on tap. Even with this off: press and hold any word."
+          checked={p.glossaryUnderline}
+          onChange={p.onGlossaryUnderline}
+        />
+
+        <Row label="Typeface">
+          <Segmented
+            compact
+            ariaLabel="Typeface"
+            options={FACES.map((f) => ({ label: f.label, value: f.id }))}
+            value={p.face}
+            onChange={p.onFace}
           />
-          {p.showTapZones && (
-            <Toggle
-              label="Tap edges to turn pages"
-              hint="Off: swipe to turn, tap anywhere for controls."
-              checked={p.tapZones}
-              onChange={p.onTapZones}
-            />
-          )}
+        </Row>
+
+        <Row label="Layout">
+          <Segmented
+            compact
+            ariaLabel="Reading mode"
+            options={[
+              { label: "Pages", value: "page" as const },
+              { label: "Scroll", value: "scroll" as const },
+            ]}
+            value={p.mode}
+            onChange={p.onMode}
+          />
+        </Row>
+
+        {p.showTapZones && (
+          <Toggle
+            label="Tap edges to turn pages"
+            hint="Off: swipe to turn, tap anywhere for controls."
+            checked={p.tapZones}
+            onChange={p.onTapZones}
+          />
+        )}
+
           {p.onGoToPrintedPage && (
             <form
               onSubmit={(e) => {
@@ -571,38 +575,8 @@ export function SettingsPanel(
               </button>
             </form>
           )}
-        </PanelGroup>
       </div>
     </aside>
   );
 }
 
-function PanelGroup({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-4 px-5 py-5">
-      <h3 className="text-xs font-bold uppercase tracking-[0.09em] text-(--reader-ink-soft)">{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-function PanelRow({
-  label,
-  hindi,
-  children,
-}: {
-  label: string;
-  hindi?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    // Label over control rather than beside it: beside a label, three
-    // options had about 55px each and "Compact" touched its neighbours.
-    <div>
-      <p lang={hindi ? "hi" : undefined} className={`mb-2 text-sm ${hindi ? "hi hi-tight" : ""}`}>
-        {label}
-      </p>
-      {children}
-    </div>
-  );
-}
