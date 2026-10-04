@@ -16,20 +16,29 @@ import { Header } from "./Header";
 import { BottomNav, Sidebar } from "./Nav";
 import { RailProvider } from "./Rail";
 import { ServiceWorker } from "./ServiceWorker";
-import { WorkspaceProvider } from "./WorkspaceProvider";
+import { WorkspaceProvider, useWorkspace } from "./WorkspaceProvider";
 
+/**
+ * ⌘K opens the Assistant *in the workspace you are in*. `/assistant` belongs
+ * to none of them, so on arrival the chrome falls back to the last workspace
+ * picked from the switcher — and from a Connect page reached any other way,
+ * that sent the reader to Originals' Assistant. Deriving the current one
+ * first carries it across, as reading a book does.
+ */
 function CommandK() {
   const router = useRouter();
+  const { workspace, derive } = useWorkspace();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
+        derive(workspace.id);
         router.push("/assistant");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router]);
+  }, [router, workspace.id, derive]);
   return null;
 }
 

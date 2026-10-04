@@ -34,7 +34,7 @@ function isActive(item: NavItem, pathname: string, claimed: string | null): bool
  * distances in the three-slot workspaces.
  */
 export function BottomNav() {
-  const { workspace, tab } = useWorkspace();
+  const { workspace, tab, derive } = useWorkspace();
   const pathname = usePathname() ?? "/";
   const claimed = tab && tab.path === pathname ? tab.href : null;
   const navRef = useRef<HTMLElement>(null);
@@ -69,6 +69,8 @@ export function BottomNav() {
       <li key={nav.href} className="min-w-0 flex-1">
         <Link
           href={nav.href}
+          // The Assistant belongs to no workspace; take this one along (see CommandK).
+          onClick={nav.isSearch ? () => derive(workspace.id) : undefined}
           aria-current={active ? "page" : undefined}
           /* `h-full` so every tab fills the row rather than sizing to its own
              label. At the largest app text size "Highlights & Notes" takes two
@@ -111,7 +113,7 @@ export function BottomNav() {
 
 /** Desktop ≥1024px: persistent sidebar — selector top, nav, avatar bottom. */
 export function Sidebar() {
-  const { workspace, tab } = useWorkspace();
+  const { workspace, tab, derive } = useWorkspace();
   const pathname = usePathname() ?? "/";
   const claimed = tab && tab.path === pathname ? tab.href : null;
 
@@ -145,6 +147,8 @@ export function Sidebar() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    // The Assistant belongs to no workspace; take this one along (see CommandK).
+                    onClick={item.isSearch ? () => derive(workspace.id) : undefined}
                     aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       active ? "text-white" : "text-ink hover:bg-ink/5"
