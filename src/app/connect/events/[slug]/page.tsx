@@ -262,14 +262,20 @@ export default async function EventDetailPage({
         <>
           <div aria-hidden className="h-20" />
           <div
-            className="fixed inset-x-0 z-30 border-t border-rule bg-surface/95 px-4 py-3 backdrop-blur sm:px-6 lg:bottom-0 lg:ps-72 lg:pe-8"
             /* Clears the tab bar and the home indicator — the same number the
                player pill uses for the same job. On a desktop there is no tab
-               bar, so `lg:bottom-0` puts it on the floor and the sidebar's
-               width is padded off the start edge instead. */
-            style={{ bottom: "calc(env(safe-area-inset-bottom) + 3.9rem)" }}
+               bar: it sits on the floor, starting where the 16rem sidebar
+               ends (the shell's `lg:pl-64`).
+
+               Both as classes. The offset was an inline style, which outranks
+               any class, so `lg:bottom-0` never applied and the bar floated
+               62px off the floor on a desktop; and the sidebar was padded off
+               as 18rem, so the button sat 32px right of the column above it. */
+            className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+3.9rem)] z-30 border-t border-rule bg-surface/95 py-3 backdrop-blur lg:bottom-0 lg:left-64"
           >
-            <div className="mx-auto w-full max-w-3xl">
+            {/* PageContainer's own width and gutters, so the button is exactly
+                as wide as the poster above it. */}
+            <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8">
               <a
                 href={event.registration_url}
                 target="_blank"
