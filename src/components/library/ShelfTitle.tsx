@@ -47,22 +47,22 @@ export function ShelfTitle({
         <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
           {title}
         </h1>
-        {/* 24px of glyph in a 44px target: the ring is small because it sits
-            beside a title and must not compete with it, and the target is not
-            because a thumb is not small. The negative margin gives the extra
-            back so the title's line is not pushed taller. Centring puts the
-            ring's foot 4px below the title's baseline (Newsreader sits high
-            in its line box), so the glyph is lifted to stand on the same line
-            as the letters. */}
+        {/* 20px of glyph in a 44px target: at that size the ring stands
+            exactly as tall as the title's capitals (16px at text-2xl), so it
+            reads as part of the title rather than a badge beside it, and the
+            target is still a thumb's. The negative margin gives the extra back
+            so the title's line is not pushed taller. Centring leaves the ring's
+            foot 2px below the baseline (Newsreader sits high in its line box),
+            so the glyph is lifted to stand on the letters' line. */}
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-controls={id}
           aria-label={open ? `Hide what ${title} holds` : `What ${title} holds`}
-          className="-m-2.5 inline-flex items-center justify-center p-2.5 text-ink-soft transition-colors hover:text-ink lg:hidden"
+          className="-m-3 inline-flex items-center justify-center p-3 text-ink-soft transition-colors hover:text-ink lg:hidden"
         >
-          <InfoIcon className="h-6 w-6 -translate-y-1" />
+          <InfoIcon className="h-5 w-5 -translate-y-0.5" />
         </button>
       </div>
 
