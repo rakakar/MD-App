@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { AvatarMenu, DisplayButton, WorkspaceSwitcher } from "./Header";
+import { SidebarAccount, WorkspaceSwitcher } from "./Header";
 import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
@@ -179,11 +179,8 @@ export function Sidebar() {
             /originals and /resources, and nothing at all everywhere else. */}
         <RailHost />
       </div>
-      <div className="flex items-center gap-2 border-t border-rule p-3">
-        <AvatarMenu />
-        <div className="ml-auto">
-          <DisplayButton />
-        </div>
+      <div className="border-t border-rule p-3">
+        <SidebarAccount />
       </div>
     </aside>
   );

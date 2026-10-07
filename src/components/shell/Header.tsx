@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -17,6 +17,7 @@ import {
   CheckIcon,
   ChevronDown,
   CloseIcon,
+  ExternalLinkIcon,
   FeedbackIcon,
   FeedbackListIcon,
   PaletteIcon,
@@ -466,6 +467,190 @@ function AvatarMenu() {
           mid-transition leaves nothing on screen. */}
       <DisplaySheet open={displayOpen} onClose={() => setDisplayOpen(false)} />
     </>
+  );
+}
+
+/**
+ * **The desktop sidebar's account row** (designer's comp, 7 Oct 2026).
+ *
+ * The phone's account control is a square with a person in it that opens a
+ * sheet, because a phone's bar has no room for more. A sidebar does: so the
+ * reader is named at its foot — initial, name, address — and the row opens
+ * its menu upwards, in place, as a desktop menu does. The same four entries
+ * as the phone's sheet, in the same order, with the reader repeated at the
+ * top of it so the menu says whose it is.
+ *
+ * ⌘, opens Settings from anywhere, as it does in every desktop app; the menu
+ * shows the shortcut beside the row. Signed out, the foot keeps Sign in and
+ * the palette — see `DisplayButton`.
+ */
+export function SidebarAccount() {
+  const { user, loading } = useAuth();
+  const { open: openFeedback } = useFeedback();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [displayOpen, setDisplayOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const signedIn = !!user;
+
+  useEffect(() => {
+    if (!signedIn) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        setOpen(false);
+        router.push("/settings");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [signedIn, router]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex w-full items-center gap-2">
+        <AvatarMenu />
+        <div className="ml-auto">
+          <DisplayButton />
+        </div>
+      </div>
+    );
+  }
+
+  const email = (user.email as string | undefined) ?? "";
+  const name =
+    (user.name as string | undefined)?.trim() ||
+    (user.first_name as string | undefined)?.trim() ||
+    email.split("@")[0];
+  const initial = (name || email || "?").charAt(0).toUpperCase();
+
+  const avatar = (
+    <span
+      aria-hidden
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold"
+      style={{
+        background: "color-mix(in srgb, var(--ws-color) 10%, var(--color-card))",
+        borderColor: "color-mix(in srgb, var(--ws-color) 25%, transparent)",
+        color: "var(--ws-ink)",
+      }}
+    >
+      {initial}
+    </span>
+  );
+  const who = (
+    <span className="min-w-0 flex-1 text-start">
+      <span className="block truncate text-sm font-semibold text-ink">{name}</span>
+      <span className="block truncate text-xs text-ink-soft">{email}</span>
+    </span>
+  );
+
+  const row =
+    "flex min-h-10 w-full items-center gap-3 rounded-control px-2.5 text-start text-sm font-medium text-ink transition-colors hover:bg-ink/5";
+  const glyph = "flex h-4.5 w-4.5 shrink-0 items-center justify-center text-ink-soft";
+
+  return (
+    <div ref={ref} className="relative w-full">
+      {open && (
+        <div
+          role="menu"
+          aria-label="Account"
+          className="absolute inset-x-0 bottom-full z-50 mb-2 rounded-card border border-rule bg-card p-1.5 shadow-raised"
+        >
+          <div className="flex items-center gap-3 px-2.5 pb-2.5 pt-2">
+            {avatar}
+            {who}
+          </div>
+          <div aria-hidden className="mx-1 mb-1 h-px bg-rule" />
+          <Link href="/settings" role="menuitem" onClick={() => setOpen(false)} className={row}>
+            <span aria-hidden className={glyph}>
+              <SettingsIcon className="h-4.5 w-4.5" />
+            </span>
+            Settings
+            <kbd className="ml-auto rounded border border-rule px-1.5 py-0.5 text-xs text-ink-soft">⌘,</kbd>
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setDisplayOpen(true);
+            }}
+            className={row}
+          >
+            <span aria-hidden className={glyph}>
+              <PaletteIcon className="h-4.5 w-4.5" />
+            </span>
+            Display
+          </button>
+          <div aria-hidden className="mx-1 my-1 h-px bg-rule" />
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              openFeedback({ source: "menu" });
+            }}
+            className={row}
+          >
+            <span aria-hidden className={glyph}>
+              <FeedbackIcon className="h-4.5 w-4.5" />
+            </span>
+            Send feedback
+          </button>
+          {/* ↗ as the comp draws it: this one leaves the menu for a page of
+              its own, where the others act in place. */}
+          <Link href="/feedback" role="menuitem" onClick={() => setOpen(false)} className={row}>
+            <span aria-hidden className={glyph}>
+              <FeedbackListIcon className="h-4.5 w-4.5" />
+            </span>
+            My feedback
+            <ExternalLinkIcon className="ml-auto h-4 w-4 text-ink-soft" />
+          </Link>
+        </div>
+      )}
+
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Account: ${name}`}
+        onClick={() => setOpen((o) => !o)}
+        className={`flex w-full items-center gap-3 rounded-card border px-2.5 py-2 transition-colors ${
+          open ? "border-rule bg-card" : "border-transparent hover:border-rule hover:bg-card"
+        }`}
+      >
+        {avatar}
+        {who}
+        <ChevronUpDown className="h-4 w-4 shrink-0 text-ink-soft" />
+      </button>
+
+      <DisplaySheet open={displayOpen} onClose={() => setDisplayOpen(false)} />
+    </div>
+  );
+}
+
+/** ⌃ over ⌄ — "this opens a menu", the sidebar-footer convention */
+function ChevronUpDown({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M8 9l4-4 4 4M8 15l4 4 4-4" />
+    </svg>
   );
 }
 

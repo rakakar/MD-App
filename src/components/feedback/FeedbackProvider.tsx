@@ -17,6 +17,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 // paper on a form nobody is reading is a colour with no argument for it.
 import { ctaPrimary } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
+import { Dialog, useIsDesktop } from "@/components/ui/Dialog";
+import { useWorkspace } from "@/components/shell/WorkspaceProvider";
+import { CloseIcon } from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
 import { watchClientErrors } from "@/lib/clientErrors";
 import {
@@ -108,6 +111,8 @@ function FeedbackSheet({
   const [error, setError] = useState("");
   const [phase, setPhase] = useState<Phase>("form");
   const fileRef = useRef<HTMLInputElement>(null);
+  const desktop = useIsDesktop();
+  const { workspace } = useWorkspace();
 
   const openedFrom = prefill?.source ?? "menu";
 
@@ -172,6 +177,46 @@ function FeedbackSheet({
 
   const title =
     kind === "content" ? "Report a correction" : "Send feedback";
+
+  const placeholder =
+    kind === "content"
+      ? "What is wrong here?"
+      : kind === "idea"
+        ? "What would make this better?"
+        : "What happened?";
+
+  if (desktop) {
+    return (
+      <FeedbackDialog
+        accent={workspace.color}
+        title={title}
+        onClose={onClose}
+        signedIn={!!user}
+        phase={phase}
+        kind={kind}
+        onKind={setKind}
+        quoted={prefill.quoted_text ? { ref: prefill.canonical_ref, text: prefill.quoted_text } : null}
+        message={message}
+        onMessage={setMessage}
+        placeholder={placeholder}
+        suggested={suggested}
+        onSuggested={setSuggested}
+        error={error}
+        screenshot={screenshot}
+        onPickScreenshot={() => fileRef.current?.click()}
+        fileInput={
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => pickScreenshot(e.target.files?.[0] ?? null)}
+          />
+        }
+        onSubmit={() => void submit()}
+      />
+    );
+  }
 
   return (
     <Sheet open onClose={onClose} title={title}>
@@ -243,13 +288,7 @@ function FeedbackSheet({
               onChange={(e) => setMessage(e.target.value)}
               maxLength={2000}
               rows={4}
-              placeholder={
-                kind === "content"
-                  ? "What is wrong here?"
-                  : kind === "idea"
-                    ? "What would make this better?"
-                    : "What happened?"
-              }
+              placeholder={placeholder}
               className="mt-3 w-full rounded-xl border border-(--reader-rule) bg-transparent px-3 py-2 text-sm outline-none focus:border-(--ws-color)"
             />
 
@@ -286,7 +325,8 @@ function FeedbackSheet({
               <button
                 type="button"
                 onClick={() => void submit()}
-                disabled={phase === "sending"}
+                // Greyed out until there is something to send, as on desktop.
+                disabled={phase === "sending" || message.trim().length === 0}
                 className={ctaPrimary}
                 style={{ background: "var(--ws-color)" }}
               >
@@ -302,5 +342,199 @@ function FeedbackSheet({
         )}
       </div>
     </Sheet>
+  );
+}
+
+/**
+ * **Send feedback on a desktop** (designer's comp, 7 Oct 2026): a dialog in
+ * the middle of the window instead of a sheet from its floor. The same form
+ * and the same state as the sheet — kind, message, the correction's
+ * suggested text, a screenshot — laid out for a pointer: the four kinds as one
+ * segmented control, a taller box to write in, and the privacy line, Cancel
+ * and Send together in a footer. ⌘↵ sends, as the button says.
+ */
+function FeedbackDialog({
+  accent,
+  title,
+  onClose,
+  signedIn,
+  phase,
+  kind,
+  onKind,
+  quoted,
+  message,
+  onMessage,
+  placeholder,
+  suggested,
+  onSuggested,
+  error,
+  screenshot,
+  onPickScreenshot,
+  fileInput,
+  onSubmit,
+}: {
+  accent: string;
+  title: string;
+  onClose: () => void;
+  signedIn: boolean;
+  phase: Phase;
+  kind: FeedbackKind;
+  onKind: (k: FeedbackKind) => void;
+  quoted: { ref?: string; text: string } | null;
+  message: string;
+  onMessage: (v: string) => void;
+  placeholder: string;
+  suggested: string;
+  onSuggested: (v: string) => void;
+  error: string;
+  screenshot: File | null;
+  onPickScreenshot: () => void;
+  fileInput: ReactNode;
+  onSubmit: () => void;
+}) {
+  const field =
+    "w-full resize-y rounded-control border border-rule bg-card px-3.5 py-3 text-sm text-ink outline-none transition-[box-shadow,border-color] placeholder:text-ink-soft focus:border-(--ws-color) focus:ring-3 focus:ring-(--ws-color)/15";
+  const done = phase === "sent" || phase === "queued";
+
+  return (
+    <Dialog open onClose={onClose} label={title} accent={accent} className="flex w-full max-w-lg flex-col">
+      <div className="flex items-center justify-between px-6 pb-4 pt-6">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="-me-2 flex h-9 w-9 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+        >
+          <CloseIcon className="h-4.5 w-4.5" />
+        </button>
+      </div>
+
+      {!signedIn ? (
+        <div className="px-6 pb-6">
+          <p className="text-sm text-ink-soft">
+            Sign in to send feedback — it&apos;s how we can tell you what happened to it.
+          </p>
+          <Link
+            href="/login?next=/me"
+            onClick={onClose}
+            className={`mt-4 ${ctaPrimary}`}
+            style={{ background: "var(--ws-color)" }}
+          >
+            Sign in
+          </Link>
+        </div>
+      ) : done ? (
+        <p className="px-6 pb-10 pt-4 text-center text-sm">
+          {phase === "sent" ? "Thank you — we've got it." : "Saved. It'll send itself when you're back online."}
+        </p>
+      ) : (
+        <>
+          <div className="px-6 pb-5">
+            <div role="radiogroup" aria-label="Kind of feedback" className="flex gap-1 rounded-control border border-rule bg-inset p-1">
+              {FEEDBACK_KINDS.map((k) => {
+                const active = k.value === kind;
+                return (
+                  <button
+                    key={k.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => onKind(k.value)}
+                    title={k.hint}
+                    className={`min-h-9 flex-1 rounded-md border text-sm transition-colors ${
+                      active ? "border-rule bg-card font-semibold shadow-sm" : "border-transparent text-ink hover:bg-ink/5"
+                    }`}
+                    style={active ? { color: "var(--ws-ink)" } : undefined}
+                  >
+                    {k.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {quoted && (
+              <div className="mt-4 rounded-control border border-rule px-3.5 py-2.5">
+                <p className="text-xs text-ink-soft">{quoted.ref || "Selected passage"}</p>
+                <p lang="hi" className="hi mt-0.5 line-clamp-3 text-sm">{quoted.text}</p>
+              </div>
+            )}
+
+            <textarea
+              autoFocus
+              value={message}
+              onChange={(e) => onMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  onSubmit();
+                }
+              }}
+              maxLength={2000}
+              rows={6}
+              placeholder={placeholder}
+              className={`mt-4 ${field}`}
+            />
+
+            {kind === "content" && (
+              <textarea
+                value={suggested}
+                onChange={(e) => onSuggested(e.target.value)}
+                maxLength={4000}
+                rows={2}
+                placeholder="What should it say? (optional)"
+                className={`mt-2 ${field}`}
+              />
+            )}
+
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+            {fileInput}
+            <button
+              type="button"
+              onClick={onPickScreenshot}
+              className="mt-4 inline-flex min-h-9 max-w-full items-center gap-2 rounded-control border border-dashed border-rule px-3.5 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
+            >
+              <PaperclipIcon className="h-4 w-4 shrink-0 text-ink-soft" />
+              <span className="truncate">{screenshot ? screenshot.name : "Add screenshot"}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4 border-t border-rule bg-inset px-6 py-4">
+            <p className="min-w-0 flex-1 text-xs leading-relaxed text-ink-soft">
+              We also attach the screen you were on, your app version and device — never your
+              notes, bookmarks or reading history.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-10 shrink-0 rounded-control border border-rule bg-card px-4 text-sm font-semibold transition-colors hover:bg-ink/5"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={phase === "sending" || message.trim().length === 0}
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-control px-4 text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+              style={{ background: "var(--ws-color)" }}
+            >
+              {phase === "sending" ? "Sending…" : "Send"}
+              {phase !== "sending" && (
+                <kbd className="rounded border border-white/40 px-1 py-px font-sans text-xs font-medium">⌘↵</kbd>
+              )}
+            </button>
+          </div>
+        </>
+      )}
+    </Dialog>
+  );
+}
+
+function PaperclipIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9" />
+    </svg>
   );
 }
