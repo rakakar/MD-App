@@ -4,8 +4,8 @@ import { useId, useState } from "react";
 import { InfoIcon } from "@/components/shell/icons";
 
 /**
- * A page title with its one-line description tucked behind an `i`, and a
- * fact about the page ranged right on the same line.
+ * A page title with its one-line description — and the count of what the page
+ * holds, under it — tucked behind an `i`.
  *
  * **The description is still there, just not in the way.** It says what the
  * page is — "Discourses, satsangs and shivir sessions of Shri A. Nagraj" — and
@@ -31,7 +31,7 @@ export function ShelfTitle({
 }: {
   title: string;
   description: string;
-  /** "73 recordings · 7 collections" — beside the title, ranged right */
+  /** "73 recordings · 7 collections" — under the description, hidden with it on a phone */
   meta?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -64,11 +64,6 @@ export function ShelfTitle({
         >
           <InfoIcon className="h-6 w-6 -translate-y-1" />
         </button>
-        {meta && (
-          <p className="ml-auto whitespace-nowrap text-sm tabular-nums text-ink-soft lg:hidden">
-            {meta}
-          </p>
-        )}
       </div>
 
       {/* The app's own disclosure — the same grid-rows ease the centre and link
@@ -77,9 +72,13 @@ export function ShelfTitle({
           on screen. */}
       <div className="disclosure lg:hidden" data-open={open} inert={!open}>
         <div>
-          <p id={id} className="pt-1.5 text-sm text-ink-soft">
-            {description}
-          </p>
+          <div id={id} className="pt-1.5 text-sm text-ink-soft">
+            <p>{description}</p>
+            {/* The count goes with the description rather than beside the
+                title: both answer "what is this page", and a reader who has
+                not asked needs neither (designer's call, 7 Oct 2026). */}
+            {meta && <p className="mt-1 tabular-nums">{meta}</p>}
+          </div>
         </div>
       </div>
       {/* Desktop: the description, and the count on its own line under it —
