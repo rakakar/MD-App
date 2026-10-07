@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, InfoIcon, WarningIcon } from "@/components/shell/icons";
+import { ChevronRight, ImportantNoteIcon, WarningIcon } from "@/components/shell/icons";
 import type { CentreNote, NoteTone } from "@/lib/centreNotes";
 import { CAUTION_NOTE_URL } from "@/lib/centreNotes";
 import { contentLang } from "@/lib/script";
@@ -14,7 +14,7 @@ import { contentLang } from "@/lib/script";
  */
 const TONE: Record<
   NoteTone,
-  { tint: string; ink: string; edge: string; Icon: typeof InfoIcon }
+  { tint: string; ink: string; edge: string; Icon: typeof ImportantNoteIcon }
 > = {
   caution: {
     tint: "color-mix(in srgb, #b7791f 12%, var(--color-card))",
@@ -26,7 +26,7 @@ const TONE: Record<
     tint: "color-mix(in srgb, #2f6e86 10%, var(--color-card))",
     ink: "color-mix(in srgb, #2f6e86 62%, var(--color-ink))",
     edge: "#2f6e86",
-    Icon: InfoIcon,
+    Icon: ImportantNoteIcon,
   },
 };
 

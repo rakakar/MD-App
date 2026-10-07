@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
-import { InfoIcon } from "@/components/shell/icons";
+import { ImportantNoteIcon } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { getBooks } from "@/lib/api";
@@ -93,7 +93,7 @@ export default async function TranslationsHome({
         style={{ background: "color-mix(in srgb, var(--ws-color) 6%, var(--color-card))" }}
       >
         <span aria-hidden className="mt-px shrink-0" style={{ color: "var(--ws-ink)" }}>
-          <InfoIcon className="h-4.5 w-4.5" />
+          <ImportantNoteIcon className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold leading-tight">Important note</p>

@@ -704,6 +704,23 @@ export function InfoIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * A sticky note marked with "!" — a standing note a reader must not miss
+ * (Translations' and Centres' important notes). Not `InfoIcon`: the ringed `i`
+ * is the button that opens a page title's description, and a note wearing the
+ * same glyph read as something to press.
+ */
+export function ImportantNoteIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9Z" />
+      <path d="M15 3v4a2 2 0 0 0 2 2h4" />
+      <path d="M11 8.5v5" />
+      <path d="M11 16.5h.01" />
+    </Svg>
+  );
+}
+
 export function AlertIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>
