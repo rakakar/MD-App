@@ -44,7 +44,7 @@ export function NotificationBanner() {
   };
 
   return (
-    <div className="mb-4 flex items-start gap-3 rounded-2xl border border-rule bg-card p-4">
+    <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rule bg-card p-4">
       <span aria-hidden className="text-lg leading-none">
         🔔
       </span>

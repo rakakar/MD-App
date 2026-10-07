@@ -51,6 +51,7 @@ export function FindBar({
   dense = false,
   filters,
   placeholder,
+  flush = false,
 }: {
   basePath: string;
   state: FindState;
@@ -66,6 +67,12 @@ export function FindBar({
    * name, which is what a screen reader hears whatever the box shows.
    */
   placeholder?: string;
+  /**
+   * No space of its own above the box. Its `mt-4` is what parts it from a
+   * title directly over it; inside a pinned bar, which already carries its
+   * air as padding, the two added up to 36px between title and search.
+   */
+  flush?: boolean;
   /**
    * The box is sharing a header line on a desktop, so the caption under it
    * drops there and keeps its phone. The line is worth its height where the
@@ -129,7 +136,7 @@ export function FindBar({
   }
 
   return (
-    <div className={placeholder ? "" : `mt-4 ${dense ? "lg:mt-0" : ""}`}>
+    <div className={placeholder || flush ? "" : `mt-4 ${dense ? "lg:mt-0" : ""}`}>
       <FindRow
         search={
           <SearchField

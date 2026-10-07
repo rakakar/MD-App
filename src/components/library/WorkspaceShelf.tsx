@@ -253,6 +253,7 @@ export async function WorkspaceShelf({
             state={state}
             scope={searchScope}
             dense
+            flush
             filters={
               <FindFilters
                 topics={topics}
@@ -330,6 +331,7 @@ export async function WorkspaceShelf({
                tab labelled Library. */
             scope={searchScope}
             dense
+            flush
             /* No facets, no filters: a failed find leaves the shelf standing and
                the browse needs nothing from it, but a button that opened onto an
                empty sheet would be worse than no button. */

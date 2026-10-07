@@ -97,11 +97,14 @@ export default async function OriginalsHome() {
         grid cell directly — a wrapper left empty becomes an empty cell.
 
         On a phone the gap is 20px, everywhere: `mt-5` is what a SectionHeading
-        puts above itself between two sections, so the stack repeats it. Change
+        puts above itself between two sections, so the stack repeats it. No
+        margin above the stack itself — the page's own top padding is that
+        20px, and the banner, when it shows, carries its 20px below it; a
+        `mt-5` here put 40px between the app bar and the Sutra. Change
         the number in two places (here and SectionHeading) or the phone loses
         its rhythm. The desktop rows take 40px, as drawn.
       */}
-      <div className="mt-5 flex flex-col gap-5 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-10">
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-10">
         {sutra && <SutraCard sutra={sutra} className="lg:col-span-2 lg:row-start-1" />}
 
         {/* Rails at every width, now that it has the page's full width on
