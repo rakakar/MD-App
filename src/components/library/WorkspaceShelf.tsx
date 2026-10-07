@@ -47,6 +47,14 @@ import type {
  * because its counts describe the whole shelf and that is precisely what the
  * browse cannot answer.
  */
+/**
+ * Media's box (designer's call, 7 Oct 2026): the caption that said what the box
+ * reads is folded into the placeholder, and Filters is the glyph alone — one
+ * row of chrome rather than two, on all three shelves alike. The shelf's name
+ * survives in the field's accessible name via `searchScope`.
+ */
+const PLACEHOLDER = "Search by name, topic, year…";
+
 export async function WorkspaceShelf({
   root,
   title,
@@ -254,6 +262,7 @@ export async function WorkspaceShelf({
             scope={searchScope}
             dense
             flush
+            placeholder={PLACEHOLDER}
             filters={
               <FindFilters
                 topics={topics}
@@ -262,6 +271,7 @@ export async function WorkspaceShelf({
                 basePath={basePath}
                 itemCount={itemCount}
                 hideAxes={filterAxes}
+                iconOnly
               />
             }
           />
@@ -332,6 +342,7 @@ export async function WorkspaceShelf({
             scope={searchScope}
             dense
             flush
+            placeholder={PLACEHOLDER}
             /* No facets, no filters: a failed find leaves the shelf standing and
                the browse needs nothing from it, but a button that opened onto an
                empty sheet would be worse than no button. */
@@ -344,6 +355,7 @@ export async function WorkspaceShelf({
                   basePath={basePath}
                   itemCount={itemCount}
                   hideAxes={filterAxes}
+                  iconOnly
                 />
               )
             }
