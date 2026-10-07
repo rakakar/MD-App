@@ -1,4 +1,5 @@
 import { PageContainer, Skeleton } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 
 /**
  * See `components/ui/Skeleton.tsx` for why these files exist.
@@ -13,12 +14,11 @@ export default function Loading() {
   return (
     <PageContainer>
       {/* written, not fetched — so it is drawn for real */}
-      <h1 className="font-display text-2xl font-medium">Translations</h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        The published original works, rendered into other languages by students.
-      </p>
-      {/* the counted "4 books · 740 pages" line, which the API owns */}
-      <Skeleton className="mt-1 h-5 w-40 rounded-md" />
+      <PageTitle
+        shelf
+        title="Translations"
+        description="The published original works, rendered into other languages by students."
+      />
 
       <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {Array.from({ length: 8 }, (_, i) => (

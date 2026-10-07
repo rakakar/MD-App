@@ -4,6 +4,7 @@ import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getBooks } from "@/lib/api";
 import { contentLang } from "@/lib/script";
 import type { BookSummary } from "@/lib/types";
@@ -65,19 +66,22 @@ export default async function BooksPage({
           a page they have to check they arrived at. Translations keeps its
           own name — its tab still reads "Read", and renaming one shelf's is
           not licence to rename another's. */}
-      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        {isTranslations ? "Translations" : "Books"}
-      </h1>
-      {all.length > 0 && (
-        <p className="mt-0.5 text-sm text-ink-soft">
-          <span>
-            {all.length} {all.length === 1 ? "book" : "books"}
-          </span>
-          {pages > 0 && ` · ${pages} pages`}
-          {" · "}
-          <span {...contentLang(all[0].author)}>{all[0].author}</span>
-        </p>
-      )}
+      <PageTitle
+        shelf
+        title={isTranslations ? "Translations" : "Books"}
+        meta={
+          all.length > 0 && (
+            <>
+              <span>
+                {all.length} {all.length === 1 ? "book" : "books"}
+              </span>
+              {pages > 0 && ` · ${pages} pages`}
+              {" · "}
+              <span {...contentLang(all[0].author)}>{all[0].author}</span>
+            </>
+          )
+        }
+      />
 
       {/* Resume rows sit above the shelf (design 1B): someone opening "Read"
           mid-book is far likelier to want the page they left than the grid.

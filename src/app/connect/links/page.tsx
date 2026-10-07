@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LinksScreen } from "@/components/connect/LinksScreen";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getLinkGroups } from "@/lib/api";
 
 export const revalidate = 900;
@@ -28,8 +29,7 @@ export default async function ConnectLinksPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-medium">Links</h1>
-      <p className="mt-1 text-sm text-ink-soft">Groups, channels and pages, by kind.</p>
+      <PageTitle title="Links" description="Groups, channels and pages, by kind." />
 
       {groups === null ? (
         <div className="mt-4">

@@ -3,6 +3,7 @@ import { GlossaryBrowser } from "@/components/paribhasha/GlossaryBrowser";
 import { WordTrailProvider } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider } from "@/components/reader/GlossaryProvider";
 import { PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getParibhasha } from "@/lib/api";
 
 export const revalidate = 900;
@@ -46,10 +47,10 @@ export default async function ParibhashaPage({
 
   return (
     <PageContainer>
-      <h1 className="text-xl font-bold">Paribhasha</h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        The vocabulary of Madhyasth Darshan, based on the Paribhasha Samhita.
-      </p>
+      <PageTitle
+        title="Paribhasha"
+        description="The vocabulary of Madhyasth Darshan, based on the Paribhasha Samhita."
+      />
 
       {/* The same headword index the reader uses, so the words *inside* these
           definitions are marked and tappable — the glossary is written in the

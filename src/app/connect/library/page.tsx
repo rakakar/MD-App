@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { FileList } from "@/components/library/FileList";
 import { NodeCardView } from "@/components/library/NodeCard";
 import { EmptyState, PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getNode, getWorkspaces, nodeChildren } from "@/lib/api";
 import { shelfMap } from "@/lib/library";
 
@@ -45,12 +46,10 @@ export default async function ConnectLibraryPage() {
 
   return (
     <PageContainer size="shelf">
-      <h1 className="font-display text-2xl font-medium">
-        Connect · Library
-      </h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        Material that belongs to the centres and the work around them.
-      </p>
+      <PageTitle
+        title="Connect · Library"
+        description="Material that belongs to the centres and the work around them."
+      />
       {/* The way back, as a link rather than as a segmented nav.
           `ConnectNav` was Events | Centres, and Centres has no endpoint any
           more (Events_API_v1 §5) — a two-segment control with one segment left

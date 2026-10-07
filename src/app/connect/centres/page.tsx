@@ -4,6 +4,7 @@ import { CentreCard } from "@/components/connect/CentreCard";
 import { CentreNoteCard } from "@/components/connect/CentreNote";
 import { ChevronRight, PinIcon } from "@/components/shell/icons";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getCentres } from "@/lib/api";
 import { CENTRE_NOTES } from "@/lib/centreNotes";
 
@@ -33,10 +34,7 @@ export default async function CentresPage() {
 
   return (
     <PageContainer>
-      <h1 className="font-display text-2xl font-medium">Centres</h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        Browse centre details, contact person, website.
-      </p>
+      <PageTitle title="Centres" description="Browse centre details, contact person, website." />
 
       {centres === null ? (
         <div className="mt-4">

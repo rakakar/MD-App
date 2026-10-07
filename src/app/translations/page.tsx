@@ -3,6 +3,7 @@ import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
 import { InfoIcon } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getBooks } from "@/lib/api";
 import type { BookSummary } from "@/lib/types";
 
@@ -36,9 +37,19 @@ export default async function TranslationsHome({
     // same title step. In the text column the covers were two-thirds the size
     // of the originals they translate, which read as a lesser shelf.
     <PageContainer size="shelf">
-      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        Translations
-      </h1>
+      <PageTitle
+        shelf
+        title="Translations"
+        description="The published original works, rendered into other languages by students."
+        meta={
+          all.length > 0 && (
+            <>
+              {all.length} {all.length === 1 ? "book" : "books"}
+              {pages > 0 && ` · ${pages} pages`}
+            </>
+          )
+        }
+      />
       {/* Two sentences became one. "read in the same reader" was an
           implementation fact wearing a reader's clothes — nobody arrives here
           wondering which component renders the page — and "each edition names
@@ -51,17 +62,9 @@ export default async function TranslationsHome({
           second puts the provenance in the first line a reader meets rather
           than holding it back for the note. The note is then free to be about
           consequence — which text wins — instead of introducing the fact. */}
-      <p className="mt-1 text-sm text-ink-soft">
-        The published original works, rendered into other languages by students.
-      </p>
-      {all.length > 0 && (
-        <p className="mt-1 text-sm text-ink-soft">
-          <span>
-            {all.length} {all.length === 1 ? "book" : "books"}
-          </span>
-          {pages > 0 && ` · ${pages} pages`}
-        </p>
-      )}
+      {/* The note is *not* behind the title's `i` with the description: what a
+          translation is worth is the one thing on this page a reader must not
+          be able to miss (designer's call, 7 Oct 2026). */}
 
       {/*
         Under the subtext rather than in place of it, because the two answer

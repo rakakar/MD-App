@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { StageResources } from "@/components/journey/StageResources";
 import { BackIcon, ChevronDown, ChevronRight } from "@/components/shell/icons";
 import { PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { LEVELS, PATH_CAVEAT, STAGES, stageById, stageResources } from "@/lib/journey";
 import { journeyDocumentHref } from "@/lib/routes";
 import { getPrefs } from "@/lib/storage";
@@ -60,12 +61,17 @@ export default function FullPathPage() {
         Dashboard
       </Link>
 
-      <h1 className="mt-4 font-display text-2xl font-medium">The full path</h1>
-      <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-        Four levels, nine stages. Durations say how long this usually{" "}
-        <em>unfolds over</em> — they are not deadlines, and nothing here is
-        locked.
-      </p>
+      <PageTitle
+        className="mt-4"
+        title="The full path"
+        description={
+          <>
+            Four levels, nine stages. Durations say how long this usually{" "}
+            <em>unfolds over</em> — they are not deadlines, and nothing here is
+            locked.
+          </>
+        }
+      />
 
       <ul className="mt-5 flex flex-col gap-2.5">
         {LEVELS.map((level) => {

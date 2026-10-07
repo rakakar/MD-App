@@ -15,7 +15,7 @@ import {
   ProvidedViewToggle,
 } from "./CollectionLayout";
 import { CollectionGridCard, CollectionListRow } from "./CollectionShell";
-import { ShelfTitle } from "./ShelfTitle";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
@@ -127,7 +127,7 @@ export function AvShelf({
        Devanagari — are the content; the grid spent a 165px column on artwork
        that told them nothing while the name wrapped to three lines. */
     <CollectionViewProvider fallback="list">
-      <ShelfTitle title={title} description={description} meta={meta} />
+      <PageTitle shelf title={title} description={description} meta={meta} />
 
       {/* Above the controls, because it is the shortest path to the thing a
           returning reader came for — and drawn client-side from playheads, so

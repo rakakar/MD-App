@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/ui/PageTitle";
 import { PageContainer, ShelfControlsSkeleton, ShelfGridSkeleton } from "@/components/ui";
 
 /** See `components/ui/Skeleton.tsx` for why these files exist. */
@@ -5,12 +6,11 @@ export default function Loading() {
   return (
     <PageContainer size="shelf">
       {/* written, not fetched — so it is drawn for real, at its real size */}
-      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        Student Materials
-      </h1>
-      <p className="mt-0.5 text-sm text-ink-soft">
-        Contains Textbooks, Study guides, Shodh patra, shivir materials, and other media. Written and curated by students.
-      </p>
+      <PageTitle
+        shelf
+        title="Student Materials"
+        description="Contains Textbooks, Study guides, Shodh patra, shivir materials, and other media. Written and curated by students."
+      />
       <ShelfControlsSkeleton />
       <ShelfGridSkeleton />
     </PageContainer>

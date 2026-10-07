@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ContactsScreen } from "@/components/connect/ContactsScreen";
 import { BackIcon } from "@/components/shell/icons";
 import { ErrorState, PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getContacts, getContactStates } from "@/lib/api";
 
 export const revalidate = 900;
@@ -46,8 +47,7 @@ export default async function CityContactsPage() {
         Centres
       </Link>
 
-      <h1 className="mt-4 font-display text-2xl font-medium">City-wise contacts</h1>
-      <p className="mt-1 text-sm text-ink-soft">Someone to meet in your city.</p>
+      <PageTitle className="mt-4" title="City-wise contacts" description="Someone to meet in your city." />
 
       {states && initial ? (
         <ContactsScreen initial={initial} states={states} />

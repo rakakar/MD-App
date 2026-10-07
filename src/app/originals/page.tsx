@@ -72,13 +72,6 @@ export default async function OriginalsLibraryPage({
           the top of the screen says it, and the switcher inside that bar says
           it again, so this was the third telling on the way to a page chosen
           from the tab bar. */}
-      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        Library
-      </h1>
-      <p className="mt-0.5 text-sm text-ink-soft">
-        Compilations, diaries, letters, articles and photos of Shri A. Nagraj.
-      </p>
-
       {/* Above the shelf, for the same reason the Audio/Video tab puts its own
           there: it is the shortest path to the thing a returning reader came
           for. Drawn client-side from saved places, so it is simply absent for
@@ -87,10 +80,11 @@ export default async function OriginalsLibraryPage({
           Documents read *as text* resume here too, and only here. This is the
           tab their editions live on, and the shelf's own rail is for the
           shelf's own books — see `ContinueDocument`. */}
-      <ContinueDocument />
-
       <WorkspaceShelf
         root={root}
+        title="Library"
+        description="Compilations, diaries, letters, articles and photos of Shri A. Nagraj."
+        lead={<ContinueDocument />}
         state={state}
         topics={topics}
         shelves={shelves}

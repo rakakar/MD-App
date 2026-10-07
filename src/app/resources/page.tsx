@@ -4,6 +4,7 @@ import { ContinueDocument } from "@/components/library/ContinueDocument";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
 import { ShelfCard } from "@/components/shelf/BookShelf";
 import { PageContainer, SegmentedNav } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getBooks, getNode, getTopics, getWorkspaces } from "@/lib/api";
 import { readFind } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
@@ -40,6 +41,10 @@ const FORMAT_LABEL: Record<Format, string> = {
  * which is the point of gating it here rather than deleting the branch.
  */
 const SHOW_FORMAT_TOGGLE = false;
+
+const TITLE = "Student Materials";
+const DESCRIPTION =
+  "Contains Textbooks, Study guides, Shodh patra, shivir materials, and other media. Written and curated by students.";
 
 /**
  * The Resources shelf — the workspace root, rendered as its contents.
@@ -92,28 +97,15 @@ export default async function ResourcesPage({
   const active: Format =
     SHOW_FORMAT_TOGGLE && format === "books" && books.length > 0 ? "books" : "library";
 
-  return (
-    <PageContainer size="shelf">
-      {/* The title is the name of this *screen*, not of the workspace it sits
-          in — the app bar and the switcher already say "Resources"; this is
-          the answer to "what is this particular page for", the same way the
-          nav item that opens it is now named "Student Materials" and not
-          "Library". It used to be `root.name`, which said "संसाधन" and left
-          the heading of a bottom-nav destination editable in the admin. */}
-      <h1 className="font-display text-[1.625rem] font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        Student Materials
-      </h1>
-      <p className="mt-0.5 text-sm text-ink-soft">
-        Contains Textbooks, Study guides, Shodh patra, shivir materials, and
-        other media. Written and curated by students.
-      </p>
-
+  // The resume rail, then the format switch: what sits between the title and
+  // the shelf, on either view.
+  const lead = (
+    <>
       {/* The shortest path back to a half-read document, as on `/originals` —
           scoped to this shelf, so it names Resources' own files and not the
           originals a reader left off in. Drawn client-side from saved places,
           so it is simply absent for anyone who has not started one. */}
       <ContinueDocument workspace="resources" />
-
       {available.length > 1 && (
         <div className="mt-4">
           <SegmentedNav
@@ -125,6 +117,26 @@ export default async function ResourcesPage({
             }))}
           />
         </div>
+      )}
+    </>
+  );
+
+  return (
+    <PageContainer size="shelf">
+      {/* The title is the name of this *screen*, not of the workspace it sits
+          in — the app bar and the switcher already say "Resources"; this is
+          the answer to "what is this particular page for", the same way the
+          nav item that opens it is now named "Student Materials" and not
+          "Library". It used to be `root.name`, which said "संसाधन" and left
+          the heading of a bottom-nav destination editable in the admin.
+
+          Drawn by the shelf, which knows the count that sits behind its `i`;
+          the books view has no count to add, so it draws its own. */}
+      {active === "books" && (
+        <>
+          <PageTitle shelf title={TITLE} description={DESCRIPTION} />
+          {lead}
+        </>
       )}
 
       {active === "books" ? (
@@ -138,6 +150,9 @@ export default async function ResourcesPage({
       ) : (
         <WorkspaceShelf
           root={root}
+          title={TITLE}
+          description={DESCRIPTION}
+          lead={lead}
           state={state}
           topics={topics}
           shelves={shelves}

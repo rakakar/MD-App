@@ -10,6 +10,7 @@ import { PhotoStrip } from "./PhotoStrip";
 import { RailFacets } from "./RailFacets";
 import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { findLibrary, nodeChildren } from "@/lib/api";
 import { isAsked, scopeSize, type FindState, type FindAxis } from "@/lib/find";
 import type {
@@ -48,6 +49,9 @@ import type {
  */
 export async function WorkspaceShelf({
   root,
+  title,
+  description,
+  lead,
   state,
   topics,
   shelves,
@@ -60,6 +64,15 @@ export async function WorkspaceShelf({
   photoStrip = true,
 }: {
   root: LibraryNode;
+  /**
+   * The page's title and what it is. Drawn here rather than by the page so the
+   * shelf's count can go behind the same `i` as the description — the count is
+   * the shelf's to know, and on a phone both are hidden until asked for.
+   */
+  title: string;
+  description: React.ReactNode;
+  /** what sits between the title and the controls — the resume rail */
+  lead?: React.ReactNode;
   state: FindState;
   topics: Topic[];
   shelves: Record<number, string>;
@@ -176,6 +189,32 @@ export async function WorkspaceShelf({
       : scopeSize(find?.facets ?? {});
   const itemCount = finding ? find.count : inScope;
 
+  // How much is on the shelf, under the description. The browse's figure only:
+  // a find prints its own count over its results.
+  const meta =
+    !finding && (itemCount > 0 || doors.length > 0) ? (
+      <>
+        {itemCount > 0 && <>{itemCount} items</>}
+        {itemCount > 0 && doors.length > 0 && " · "}
+        {doors.length > 0 && <>{doors.length} collections</>}
+      </>
+    ) : null;
+  const heading = (
+    <>
+      <PageTitle shelf title={title} description={description} meta={meta} />
+      {lead}
+    </>
+  );
+
+  // **Pinned under the app bar: the search, and the row that decides what is
+  // below it** — as on Media (designer's call, 7 Oct 2026). Student Materials
+  // runs to some fourteen hundred files; narrowing them should not mean
+  // scrolling back up to find the box. The app's one sticky-row recipe: the air
+  // is padding inside the box, and the box is opaque, so nothing scrolls
+  // through a gap above it.
+  const sticky =
+    "sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8";
+
   // The Category axis as a row of chips under the search, as Media has its
   // Audio · Video (designer's call, 1 Oct 2026). Only the kinds this shelf
   // actually shows, in the app's kind order; "All" is the shelf's own total.
@@ -201,29 +240,32 @@ export async function WorkspaceShelf({
   if (finding) {
     return (
       <>
+        {heading}
         {/* Two copies of one set of controls, and only ever one of them on
             screen: `lg:hidden` here, and the rail itself `display:none` below
             `lg`. It buys the breakpoint back from JavaScript — no media query
             hook, no measuring, nothing to be wrong about between the server's
             HTML and the client's first paint — and it keeps every facet link in
             the document even before hydration moves the desktop copy. */}
-        <FindBar
-          basePath={basePath}
-          state={state}
-          scope={searchScope}
-          dense
-          filters={
-            <FindFilters
-              topics={topics}
-              facets={facets}
-              state={state}
-              basePath={basePath}
-              itemCount={itemCount}
-              hideAxes={filterAxes}
-            />
-          }
-        />
-        {kindRow && <div className="mt-2.5 flex items-center gap-2">{kindRow}</div>}
+        <div className={sticky}>
+          <FindBar
+            basePath={basePath}
+            state={state}
+            scope={searchScope}
+            dense
+            filters={
+              <FindFilters
+                topics={topics}
+                facets={facets}
+                state={state}
+                basePath={basePath}
+                itemCount={itemCount}
+                hideAxes={filterAxes}
+              />
+            }
+          />
+          {kindRow && <div className="mt-2.5 flex items-center gap-2">{kindRow}</div>}
+        </div>
         <div className="lg:hidden">
           <ActiveFindFilters
             topics={topics}
@@ -271,20 +313,14 @@ export async function WorkspaceShelf({
     // ever the box there.
     <CollectionViewProvider fallback="grid">
     <div className="flex flex-col">
+      {heading}
       {/* On a desktop, as on Media (designer's call, 1 Oct 2026): the count on
           its own line under the description, then the search across the page
           with its labelled Filters beside it. Squeezed to 320px on the title's
           row, the box cut its own placeholder short — "Search Student Mat" —
           on the one shelf whose name is long. */}
-      <div className="lg:mb-1 lg:border-b lg:border-rule lg:pb-4">
-        <p className="mt-1 hidden text-sm text-ink-soft lg:block">
-          {itemCount > 0 && <span className="tabular-nums">{itemCount} items</span>}
-          {itemCount > 0 && doors.length > 0 && " · "}
-          {doors.length > 0 && (
-            <span className="tabular-nums">{doors.length} collections</span>
-          )}
-        </p>
-        <div className="lg:mt-4">
+      <div className={`${sticky} lg:mb-1 lg:border-b lg:border-rule lg:pb-4`}>
+        <div>
           <FindBar
             basePath={basePath}
             state={state}
