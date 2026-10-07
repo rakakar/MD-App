@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
@@ -324,6 +324,12 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
 function AvatarMenu() {
   const { user, loading } = useAuth();
   const { open: openFeedback } = useFeedback();
+  // Settings and My feedback belong to no workspace: on arrival the chrome
+  // would fall back to the last one picked from the switcher on this device —
+  // My Journey on one phone, Originals on another. Take the current one along,
+  // as ⌘K does for the Assistant.
+  const { workspace, derive } = useWorkspace();
+  const keepWorkspace = useCallback(() => derive(workspace.id), [derive, workspace.id]);
   const [open, setOpen] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(false);
   // Back here after signing in. The path only — reading the query would need
@@ -401,7 +407,14 @@ function AvatarMenu() {
             thing. They are not: the journey is content, this menu is the app.
             That conflation is also why Settings used to live at `/me/settings`
             and hijacked the chrome; see the redirect left at that path. */}
-        <Link href="/settings" onClick={() => setOpen(false)} className={row}>
+        <Link
+          href="/settings"
+          onClick={() => {
+            keepWorkspace();
+            setOpen(false);
+          }}
+          className={row}
+        >
           <span aria-hidden className={glyph}>
             <SettingsIcon className="h-5 w-5" />
           </span>
@@ -447,7 +460,14 @@ function AvatarMenu() {
           </span>
           Send feedback
         </button>
-        <Link href="/feedback" onClick={() => setOpen(false)} className={row}>
+        <Link
+          href="/feedback"
+          onClick={() => {
+            keepWorkspace();
+            setOpen(false);
+          }}
+          className={row}
+        >
           <span aria-hidden className={glyph}>
             <FeedbackListIcon className="h-5 w-5" />
           </span>
@@ -486,6 +506,12 @@ function AvatarMenu() {
 export function SidebarAccount() {
   const { user, loading } = useAuth();
   const { open: openFeedback } = useFeedback();
+  // Settings and My feedback belong to no workspace: on arrival the chrome
+  // would fall back to the last one picked from the switcher on this device —
+  // My Journey on one phone, Originals on another. Take the current one along,
+  // as ⌘K does for the Assistant.
+  const { workspace, derive } = useWorkspace();
+  const keepWorkspace = useCallback(() => derive(workspace.id), [derive, workspace.id]);
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(false);
@@ -498,12 +524,13 @@ export function SidebarAccount() {
       if ((e.metaKey || e.ctrlKey) && e.key === ",") {
         e.preventDefault();
         setOpen(false);
+        keepWorkspace();
         router.push("/settings");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [signedIn, router]);
+  }, [signedIn, router, keepWorkspace]);
 
   useEffect(() => {
     if (!open) return;
@@ -576,7 +603,15 @@ export function SidebarAccount() {
             {who}
           </div>
           <div aria-hidden className="mx-1 mb-1 h-px bg-rule" />
-          <Link href="/settings" role="menuitem" onClick={() => setOpen(false)} className={row}>
+          <Link
+            href="/settings"
+            role="menuitem"
+            onClick={() => {
+              keepWorkspace();
+              setOpen(false);
+            }}
+            className={row}
+          >
             <span aria-hidden className={glyph}>
               <SettingsIcon className="h-4.5 w-4.5" />
             </span>
@@ -612,7 +647,15 @@ export function SidebarAccount() {
             </span>
             Send feedback
           </button>
-          <Link href="/feedback" role="menuitem" onClick={() => setOpen(false)} className={row}>
+          <Link
+            href="/feedback"
+            role="menuitem"
+            onClick={() => {
+              keepWorkspace();
+              setOpen(false);
+            }}
+            className={row}
+          >
             <span aria-hidden className={glyph}>
               <FeedbackListIcon className="h-4.5 w-4.5" />
             </span>
