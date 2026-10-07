@@ -17,7 +17,6 @@ import {
   CheckIcon,
   ChevronDown,
   CloseIcon,
-  ExternalLinkIcon,
   FeedbackIcon,
   FeedbackListIcon,
   PaletteIcon,
@@ -613,14 +612,11 @@ export function SidebarAccount() {
             </span>
             Send feedback
           </button>
-          {/* ↗ as the comp draws it: this one leaves the menu for a page of
-              its own, where the others act in place. */}
           <Link href="/feedback" role="menuitem" onClick={() => setOpen(false)} className={row}>
             <span aria-hidden className={glyph}>
               <FeedbackListIcon className="h-4.5 w-4.5" />
             </span>
             My feedback
-            <ExternalLinkIcon className="ml-auto h-4 w-4 text-ink-soft" />
           </Link>
         </div>
       )}
