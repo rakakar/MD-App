@@ -59,7 +59,7 @@ export function DisplaySheet({ open, onClose }: { open: boolean; onClose: () => 
 }
 
 /**
- * The four theme chips, on their own so the reader's settings sheet shows the
+ * The theme chips, on their own so the reader's settings sheet shows the
  * same control rather than its own copy.
  *
  * It had a copy, and the copy drifted: its dark chip was a #14110F block on a
@@ -70,7 +70,10 @@ export function ThemeSwatches({ rule = "--color-rule" }: { rule?: string }) {
   const { theme, setTheme } = useDisplay();
   return (
     <div role="radiogroup" aria-label="Theme" className="flex gap-3">
-      {THEMES.map((t) => {
+      {/* Sepia is hidden — the designer's call, 7 Oct 2026 — but still drawn
+          for a reader already on it, so the theme they are in has a chip that
+          says so. Choosing any other takes it away for good. */}
+      {THEMES.filter((t) => t.id !== "sepia" || theme === "sepia").map((t) => {
         const active = theme === t.id;
         return (
           <button
