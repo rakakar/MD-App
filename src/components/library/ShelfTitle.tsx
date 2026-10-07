@@ -50,7 +50,10 @@ export function ShelfTitle({
         {/* 24px of glyph in a 44px target: the ring is small because it sits
             beside a title and must not compete with it, and the target is not
             because a thumb is not small. The negative margin gives the extra
-            back so the title's line is not pushed taller. */}
+            back so the title's line is not pushed taller. Centring puts the
+            ring's foot 4px below the title's baseline (Newsreader sits high
+            in its line box), so the glyph is lifted to stand on the same line
+            as the letters. */}
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -59,7 +62,7 @@ export function ShelfTitle({
           aria-label={open ? `Hide what ${title} holds` : `What ${title} holds`}
           className="-m-2.5 inline-flex items-center justify-center p-2.5 text-ink-soft transition-colors hover:text-ink lg:hidden"
         >
-          <InfoIcon className="h-6 w-6" />
+          <InfoIcon className="h-6 w-6 -translate-y-1" />
         </button>
         {meta && (
           <p className="ml-auto whitespace-nowrap text-sm tabular-nums text-ink-soft lg:hidden">
