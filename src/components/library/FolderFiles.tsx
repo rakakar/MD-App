@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { FileList } from "@/components/library/FileList";
+import { PhoneDownloadAll, PhonePlayRow } from "@/components/library/FolderHeroActions";
+import { LARGE_BYTES } from "@/components/library/folderActions";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
 
 /**
@@ -22,6 +24,8 @@ export function FolderFiles({
   coverUrl,
   audioArt,
   folderProvenance,
+  playAll = false,
+  fullSeries,
 }: {
   files: LibraryFile[];
   linked: LocatedFile[];
@@ -30,6 +34,10 @@ export function FolderFiles({
   coverUrl?: string | null;
   audioArt?: "portrait" | "glyph";
   folderProvenance?: Provenance;
+  /** a series of recordings: Play all goes under the search on a phone */
+  playAll?: boolean;
+  /** where the whole set also lives — Full series, beside Play all */
+  fullSeries?: string | null;
 }) {
   const [q, setQ] = useState("");
   const needle = q.trim().toLowerCase();
@@ -40,6 +48,13 @@ export function FolderFiles({
   const shown = files.filter(match);
   const shownLinked = linked.filter(match);
   const none = needle && shown.length + shownLinked.length === 0;
+
+  // What Download all takes: every file a reader would save — not a link to
+  // somewhere else, and not the recordings, which play.
+  const downloadable = [...files, ...linked].filter(
+    (f) => f.kind !== "link" && f.kind !== "audio" && f.kind !== "video"
+  );
+  const large = downloadable.some((f) => (f.file_size ?? 0) >= LARGE_BYTES);
 
   return (
     <>
@@ -53,12 +68,13 @@ export function FolderFiles({
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search this folder by name"
+            placeholder="Search by name, topic, year or place"
             aria-label="Search this folder"
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-soft"
           />
         </label>
       )}
+      <PhonePlayRow playAll={playAll} fullSeries={fullSeries} />
       {none ? (
         <p className="mt-6 text-center text-sm text-ink-soft">Nothing in this folder matches “{q.trim()}”.</p>
       ) : (
@@ -71,6 +87,7 @@ export function FolderFiles({
           folderProvenance={folderProvenance}
         />
       )}
+      {downloadable.length > 1 && <PhoneDownloadAll files={downloadable} large={large} />}
     </>
   );
 }

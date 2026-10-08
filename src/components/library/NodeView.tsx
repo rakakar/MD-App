@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SERIES_PORTRAIT } from "@/lib/media";
 import { FolderFiles } from "@/components/library/FolderFiles";
 import { DownloadAllButton, PlayAllButton } from "@/components/library/FolderHeroActions";
 import { FindBar } from "@/components/library/FindBar";
@@ -199,6 +200,8 @@ export async function NodeView({
                track wears the wave on that shelf's colour instead. */
             audioArt={ws === "originals" ? "portrait" : "glyph"}
             folderProvenance={node.provenance}
+            playAll={isRecordings && isAlbum}
+            fullSeries={node.external_url}
           />
 
           {children.length === 0 && node.linked_children.length === 0 && files.length === 0 && (
@@ -280,6 +283,20 @@ function Header({
   // middle of a deep path, which no other control offers.
   const trail = node.breadcrumb.slice(0, -1).filter((step) => !shelves[step.id]);
 
+  // Where it is from, then what is in it and how much.
+  const where = [node.year, node.place, languageInEnglish(node)].filter(Boolean).join(" · ");
+  const counts = [
+    filesSummary(files),
+    totalRunTime(files),
+    readingCount > 0 ? `${readingCount} as text` : "",
+  ].filter(Boolean);
+  const summary = [
+    ...counts,
+    !isRecordings ? formatBytes(files.reduce((n, f) => n + (f.file_size ?? 0), 0)) : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <CollectionHero
       tone={hue.to}
@@ -330,7 +347,18 @@ function Header({
         ) : undefined
       }
       thumb={
-        isAlbum ? (
+        isRecordings && !node.cover_url && ws === "originals" ? (
+          /* A series with no cover of its own wears the shared portrait, wide,
+             as the phone comps draw it — the same face its rows fall back to,
+             rather than a numeral on a blank tile. Originals only: elsewhere
+             the recording is not necessarily him (see \`AlbumAudio\`). */
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={SERIES_PORTRAIT}
+            alt=""
+            className="aspect-[4/3] w-32 shrink-0 rounded-lg object-cover shadow-[0_2px_8px_rgba(0,0,0,.25)] lg:w-40"
+          />
+        ) : isAlbum ? (
           <div className="w-24 shrink-0 lg:w-28">
             <CoverTile
               book={{
@@ -361,29 +389,32 @@ function Header({
         ) : undefined
       }
       title={node.name}
-      /* **Where it is from — year, place, language, and nothing else.**
-         Three facts of one kind, which is what makes the line scannable: a
-         reader takes it in as provenance-in-the-world rather than reading it.
-         The language is named once and in English (`languageInEnglish`), since
-         the interface is English and the label's own Devanagari half was the
-         only Hindi in a line of numbers and place names. */
-      /* One line, as the comps draw it: where it is from, then what is in it
-         and how much — "Hindi · 9 PDFs · 1 as text · 59.2 MB". The counts
-         were chips under the title; on one line they read as one sentence
-         about the folder rather than as three badges. */
+      /* **Where it is from — year, place, language.** Three facts of one
+         kind, which is what makes the line scannable. The language is named
+         once and in English (`languageInEnglish`), since the interface is
+         English.
+
+         On a desktop the line goes on to what is in it and how much — "Hindi ·
+         9 PDFs · 1 as text · 59.2 MB", as the desktop comps draw it. */
       meta={
-        [
-          node.year,
-          node.place,
-          languageInEnglish(node),
-          filesSummary(files),
-          totalRunTime(files),
-          readingCount > 0 ? `${readingCount} as text` : "",
-          !isRecordings ? formatBytes(files.reduce((n, f) => n + (f.file_size ?? 0), 0)) : "",
-        ]
-          .filter(Boolean)
-          .join(" · ") || undefined
+        where || summary ? (
+        <>
+          {where}
+          {/* Desktop: the counts and the size continue the line. */}
+          {summary && (
+            <span className="hidden lg:inline">
+              {where ? " · " : ""}
+              {summary}
+            </span>
+          )}
+        </>
+        ) : undefined
       }
+      /* Phone (designer's comps, 8 Oct 2026): the counts as chips under the
+         facts — "10 PDFS · 1 AS TEXT", "5 VIDEOS · 3 HRS" — and no size,
+         which Download all at the list's foot carries. */
+      chips={counts}
+      chipsClassName="lg:hidden"
       /* Not when it only repeats the title, as a folder's often does. */
       description={
         node.description && node.description.trim() !== node.name.trim() ? node.description : undefined

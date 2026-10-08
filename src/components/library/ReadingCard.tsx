@@ -164,18 +164,97 @@ export function ReadingCard({
     : 0;
 
   const resumeLabel = place ? "Resume reading" : "Start reading";
+  const pagesHref = pagesAt === null ? base : documentHref(file.node, file.id, pagesAt);
+  const where =
+    place && place.pageCount > 0
+      ? `Page ${place.page} of ${place.pageCount}`
+      : chapters > 0
+        ? `${chapters} ${chapters === 1 ? "chapter" : "chapters"}`
+        : null;
 
   return (
-    /*
-      **One row on a desktop** (designer's comp, 8 Oct 2026): the cover, the
+    <>
+    {/* **Phone** (designer's phone comps, 8 Oct 2026): the pill over the
+        title, where the reader is under it, the bar across the card, then
+        the one way in filled and the two ways round outlined. */}
+    <div className="group relative rounded-2xl border border-rule bg-card p-4 sm:hidden">
+      <div className="flex items-center gap-3.5">
+        <FileCover
+          src={cover}
+          title={file.title}
+          id={file.id}
+          className="h-16 w-12 shrink-0 rounded-md shadow-[0_1px_3px_rgba(0,0,0,.18)]"
+        />
+        <div className="min-w-0 flex-1">
+          <span
+            className="inline-block rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.04em]"
+            style={{ background: TINT.ink, color: "#fff" }}
+          >
+            Text edition
+          </span>
+          <Link href={href} className="mt-1 block after:absolute after:inset-0 after:content-['']">
+            <span
+              {...contentLang(file.title)}
+              className={`${contentLang(file.title).className} hi-tight line-clamp-2 block text-[0.9375rem] font-semibold leading-snug`}
+            >
+              {file.title}
+            </span>
+          </Link>
+          <span className="mt-1 block text-xs tabular-nums text-ink-soft">
+            {where && `${where} · `}reflows to your screen
+          </span>
+        </div>
+      </div>
+      {place && place.pageCount > 0 && (
+        <span className="mt-3.5 block h-1 overflow-hidden rounded-full bg-canvas">
+          <span
+            role="progressbar"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${percent}% read`}
+            className="block h-full rounded-full"
+            style={{ width: `${Math.max(percent, 4)}%`, background: "var(--progress-fill)" }}
+          />
+        </span>
+      )}
+      <div className="relative z-10 mt-3.5 flex items-center gap-2">
+        <Link
+          href={href}
+          className="inline-flex h-11 items-center whitespace-nowrap rounded-control px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: "var(--ws-color)" }}
+        >
+          {resumeLabel}
+        </Link>
+        <Link
+          href={pagesHref}
+          className="inline-flex h-11 items-center whitespace-nowrap rounded-control border border-rule px-3.5 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
+        >
+          Original pages
+        </Link>
+        <a
+          href={file.url}
+          download
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Download the PDF${formatBytes(file.file_size) ? `, ${formatBytes(file.file_size)}` : ""}`}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule text-ink transition-colors hover:bg-ink/5"
+        >
+          <DownloadIcon className="h-4 w-4" />
+        </a>
+      </div>
+    </div>
+
+    {/*
+      **One row from sm up** (designer's comp, 8 Oct 2026): the cover, the
       title with its Text edition pill over where the reader is, then the two
       ways round the reading and the one way into it, as buttons a pointer can
-      find. On a phone the buttons go under, the primary full width.
+      find.
 
       The whole card is the text's link — stretched from the title — and the
       buttons sit above it with their own targets.
-    */
-    <div className="group relative flex flex-col gap-3 rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:gap-4">
+    */}
+    <div className="group relative hidden gap-4 rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md sm:flex sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3.5">
         <FileCover
           src={cover}
@@ -243,7 +322,7 @@ export function ReadingCard({
           to reach them — OCR is sometimes wrong. */}
       <div className="relative z-10 flex shrink-0 items-center gap-1 border-t border-rule pt-3 sm:border-0 sm:pt-0">
         <Link
-          href={pagesAt === null ? base : documentHref(file.node, file.id, pagesAt)}
+          href={pagesHref}
           title={`Original pages${file.page_count ? ` — ${file.page_count} pages` : ""}`}
           className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-control px-2.5 text-sm text-ink transition-colors hover:bg-ink/5 sm:px-3"
         >
@@ -271,5 +350,6 @@ export function ReadingCard({
         </Link>
       </div>
     </div>
+    </>
   );
 }

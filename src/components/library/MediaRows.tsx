@@ -41,19 +41,24 @@ export function MediaRows({ items, verb }: { items: MediaItem[]; verb: "watched"
 
   return (
     <>
-      <div className="mb-3 flex">
+      {/* No toggle on a phone (designer's phone comps, 8 Oct 2026): the list
+          is the phone's only shape, so a grid chosen on a desktop does not
+          follow the reader onto a two-column screen of the same face. */}
+      <div className="mb-3 hidden sm:flex">
         <ViewToggle view={view} onView={setView} />
       </div>
-      {view === "grid" ? (
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-3">
+      {view === "grid" && (
+        <ul className="hidden grid-cols-2 gap-x-4 gap-y-6 sm:grid lg:grid-cols-3">
           {items.map((it) => (
             <li key={it.key}>
               <GridCard item={it} />
             </li>
           ))}
         </ul>
-      ) : (
-        <ul className="divide-y divide-rule rounded-2xl border border-rule bg-card [&>li:first-child>*]:rounded-t-2xl [&>li:last-child>*]:rounded-b-2xl">
+      )}
+      <ul
+        className={`${view === "grid" ? "sm:hidden" : ""} divide-y divide-rule rounded-2xl border border-rule bg-card [&>li:first-child>*]:rounded-t-2xl [&>li:last-child>*]:rounded-b-2xl`}
+      >
           {/* Not `overflow-hidden`: it clipped the last rows' ⋯ menus at the
               list's foot. The end rows round their own hover and picked fill
               instead, which is all the clip was for. */}
@@ -63,7 +68,6 @@ export function MediaRows({ items, verb }: { items: MediaItem[]; verb: "watched"
             </li>
           ))}
         </ul>
-      )}
     </>
   );
 }
@@ -78,7 +82,9 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
     <div className="group relative flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink/[.03] sm:gap-4 sm:px-4">
       <span className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-black sm:w-32">
         {item.art}
-        <span className="absolute inset-0 flex items-center justify-center">
+        {/* Desktop only: on a phone the picture is the picture, with its
+            length on it — the comps draw no button over the face. */}
+        <span className="absolute inset-0 hidden items-center justify-center sm:flex">
           <span
             className="flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-transform group-hover:scale-110"
             style={
@@ -112,11 +118,14 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
           className={`${t.className} hi-tight line-clamp-2 text-start text-sm font-semibold after:absolute after:inset-0 group-hover:underline sm:text-base`}
         >
           {title}
+          {/* Phone: the subject runs on from the title, in the same ink, two
+              lines between them — "अध्ययन अभ्यास… · अनुभवमूलक विधि". */}
+          {subtitle && <span className="sm:hidden"> · {subtitle}</span>}
         </button>
         {sub && (
           <span
             {...contentLang(sub)}
-            className={`${contentLang(sub).className} mt-0.5 line-clamp-1 block text-xs text-ink-soft sm:text-sm`}
+            className={`${contentLang(sub).className} ${subtitle ? "hidden sm:block" : "block"} mt-0.5 line-clamp-1 text-xs text-ink-soft sm:text-sm`}
           >
             {sub}
           </span>
@@ -136,7 +145,9 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
       {length && (
         <span className="hidden shrink-0 text-sm tabular-nums text-ink-soft sm:block">{length}</span>
       )}
-      <RowMenu items={item.menu} share={item.share} label={title} />
+      <div className="hidden sm:block">
+        <RowMenu items={item.menu} share={item.share} label={title} />
+      </div>
     </div>
   );
 }

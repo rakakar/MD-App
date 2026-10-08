@@ -32,6 +32,7 @@ export function CollectionHero({
   title,
   meta,
   chips,
+  chipsClassName = "",
   description,
   progress,
   actions,
@@ -73,6 +74,8 @@ export function CollectionHero({
   title: string;
   meta?: React.ReactNode;
   chips?: string[];
+  /** e.g. `lg:hidden` — the folder hero's counts are chips on a phone only */
+  chipsClassName?: string;
   description?: string | null;
   progress?: { percent: number; label: React.ReactNode };
   /** the primary call to action and its neighbours */
@@ -144,7 +147,9 @@ export function CollectionHero({
                 <div className="mb-1 text-xs font-semibold text-white/70">{eyebrow}</div>
               )}
               {kicker && (
-                <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white/75">
+                // Desktop only: the phone comps (8 Oct 2026) open straight on the
+                // title, under a back pill that already says where it sits.
+                <p className="mb-1.5 hidden text-xs font-bold uppercase tracking-[0.12em] text-white/75 lg:block">
                   {kicker}
                 </p>
               )}
@@ -156,7 +161,7 @@ export function CollectionHero({
               </h1>
               {meta && <p className="mt-1 text-sm font-medium text-white/80">{meta}</p>}
               {chips && chips.length > 0 && (
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                <div className={`mt-2.5 flex flex-wrap gap-1.5 ${chipsClassName}`}>
                   {chips.map((c) => (
                     <span
                       key={c}
@@ -195,7 +200,9 @@ export function CollectionHero({
             </div>
             {aside && <div className="hidden shrink-0 items-center gap-2 lg:flex">{aside}</div>}
           </div>
-          {aside && <div className="mt-4 flex flex-wrap items-center gap-2 lg:hidden">{aside}</div>}
+          {/* No phone copy of `aside`: on a phone its actions sit with the list
+              they act on — Play all under the search, Download all at the
+              list's foot (designer's phone comps, 8 Oct 2026). */}
 
           {/* A block, not a flex row. The book's actions arrive as one client
               component that owns its own progress bar as well as its buttons —

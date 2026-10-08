@@ -17,3 +17,10 @@
  * there, which is what makes it safe to reference before it is added.
  */
 export const AUDIO_POSTER = "/audio-cover.jpg";
+
+/**
+ * The illustrated portrait of Shri A. Nagraj (designer's phone comps, 8 Oct
+ * 2026): what a series of recordings with no cover of its own wears in its
+ * hero, on Originals.
+ */
+export const SERIES_PORTRAIT = "/nagraj-portrait.jpg";

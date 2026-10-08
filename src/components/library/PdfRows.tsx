@@ -132,6 +132,8 @@ function PdfRow({
   const href = resume ? `${readHref}?page=${resume}` : readHref;
   const large = (file.file_size ?? 0) >= LARGE_BYTES;
   const pages = file.page_count ? `${file.page_count} pp` : "";
+  // Spelt out on a phone, where it is a line of words rather than a column.
+  const pagesWord = file.page_count ? `${file.page_count} pages` : "";
   const size = formatBytes(file.file_size);
   const t = contentLang(file.title);
 
@@ -146,7 +148,9 @@ function PdfRow({
         aria-checked={picked}
         aria-label={`Select ${file.title}`}
         onClick={onPick}
-        className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors"
+        /* Desktop only: the phone comps (8 Oct 2026) draw no picking — a phone
+           saves a folder with Download all at the list's foot. */
+        className="relative z-10 hidden h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors sm:flex"
         style={
           picked
             ? { background: "var(--ws-color)", borderColor: "var(--ws-color)", color: "white" }
@@ -166,13 +170,13 @@ function PdfRow({
         <Link
           href={href}
           {...t}
-          className={`${t.className} hi-tight block truncate text-sm font-medium after:absolute after:inset-0 group-hover:underline sm:text-base`}
+          className={`${t.className} hi-tight line-clamp-2 block text-sm font-medium after:absolute after:inset-0 group-hover:underline sm:line-clamp-none sm:truncate sm:text-base`}
         >
           {file.title}
         </Link>
         {/* Phone: the columns, under the title. */}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-ink-soft tabular-nums sm:hidden">
-          {[pages, size].filter(Boolean).join(" · ")}
+          {[pagesWord, size].filter(Boolean).join(" · ")}
           {large && <LargeTag />}
         </span>
         {(resume || file.provenance !== folderProvenance) && (
@@ -203,11 +207,13 @@ function PdfRow({
       >
         <DownloadIcon className="h-4 w-4" />
       </a>
-      <RowMenu
-        label={file.title}
-        items={[{ label: "Open", href }]}
-        share={{ title: file.title, url: readHref }}
-      />
+      <div className="hidden sm:block">
+        <RowMenu
+          label={file.title}
+          items={[{ label: "Open", href }]}
+          share={{ title: file.title, url: readHref }}
+        />
+      </div>
     </div>
   );
 }
