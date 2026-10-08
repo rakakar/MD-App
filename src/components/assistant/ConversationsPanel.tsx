@@ -58,17 +58,28 @@ export function ConversationsPanel({
     return () => window.removeEventListener(CONVERSATIONS_CHANGED, load);
   }, []);
 
+  // Only the kinds this reader has actually asked, as the phone's
+  // Conversations screen does — a chip for Navigate on a list with no
+  // navigation in it is a filter that can only ever show "Nothing matches".
+  const counts = useMemo(() => {
+    const c: Partial<Record<Intent, number>> = {};
+    for (const x of all ?? []) c[kindOf(x)] = (c[kindOf(x)] ?? 0) + 1;
+    return c;
+  }, [all]);
+  // A kind whose last conversation was deleted has no chip to turn it off.
+  const active = kind && counts[kind] ? kind : null;
+
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return (all ?? []).filter((c) => {
-      if (kind && kindOf(c) !== kind) return false;
+      if (active && kindOf(c) !== active) return false;
       if (!needle) return true;
       return (
         c.title.toLowerCase().includes(needle) ||
         c.turns.some((t) => t.query.toLowerCase().includes(needle))
       );
     });
-  }, [all, q, kind]);
+  }, [all, q, active]);
 
   const empty = all !== null && all.length === 0;
 
@@ -138,13 +149,13 @@ export function ConversationsPanel({
               />
             </label>
             <div role="group" aria-label="Show" className="mt-3 flex flex-wrap gap-1.5">
-              <Filter label="All" on={kind === null} onClick={() => setKind(null)} />
-              {INTENTS.map((i) => (
+              <Filter label="All" on={active === null} onClick={() => setKind(null)} />
+              {INTENTS.filter((i) => counts[i]).map((i) => (
                 <Filter
                   key={i}
                   label={INTENT_LABEL[i]}
-                  on={kind === i}
-                  onClick={() => setKind(kind === i ? null : i)}
+                  on={active === i}
+                  onClick={() => setKind(active === i ? null : i)}
                 />
               ))}
             </div>
