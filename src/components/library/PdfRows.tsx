@@ -88,8 +88,10 @@ export function PdfRows({
               </button>
             </div>
           )}
+          {/* Not `overflow-hidden`, which clipped the last rows' ⋯ menus; the
+              end rows round their own fill instead. */}
           <ul
-            className={`${reading.length > 0 && chosen.length === 0 ? "mt-5" : ""} divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card`}
+            className={`${reading.length > 0 && chosen.length === 0 ? "mt-5" : ""} divide-y divide-rule rounded-2xl border border-rule bg-card [&>li:first-child>*]:rounded-t-2xl [&>li:last-child>*]:rounded-b-2xl`}
           >
             {plain.map((f) => (
               <li key={f.id}>

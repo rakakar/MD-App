@@ -56,7 +56,10 @@ export function RowMenu({
     "flex min-h-10 w-full items-center gap-2.5 rounded-md px-3 text-start text-sm text-ink transition-colors hover:bg-ink/5";
 
   return (
-    <div ref={ref} className="relative z-10">
+    // Raised while open: every row's download and ⋯ sit at `z-10` too, so at an
+    // equal level the rows after this one drew over its menu. `z-20`, not more —
+    // the pinned search bar is `z-30` and the menu should pass under it.
+    <div ref={ref} className={`relative ${open ? "z-20" : "z-10"}`}>
       <button
         type="button"
         onClick={(e) => {

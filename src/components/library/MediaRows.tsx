@@ -53,7 +53,10 @@ export function MediaRows({ items, verb }: { items: MediaItem[]; verb: "watched"
           ))}
         </ul>
       ) : (
-        <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
+        <ul className="divide-y divide-rule rounded-2xl border border-rule bg-card [&>li:first-child>*]:rounded-t-2xl [&>li:last-child>*]:rounded-b-2xl">
+          {/* Not `overflow-hidden`: it clipped the last rows' ⋯ menus at the
+              list's foot. The end rows round their own hover and picked fill
+              instead, which is all the clip was for. */}
           {items.map((it) => (
             <li key={it.key}>
               <ListRow item={it} verb={verb} />
