@@ -35,8 +35,21 @@ export function CollectionHero({
   description,
   progress,
   actions,
+  kicker,
+  aside,
   variant = "full",
 }: {
+  /**
+   * What this is and which shelf it is on — "COLLECTION · LIBRARY", "SERIES ·
+   * MEDIA" — in small capitals over the title (designer's comps, 8 Oct 2026).
+   * It also sets the title a size larger on a desktop.
+   */
+  kicker?: string;
+  /**
+   * The panel's own actions — Download all, Play all — at its foot on the
+   * right on a desktop, under the words on a phone.
+   */
+  aside?: React.ReactNode;
   /** the panel's base colour — the workspace accent, or the item's own hue */
   tone: string;
   /**
@@ -124,15 +137,20 @@ export function CollectionHero({
             that true: at `.hi`'s 1.85 a 21px line box is 39px tall and the
             glyphs float ~7px down inside it.
           */}
-          <div className="mt-4 flex items-start gap-4">
+          <div className={`mt-4 flex items-start gap-4 ${aside ? "lg:items-end" : ""}`}>
             {thumb}
             <div className="min-w-0 flex-1">
               {eyebrow && (
                 <div className="mb-1 text-xs font-semibold text-white/70">{eyebrow}</div>
               )}
+              {kicker && (
+                <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white/75">
+                  {kicker}
+                </p>
+              )}
               <h1
                 {...t}
-                className={`${t.className} hi-tight text-[1.3125rem] font-semibold`}
+                className={`${t.className} hi-tight text-[1.3125rem] font-semibold ${kicker ? "lg:text-3xl" : ""}`}
               >
                 {title}
               </h1>
@@ -175,7 +193,9 @@ export function CollectionHero({
                 </p>
               )}
             </div>
+            {aside && <div className="hidden shrink-0 items-center gap-2 lg:flex">{aside}</div>}
           </div>
+          {aside && <div className="mt-4 flex flex-wrap items-center gap-2 lg:hidden">{aside}</div>}
 
           {/* A block, not a flex row. The book's actions arrive as one client
               component that owns its own progress bar as well as its buttons —

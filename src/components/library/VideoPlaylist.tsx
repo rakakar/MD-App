@@ -1,12 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { VideoStage } from "@/components/library/VideoStage";
 import { videoSource } from "@/components/library/VideoView";
-import { formatDuration } from "@/components/library/format";
-import { PlayIcon } from "@/components/shell/icons";
-import { contentLang } from "@/lib/script";
+import { MediaRows } from "@/components/library/MediaRows";
+import { PLAY_ALL } from "@/components/library/folderActions";
 import { getPlayhead } from "@/lib/storage";
 import type { LibraryFile, LocatedFile } from "@/lib/types";
 
@@ -56,136 +54,45 @@ export function VideoPlaylist({ files }: { files: Row[] }) {
     readProgress();
   }, [readProgress, open]);
 
+  // The hero's Play all starts the first part.
+  useEffect(() => {
+    const onPlayAll = () => files[0] && setOpen(files[0]);
+    window.addEventListener(PLAY_ALL, onPlayAll);
+    return () => window.removeEventListener(PLAY_ALL, onPlayAll);
+  }, [files]);
+
   return (
     <>
-      {/* The row carries 4px of padding for its hover shape to sit in, and the
-          page 16 — so the list's own edge, the thumbnail, lands at 20 from the
-          screen and 20 under the hero. `-mt-1` takes the first row's padding
-          back out of the section's 20 rather than adding to it. */}
-      <ul className="-mt-1 flex flex-col gap-1">
-        {files.map((file) => (
-          <li key={file.id}>
-            <PlaylistRow
-              file={file}
-              watched={seen[file.id] ?? 0}
-              onOpen={() => setOpen(file)}
-            />
-          </li>
-        ))}
-      </ul>
+      <MediaRows
+        verb="watched"
+        items={files.map((file) => {
+          const src = videoSource(file.url);
+          const posterId = src?.host === "youtube" ? src.id : null;
+          const watched = seen[file.id] ?? 0;
+          return {
+            key: file.id,
+            title: file.title,
+            description: file.description,
+            durationSeconds: file.duration_seconds,
+            art: posterId ? (
+              // poster from YouTube's image CDN; the player itself is the
+              // IFrame API, which is what the PRD requires
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`https://i.ytimg.com/vi/${posterId}/hqdefault.jpg`}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            ) : null,
+            onPlay: () => setOpen(file),
+            percent: file.duration_seconds ? Math.min(100, (watched / file.duration_seconds) * 100) : 0,
+            menu: [{ label: "Open", onClick: () => setOpen(file) }],
+            share: { title: file.title, url: file.url },
+          };
+        })}
+      />
       {open && <VideoStage file={open} onClose={() => setOpen(null)} />}
     </>
-  );
-}
-
-/**
- * One line — poster, length, title.
- *
- * Three facts, and only three, because those are the three this app actually
- * has. A YouTube row also carries a channel, a view count and an age; the BE
- * knows none of them for a library file, and a row that invented somewhere to
- * put them would be a row with three holes in it.
- *
- * The bar under the poster is the exception worth having: the playhead is kept
- * for every video already, so "you are eleven minutes into this one" is a fact
- * this app *does* hold — and it is the one a reader coming back to a
- * fourteen-part shivir most wants to read off the list.
- */
-function PlaylistRow({
-  file,
-  watched,
-  onOpen,
-}: {
-  file: Row;
-  /** seconds of it already watched, from the local playhead */
-  watched: number;
-  onOpen: () => void;
-}) {
-  const t = contentLang(file.title);
-  const src = videoSource(file.url);
-  const posterId = src?.host === "youtube" ? src.id : null;
-  const length = formatDuration(file.duration_seconds);
-  const percent = file.duration_seconds
-    ? Math.min(100, (watched / file.duration_seconds) * 100)
-    : 0;
-
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={`Play ${file.title}`}
-      className="group flex w-full items-start gap-3 rounded-card p-1 text-start transition-colors hover:bg-ink/[.04]"
-    >
-      <span className="relative aspect-video w-[38%] max-w-[10.5rem] shrink-0 overflow-hidden rounded-lg bg-black">
-        {posterId && (
-          // poster from YouTube's image CDN; the player itself is the IFrame
-          // API, which is what the PRD requires
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`https://i.ytimg.com/vi/${posterId}/hqdefault.jpg`}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
-          />
-        )}
-        <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white">
-            <PlayIcon className="h-4 w-4" />
-          </span>
-        </span>
-        {length && (
-          <span className="absolute bottom-1 end-1 rounded bg-black/80 px-1.5 py-1 text-xs font-semibold leading-none tabular-nums text-white">
-            {length}
-          </span>
-        )}
-      </span>
-
-      <span className="min-w-0 flex-1 py-0.5">
-        {"breadcrumb" in file && file.breadcrumb.length > 0 && (
-          <BreadcrumbLine steps={file.breadcrumb} />
-        )}
-        <span
-          {...t}
-          className={`${t.className} hi-tight line-clamp-2 text-sm font-semibold group-hover:underline`}
-        >
-          {file.title}
-        </span>
-        {file.description && (
-          <span
-            {...contentLang(file.description)}
-            className={`${contentLang(file.description).className} mt-1 line-clamp-1 text-xs text-ink-soft`}
-          >
-            {file.description}
-          </span>
-        )}
-        {/*
-          Under the title, with the figure said out loud.
-
-          It was a hairline across the foot of the poster, YouTube's own
-          placement — and at 160px wide over a photograph of a man in a white
-          shawl it was not a thing anyone would notice unless they were looking
-          for it. Out here it has the row's own width, a track to be read
-          against, and the one number that makes it worth drawing: a reader
-          scanning fourteen parts for the one they are halfway through can now
-          do it without opening any of them.
-        */}
-        {percent > 1 && (
-          <span className="mt-1.5 flex items-center gap-2">
-            <span
-              aria-hidden
-              className="h-1 flex-1 overflow-hidden rounded-full bg-ink/10"
-            >
-              <span
-                className="block h-full rounded-full bg-(--ws-ink)"
-                style={{ width: `${percent}%` }}
-              />
-            </span>
-            <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
-              {Math.round(percent)}% watched
-            </span>
-          </span>
-        )}
-      </span>
-    </button>
   );
 }

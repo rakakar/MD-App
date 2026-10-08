@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueue";
-import { formatDuration } from "@/components/library/format";
-import { PlayIcon, WaveformIcon } from "@/components/shell/icons";
+import { MediaRows } from "@/components/library/MediaRows";
+import { PLAY_ALL } from "@/components/library/folderActions";
+import { WaveformIcon } from "@/components/shell/icons";
 import { AUDIO_POSTER } from "@/lib/media";
-import { contentLang } from "@/lib/script";
 import type { LibraryFile } from "@/lib/types";
 
 /** where this file's playhead is kept, and how the player names it */
@@ -74,167 +74,76 @@ export function AlbumAudio({
   const { play, resumes, activeId } = useAudioQueue(entries);
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
 
+  // The hero's Play all starts from the first track; the queue carries on.
+  useEffect(() => {
+    const onPlayAll = () => entries[0] && play(entries[0]);
+    window.addEventListener(PLAY_ALL, onPlayAll);
+    return () => window.removeEventListener(PLAY_ALL, onPlayAll);
+  }, [entries, play]);
+
   return (
-    <ol className="-mt-1 flex flex-col gap-1">
-      {items.map((item) => {
+    <MediaRows
+      verb="listened"
+      items={items.map((item) => {
         const key = trackId(item);
-        return (
-          <li key={item.id}>
-            <TrackRow
-              item={item}
-              art={art}
-              active={activeId === key}
-              resumeMs={resumes[key] ?? 0}
-              onPlay={() => {
-                const entry = byId.get(key);
-                if (entry) play(entry);
-              }}
-            />
-          </li>
-        );
+        const start = () => {
+          const entry = byId.get(key);
+          if (entry) play(entry);
+        };
+        const resumeMs = resumes[key] ?? 0;
+        return {
+          key: item.id,
+          title: item.title,
+          description: item.description,
+          durationSeconds: item.duration_seconds,
+          art: <AudioArt art={art} />,
+          onPlay: start,
+          active: activeId === key,
+          percent: item.duration_seconds
+            ? Math.min(100, (resumeMs / 1000 / item.duration_seconds) * 100)
+            : 0,
+          menu: [{ label: "Play", onClick: start }],
+          share: { title: item.title, url: item.url },
+        };
       })}
-    </ol>
+    />
   );
 }
 
 /**
- * One recording in the album — **the video playlist's row, to the pixel**.
- *
- * Same 16:9 thumbnail at the same width, same length badge in its corner, same
- * title beside it, same bar and percentage underneath. The only thing that had
- * been keeping the two lists apart was that audio has no still of its own to
- * show; it wears the shared portrait instead (see `AUDIO_POSTER`), which gives
- * the row the same weight of ink and lets a reader crossing from a video
- * collection to an audio one recognise what they are looking at.
- *
- * What audio adds is the playing state, which a video list has no equivalent
- * of: the track the player is on keeps its play badge lit in the accent rather
- * than only on hover, because in a list of fourteen that is the one thing that
- * has to be findable without reading any of it.
- *
- * The percentage rather than the timecode "Resume · 12:04". A position is a
- * fact about the file; a fraction is a fact about the reader, and it is the one
- * being scanned for. The exact place is still what the player resumes from —
- * nothing about the playhead changed, only what the row says about it.
+ * What a track wears: the shared portrait on Originals, the wave on the
+ * shelf's colour elsewhere — and the wave too if the portrait fails to load,
+ * so a row is never a black box. See `art` above.
  */
-function TrackRow({
-  item,
-  active,
-  resumeMs,
-  onPlay,
-  art,
-}: {
-  item: LibraryFile;
-  art: "portrait" | "glyph";
-  /** this is the track the player is on — the one thing a list of fourteen
-   *  must be able to say without being read */
-  active: boolean;
-  resumeMs: number;
-  onPlay: () => void;
-}) {
-  const t = contentLang(item.title);
-  const length = formatDuration(item.duration_seconds);
-  const percent = item.duration_seconds
-    ? Math.min(100, (resumeMs / 1000 / item.duration_seconds) * 100)
-    : 0;
-  // The portrait is a file in `public/`, so a build that has not been given it
-  // yet falls back to the kind tile rather than to a broken image. `onError`
-  // alone does not cover it: the row is server-rendered, so the browser can
-  // have tried and failed before React ever attached a handler — hence the
-  // check on mount for an image that is `complete` with no pixels in it.
-  const [posterFailed, setPosterFailed] = useState(false);
-  const glyph = art === "glyph" || posterFailed;
-  const posterRef = useRef<HTMLImageElement>(null);
+function AudioArt({ art }: { art: "portrait" | "glyph" }) {
+  const [failed, setFailed] = useState(false);
+  const ref = useRef<HTMLImageElement>(null);
   useEffect(() => {
-    const el = posterRef.current;
-    if (el && el.complete && el.naturalWidth === 0) setPosterFailed(true);
+    const el = ref.current;
+    if (el && el.complete && el.naturalWidth === 0) setFailed(true);
   }, []);
-
+  if (art === "glyph" || failed) {
+    return (
+      <span
+        aria-hidden
+        className={`flex h-full w-full items-center justify-center ${
+          art === "glyph" ? "text-white" : "bg-kind-audio text-kind-audio-ink"
+        }`}
+        style={art === "glyph" ? { background: "var(--ws-color)" } : undefined}
+      >
+        <WaveformIcon className="h-6 w-6" />
+      </span>
+    );
+  }
   return (
-    <button
-      type="button"
-      onClick={onPlay}
-      aria-label={`Play ${item.title}`}
-      className="group flex w-full items-start gap-3 rounded-card p-1 text-start transition-colors hover:bg-ink/[.04]"
-    >
-      <span className="relative aspect-video w-[38%] max-w-[10.5rem] shrink-0 overflow-hidden rounded-lg bg-black">
-        {glyph ? (
-          // Not `KindTile` with a size override: two Tailwind size utilities on
-          // one element are resolved by their order in the stylesheet, not in
-          // the class list, so `h-full` beside `h-14` is a coin toss.
-          //
-          // The shelf's colour when the glyph was *asked* for, and the audio
-          // tint when it is standing in for a portrait that would not load —
-          // the second is a fallback and should keep looking like every other
-          // audio tile in the app.
-          <span
-            aria-hidden
-            className={`flex h-full w-full items-center justify-center ${
-              art === "glyph" ? "text-white" : "bg-kind-audio text-kind-audio-ink"
-            }`}
-            style={art === "glyph" ? { background: "var(--ws-color)" } : undefined}
-          >
-            <WaveformIcon className="h-6 w-6" />
-          </span>
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            ref={posterRef}
-            src={AUDIO_POSTER}
-            alt=""
-            loading="lazy"
-            onError={() => setPosterFailed(true)}
-            className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
-          />
-        )}
-        <span
-          className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-            active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-          }`}
-        >
-          <span
-            className="flex h-9 w-9 items-center justify-center rounded-full text-white"
-            style={{ background: active ? "var(--ws-color)" : "rgb(0 0 0 / 0.7)" }}
-          >
-            <PlayIcon className="h-4 w-4" />
-          </span>
-        </span>
-        {length && (
-          <span className="absolute bottom-1 end-1 rounded bg-black/80 px-1.5 py-1 text-xs font-semibold leading-none tabular-nums text-white">
-            {length}
-          </span>
-        )}
-      </span>
-
-      <span className="min-w-0 flex-1 py-0.5">
-        <span
-          {...t}
-          className={`${t.className} hi-tight line-clamp-2 text-sm font-semibold group-hover:underline`}
-        >
-          {item.title}
-        </span>
-        {item.description && (
-          <span
-            {...contentLang(item.description)}
-            className={`${contentLang(item.description).className} mt-1 line-clamp-1 text-xs text-ink-soft`}
-          >
-            {item.description}
-          </span>
-        )}
-        {percent > 1 && (
-          <span className="mt-1.5 flex items-center gap-2">
-            <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-ink/10">
-              <span
-                className="block h-full rounded-full bg-(--ws-ink)"
-                style={{ width: `${percent}%` }}
-              />
-            </span>
-            <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
-              {Math.round(percent)}% listened
-            </span>
-          </span>
-        )}
-      </span>
-    </button>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      ref={ref}
+      src={AUDIO_POSTER}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-full w-full object-cover"
+    />
   );
 }

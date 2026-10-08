@@ -1,7 +1,7 @@
 import { AlbumAudio } from "@/components/library/AlbumAudio";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ImageGallery } from "@/components/library/ImageGallery";
-import { PdfCard } from "@/components/library/PdfCard";
+import { PdfRows } from "@/components/library/PdfRows";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { VideoPlaylist } from "@/components/library/VideoPlaylist";
 import { VideoView } from "@/components/library/VideoView";
@@ -124,20 +124,7 @@ function KindGroup({
     return <VideoPlaylist files={files} />;
   }
 
-  if (kind === "pdf") {
-    // Hairlines, not gaps: these rows are one folder's files, and the divider
-    // is the whole of the structure a list of like things needs — see
-    // `PdfCard` for why the cards' own borders went.
-    return (
-      <ul className="-mt-2 flex flex-col divide-y divide-rule">
-        {files.map((file) => (
-          <li key={file.id}>
-            <PdfCard file={file} folderProvenance={folderProvenance} />
-          </li>
-        ))}
-      </ul>
-    );
-  }
+  if (kind === "pdf") return <PdfRows files={files} folderProvenance={folderProvenance} />;
 
   // `link` and `other`. Both are handed over rather than rendered, and the
   // difference is only what happens next: a link opens where it lives, a file

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { FileList } from "@/components/library/FileList";
+import { FolderFiles } from "@/components/library/FolderFiles";
+import { DownloadAllButton, PlayAllButton } from "@/components/library/FolderHeroActions";
 import { FindBar } from "@/components/library/FindBar";
 import { FindResults } from "@/components/library/FindResults";
 import { DoorRow } from "@/components/library/CollectionShell";
 import { Sieve } from "@/components/library/Sieve";
-import { filesSummary, languageInEnglish, totalRunTime } from "@/components/library/format";
+import { filesSummary, formatBytes, languageInEnglish, totalRunTime } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { CollectionHero, EmptyState, HeroPill, ShareButton } from "@/components/ui";
@@ -185,9 +186,12 @@ export async function NodeView({
             </section>
           )}
 
-          <FileList
+          <FolderFiles
             files={node.items}
             linked={node.linked_items}
+            /* The catalogue search looks beneath a folder; one that holds only
+               files gets a box that narrows those files instead. */
+            searchable={!searchable && files.length > 1}
             albumTitle={node.name}
             coverUrl={node.cover_url}
             /* The shared portrait of Nagraj ji stands in for a still only where
@@ -260,6 +264,9 @@ function Header({
   // VPS, so for a while a new build talks to an API that has never heard of
   // this field. Without it that window is `undefined + 0` — `NaN`, which is
   // falsy here by luck rather than by decision.
+  // What Download all takes: the files a reader would save, which is every
+  // one except a link to somewhere else and the recordings, which play.
+  const downloadable = files.filter((f) => f.kind !== "link" && f.kind !== "audio" && f.kind !== "video");
   const readingCount =
     (node.reading_count ?? 0) + node.linked_items.filter((f) => f.reading).length;
 
@@ -306,15 +313,25 @@ function Header({
          set where it also lives, and the link to this page. They were a row
          apart — the link sitting alone under the description, where it was the
          last thing on a panel that had already finished. */
-      topRight={
-        <div className="flex items-center gap-2">
-          {node.external_url && <WholeSetLink url={node.external_url} />}
-          <ShareButton title={node.name} />
-        </div>
+      topRight={<ShareButton title={node.name} />}
+      kicker={`${isRecordings ? "Series" : parent && shelves[parent.id] ? "Collection" : "Folder"} · ${
+        av ? "Media" : libraryTabLabel(ws)
+      }`}
+      aside={
+        isRecordings || node.external_url || downloadable.length > 1 ? (
+          <>
+            {node.external_url && <WholeSetLink url={node.external_url} />}
+            {isRecordings && isAlbum ? (
+              <PlayAllButton />
+            ) : downloadable.length > 1 ? (
+              <DownloadAllButton files={downloadable} />
+            ) : null}
+          </>
+        ) : undefined
       }
       thumb={
         isAlbum ? (
-          <div className="w-24 shrink-0">
+          <div className="w-24 shrink-0 lg:w-28">
             <CoverTile
               book={{
                 title_hi: node.name,
@@ -350,24 +367,27 @@ function Header({
          The language is named once and in English (`languageInEnglish`), since
          the interface is English and the label's own Devanagari half was the
          only Hindi in a line of numbers and place names. */
-      meta={[node.year, node.place, languageInEnglish(node)].filter(Boolean).join(" · ") || undefined}
-      /* **What is inside — as tags, because that is what a reader chooses on.**
-         "19 Videos" was buried mid-line among the facts above, where the one
-         number that says how big a commitment this is read like a footnote.
-         It takes the chip the provenance had: every folder under मूल ग्रंथ is
-         Original, so that badge said the same word on every screen a reader
-         reached from this tab — and it is still on each file's own row, where
-         it can actually differ. "N as text" keeps its place beside the count:
-         same kind of fact, same shape. */
-      chips={[
-        filesSummary(files),
-        // How many, then how long: the count is the number of decisions, the
-        // hours are what they come to. On a fourteen-part shivir the second is
-        // the one that decides whether tonight is the night.
-        totalRunTime(files),
-        readingCount > 0 ? `${readingCount} as text` : "",
-      ].filter(Boolean)}
-      description={node.description}
+      /* One line, as the comps draw it: where it is from, then what is in it
+         and how much — "Hindi · 9 PDFs · 1 as text · 59.2 MB". The counts
+         were chips under the title; on one line they read as one sentence
+         about the folder rather than as three badges. */
+      meta={
+        [
+          node.year,
+          node.place,
+          languageInEnglish(node),
+          filesSummary(files),
+          totalRunTime(files),
+          readingCount > 0 ? `${readingCount} as text` : "",
+          !isRecordings ? formatBytes(files.reduce((n, f) => n + (f.file_size ?? 0), 0)) : "",
+        ]
+          .filter(Boolean)
+          .join(" · ") || undefined
+      }
+      /* Not when it only repeats the title, as a folder's often does. */
+      description={
+        node.description && node.description.trim() !== node.name.trim() ? node.description : undefined
+      }
     />
   );
 }

@@ -6,7 +6,6 @@ import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { FileCover } from "@/components/library/FileCover";
 import { formatBytes } from "@/components/library/format";
 import {
-  ChevronRight,
   DocumentIcon,
   DownloadIcon,
   WaveformIcon,
@@ -164,53 +163,47 @@ export function ReadingCard({
     ? Math.min(100, Math.round((place.page / place.pageCount) * 100))
     : 0;
 
-  return (
-    // `relative` so the primary link can stretch across the card; the quiet
-    // links at the bottom lift themselves clear with `z-10`.
-    <div className="group relative rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md">
-      {"breadcrumb" in file && file.breadcrumb.length > 0 && (
-        <BreadcrumbLine steps={file.breadcrumb} />
-      )}
+  const resumeLabel = place ? "Resume reading" : "Start reading";
 
-      <div className="flex items-start gap-3.5">
-        {/* Portrait, with a spine's worth of shadow: that silhouette is what
-            says "book" before a single word is read, and it is the signal that
-            survives being scanned at arm's length — which is how a folder of
-            ten is actually read. The document card's frame is squarer for the
-            same reason, from the other side. */}
+  return (
+    /*
+      **One row on a desktop** (designer's comp, 8 Oct 2026): the cover, the
+      title with its Text edition pill over where the reader is, then the two
+      ways round the reading and the one way into it, as buttons a pointer can
+      find. On a phone the buttons go under, the primary full width.
+
+      The whole card is the text's link — stretched from the title — and the
+      buttons sit above it with their own targets.
+    */
+    <div className="group relative flex flex-col gap-3 rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-3.5">
         <FileCover
           src={cover}
           title={file.title}
           id={file.id}
-          className="h-[5.5rem] w-[4.125rem] rounded-lg shadow-[0_1px_3px_rgba(0,0,0,.18)]"
+          className="h-16 w-12 rounded-md shadow-[0_1px_3px_rgba(0,0,0,.18)]"
         />
-
         <div className="min-w-0 flex-1">
-          <Link
-            href={href}
-            className="after:absolute after:inset-0 after:content-['']"
-          >
+          {"breadcrumb" in file && file.breadcrumb.length > 0 && (
+            <BreadcrumbLine steps={file.breadcrumb} />
+          )}
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Link href={href} className="min-w-0 after:absolute after:inset-0 after:content-['']">
+              <span
+                {...contentLang(file.title)}
+                className={`${contentLang(file.title).className} block truncate text-[0.9375rem] font-semibold leading-snug group-hover:underline`}
+              >
+                {file.title}
+              </span>
+            </Link>
+            {/* The pill is filled and the document rows have none — a badge
+                on both marks neither. */}
             <span
-              {...contentLang(file.title)}
-              className={`${contentLang(file.title).className} block text-[0.9375rem] font-semibold leading-snug group-hover:underline`}
-            >
-              {file.title}
-            </span>
-          </Link>
-
-          {/* The pill is filled and the document card has none — asymmetric on
-              purpose. A badge on both marks neither; a badge on the better one
-              is the whole signal. */}
-          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span
-              className="rounded-full px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.04em]"
+              className="shrink-0 rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.04em]"
               style={{ background: TINT.ink, color: "#fff" }}
             >
               Text edition
             </span>
-            {/* The wave, because this marks that an audio *file* exists — the
-                headphones are for listening as an act (the reader's Listen
-                button, the A/V tab's nav glyph) and for nothing else. */}
             {reading.has_audio && (
               <span className="inline-flex items-center gap-1 text-xs text-ink-soft">
                 <WaveformIcon className="h-3.5 w-3.5" />
@@ -219,99 +212,63 @@ export function ReadingCard({
             )}
           </span>
 
-          {/* The vocabulary of an experience, where the document card gives the
-              vocabulary of a file — "PDF · 133 pages · 12 MB" against this.
-              That contrast is the fastest of the five signals for anyone who
-              reads the row rather than scanning it.
-
-              One promise and not three. Font size and theme were in this line
-              and took it onto a second row on every phone, which is a real
-              cost paid for two settings nobody chooses a document by. Reflow
-              is the one that decides whether this is worth opening — it is the
-              whole of §1 — and the other two are found in the reader itself
-              within seconds of arriving. */}
-          <span className="mt-1 block text-xs text-ink-soft">
-            {chapters > 0 && (
-              <span className="tabular-nums">
-                {chapters} {chapters === 1 ? "chapter" : "chapters"} ·{" "}
+          <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
+            {place && place.pageCount > 0 && (
+              <span className="block h-1 w-full max-w-60 overflow-hidden rounded-full bg-canvas">
+                <span
+                  role="progressbar"
+                  aria-valuenow={percent}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${percent}% read`}
+                  className="block h-full rounded-full"
+                  style={{ width: `${Math.max(percent, 4)}%`, background: "var(--progress-fill)" }}
+                />
               </span>
             )}
-            reflows to your screen
-          </span>
-
-          {file.description && (
-            <span
-              {...contentLang(file.description)}
-              className={`${contentLang(file.description).className} mt-1 block text-xs text-ink-soft`}
-            >
-              {file.description}
+            <span className="tabular-nums">
+              {place && place.pageCount > 0
+                ? `Page ${place.page} of ${place.pageCount}`
+                : chapters > 0
+                  ? `${chapters} ${chapters === 1 ? "chapter" : "chapters"}`
+                  : null}
+              {(place && place.pageCount > 0) || chapters > 0 ? " · " : ""}
+              reflows to your screen
             </span>
-          )}
+          </span>
         </div>
-
-        <ChevronRight className="mt-0.5 h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5" />
       </div>
 
-      {/* The same bar and the same sentence the document row beside it uses.
-          Two rows in one folder, both saying where the reader is, and neither
-          of them inventing its own vocabulary for it. */}
-      {place && place.pageCount > 0 && (
-        <div className="mt-3">
-          <span className="block h-1.5 overflow-hidden rounded-full bg-canvas">
-            <span
-              role="progressbar"
-              aria-valuenow={percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={`${percent}% read`}
-              className="block h-full rounded-full"
-              style={{
-                // A floor, so the bar reads as a bar rather than as a stray
-                // dot — the exact page is spelled out underneath, so nothing
-                // here is doing the lying. Same reasoning as `PdfCard`.
-                width: `${Math.max(percent, 4)}%`,
-                background: "var(--progress-fill)",
-              }}
-            />
-          </span>
-          <span
-            className="mt-1.5 block text-xs font-semibold tabular-nums"
-            style={{ color: "var(--ws-ink)" }}
-          >
-            Resume on page {place.page} of {place.pageCount}
-          </span>
-        </div>
-      )}
-
-      {/* Icons without words, unlike the document card's spelled-out row. Both
-          of these are ways *round* the reading, and on this card that is a
-          smaller thing than it is on a plain PDF — but never a hidden one: the
-          scanned pages are the original and a reader must always be able to
-          reach them, particularly since OCR is sometimes wrong. */}
-      <div className="relative z-10 mt-3 flex items-center gap-3 border-t border-rule pt-2.5">
+      {/* The scanned pages are the original, and a reader must always be able
+          to reach them — OCR is sometimes wrong. */}
+      <div className="relative z-10 flex shrink-0 items-center gap-1 border-t border-rule pt-3 sm:border-0 sm:pt-0">
         <Link
-          // At the page they were on there, when there is one. This link is
-          // the *only* way the pages place can be reached from this screen —
-          // a file with a text edition never draws the document card that
-          // would otherwise carry it — so dropping the page here would be
-          // quietly throwing it away.
           href={pagesAt === null ? base : documentHref(file.node, file.id, pagesAt)}
           title={`Original pages${file.page_count ? ` — ${file.page_count} pages` : ""}`}
-          aria-label="Read the original pages"
-          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-ink-soft transition-colors hover:bg-ink/[.04] hover:text-ink"
+          className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-control px-2.5 text-sm text-ink transition-colors hover:bg-ink/5 sm:px-3"
         >
-          <DocumentIcon className="h-3.5 w-3.5" />
+          <DocumentIcon className="h-4 w-4 text-ink-soft" />
           <span>Original pages</span>
         </Link>
         <a
           href={file.url}
           download
+          target="_blank"
+          rel="noopener noreferrer"
           title={`Download the PDF${formatBytes(file.file_size) ? ` — ${formatBytes(file.file_size)}` : ""}`}
-          aria-label="Download the PDF"
-          className="inline-flex items-center rounded-lg px-2 py-1 text-ink-soft transition-colors hover:bg-ink/[.04] hover:text-ink"
+          className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-control px-2.5 text-sm text-ink transition-colors hover:bg-ink/5 sm:px-3"
         >
-          <DownloadIcon className="h-3.5 w-3.5" />
+          <DownloadIcon className="h-4 w-4 text-ink-soft" />
+          {/* the glyph alone on a phone, where three labelled buttons wrap */}
+          <span className="sr-only sm:not-sr-only">Download</span>
         </a>
+        <Link
+          href={href}
+          className="ms-auto inline-flex h-10 items-center whitespace-nowrap rounded-control px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 sm:ms-2"
+          style={{ background: "var(--ws-color)" }}
+        >
+          {resumeLabel}
+        </Link>
       </div>
     </div>
   );
