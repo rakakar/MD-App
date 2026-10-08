@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight } from "@/components/shell/icons";
+import { WordEntry } from "@/components/paribhasha/WordEntry";
 import { getParibhasha } from "@/lib/api";
 import { relatedWords } from "@/lib/assistant/related";
 import { searchGlossary } from "@/lib/glossary";
@@ -20,6 +21,11 @@ const MORE_ROWS = 3;
  * The first entry opens in full, because someone who typed a word wants its
  * definition and not a list to choose from; any others that also matched
  * follow as rows, each a tap from its own page.
+ *
+ * In full means the whole entry, every part of it, marked and followable as
+ * on its own page (designer's call, 8 Oct 2026) — not its first part with a
+ * count of the rest. Only what needs the device to work out stays behind
+ * "Full entry": related words and where the word occurs in the books.
  *
  * Answered from the dictionary on the device, so it is instant and costs
  * nothing. The endpoint is the fallback for a device that could not get the
@@ -107,17 +113,12 @@ export function ParibhashaAnswer({
           </span>
           {first.hinglish && <span className="text-sm text-ink-soft">{first.hinglish}</span>}
         </h3>
-        {first.definitions[0] && (
-          <p lang="hi" className="hi mt-3 text-lg leading-relaxed">
-            {first.definitions[0]}
-          </p>
-        )}
+        <div className="mt-3">
+          <WordEntry word={first} size="md" />
+        </div>
         <div className="mt-4 flex items-center gap-2 border-t border-rule pt-3 text-sm">
           <EntryIcon className="h-4 w-4 shrink-0" />
-          <span className="min-w-0 flex-1 text-ink-soft">
-            Paribhasha
-            {first.definitions.length > 1 && ` · ${first.definitions.length} parts`}
-          </span>
+          <span className="min-w-0 flex-1 text-ink-soft">Paribhasha</span>
           <Link
             href={`/paribhasha/${first.id}?from=assistant`}
             className="inline-flex min-h-11 items-center gap-1 font-semibold"
