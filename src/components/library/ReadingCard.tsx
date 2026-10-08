@@ -181,7 +181,7 @@ export function ReadingCard({
           src={cover}
           title={file.title}
           id={file.id}
-          className="h-16 w-12 rounded-md shadow-[0_1px_3px_rgba(0,0,0,.18)]"
+          className="h-[5.5rem] w-[4.125rem] shrink-0 rounded-lg shadow-[0_1px_3px_rgba(0,0,0,.18)]"
         />
         <div className="min-w-0 flex-1">
           {"breadcrumb" in file && file.breadcrumb.length > 0 && (

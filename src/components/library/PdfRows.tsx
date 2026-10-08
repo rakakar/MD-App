@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FileCover } from "@/components/library/FileCover";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { ReadingCard } from "@/components/library/ReadingCard";
@@ -10,6 +9,7 @@ import { RowMenu } from "@/components/library/RowMenu";
 import { LARGE_BYTES, downloadFiles } from "@/components/library/folderActions";
 import { formatBytes } from "@/components/library/format";
 import { CheckIcon, DownloadIcon } from "@/components/shell/icons";
+import { KindTile } from "@/components/ui/KindTile";
 import { contentLang } from "@/lib/script";
 import { getPdfPlace } from "@/lib/storage";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
@@ -21,7 +21,7 @@ type File = LibraryFile | LocatedFile;
  * edition as reading cards first, then the rest as one ruled list a reader can
  * pick from.
  *
- * Each row is one line — a checkbox, the first page, the title, pages, size,
+ * Each row is one line — a checkbox, the first page in its file tile, the title, pages, size,
  * download and ⋯ — and ticking rows raises a bar with what they come to and
  * one Download for all of them. Large files say so before a byte moves.
  */
@@ -154,12 +154,10 @@ function PdfRow({
         {picked && <CheckIcon className="h-3.5 w-3.5" />}
       </button>
 
-      <FileCover
-        src={file.thumbnail_url}
-        title={file.title}
-        id={file.id}
-        className="h-12 w-9 rounded-sm shadow-[0_1px_2px_rgba(0,0,0,.12)]"
-      />
+      {/* The document's own first page in the app's file tile, as the list had
+          it before the ruled rows (designer's call, 8 Oct 2026) — smaller than a
+          folder's tile, because a file is the smaller thing. */}
+      <KindTile kind="pdf" cover={file.thumbnail_url} size="md" />
 
       <span className="min-w-0 flex-1">
         {"breadcrumb" in file && file.breadcrumb.length > 0 && <BreadcrumbLine steps={file.breadcrumb} />}
