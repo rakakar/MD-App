@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { FindRow } from "@/components/library/FindRow";
-import { MoreResults } from "@/components/library/MoreResults";
+import { FindTable } from "@/components/library/FindTable";
 import { ClearFind } from "@/components/library/Sieve";
 import { EmptyState } from "@/components/ui";
 import { findHref, type FindState } from "@/lib/find";
@@ -76,22 +75,7 @@ export function FindResults({
       )}
 
       {results.length > 0 ? (
-        <ul className="mt-3 divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
-          {results.map((row) => (
-            <li key={`${row.type}-${row.id}`}>
-              <FindRow row={row} shelves={shelves} />
-            </li>
-          ))}
-          {/* Later pages append into this same list rather than starting a
-              card of their own — one answer, however many taps it took. */}
-          <MoreResults
-            scope={scope}
-            state={state}
-            total={count}
-            firstPage={results.length}
-            shelves={shelves}
-          />
-        </ul>
+        <FindTable first={results} scope={scope} state={state} total={count} shelves={shelves} />
       ) : (
         <NothingHere state={state} basePath={basePath} />
       )}
