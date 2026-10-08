@@ -244,7 +244,10 @@ export function Chip({
   onClick,
   onRemove,
   count,
+  compact = false,
 }: {
+  /** a 32px chip for a desktop line of text — the active filters beside a count */
+  compact?: boolean;
   label: string;
   selected?: boolean;
   variant?: "solid" | "tint";
@@ -278,9 +281,9 @@ export function Chip({
   // Media three of them share a 390pt row with the layout toggle — at 3.5 the
   // last count slid 14px under the toggle. Measured to fit at 390 and 428;
   // on a 360pt phone the row still runs over and scrolls sideways instead.
-  const base = `inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border ${
-    count != null ? "px-2.5" : "px-3.5"
-  } text-sm transition-colors`;
+  const base = `inline-flex ${compact ? "min-h-8 text-xs" : "min-h-11 text-sm"} shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border ${
+    compact ? "px-3" : count != null ? "px-2.5" : "px-3.5"
+  } transition-colors`;
   const cls = !selected
     ? `${base} border-rule bg-card text-ink`
     : variant === "solid"

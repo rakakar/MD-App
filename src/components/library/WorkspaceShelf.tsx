@@ -301,6 +301,16 @@ export async function WorkspaceShelf({
           basePath={basePath}
           scope={scope}
           shelves={shelves}
+          activeFilters={
+            <ActiveFindFilters
+              topics={topics}
+              facets={facets}
+              state={state}
+              basePath={basePath}
+              hideAxes={filterAxes}
+              inline
+            />
+          }
         />
       </>
     );

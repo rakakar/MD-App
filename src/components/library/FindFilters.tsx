@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useIsDesktop } from "@/components/ui/Dialog";
 import { KIND_LABEL, KIND_ORDER } from "./format";
 import { AXIS_LABEL, chipLabel } from "./Sieve";
 import { yearBands, yearSpan } from "./years";
@@ -20,6 +21,7 @@ import {
 import {
   FIND_AXES,
   FIND_ORDERINGS,
+  MIN_QUERY_CHARS,
   ORDERING_LABEL,
   clearAxis,
   effectiveOrdering,
@@ -198,6 +200,12 @@ export function FindFilters({
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const desktop = useIsDesktop();
+  useEffect(() => {
+    if (Date.now() - reopenAt > 10_000) return;
+    reopenAt = 0;
+    setOpen(true);
+  }, []);
 
   const live = liveAxes(facets, state, hideAxes);
   const axes = drawableAxes(live).filter(
@@ -209,6 +217,25 @@ export function FindFilters({
   // Counted over every axis in use, drawable or not, so the button and the chip
   // row below it can never disagree about how narrowed the page is.
   const count = shownCount(live, state);
+
+  if (desktop) {
+    return (
+      <FilterPopover
+        open={open}
+        onToggle={() => setOpen((o) => !o)}
+        onClose={() => setOpen(false)}
+        count={count}
+        iconOnly={iconOnly}
+        axes={axes}
+        topics={topics}
+        state={state}
+        basePath={basePath}
+        itemCount={itemCount}
+        noun={noun}
+        clearAllHref={count > 0 || state.ordering ? findHref(basePath, clearSheet(state, live)) : null}
+      />
+    );
+  }
 
   return (
     <>
@@ -264,6 +291,204 @@ export function FindFilters({
         <SortSection state={state} basePath={basePath} />
       </Sheet>
     </>
+  );
+}
+
+/**
+ * **The filters on a desktop: a panel hanging from the button** (designer's
+ * comp, 8 Oct 2026), instead of a sheet rising over the whole window. At a
+ * desk the grid behind is worth keeping in view — every chip still navigates
+ * underneath, so the reader watches the shelf narrow as they choose, and the
+ * panel stays open until they click away from it.
+ *
+ * Denser than the sheet, as a desktop menu is: an uppercase heading per axis
+ * with its own Clear, counted chips, Sort as one segmented row, and the live
+ * count with Clear all in a footer.
+ */
+/**
+ * Set when a choice is made inside the panel, read once by the next mount.
+ *
+ * A chip is a navigation, and the first one on a shelf turns its browse into a
+ * find — a different page under the same URL, which mounts a fresh button with
+ * its panel shut. The reader was in the middle of choosing; this carries the
+ * panel across, so it reopens where they left it.
+ *
+ * A time rather than a flag: when the page does *not* remount, nothing reads
+ * it, and a flag left standing would pop the panel open on some later page.
+ */
+let reopenAt = 0;
+
+const SHORT_ORDER: Record<FindOrdering, string> = {
+  "-added": "Newest",
+  added: "Oldest",
+  "-duration": "Longest",
+};
+
+function FilterPopover({
+  open,
+  onToggle,
+  onClose,
+  count,
+  iconOnly,
+  axes,
+  topics,
+  state,
+  basePath,
+  itemCount,
+  noun,
+  clearAllHref,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  count: number;
+  iconOnly: boolean;
+  axes: { axis: FindAxis; options: FacetValue[] }[];
+  topics: Topic[];
+  state: FindState;
+  basePath: string;
+  itemCount: number;
+  noun: string;
+  clearAllHref: string | null;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
+
+  // "Best" is relevance, which only exists with words in the box; without
+  // them the list is newest first, and a Best beside Newest would be two
+  // names for one order.
+  const asked = state.q.length >= MIN_QUERY_CHARS;
+  const current = effectiveOrdering(state);
+  const sorts: { value: FindOrdering | ""; label: string }[] = [
+    ...(asked ? [{ value: "" as const, label: "Best" }] : []),
+    ...FIND_ORDERINGS.map((value) => ({ value, label: SHORT_ORDER[value] })),
+  ];
+
+  const heading = "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft";
+
+  return (
+    <div
+      ref={ref}
+      className="relative"
+      onClickCapture={(e) => {
+        const t = e.target as HTMLElement;
+        if (t.closest("[role=dialog] a, [role=dialog] [role=radio]")) reopenAt = Date.now();
+      }}
+    >
+      <FilterButton count={count} onClick={onToggle} iconOnly={iconOnly} />
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Filters"
+          className="absolute right-0 top-full z-40 mt-2 flex max-h-[min(36rem,calc(100dvh-8rem))] w-[26rem] flex-col overflow-hidden rounded-card border border-rule bg-card shadow-raised"
+        >
+          <div className="min-h-0 flex-1 divide-y divide-rule overflow-y-auto overscroll-contain">
+            {axes.map(({ axis, options }) => {
+              const on = state.selection[axis]?.length ?? 0;
+              return (
+                <section key={axis} className="px-4 py-3.5">
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <h3 className={heading}>{AXIS_HEADING[axis].replace(/^By /, "")}</h3>
+                    {on > 0 && (
+                      <Link
+                        href={findHref(basePath, clearAxis(state, axis))}
+                        className="text-xs font-semibold"
+                        style={{ color: "var(--ws-ink)" }}
+                      >
+                        Clear
+                      </Link>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2" role="group" aria-label={AXIS_LABEL[axis]}>
+                    {axis === "topic"
+                      ? liveTopics(topics, options).map((topic) => (
+                          <Chip
+                            key={topic.code}
+                            label={topic.name}
+                            count={options.find((o) => o.value === topic.code)?.count}
+                            href={findHref(basePath, toggleChip(state, "topic", topic.code))}
+                            selected={isChipOn(state, "topic", topic.code)}
+                          />
+                        ))
+                      : axis === "year"
+                        ? yearBands(options).map((band) => (
+                            <Chip
+                              key={band.label}
+                              label={band.label}
+                              count={options
+                                .filter((o) => band.values.includes(o.value))
+                                .reduce((n, o) => n + o.count, 0)}
+                              href={findHref(basePath, toggleGroup(state, "year", band.values))}
+                              selected={band.values.every((v) => isChipOn(state, "year", v))}
+                            />
+                          ))
+                        : options.map((chip) => (
+                            <Chip
+                              key={chip.value}
+                              label={chipLabel(axis, chip)}
+                              count={chip.count}
+                              href={findHref(basePath, toggleChip(state, axis, chip.value))}
+                              selected={isChipOn(state, axis, chip.value)}
+                            />
+                          ))}
+                  </div>
+                </section>
+              );
+            })}
+
+            <section className="px-4 py-3.5">
+              <h3 className={`${heading} mb-2.5`}>Sort by</h3>
+              <div role="radiogroup" aria-label="Sort by" className="flex gap-1 rounded-control border border-rule bg-inset p-1">
+                {sorts.map((o) => {
+                  const active = current === o.value;
+                  return (
+                    <button
+                      key={o.label}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => router.push(findHref(basePath, setOrdering(state, o.value)))}
+                      className={`min-h-9 flex-1 rounded-md border text-sm transition-colors ${
+                        active ? "border-rule bg-card font-semibold shadow-sm" : "border-transparent text-ink hover:bg-ink/5"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-rule px-4 py-3">
+            <span className="text-sm text-ink-soft tabular-nums">
+              {itemCount} {itemCount === 1 ? noun : `${noun}s`}
+            </span>
+            {clearAllHref && (
+              <Link href={clearAllHref} className="text-sm font-semibold" style={{ color: "var(--ws-ink)" }}>
+                Clear all
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -432,12 +657,15 @@ export function ActiveFindFilters({
   state,
   basePath,
   hideAxes = [],
+  inline = false,
 }: {
   topics: Topic[];
   facets: LibraryFacets;
   state: FindState;
   basePath: string;
   hideAxes?: FindAxis[];
+  /** compact, with no space of its own — set beside a result count */
+  inline?: boolean;
 }) {
   const router = useRouter();
   const axes = liveAxes(facets, state, hideAxes);
@@ -483,11 +711,8 @@ export function ActiveFindFilters({
     }
   }
 
-  return (
-    <div className="mt-3">
-      <ActiveFilters items={items} onClear={() => go(clearShown(state, axes))} />
-    </div>
-  );
+  const row = <ActiveFilters items={items} onClear={() => go(clearShown(state, axes))} compact={inline} />;
+  return inline ? row : <div className="mt-3">{row}</div>;
 }
 
 /**

@@ -26,7 +26,14 @@ export function FindResults({
   basePath,
   scope,
   shelves,
+  activeFilters,
 }: {
+  /**
+   * Desktop: the filters that are on, as removable chips beside the count —
+   * the designer's comp, 8 Oct 2026. They then carry the Clear, so the
+   * line's own Clear steps aside.
+   */
+  activeFilters?: React.ReactNode;
   find: LibraryFindResponse;
   state: FindState;
   basePath: string;
@@ -35,19 +42,25 @@ export function FindResults({
   shelves: ShelfMap;
 }) {
   const { results, count } = find;
+  // With chips on the line, their own Clear is the way out; the line's would
+  // be a second one. With only words in the box there are no chips, and it
+  // stays.
+  const chipsCarryClear =
+    !!activeFilters && Object.values(state.selection).some((v) => (v?.length ?? 0) > 0);
 
   return (
     <div className="mt-5">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
-        <span>
-          {count > 0 ? `${count} ${count === 1 ? "result" : "results"}` : "No results"}
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span>{count > 0 ? `${count} ${count === 1 ? "result" : "results"}` : "No results"}</span>
+          {activeFilters && <span className="hidden lg:contents">{activeFilters}</span>}
         </span>
         {/* Desktop only. The phone's way out is the "Clear" beside the chips it
             clears, where the comps put it; this line would be a second one at
             the far edge of the same eyeful, saying a different number because
             it counts the query too. The rail's copy of the filters has no such
             row, so on a desktop this is still the only one. */}
-        <span className="hidden lg:inline">
+        <span className={chipsCarryClear ? "hidden" : "hidden lg:inline"}>
           <ClearFind basePath={basePath} state={state} />
         </span>
       </div>

@@ -113,12 +113,15 @@ export function AvShelf({
   // holds, rather than on a heading of its own above the first collection.
   // One count, in one place: the search results used to print a second copy
   // of the same two numbers under the controls.
+  const countLabel = `${find.count} ${find.count === 1 ? "recording" : "recordings"}`;
   const meta =
     find.count > 0 ? (
-      <>
-        {find.count} {find.count === 1 ? "recording" : "recordings"}
+      // With filters on, a desktop says the count beside them instead — see
+      // below — so it is said once.
+      <span className={narrowed > 0 ? "lg:hidden" : undefined}>
+        {countLabel}
         {groups.length > 1 && <> · {groups.length} collections</>}
-      </>
+      </span>
     ) : null;
 
   return (
@@ -188,6 +191,21 @@ export function AvShelf({
           hideAxes={hideAxes}
         />
       </div>
+      {/* Desktop: the count with the filters that made it, as removable
+          chips — the designer's comp, 8 Oct 2026, as on the Library. */}
+      {narrowed > 0 && (
+        <div className="mt-2 hidden flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-soft lg:flex">
+          <span className="tabular-nums">{countLabel}</span>
+          <ActiveFindFilters
+            topics={topics}
+            facets={facets}
+            state={state}
+            basePath={basePath}
+            hideAxes={hideAxes}
+            inline
+          />
+        </div>
+      )}
       <RailSlot>
         <RailFacets
           facets={facets}

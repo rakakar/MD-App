@@ -101,20 +101,29 @@ export function FindRow({
 export function ActiveFilters({
   items,
   onClear,
+  compact = false,
 }: {
   items: { key: string; label: string; onRemove: () => void }[];
   onClear: () => void;
+  /** smaller chips, in a line of text — beside a desktop result count */
+  compact?: boolean;
 }) {
   if (items.length === 0) return null;
   return (
-    <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+    <div
+      className={
+        compact
+          ? "flex flex-wrap items-center gap-2"
+          : "-mx-4 flex items-center gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0"
+      }
+    >
       {items.map((i) => (
-        <Chip key={i.key} label={i.label} selected variant="tint" onRemove={i.onRemove} />
+        <Chip key={i.key} label={i.label} selected variant="tint" onRemove={i.onRemove} compact={compact} />
       ))}
       <button
         type="button"
         onClick={onClear}
-        className="min-h-11 shrink-0 px-1 text-sm font-medium text-ink-soft transition-colors hover:text-ink"
+        className={`${compact ? "min-h-8 text-xs" : "min-h-11 text-sm"} shrink-0 px-1 font-medium text-ink-soft transition-colors hover:text-ink`}
       >
         Clear
       </button>
