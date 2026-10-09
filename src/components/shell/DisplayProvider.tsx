@@ -71,6 +71,12 @@ interface DisplayValue {
   reset: () => void;
   /** false until the saved prefs have been read, so nothing writes a default over them */
   loaded: boolean;
+  /**
+   * The phone app bar reports its painted colour here, or null when it is not
+   * showing, so the status bar above it can be the same colour. See Header.tsx
+   * `useStatusBarMatchesBar`.
+   */
+  reportChrome: (hex: string | null) => void;
 }
 
 const DisplayContext = createContext<DisplayValue | null>(null);
@@ -89,6 +95,9 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
   // The status bar follows the book while one is open, so this has to move
   // with the route as well as with the settings.
   const reading = ownsViewport(usePathname() ?? "/");
+  // The app bar's own colour, while one is on screen. It carries the
+  // workspace's 8% trace, which THEME_BG cannot know about.
+  const [chrome, reportChrome] = useState<string | null>(null);
 
   useEffect(() => {
     const p = getPrefs();
@@ -129,7 +138,12 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
       }
       // Most of this audience installs to the home screen, where this is the
       // status bar. A terracotta bar over a dark app reads as a broken app.
-      meta.content = paper ?? THEME_BG[next];
+      //
+      // The installed app's status bar is solid (see `appleWebApp` in
+      // layout.tsx), so it sits directly above the app bar. When the app bar
+      // has reported its colour, the status bar takes that colour and the two
+      // read as one bar, as they did when the bar ran up under the clock.
+      meta.content = paper ?? chrome ?? THEME_BG[next];
     };
     apply();
     if (theme !== "system") return;
@@ -159,7 +173,7 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", onReturn);
       window.removeEventListener("pageshow", apply);
     };
-  }, [theme, readerTheme, reading, loaded]);
+  }, [theme, readerTheme, reading, chrome, loaded]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -221,6 +235,7 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
         setBoldText,
         reset,
         loaded,
+        reportChrome,
       }}
     >
       {children}

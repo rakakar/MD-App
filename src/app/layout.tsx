@@ -94,8 +94,21 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     title: "MD Study",
-    // the reader paints its own background to the top edge (viewport-fit=cover)
-    statusBarStyle: "black-translucent",
+    /* A solid status bar, painted from `theme-color` (see the pre-paint script
+       and DisplayProvider), so it still follows the theme and the book's paper.
+
+       It was `black-translucent`, which ran the page up under the status bar.
+       From iOS 26 the system frosts whatever sits under the status bar in an
+       installed web app, and no CSS or meta tag turns that off. Here that was
+       the app bar, so on iOS 27 the whole bar looked out of focus. With the bar
+       solid there is nothing under it to frost, and `env(safe-area-inset-top)`
+       becomes 0, so the layout needs no change.
+
+       iOS reads this once, when the app is added to the home screen: an
+       existing icon keeps the old style until it is removed and added again.
+       The native shell does not read it; its fix is in
+       `ios/App/App/SceneDelegate.swift`. */
+    statusBarStyle: "default",
   },
   openGraph: {
     type: "website",

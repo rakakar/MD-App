@@ -11,6 +11,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
 import { signInHref } from "@/lib/routes";
 import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceConfig";
+import { useDisplay } from "./DisplayProvider";
 import { DisplaySheet } from "./DisplaySheet";
 import { useWorkspace } from "./WorkspaceProvider";
 import {
@@ -783,9 +784,71 @@ function useHeaderHeight(ref: React.RefObject<HTMLElement | null>) {
   }, [ref]);
 }
 
+/**
+ * **The status bar is the top of this bar.**
+ *
+ * The installed app's status bar is solid now, painted from `theme-color`.
+ * It had to stop being translucent because iOS 26+ frosts anything that runs
+ * under it; see `appleWebApp` in layout.tsx. With the theme's plain surface
+ * colour it would sit as a lighter band above this bar, because the bar carries
+ * the workspace's 8% trace (`--ws-chrome`). So the bar reports what it actually
+ * paints, and DisplayProvider, which still owns the tag, uses that colour.
+ *
+ * It is measured rather than computed for the same reason as the height above:
+ * the colour is a `color-mix` of the workspace hue and the theme's surface, and
+ * the browser has already resolved it. It is keyed on `resolved` rather than
+ * on the theme setting: DisplayProvider writes `data-theme` in an effect that
+ * runs after this one, and only then updates `resolved`. So by the time this
+ * effect sees a new `resolved`, the new theme is already painted. (Waiting a
+ * frame instead does not work, because a hidden page gets no frames.)
+ *
+ * When the bar is hidden (on a desktop) or unmounted (inside a book, or on a
+ * bare route), it reports null and the theme colour applies again.
+ */
+function useStatusBarMatchesBar(ref: React.RefObject<HTMLElement | null>) {
+  const { resolved, reportChrome } = useDisplay();
+  const { workspace } = useWorkspace();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const wide = window.matchMedia("(min-width: 64rem)");
+    const measure = () => {
+      const shown = el.getClientRects().length > 0;
+      reportChrome(shown ? toHex(getComputedStyle(el).backgroundColor) : null);
+    };
+    measure();
+    wide.addEventListener("change", measure);
+    return () => {
+      wide.removeEventListener("change", measure);
+      reportChrome(null);
+    };
+  }, [ref, resolved, workspace.id, reportChrome]);
+}
+
+/**
+ * `rgb(…)` or `color(srgb …)`, which is how a resolved `color-mix` comes back,
+ * as #rrggbb. Returns null for anything else, so the theme colour applies
+ * instead of a guess.
+ */
+function toHex(css: string): string | null {
+  const nums = css.match(/[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 3) return null;
+  const scale = css.startsWith("color(srgb") ? 255 : css.startsWith("rgb") ? 1 : 0;
+  if (!scale) return null;
+  return (
+    "#" +
+    nums
+      .slice(0, 3)
+      .map((n) => Math.round(Math.min(255, Math.max(0, n * scale))).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
 export function Header() {
   const ref = useRef<HTMLElement>(null);
   useHeaderHeight(ref);
+  useStatusBarMatchesBar(ref);
 
   return (
     <header
