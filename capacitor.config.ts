@@ -62,12 +62,16 @@ const config: CapacitorConfig = {
    * the web layer already draws to the full height, which the reader on a
    * booted emulator confirms.
    *
-   * iOS has knobs that probably want changing — `ios.contentInset` in
-   * particular, since the app positions itself with `env(safe-area-inset-*)`
-   * and WKWebView's own insets would stack on top of that. They are left at
-   * their defaults because nothing here has run on iOS yet (no Xcode on the
-   * machine this was set up on). Set them once you can watch the result;
-   * a guessed value with a confident comment beside it is worse than a default.
+   * iOS needs none either. The worry was `ios.contentInset`: the app positions
+   * itself with `env(safe-area-inset-*)`, and if WKWebView added its own
+   * insets the padding would be applied twice. Capacitor's default is `never`,
+   * which adds no inset of its own (`CAPInstanceDescriptor.m`), so the
+   * default is already the value this app needs. The first device run, on an
+   * iPhone 14 Plus under iOS 27 (October 2026), showed nothing doubled.
+   *
+   * The one iOS-only fix is native, not config: iOS 26+ frosts web content
+   * under the status bar, and `MainViewController` in
+   * `ios/App/App/SceneDelegate.swift` switches that off.
    */
 };
 

@@ -336,10 +336,11 @@ prompt, न कोई वजह। अब shell `@capacitor/push-notifications` 
 
 ## स्थिति
 
-`ios/` project पूरा तैयार है — Xcode project, Swift Package setup (Capacitor 8
-में CocoaPods नहीं), icons, और light/dark splash. **बस build नहीं हुई है**,
-क्योंकि जिस मशीन पर यह सब बना उसमें Xcode के लिए जगह नहीं थी। इस अध्याय में
-setup वाला हिस्सा सच है और verified नहीं है, यह फ़र्क़ याद रखिए।
+`ios/` project पूरा तैयार है और **चल चुका है**: Xcode project, Swift Package
+setup (Capacitor 8 में CocoaPods नहीं), icons और light/dark splash. पहली device
+build 9 अक्टूबर 2026 को हुई, Xcode 27 से, iPhone 14 Plus (iOS 27) पर, free
+personal team के साथ. Store वाला हिस्सा (Archive, APNs, review) अभी भी आज़माया
+नहीं गया है।
 
 ## Build करना
 
@@ -353,13 +354,37 @@ npx cap sync ios
 npx cap open ios
 ```
 
-Xcode में Signing & Capabilities → अपनी team चुनिए → Run.
+Xcode में Signing & Capabilities → अपनी team चुनिए → Run (⌘R).
+
+पहली build में जो अड़चनें आईं:
+
+- **Install Xcode की window से कीजिए, terminal से नहीं.** Command line वाला
+  `xcodebuild` compile तो कर देता है, पर codesign पर `errSecInternalComponent`
+  देकर रुक जाता है, क्योंकि keychain का password prompt सिर्फ़ Xcode की window
+  में आ सकता है। जब prompt आए, तो Mac का login password डालिए (Apple ID का
+  नहीं) और **Always Allow** दबाइए।
+- **Capacitor की framework GitHub से आती है**, और वह download कभी-कभी बहुत धीमा
+  (~20 KB/s) चलता है जबकि बाक़ी internet तेज़ होता है। अगर Xcode
+  "CapApp-SPM (resolving…)" पर अटका रहे, तो `Capacitor.xcframework.zip` को
+  `curl -C -` से टुकड़ों में उतारिए, उसका checksum capacitor-swift-pm की
+  `Package.swift` से मिलाइए, और उसे `~/Library/Caches/org.swift.swiftpm/artifacts/`
+  में URL वाले नाम से रख दीजिए। जब तक Xcode ख़ुद वही file उतार रहा हो, तब तक
+  ऐसा मत कीजिए, वरना दोनों टकराते हैं ("already exists")। उसके बाद
+  File → Packages → Resolve Package Versions.
+- **Xcode का "recommended settings" upgrade मत मानिए.** वह और चीज़ों के साथ
+  deployment target को 15.0 से ऊपर कर देता है, जिससे पुराने iPhone छूट जाते हैं।
+- Xcode `Info.plist` की formatting बदल देता है और उसका comment हटा देता है।
+  ऐसा हो तो `git checkout ios/App/App/Info.plist` कर दीजिए।
 
 ## अपने iPhone पर आज़माना — $99 के बिना
 
 Xcode की **free personal team** से अपने ही device पर install हो जाता है, 7 दिन के
 लिए। USB से फ़ोन जोड़िए, Xcode में उसे चुनिए, Run. Store के लिए ही $99/साल वाला
 Apple Developer Program चाहिए।
+
+पहली बार फ़ोन पर दो काम करने पड़ते हैं: Settings → Privacy & Security →
+**Developer Mode** on (फ़ोन restart होगा), और पहली install के बाद
+Settings → General → VPN & Device Management → अपना Apple ID → **Trust**.
 
 ## App Store के लिए
 
@@ -384,11 +409,18 @@ Apple reject करता है। बचाव यह है कि app मे
 पूरा internet खोल देता है और App Review में उसका औचित्य देना पड़ता है। जब app
 सिर्फ़ deployed https origin पर जाए, तो ये keys हटाई जा सकती हैं।
 
-**`ios.contentInset` शायद बदलनी पड़ेगी.** App अपनी जगह `env(safe-area-inset-*)`
-से बनाती है, और WKWebView अपने insets उसके ऊपर जोड़ सकता है — दोहरा padding। यह
-`capacitor.config.ts` में जान-बूझकर default पर छोड़ा गया है, क्योंकि iOS पर कुछ
-चला ही नहीं है। जब देख सकें तब तय कीजिए; बिना जाँचे value और उसके बग़ल में
-आत्मविश्वास से लिखा comment — default से बुरा है।
+**`ios.contentInset` को छूने की ज़रूरत नहीं.** डर यह था कि app अपनी जगह
+`env(safe-area-inset-*)` से बनाती है और WKWebView उसके ऊपर अपने insets जोड़ देगा,
+यानी padding दो बार लगेगी। पर Capacitor का default `never` है, जो अपनी तरफ़ से
+कोई inset नहीं जोड़ता, और इस app को यही चाहिए। पहली device run में कुछ भी दोहरा
+नहीं दिखा।
+
+**iOS 26+ status bar के नीचे का content धुंधला करता है.** इसे "scroll edge
+effect" कहते हैं, और यह UIKit का अपना blur है, CSS का नहीं। उसके नीचे app bar
+आता है, इसलिए iOS 27 पर पूरा bar out of focus लगता था। इसे
+`ios/App/App/SceneDelegate.swift` का `MainViewController` बंद करता है। Status bar
+को solid करना भी एक उपाय है, पर तब reader अपना paper screen के ऊपरी किनारे तक
+नहीं ले जा पाता।
 
 ---
 
@@ -429,9 +461,10 @@ npx @capacitor/assets generate --iconBackgroundColor '#fdfbf8' --iconBackgroundC
 
 ## जो अभी नहीं हुआ
 
-- **iOS पर कुछ भी चलाया नहीं गया** — Xcode ही नहीं था
 - **Release signing / `.aab`** — keystore नहीं बना, `bundleRelease` नहीं चला
-- **iOS push** — code साझा है और चलेगा, पर उसके लिए Firebase में APNs key
-  चढ़ानी होगी और iOS पर अभी कुछ भी build नहीं हुआ
+- **iOS push**: code साझा है, और plugin अब iOS project में भी जुड़ा है। बस
+  Firebase में APNs key चढ़ानी बाक़ी है, जिसके लिए paid Developer Program
+  चाहिए; free team पर push नहीं चलता।
+- **App Store build**: Archive, release signing और review, कुछ भी नहीं हुआ
 - **Background audio** — native audio session नहीं है, और Apple के सामने यही
   सबसे मज़बूत दलील होती
