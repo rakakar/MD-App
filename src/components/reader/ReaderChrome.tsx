@@ -418,7 +418,7 @@ const SWATCH_LABEL: Record<HighlightColour, string> = {
  * bookmark button is gone from the bottom bar, and a highlight is a bookmark
  * with a colour in the store. Note · Share · Copy are the comps' three. What
  * follows them is ours and conditional — Paribhasha only when the glossary
- * actually has the word, ▶ Here only when there is audio — so the common case
+ * actually has the word, ▶ Listen only when there is audio — so the common case
  * is the four the comps draw.
  */
 export function SelectionBar({
@@ -480,7 +480,7 @@ export function SelectionBar({
       <SelectionAction onClick={onCopy}>Copy</SelectionAction>
 
       {onParibhasha && <SelectionAction onClick={onParibhasha}>Paribhasha</SelectionAction>}
-      {onPlayHere && <SelectionAction onClick={onPlayHere}>▶ Here</SelectionAction>}
+      {onPlayHere && <SelectionAction onClick={onPlayHere}>▶ Listen</SelectionAction>}
       <SelectionAction onClick={onReport} ariaLabel="Report a problem with this passage">
         Report
       </SelectionAction>

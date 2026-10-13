@@ -169,6 +169,12 @@ interface Selection {
    * reconciled, which is the signal to fall back to the whole paragraph.
    */
   span?: { start: number; end: number };
+  /**
+   * When the reader's own touch selection runs over more than one paragraph:
+   * each paragraph's words, in order. `para`, `text` and `span` above are then
+   * the first paragraph, all of the text, and the first paragraph's span.
+   */
+  parts?: { para: Paragraph; text: string; span?: { start: number; end: number } }[];
 }
 
 /** an offer to jump to a saved position in another chapter */
@@ -800,8 +806,25 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // menu and Google's search sheet never appear (useTouchSelection).
   const touchSel = useTouchSelection({
     contentRef,
-    onSelect: (host, range) => setSelection(selectionFrom(host, range)),
+    onSelect: (parts) => {
+      const each = parts
+        .map((p) => selectionFrom(p.host, p.range))
+        .filter((x): x is Selection => x !== null);
+      if (each.length <= 1) return setSelection(each[0] ?? null);
+      setSelection({
+        para: each[0].para,
+        // a blank line between paragraphs, as they stand on the page
+        text: each.map((x) => x.text).join("\n\n"),
+        span: each[0].span,
+        parts: each.map(({ para, text, span }) => ({ para, text, span })),
+      });
+    },
   });
+  /** every paragraph the selection touches, for the wash behind them */
+  const selectedRefs = useMemo(
+    () => (selection ? (selection.parts ?? [selection]).map((p) => p.para.canonical_ref) : undefined),
+    [selection]
+  );
   const { clear: clearTouch, justSelected, madeSince, active: touchActive } = touchSel;
   /** the tap that clears a selection is not also a tap on what is under it */
   const swallowClick = useRef(false);
@@ -1193,24 +1216,27 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    * is the one outcome a reading app must never produce.
    */
   const doHighlight = useCallback(
-    (ref: string, colour: HighlightColour, span?: { start: number; end: number }) => {
+    (sel: Selection, colour: HighlightColour) => {
       track("bookmark_add");
-      const para = paraByRef.get(ref);
-      saveBookmark(
-        {
-          canonical_ref: ref,
-          book_code: book.code,
-          book_title: book.title_hi,
-          text_hi: para?.text_hi,
-        },
-        !!user,
-        colour,
-        // No span means the words could not be located in the paragraph's own
-        // text — a table cell, or text the block renders its own way. The
-        // paragraph is then painted whole, which is what a highlight was
-        // before spans existed and is never wrong, only coarse.
-        span && para ? { ...span, text: para.text_hi.slice(span.start, span.end), colour } : undefined
-      );
+      // A selection over several paragraphs is several highlights — one per
+      // paragraph, each on its own words, because that is how they are kept.
+      for (const { para, span } of sel.parts ?? [sel]) {
+        saveBookmark(
+          {
+            canonical_ref: para.canonical_ref,
+            book_code: book.code,
+            book_title: book.title_hi,
+            text_hi: para.text_hi,
+          },
+          !!user,
+          colour,
+          // No span means the words could not be located in the paragraph's
+          // own text — a table cell, or text the block renders its own way.
+          // The paragraph is then painted whole, which is what a highlight was
+          // before spans existed and is never wrong, only coarse.
+          span ? { ...span, text: para.text_hi.slice(span.start, span.end), colour } : undefined
+        );
+      }
       // The store is written synchronously, so re-reading it here paints the
       // passage in the same frame the bar closes — which is the whole point of
       // a local-first write, and the difference between "Highlighted" being a
@@ -1219,7 +1245,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       confirmSaved("Highlighted");
       clearSelection();
     },
-    [user, book.code, book.title_hi, paraByRef, confirmSaved, clearSelection, refreshPainted]
+    [user, book.code, book.title_hi, confirmSaved, clearSelection, refreshPainted]
   );
 
   /**
@@ -1818,7 +1844,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 page={page}
                 matcher={glossaryUnderline ? matcher : null}
                 activeSeq={activeSeq}
-                selectedRef={selection?.para.canonical_ref}
+                selectedRefs={selectedRefs}
                 painted={painted}
                 margin={marginFor}
               />
@@ -1895,7 +1921,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     page={pg}
                     matcher={glossaryUnderline ? matcher : null}
                     activeSeq={activeSeq}
-                    selectedRef={selection?.para.canonical_ref}
+                    selectedRefs={selectedRefs}
                     painted={painted}
                     margin={marginFor}
                     chapterLabel={pi === 0 && !isFrontMatter ? `अध्याय ${chapterNumber}` : undefined}
@@ -2020,9 +2046,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {selection && !noteOpen && (
         <SelectionBar
           bottom={bottomOffset}
-          onHighlight={(colour) =>
-            doHighlight(selection.para.canonical_ref, colour, selection.span)
-          }
+          onHighlight={(colour) => doHighlight(selection, colour)}
           onNote={() => {
             setNoteTarget(selection);
             setNoteOpen(true);
@@ -2275,7 +2299,7 @@ function PageParas({
   page,
   matcher,
   activeSeq,
-  selectedRef,
+  selectedRefs,
   painted,
   chapterLabel,
   pageLabel,
@@ -2291,7 +2315,7 @@ function PageParas({
   /** null when the reader has underlining off, or the index has not arrived */
   matcher: Matcher | null;
   activeSeq: number | null;
-  selectedRef?: string;
+  selectedRefs?: string[];
   painted: Map<string, HighlightRange[]>;
 }) {
   const segments = useMemo(
@@ -2345,7 +2369,7 @@ function PageParas({
           para={p}
           pageKey={page.key}
           activeSeq={activeSeq}
-          selectedRef={selectedRef}
+          selectedRefs={selectedRefs}
           segments={painting[i] ?? null}
           highlighted={(painted.get(p.canonical_ref)?.length ?? 0) > 0}
           dot={painted.get(p.canonical_ref)?.[0]?.colour}
@@ -2375,7 +2399,7 @@ function ParaWrap({
   para,
   pageKey,
   activeSeq,
-  selectedRef,
+  selectedRefs,
   segments,
   highlighted,
   dot,
@@ -2389,7 +2413,7 @@ function ParaWrap({
   para: Paragraph;
   pageKey: string;
   activeSeq: number | null;
-  selectedRef?: string;
+  selectedRefs?: string[];
   segments?: PaintedSegment[] | null;
   /** whether anything in this paragraph is painted — for the selection rule */
   highlighted?: boolean;
@@ -2397,7 +2421,7 @@ function ParaWrap({
   dot?: HighlightColour;
 }) {
   const isActive = activeSeq === para.sequence;
-  const isSelected = selectedRef === para.canonical_ref;
+  const isSelected = !!selectedRefs?.includes(para.canonical_ref);
   return (
     <div
       id={`p-${pageKey}-${para.para_number}`}

@@ -17,14 +17,15 @@ import { textNodes } from "@/lib/highlights";
  * - press and hold a word: it is selected, and dragging without lifting
  *   extends it, a word at a time;
  * - two handles adjust either end afterwards;
- * - a selection never leaves its paragraph, which is all the reader's actions
- *   ever used anyway (a highlight, a note and a share are each one paragraph).
+ * - either can run on into the next paragraph, or back into the one before.
+ *   What it hands the reader is one part per paragraph, because that is how a
+ *   highlight is stored: as words within one paragraph's text.
  *
  * Mouse and keyboard keep the browser's selection — they never had a pill.
  *
- * The selection is held as character offsets into the paragraph's text nodes
- * (the same nodes `selectionSpan` counts), and turned into a live Range only
- * to measure it. Hit-testing is done by measuring characters rather than with
+ * Each end is held as a paragraph and a character offset into its text nodes
+ * (the same nodes `selectionSpan` counts), and turned into live Ranges only
+ * to measure them. Hit-testing is done by measuring characters rather than with
  * `caretRangeFromPoint`, which has nothing to land on in unselectable text.
  */
 
@@ -34,10 +35,35 @@ const SLOP = 10;
 const KNOB = 26;
 const GRAB = 60;
 
-interface Sel {
+/** A place in the book's text: a paragraph, and a character offset into it. */
+interface Pos {
   host: HTMLElement;
-  start: number;
-  end: number;
+  offset: number;
+}
+
+/** `start` is never after `end`. */
+interface Sel {
+  start: Pos;
+  end: Pos;
+}
+
+/** What a selection hands the reader: the words it covers in each paragraph. */
+export interface TouchPart {
+  host: HTMLElement;
+  range: Range;
+}
+
+/** Document order: negative when `a` comes first. */
+function cmp(a: Pos, b: Pos): number {
+  if (a.host === b.host) return a.offset - b.offset;
+  return a.host.compareDocumentPosition(b.host) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+}
+
+/** The paragraphs on show, in order — not a margin note's. */
+function hostsOf(root: HTMLElement): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>("[data-ref]")].filter(
+    (h) => !h.parentElement?.closest("[data-margin]") && !h.hasAttribute("data-margin")
+  );
 }
 
 /** Text nodes the reader can select: the paragraph's, minus a margin note. */
@@ -147,13 +173,58 @@ function wordAt(text: string, i: number): { start: number; end: number } {
   return { start, end: Math.max(end, start + 1) };
 }
 
+/** The word at a place, as two places. */
+function wordOf(p: Pos): { start: Pos; end: Pos } {
+  const text = textOf(p.host);
+  const w = wordAt(text, Math.max(0, Math.min(p.offset, text.length - 1)));
+  return { start: { host: p.host, offset: w.start }, end: { host: p.host, offset: w.end } };
+}
+
+/**
+ * The place nearest a point anywhere in the text: the paragraph whose box is
+ * nearest it (it is usually inside one), then the letter nearest in that.
+ */
+function hitAt(root: HTMLElement, x: number, y: number): Pos | null {
+  let host: HTMLElement | null = null;
+  let best = Infinity;
+  for (const h of hostsOf(root)) {
+    const b = h.getBoundingClientRect();
+    const d = Math.max(0, b.top - y, y - b.bottom);
+    if (d < best) {
+      best = d;
+      host = h;
+    }
+    if (d === 0) break;
+  }
+  if (!host) return null;
+  const at = charAt(host, x, y, false);
+  return at === null ? null : { host, offset: at };
+}
+
+/** One Range per paragraph the selection touches. */
+function partsOf(root: HTMLElement, s: Sel): TouchPart[] {
+  const hosts = hostsOf(root);
+  const from = hosts.indexOf(s.start.host);
+  const to = hosts.indexOf(s.end.host);
+  if (from === -1 || to === -1) return [];
+  const out: TouchPart[] = [];
+  for (const host of hosts.slice(from, to + 1)) {
+    const a = host === s.start.host ? s.start.offset : 0;
+    const b = host === s.end.host ? s.end.offset : textOf(host).length;
+    if (b <= a) continue;
+    const range = rangeOf(host, a, b);
+    if (range && range.toString().trim()) out.push({ host, range });
+  }
+  return out;
+}
+
 export function useTouchSelection({
   contentRef,
   onSelect,
 }: {
   contentRef: React.RefObject<HTMLDivElement | null>;
-  /** a finished selection, or `null` when it is cleared */
-  onSelect: (host: HTMLElement, range: Range) => void;
+  /** a finished selection, one part per paragraph, in order */
+  onSelect: (parts: TouchPart[]) => void;
 }) {
   const [enabled, setEnabled] = useState(false);
   const [sel, setSel] = useState<Sel | null>(null);
@@ -183,18 +254,21 @@ export function useTouchSelection({
 
   const commit = useCallback(() => {
     const s = selRef.current;
-    if (!s) return;
-    const r = rangeOf(s.host, s.start, s.end);
-    if (!r) return;
+    const root = contentRef.current;
+    if (!s || !root) return;
+    const parts = partsOf(root, s);
+    if (parts.length === 0) return;
     lastSelectAt.current = Date.now();
-    onSelectRef.current(s.host, r);
-  }, []);
+    onSelectRef.current(parts);
+  }, [contentRef]);
 
   const clear = useCallback(() => set(null), [set]);
+  /** the first paragraph's part, for anything that needs to measure it */
   const range = useCallback(() => {
     const s = selRef.current;
-    return s ? rangeOf(s.host, s.start, s.end) : null;
-  }, []);
+    const root = contentRef.current;
+    return s && root ? (partsOf(root, s)[0]?.range ?? null) : null;
+  }, [contentRef]);
   const justSelected = useCallback(() => Date.now() - lastSelectAt.current < 500, []);
   const madeSince = useCallback((t: number) => heldAt.current >= t, []);
 
@@ -207,7 +281,7 @@ export function useTouchSelection({
     const inText = (el: Element | null) => !!el && !!contentRef.current?.contains(el);
     let timer: ReturnType<typeof setTimeout> | null = null;
     let origin: { x: number; y: number } | null = null;
-    let anchor: { host: HTMLElement; start: number; end: number } | null = null;
+    let anchor: Sel | null = null;
 
     const cancel = () => {
       if (timer) clearTimeout(timer);
@@ -230,11 +304,9 @@ export function useTouchSelection({
         if (!host || !inText(host) || host.closest("[data-margin]")) return;
         const at = charAt(host, x, y, true);
         if (at === null) return;
-        const text = textOf(host);
-        const w = wordAt(text, Math.min(at, text.length - 1));
-        anchor = { host, ...w };
+        anchor = wordOf({ host, offset: at });
         heldAt.current = Date.now();
-        set({ host, ...w });
+        set(anchor);
         navigator.vibrate?.(8);
       }, HOLD_MS);
     };
@@ -246,14 +318,13 @@ export function useTouchSelection({
       if (!anchor) return;
       // the press became a selection: the page must not scroll under it
       if (e.cancelable) e.preventDefault();
-      const at = charAt(anchor.host, t.clientX, t.clientY, false);
-      if (at === null) return;
-      const text = textOf(anchor.host);
-      const w = wordAt(text, Math.min(at, text.length - 1));
+      const root = contentRef.current;
+      const hit = root && hitAt(root, t.clientX, t.clientY);
+      if (!hit) return;
+      const w = wordOf(hit);
       set({
-        host: anchor.host,
-        start: Math.min(anchor.start, w.start),
-        end: Math.max(anchor.end, w.end),
+        start: cmp(w.start, anchor.start) < 0 ? w.start : anchor.start,
+        end: cmp(w.end, anchor.end) > 0 ? w.end : anchor.end,
       });
     };
 
@@ -291,14 +362,14 @@ export function useTouchSelection({
   const measure = useCallback(() => {
     const s = selRef.current;
     const root = contentRef.current;
-    const r = s && root?.contains(s.host) ? rangeOf(s.host, s.start, s.end) : null;
-    if (!r || !root) {
+    if (!s || !root) {
       setRects([]);
       return;
     }
     const o = root.getBoundingClientRect();
     setRects(
-      [...r.getClientRects()]
+      partsOf(root, s)
+        .flatMap((p) => [...p.range.getClientRects()])
         .filter((c) => c.width > 1)
         .map((c) => ({ left: c.left - o.left, top: c.top - o.top, width: c.width, height: c.height }))
     );
@@ -334,23 +405,25 @@ export function useTouchSelection({
   };
   const onHandleMove = (e: React.PointerEvent) => {
     const s = selRef.current;
-    if (!drag.current || !s) return;
+    const root = contentRef.current;
+    if (!drag.current || !s || !root) return;
     e.stopPropagation();
-    const at = charAt(s.host, e.clientX, e.clientY - lift.current, false);
-    if (at === null) return;
-    const text = textOf(s.host);
-    const w = wordAt(text, Math.min(at, text.length - 1));
+    const hit = hitAt(root, e.clientX, e.clientY - lift.current);
+    if (!hit) return;
+    const w = wordOf(hit);
+    // Dragged past the other end, the handles trade places: the one in hand
+    // carries on as the other, and the end it passed keeps its whole word.
     if (drag.current === "start") {
-      if (w.start < s.end) set({ ...s, start: w.start });
+      if (cmp(w.start, s.end) < 0) set({ start: w.start, end: s.end });
       else {
         drag.current = "end";
-        set({ ...s, start: wordAt(text, s.end - 1).start, end: w.end });
+        set({ start: wordOf({ ...s.end, offset: s.end.offset - 1 }).start, end: w.end });
       }
     } else {
-      if (w.end > s.start) set({ ...s, end: w.end });
+      if (cmp(w.end, s.start) > 0) set({ start: s.start, end: w.end });
       else {
         drag.current = "start";
-        set({ ...s, start: w.start, end: wordAt(text, s.start).end });
+        set({ start: w.start, end: wordOf(s.start).end });
       }
     }
   };
