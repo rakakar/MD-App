@@ -54,6 +54,17 @@ const SPACING = [
   { label: "Airy", value: LINE_HEIGHTS[2] },
 ];
 
+/** Reading mode, in the reader's words. Shared with the app's Settings page. */
+export const MODES: { label: string; value: ReadingMode }[] = [
+  { label: "Page by page", value: "page" },
+  { label: "Chapter-wise", value: "scroll" },
+];
+
+export const MODE_HINT: Record<ReadingMode, string> = {
+  page: "Like a printed book: one page at a time. Swipe to turn.",
+  scroll: "The whole chapter on one long page. Slide up to keep reading.",
+};
+
 
 interface SettingsSheetProps {
   open: boolean;
@@ -174,16 +185,17 @@ export function SettingsSheet(p: SettingsSheetProps) {
           </div>
         </Row>
 
-        <Row label="Layout">
+        {/* Named for what the reader does, not what the screen is: "Layout"
+            and "Pages / Scroll" left readers guessing — the designer's call,
+            13 Oct 2026. The line under it says what the chosen one is like. */}
+        <Row label="Reading style">
           <Segmented
-            ariaLabel="Reading mode"
-            options={[
-              { label: "Pages", value: "page" as const },
-              { label: "Scroll", value: "scroll" as const },
-            ]}
+            ariaLabel="Reading style"
+            options={MODES}
             value={p.mode}
             onChange={p.onMode}
           />
+          <p className="mt-2 text-xs text-(--reader-ink-soft)">{MODE_HINT[p.mode]}</p>
         </Row>
 
         {p.showTapZones && (
@@ -524,17 +536,15 @@ export function SettingsPanel(
           />
         </Row>
 
-        <Row label="Layout">
+        <Row label="Reading style">
           <Segmented
             compact
-            ariaLabel="Reading mode"
-            options={[
-              { label: "Pages", value: "page" as const },
-              { label: "Scroll", value: "scroll" as const },
-            ]}
+            ariaLabel="Reading style"
+            options={MODES}
             value={p.mode}
             onChange={p.onMode}
           />
+          <p className="mt-2.5 text-xs text-(--reader-ink-soft)">{MODE_HINT[p.mode]}</p>
         </Row>
 
         {p.showTapZones && (

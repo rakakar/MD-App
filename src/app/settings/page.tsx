@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AccountSecurity } from "@/components/auth/AccountSecurity";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationSetting } from "@/components/push/NotificationSetting";
+import { MODES, MODE_HINT } from "@/components/reader/SettingsSheet";
 import { DisplayControls } from "@/components/shell/DisplaySheet";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useDisplay } from "@/components/shell/DisplayProvider";
@@ -101,13 +102,9 @@ export default function SettingsPage() {
 
       <SectionHeading>Reading</SectionHeading>
       <div className="rounded-2xl  border border-rule bg-card p-4">
-        <p className="text-sm font-medium">Reading mode</p>
-        <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Reading mode">
-          {([
-            [null, "Automatic"],
-            ["page", "Pages"],
-            ["scroll", "Scroll"],
-          ] as const).map(([m, label]) => (
+        <p className="text-sm font-medium">Reading style</p>
+        <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Reading style">
+          {([[null, "Automatic"], ...MODES.map((o) => [o.value, o.label] as const)] as const).map(([m, label]) => (
             <button
               key={label}
               type="button"
@@ -125,6 +122,7 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+        <p className="mt-2 text-xs text-ink-soft">{MODE_HINT[prefs.readingMode ?? "scroll"]}</p>
       </div>
 
       {/* Renders its own heading, or nothing at all — this browser may have no
