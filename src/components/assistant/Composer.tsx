@@ -209,7 +209,7 @@ export function Composer({
                     style={
                       pill.option.open
                         ? {
-                            ["--ws-color" as string]: "var(--color-ws-connect)",
+                            ["--ws-color" as string]: "var(--color-ws-originals)",
                             color: "var(--ws-ink)",
                             borderColor: "color-mix(in srgb, var(--ws-color) 55%, var(--color-card))",
                             background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",

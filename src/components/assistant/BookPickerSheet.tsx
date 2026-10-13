@@ -96,7 +96,7 @@ export function BookPickerSheet({
       onClose={onClose}
       title="Search in"
       subtitle="Book search and Research look only in the books you choose"
-      accent={WORKSPACES.connect.color}
+      accent={WORKSPACES.originals.color}
       actions={draft.length > 0 ? <SheetTextAction onClick={() => setDraft([])}>Clear</SheetTextAction> : undefined}
       footer={
         <SheetAction
@@ -298,7 +298,7 @@ export function BookPickerTray({
             onClose();
           }}
           className="inline-flex min-h-11 items-center rounded-control px-5 text-sm font-semibold text-white"
-          style={{ background: WORKSPACES.connect.color }}
+          style={{ background: WORKSPACES.originals.color }}
         >
           Done
         </button>
@@ -307,7 +307,8 @@ export function BookPickerTray({
   );
 }
 
-/** A book, or "All books", in the tray — Connect's teal when chosen, as the pill in the box is. */
+/** A book, or "All books", in the tray — terracotta when chosen, as the pill in the box is
+ *  (the designer's call, 13 Oct 2026; it was Connect's teal). */
 function Chip({
   label,
   on,
@@ -329,7 +330,7 @@ function Chip({
         on ? "font-semibold" : "border-rule bg-card text-ink hover:bg-inset"
       }`}
       style={{
-        ["--ws-color" as string]: "var(--color-ws-connect)",
+        ["--ws-color" as string]: "var(--color-ws-originals)",
         ...(on
           ? {
               color: "var(--ws-ink)",
