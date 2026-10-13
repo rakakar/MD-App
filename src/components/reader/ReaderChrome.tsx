@@ -660,7 +660,7 @@ export function ReaderDesktopBar({
           <button
             type="button"
             onClick={onSettings}
-            aria-label="Theme and settings"
+            aria-label="Reading settings"
             aria-pressed={settingsOpen}
             title="Theme & settings"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) transition-colors hover:bg-current/5"

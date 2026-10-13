@@ -14,11 +14,13 @@ import {
 import { Sheet } from "./Sheet";
 
 /**
- * **Theme & Settings** — the reader's own panel, as the comps draw it.
+ * **Reading settings** — the reader's own panel, as the comps draw it. The
+ * comps title it "Theme & Settings"; renamed 13 Oct 2026 (the designer's call)
+ * so it is not mistaken for the app's theme.
  *
  * Everything here is device-local and works signed out. The order is the
- * comps': size first, because it is what a reader reaches for; then the paper;
- * then the three things about how the type is set; then the one switch.
+ * designer's (13 Oct 2026): size first, because it is what a reader reaches
+ * for; then reading style; then page colour, the overlay, spacing and face.
  */
 
 /**
@@ -65,7 +67,7 @@ export const MODES: { label: string; value: ReadingMode }[] = [
 ];
 
 export const MODE_HINT: Record<ReadingMode, string> = {
-  page: "Like a printed book: one page at a time. Swipe to turn.",
+  page: "Like a printed book: one page at a time.",
   scroll: "The whole chapter on one long page. Slide up to keep reading.",
 };
 
@@ -93,7 +95,7 @@ export function SettingsSheet(p: SettingsSheetProps) {
   const { readerTheme, setReaderTheme } = useDisplay();
 
   return (
-    <Sheet open={p.open} onClose={p.onClose} title="Theme & Settings">
+    <Sheet open={p.open} onClose={p.onClose} title="Reading settings">
       <div className="space-y-6 px-5 pt-4">
         <FontSize fontScale={p.fontScale} face={p.face} onFontScale={p.onFontScale} />
 
@@ -454,7 +456,7 @@ export function SettingsPanel(
 
   return (
     <aside
-      aria-label="Theme & Settings"
+      aria-label="Reading settings"
       inert={!p.open}
       data-reader-chrome
       className={`fixed bottom-0 right-0 top-16 z-30 hidden w-80 flex-col border-l border-(--reader-rule) bg-(--reader-bg) transition-transform duration-300 ease-out motion-reduce:transition-none lg:flex ${
@@ -462,7 +464,7 @@ export function SettingsPanel(
       }`}
     >
       <div className="flex items-center justify-between border-b border-(--reader-rule) py-3 pl-5 pr-3">
-        <h2 className="text-sm font-semibold">Theme &amp; Settings</h2>
+        <h2 className="text-sm font-semibold">Reading settings</h2>
         <button
           type="button"
           onClick={p.onClose}
