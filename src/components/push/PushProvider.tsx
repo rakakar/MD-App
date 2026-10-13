@@ -9,6 +9,7 @@ import {
   type ForegroundMessage,
 } from "@/lib/push";
 import { onNativePushReceived, onNativePushTapped } from "@/lib/push-native";
+import { addToInbox } from "@/lib/inbox";
 
 const TOAST_MS = 8000;
 
@@ -93,9 +94,20 @@ export function PushProvider() {
   // tap surfaces here as an event and this is the only code that can act on
   // it. Declared below `go` because it needs it — the other effects sit above
   // because they do not.
+  //
+  // Both also go into the inbox: in the shells no service worker sees a push,
+  // so the page is the only thing that can keep it. A tap on one that arrived
+  // while the app was closed is the first the page hears of it — kept then,
+  // already read, since the reader is opening it.
   useEffect(() => {
-    const stopReceived = onNativePushReceived(setMessage);
-    const stopTapped = onNativePushTapped((push) => go(push.clickUrl));
+    const stopReceived = onNativePushReceived((m) => {
+      void addToInbox(m);
+      setMessage(m);
+    });
+    const stopTapped = onNativePushTapped((push) => {
+      void addToInbox(push, { read: true });
+      go(push.clickUrl);
+    });
     return () => {
       stopReceived();
       stopTapped();

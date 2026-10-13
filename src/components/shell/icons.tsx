@@ -660,6 +660,16 @@ export function SettingsIcon({ className }: { className?: string }) {
   );
 }
 
+/** Notifications — a bell, the mark every phone already uses for them. */
+export function BellIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.6 6.3 2.3 7a.6.6 0 0 1-.4 1H4.1a.6.6 0 0 1-.4-1c.7-.7 2.3-2.5 2.3-7Z" />
+      <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
+    </Svg>
+  );
+}
+
 /**
  * Feedback — a speech bubble, for both the sending of it and the reading
  * back. The two rows are told apart by their words and by what is inside the

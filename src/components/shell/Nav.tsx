@@ -8,6 +8,7 @@ import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
 import type { NavItem } from "@/lib/workspaceConfig";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 /**
  * A page that named its own tab wins outright — it knows something the path
@@ -126,6 +127,9 @@ export function Sidebar() {
       <div className="flex items-center gap-2.5 border-b border-rule px-4 py-4">
         <BrandMark className="h-7.5 w-7.5" />
         <span className="text-sm font-semibold tracking-[-0.01em]">MD Study</span>
+        <div className="ms-auto">
+          <NotificationBell />
+        </div>
       </div>
       <div className="flex flex-col gap-1.5 border-b border-rule p-3">
         <p className="px-2 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">

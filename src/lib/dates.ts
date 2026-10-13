@@ -60,3 +60,29 @@ export function parseDay(iso: string | null | undefined): Date | null {
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   return isNaN(d.getTime()) ? null : d;
 }
+
+const WEEKDAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/**
+ * How long ago, the way a person says it: "Just now", "5m ago", "2h ago",
+ * "Yesterday", "2 days ago", then the weekday within the week, then the date.
+ * Days are calendar days, so 11pm yesterday is "Yesterday", not "1h ago"'s
+ * neighbour "23h ago".
+ */
+export function timeAgo(ms: number, now = Date.now()): string {
+  const mins = Math.floor((now - ms) / 60_000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const then = new Date(ms);
+  const today = new Date(now);
+  const days = Math.round(
+    (new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() -
+      new Date(then.getFullYear(), then.getMonth(), then.getDate()).getTime()) /
+      86_400_000
+  );
+  if (days === 0) return `${Math.floor(mins / 60)}h ago`;
+  if (days === 1) return "Yesterday";
+  if (days <= 3) return `${days} days ago`;
+  if (days < 7) return WEEKDAY[then.getDay()];
+  return dayMonth(then);
+}

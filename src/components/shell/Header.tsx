@@ -11,6 +11,8 @@ import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
 import { signInHref } from "@/lib/routes";
 import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceConfig";
+import { UnreadBadge, UnreadDot } from "@/components/notifications/NotificationList";
+import { useInbox } from "@/components/notifications/useInbox";
 import { useDisplay } from "./DisplayProvider";
 import { DisplaySheet } from "./DisplaySheet";
 import { useWorkspace } from "./WorkspaceProvider";
@@ -22,6 +24,7 @@ import {
   FeedbackListIcon,
   PaletteIcon,
   SettingsIcon,
+  BellIcon,
   UserIcon,
   WorkspaceIcon,
 } from "./icons";
@@ -333,6 +336,7 @@ function AvatarMenu() {
   const keepWorkspace = useCallback(() => derive(workspace.id), [derive, workspace.id]);
   const [open, setOpen] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(false);
+  const { unread } = useInbox();
   // Back here after signing in. The path only — reading the query would need
   // `useSearchParams`, which opts every route under the shell into client
   // rendering to serve one link.
@@ -371,15 +375,18 @@ function AvatarMenu() {
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label="Account menu"
+        aria-label={unread > 0 ? `Account menu, ${unread} unread notifications` : "Account menu"}
         onClick={() => setOpen(true)}
         /* 48px, squaring up with the switcher beside it — the two are the only
            things in the bar and one standing 8px shorter than the other read as
            a misalignment rather than a hierarchy. The glyph steps up with the
            box so it keeps its proportion. */
-        className="flex h-12 w-12 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+        className="relative flex h-12 w-12 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
       >
         <UserIcon className="h-5 w-5" />
+        {/* Something unread: the menu holds Notifications, so the dot sits on
+            the door to it (designer's comp, 13 Oct 2026). */}
+        {unread > 0 && <UnreadDot className="-end-1 -top-1" />}
       </button>
 
       {/*
@@ -408,6 +415,23 @@ function AvatarMenu() {
             thing. They are not: the journey is content, this menu is the app.
             That conflation is also why Settings used to live at `/me/settings`
             and hijacked the chrome; see the redirect left at that path. */}
+        {/* First, with its count, and ruled off from the rest: it is the one
+            row here that changes on its own. */}
+        <Link
+          href="/notifications"
+          onClick={() => {
+            keepWorkspace();
+            setOpen(false);
+          }}
+          className={row}
+        >
+          <span aria-hidden className={glyph}>
+            <BellIcon className="h-5 w-5" />
+          </span>
+          Notifications
+          <UnreadBadge count={unread} className="ms-auto" />
+        </Link>
+        <div aria-hidden className="mx-3 my-1 h-px bg-rule" />
         <Link
           href="/settings"
           onClick={() => {
@@ -518,6 +542,7 @@ export function SidebarAccount() {
   const [displayOpen, setDisplayOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const signedIn = !!user;
+  const { unread } = useInbox();
 
   useEffect(() => {
     if (!signedIn) return;
@@ -570,7 +595,7 @@ export function SidebarAccount() {
   const avatar = (
     <span
       aria-hidden
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold"
+      className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold"
       style={{
         background: "color-mix(in srgb, var(--ws-color) 10%, var(--color-card))",
         borderColor: "color-mix(in srgb, var(--ws-color) 25%, transparent)",
@@ -578,6 +603,14 @@ export function SidebarAccount() {
       }}
     >
       {initial}
+    </span>
+  );
+  // The row's avatar wears the dot; the copy inside the open menu does not —
+  // there the Notifications row says it with a number.
+  const rowAvatar = (
+    <span className="relative shrink-0">
+      {avatar}
+      {unread > 0 && <UnreadDot className="-end-0.5 -top-0.5" />}
     </span>
   );
   const who = (
@@ -604,6 +637,22 @@ export function SidebarAccount() {
             {who}
           </div>
           <div aria-hidden className="mx-1 mb-1 h-px bg-rule" />
+          <Link
+            href="/notifications"
+            role="menuitem"
+            onClick={() => {
+              keepWorkspace();
+              setOpen(false);
+            }}
+            className={row}
+          >
+            <span aria-hidden className={glyph}>
+              <BellIcon className="h-4.5 w-4.5" />
+            </span>
+            Notifications
+            <UnreadBadge count={unread} className="ml-auto" />
+          </Link>
+          <div aria-hidden className="mx-1 my-1 h-px bg-rule" />
           <Link
             href="/settings"
             role="menuitem"
@@ -669,13 +718,13 @@ export function SidebarAccount() {
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Account: ${name}`}
+        aria-label={unread > 0 ? `Account: ${name}, ${unread} unread notifications` : `Account: ${name}`}
         onClick={() => setOpen((o) => !o)}
         className={`flex w-full items-center gap-3 rounded-card border px-2.5 py-2 transition-colors ${
           open ? "border-rule bg-card" : "border-transparent hover:border-rule hover:bg-card"
         }`}
       >
-        {avatar}
+        {rowAvatar}
         {who}
         <ChevronUpDown className="h-4 w-4 shrink-0 text-ink-soft" />
       </button>

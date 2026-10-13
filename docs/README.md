@@ -18,6 +18,7 @@
 | Connect के Centres, Contacts या Links पर काम है | [Connect_Directory_v1.md](Connect_Directory_v1.md) — **यही authority है** |
 | Feedback वाला हिस्सा | [feedback.md](feedback.md) |
 | Notifications वाला हिस्सा | [push-notifications.md](push-notifications.md) |
+| Notifications inbox (bell, `/notifications`) | [notifications.md](notifications.md) |
 | APK या iOS build बनानी है | [mobile-apps.md](mobile-apps.md) |
 | Product का इरादा जानना है | [PRD_v2.md](PRD_v2.md) — banners ज़रूर पढ़ें |
 | Code लिखने जा रहे हैं | `../AGENTS.md` — **पहले** |

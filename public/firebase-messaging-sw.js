@@ -39,7 +39,80 @@ function readPayload(event) {
     body: data.body || notification.body || "",
     imageUrl: data.image_url || notification.image || "",
     clickUrl: data.click_url || (raw.fcmOptions && raw.fcmOptions.link) || "/",
+    kind: data.kind || "",
   };
+}
+
+/*
+ * The inbox (src/lib/inbox.ts owns the shape — keep the two in step).
+ * Written here, for every push, before deciding how to show it: the page
+ * cannot do it for a push that arrives while the app is closed, and doing it
+ * in one place for both cases means it is never written twice.
+ */
+const INBOX_DB = "md-inbox";
+const INBOX_KEEP = 100;
+
+function kindOf(clickUrl, declared) {
+  const k = String(declared || "").toLowerCase();
+  if (["stage", "feedback", "event", "highlight"].includes(k)) return k;
+  let path = clickUrl || "/";
+  try {
+    path = new URL(path, self.location.origin).pathname;
+  } catch {
+    /* read it as a path */
+  }
+  if (/^\/(feedback)/.test(path)) return "feedback";
+  if (/^\/(events|connect|shivir)/.test(path)) return "event";
+  if (/^\/(journey|stage|me\/journey)/.test(path)) return "stage";
+  if (/^\/(me\/bookmarks|me\/highlights|books\/)/.test(path)) return "highlight";
+  return "general";
+}
+
+function openInbox() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(INBOX_DB, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains("items")) {
+        req.result.createObjectStore("items", { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function keepInInbox(payload) {
+  try {
+    const db = await openInbox();
+    await new Promise((resolve, reject) => {
+      const t = db.transaction("items", "readwrite");
+      const store = t.objectStore("items");
+      const all = store.getAll();
+      all.onsuccess = () => {
+        const now = Date.now();
+        store.put({
+          id: now + "-" + Math.random().toString(36).slice(2, 8),
+          title: payload.title,
+          body: payload.body,
+          clickUrl: payload.clickUrl || "/",
+          imageUrl: payload.imageUrl || undefined,
+          kind: kindOf(payload.clickUrl, payload.kind),
+          receivedAt: now,
+          read: false,
+        });
+        const old = all.result.sort((a, b) => b.receivedAt - a.receivedAt).slice(INBOX_KEEP - 1);
+        for (const o of old) store.delete(o.id);
+      };
+      t.oncomplete = resolve;
+      t.onerror = () => reject(t.error);
+    });
+    db.close();
+    const ch = new BroadcastChannel("md-inbox");
+    ch.postMessage({ type: "changed" });
+    ch.close();
+  } catch {
+    // Storage refused: the notification is still shown, only not kept.
+  }
 }
 
 /** Windows of this app that the reader can actually see right now. */
@@ -53,6 +126,8 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     (async () => {
+      await keepInInbox(payload);
+
       // App open and on screen: hand it to the page, which shows an in-app
       // banner. A system notification here would slide over the very screen
       // the reader is already looking at. (The spec permits skipping
