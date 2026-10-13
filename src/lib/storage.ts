@@ -226,7 +226,7 @@ export const DEFAULT_PREFS: Prefs = {
    * larger letter body reads bigger than Tiro at the same size. First set at
    * 1.05, then raised two steps on device; the cost is fewer words per line
    * and more loose lines in justified text. A deviation
-   * from the comps (design-system.md). Tiro stays one tap away as "Serif".
+   * from the comps (design-system.md). Tiro stays one tap away as "Classic".
    *
    * Only new readers get these: setPrefs writes the whole merged object, so
    * anyone who has changed any setting already has fontScale 1 / serif saved.

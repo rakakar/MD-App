@@ -48,9 +48,12 @@ const SURFACES: Record<ReaderSurface, { label: string; bg: string; ink: string; 
     focus: { label: "Cream", bg: "var(--color-surface-focus)", ink: "var(--color-surface-focus-ink)" },
   };
 
+/* Named for how they look, not the printer's terms: Devanagari has no serifs,
+   so "Serif / Sans" told readers nothing — the designer's call, 13 Oct 2026.
+   Ids unchanged, so saved choices carry over. */
 const FACES: { id: ReaderFace; label: string; stack: string }[] = [
-  { id: "serif", label: "Serif", stack: "var(--font-devanagari)" },
-  { id: "sans", label: "Sans", stack: "var(--font-devanagari-sans)" },
+  { id: "serif", label: "Classic", stack: "var(--font-devanagari)" },
+  { id: "sans", label: "Simple", stack: "var(--font-devanagari-sans)" },
 ];
 
 /** The comps name these Compact · Relaxed · Airy; the values are unchanged. */
