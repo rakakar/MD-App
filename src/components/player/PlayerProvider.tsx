@@ -22,6 +22,7 @@ import {
   setPrefs,
 } from "@/lib/storage";
 import type { AudioRendition, ParaTimings } from "@/lib/types";
+import { onMenuRate } from "./audioChrome";
 import { DeviceSpeaker, hindiVoice, onVoicesChanged, type SpokenPara } from "./deviceSpeech";
 
 export interface TtsSource {
@@ -156,7 +157,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState(false);
   const [positionMs, setPositionMs] = useState(0);
   const [durationMs, setDurationMs] = useState(0);
-  const [rate, setRateState] = useState(1);
+  const [savedRate, setRateState] = useState(1);
+  // A speed saved before it left the menu (2x) plays as the nearest one on it.
+  const rate = onMenuRate(savedRate);
   const [sleepRemainingMs, setSleepRemaining] = useState<number | null>(null);
   const sleepUntil = useRef<number | null>(null);
   const [deviceParaSeq, setDeviceParaSeq] = useState<number | null>(null);

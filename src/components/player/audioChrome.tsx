@@ -16,7 +16,16 @@ import { coverGradient, type BookHue } from "@/lib/bookHue";
  * keeps that promise honest.
  */
 
-export const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
+/* 0.9 in, 2 out — the designer's call, 13 Oct 2026: these are discourses
+   and dense prose, and a listener who wants it a touch slower than normal had
+   nowhere between 0.75 and 1, while 2x is past where Hindi stays followable. */
+export const RATES = [0.75, 0.9, 1, 1.25, 1.5, 1.75];
+
+/** A saved speed that has since left the menu (2x) comes back as the nearest
+ *  one still on it, rather than a rate no control can show. */
+export function onMenuRate(r: number): number {
+  return RATES.includes(r) ? r : Math.min(Math.max(r, RATES[0]), RATES[RATES.length - 1]);
+}
 export const SLEEP_OPTIONS = [10, 20, 30, 45, 60];
 
 /** m:ss, or h:mm:ss once there is an hour to show. */
