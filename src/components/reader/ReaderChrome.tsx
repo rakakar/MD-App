@@ -361,15 +361,23 @@ export function ReaderBottomBar({
         )}
 
         {canListen ? (
-          <SquareBtn
+          /* Filled like the Assistant button at the top — the designer's
+             call, 13 Oct 2026: the two things the reader can *do* beyond
+             reading wear the accent, and the rest of the chrome is outline. */
+          <button
+            type="button"
             onClick={onListen}
-            label={
+            aria-label={
               deviceFallback
                 ? "Listen with this device's voice (no recorded audio yet)"
                 : "Listen to this chapter"
             }
+            aria-pressed={listening}
+            title="Listen"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-white transition-opacity active:opacity-80"
+            style={{ background: "var(--ws-color)" }}
           >
-            <span className="relative" style={listening ? { color: "var(--ws-ink)" } : undefined}>
+            <span className="relative">
               {/* Headphones here, waveform elsewhere — and the split is the
                   rule, not an oversight. A glyph standing for an audio *file*
                   is the wave (the A/V shelf, its facets, its resume row); the
@@ -379,11 +387,11 @@ export function ReaderBottomBar({
               {deviceFallback && (
                 <span
                   aria-hidden
-                  className="absolute -end-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-(--reader-ink-soft)"
+                  className="absolute -end-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-white/70"
                 />
               )}
             </span>
-          </SquareBtn>
+          </button>
         ) : (
           <span className="h-11 w-11 shrink-0" aria-hidden />
         )}
@@ -662,7 +670,7 @@ export function ReaderDesktopBar({
             onClick={onSettings}
             aria-label="Reading settings"
             aria-pressed={settingsOpen}
-            title="Theme & settings"
+            title="Reading settings"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) transition-colors hover:bg-current/5"
             style={settingsOpen ? lit : undefined}
           >
