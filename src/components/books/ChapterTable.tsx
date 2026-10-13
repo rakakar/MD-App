@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import type { ChapterTocEntry } from "@/lib/types";
+import { chapterName } from "@/lib/labels";
 
 /**
  * The chapter list on desktop (Book preview, desktop revision 29 Sep 2026):
@@ -48,7 +49,8 @@ export function ChapterTable({
             : c.start_page != null && c.end_page != null
               ? `${c.start_page}–${c.end_page}`
               : "";
-          const t = contentLang(c.title_hi);
+          const name = chapterName(c);
+          const t = contentLang(name);
           return (
             <li key={`${c.is_front_matter}-${c.number}`}>
               <Link
@@ -69,7 +71,7 @@ export function ChapterTable({
                         }
                   }
                 >
-                  {c.number}
+                  {c.is_front_matter ? "" : c.number}
                 </span>
 
                 <span className="min-w-0 flex-1">
@@ -77,7 +79,7 @@ export function ChapterTable({
                     {...t}
                     className={`${t.className} hi-tight block truncate text-title font-semibold group-hover:underline`}
                   >
-                    {c.title_hi}
+                    {name}
                   </span>
                   {pages > 0 && (
                     <span aria-hidden className="mt-2.5 block h-1 overflow-hidden rounded-full bg-inset">

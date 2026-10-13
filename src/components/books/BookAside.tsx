@@ -75,7 +75,7 @@ function HighlightsCard({ rows }: { rows: Highlight[] | null }) {
         <>
           <p className="text-sm leading-relaxed text-ink-soft">
             {user
-              ? "Nothing highlighted yet. Press and hold any line while reading to highlight it, or to write a note against it."
+              ? "Nothing highlighted yet. Press and hold any line while reading to highlight it or add a note."
               : "Highlight passages and keep notes on this book while you read. Sign in and they sync between your phone and desktop."}
           </p>
           {!user && (

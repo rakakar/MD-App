@@ -79,3 +79,17 @@ export function byGenre<T extends { genre: string | null }>(books: T[]): T[] {
     .sort((a, b) => genreRank(a.book.genre) - genreRank(b.book.genre) || a.i - b.i)
     .map((row) => row.book);
 }
+
+/**
+ * A chapter's name as a reader sees it. The one exception to "rendered exactly
+ * as it arrives": every book's front matter arrives titled "Front-matters" and
+ * numbered 0 — a publisher's term, and a placeholder rather than anyone's
+ * title. "Opening pages" says what it is (the designer's call, 13 Oct 2026).
+ * The number is dropped where the row shows one, for the same reason.
+ */
+export const FRONT_MATTER = "Opening pages";
+
+export function chapterName(ch: { title_hi: string; is_front_matter?: boolean }): string {
+  // A chapter's prev/next neighbour carries no flag, only the title.
+  return ch.is_front_matter || ch.title_hi === "Front-matters" ? FRONT_MATTER : ch.title_hi;
+}

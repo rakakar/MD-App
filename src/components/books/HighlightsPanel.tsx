@@ -16,6 +16,7 @@ import { type Highlight } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import type { HighlightColour } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
+import { chapterName } from "@/lib/labels";
 
 /**
  * A book's highlights and notes (design, "Highlights scrolled").
@@ -110,7 +111,7 @@ export function HighlightsPanel({
       <div className="mt-5">
         <EmptyState
           title="Nothing highlighted yet"
-          hint="Press and hold any line while reading to paint it, or to write a note against it."
+          hint="Press and hold any line while reading to highlight it or add a note."
         />
       </div>
     );
@@ -220,7 +221,7 @@ export function HighlightsPanel({
             return (
               <CheckRow
                 key={n}
-                label={`${c.number} · ${c.title_hi}`}
+                label={c.is_front_matter ? chapterName(c) : `${c.number} · ${c.title_hi}`}
                 // Chapters with nothing in them are shown greyed rather than
                 // hidden: "no highlights here" is an answer to "where are my
                 // highlights", not an absence.

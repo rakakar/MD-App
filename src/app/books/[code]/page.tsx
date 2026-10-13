@@ -20,7 +20,7 @@ import {
 import { ApiError, bookPdfUrl, getBook, getBookGenres, getBooks } from "@/lib/api";
 import { offShelfHref } from "@/lib/routes";
 import { bookHue } from "@/lib/bookHue";
-import { genreLabel } from "@/lib/labels";
+import { chapterName, genreLabel } from "@/lib/labels";
 import { contentLang } from "@/lib/script";
 import {
   WORKSPACES,
@@ -378,8 +378,8 @@ export default async function BookDetailPage({
                 <li key={`${ch.is_front_matter}-${ch.number}`}>
                   <ListRow
                     href={`/books/${encodeURIComponent(book.code)}/${ch.number}`}
-                    leading={<RowNumber>{ch.number}</RowNumber>}
-                    title={ch.title_hi}
+                    leading={<RowNumber>{ch.is_front_matter ? "" : ch.number}</RowNumber>}
+                    title={chapterName(ch)}
                     meta={
                       Number.isFinite(pages) && pages > 0
                         ? `${pages} ${pages === 1 ? "page" : "pages"}`

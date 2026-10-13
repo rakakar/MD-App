@@ -45,6 +45,7 @@ import {
 } from "@/lib/storage";
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import type { Matcher } from "@/lib/paribhasha";
+import { chapterName } from "@/lib/labels";
 import { Block } from "./blocks";
 import {
   ReaderBottomBar,
@@ -1920,7 +1921,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     >
                       <span aria-hidden>←</span>
                       <span lang="hi" className="hi hi-tight min-w-0 truncate">
-                        {chapter.prev.title_hi}
+                        {chapterName(chapter.prev)}
                       </span>
                     </button>
                   )}
@@ -2023,7 +2024,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           paragraphs={chapter.paragraphs}
           activeSeq={activeSeq}
           onSeekPara={playFromPara}
-          prevChapterTitle={chapter.prev?.title_hi}
+          prevChapterTitle={chapter.prev && chapterName(chapter.prev)}
           nextChapterTitle={chapter.next?.title_hi}
         />
       )}

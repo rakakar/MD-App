@@ -7,6 +7,7 @@ import { localHighlights, syncPersonal, type Highlight } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import type { HighlightColour } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
+import { chapterName } from "@/lib/labels";
 import { Sheet } from "./Sheet";
 
 /**
@@ -121,7 +122,7 @@ export function TocSheet({
             className="w-6 shrink-0 text-right text-base font-semibold tabular-nums"
             style={{ color: active ? "var(--ws-ink)" : "var(--reader-ink-soft)" }}
           >
-            {ch.number}
+            {ch.is_front_matter ? "" : ch.number}
           </span>
           {/* 18px, from 14 — the designer's call, 26 Sep 2026: a chapter's
               name is what the reader is scanning this list for, and at 14px
@@ -129,10 +130,10 @@ export function TocSheet({
               because `.hi` outranks leading utilities, and a name that wraps
               at the body's 1.85 reads as two entries. */}
           <span
-            lang="hi"
+            lang={ch.is_front_matter ? undefined : "hi"}
             className={`hi hi-tight min-w-0 flex-1 text-lg ${active ? "font-semibold" : ""}`}
           >
-            {ch.title_hi}
+            {chapterName(ch)}
           </span>
           <span className="shrink-0 text-sm tabular-nums text-(--reader-ink-soft)">
             {ch.start_page == null ? "" : bookType === "print" ? `p. ${ch.start_page}` : ch.start_page}
@@ -189,7 +190,7 @@ export function TocSheet({
             <span className="mt-1 block text-xs text-(--reader-ink-soft)">
               {chapter ? (
                 <>
-                  <span lang="hi" className="hi">{chapter.title_hi}</span>
+                  <span lang="hi" className="hi">{chapterName(chapter)}</span>
                   {ref?.page ? ` · ${bookType === "print" ? "p. " : ""}${ref.page}` : ""}
                 </>
               ) : (
@@ -222,7 +223,7 @@ export function TocSheet({
           <TabButton
             selected={tab === "contents"}
             onClick={() => setTab("contents")}
-            label="Contents"
+            label="Chapters"
             count={main.length}
           />
           <TabButton
@@ -246,7 +247,7 @@ export function TocSheet({
         <p className="px-5 pb-6 pt-4 text-sm text-(--reader-ink-soft)">
           {rows === null
             ? "Looking…"
-            : "Nothing marked in this book yet. Press and hold any line to paint it, or to write a note against it."}
+            : "Nothing highlighted yet. Press and hold any line to highlight it or add a note."}
         </p>
       ) : (
         <ul className="toc-sheet">{rows?.map(highlightRow)}</ul>

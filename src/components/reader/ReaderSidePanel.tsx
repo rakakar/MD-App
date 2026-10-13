@@ -6,6 +6,7 @@ import { localHighlights, localNotes, syncPersonal, type Highlight } from "@/lib
 import { parseRef } from "@/lib/refs";
 import type { HighlightColour, LocalNote } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
+import { chapterName } from "@/lib/labels";
 
 /**
  * The desktop reader's left panel: Contents, Highlights, Notes.
@@ -103,7 +104,7 @@ export function ReaderSidePanel({
 
   return (
     <aside
-      aria-label="Contents, highlights and notes"
+      aria-label="Chapters, highlights and notes"
       inert={!open}
       className={`fixed bottom-0 left-0 top-16 z-30 hidden w-90 flex-col border-r border-(--reader-rule) bg-(--reader-bg) transition-transform duration-300 ease-out motion-reduce:transition-none lg:flex ${
         open ? "translate-x-0" : "-translate-x-full"
@@ -116,7 +117,7 @@ export function ReaderSidePanel({
           aria-label={bookTitle}
           className="flex flex-1 items-stretch gap-1 rounded-control border border-(--reader-rule) bg-current/[0.06] p-1"
         >
-          <PanelTabButton selected={tab === "contents"} onClick={() => onTab("contents")} label="Contents" />
+          <PanelTabButton selected={tab === "contents"} onClick={() => onTab("contents")} label="Chapters" />
           <PanelTabButton
             selected={tab === "highlights"}
             onClick={() => onTab("highlights")}
@@ -276,7 +277,7 @@ function ContentsTab({
                     {ch.is_front_matter ? "" : ch.number}
                   </span>
                   <span lang="hi" className={`hi hi-tight min-w-0 flex-1 text-base ${active ? "font-semibold" : ""}`}>
-                    {ch.title_hi}
+                    {chapterName(ch)}
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-(--reader-ink-soft)">{pageLabel}</span>
                 </span>
@@ -410,7 +411,7 @@ function HighlightsTab({
   if (rows.length === 0) {
     return (
       <p className="px-1 pt-2 text-sm text-(--reader-ink-soft)">
-        Nothing highlighted in this book yet. Select any line to paint it.
+        Nothing highlighted yet. Select any line to highlight it.
       </p>
     );
   }
