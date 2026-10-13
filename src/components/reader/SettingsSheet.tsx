@@ -60,8 +60,8 @@ const SPACING = [
 
 /** Reading mode, in the reader's words. Shared with the app's Settings page. */
 export const MODES: { label: string; value: ReadingMode }[] = [
-  { label: "Page by page", value: "page" },
   { label: "Chapter-wise", value: "scroll" },
+  { label: "Page by page", value: "page" },
 ];
 
 export const MODE_HINT: Record<ReadingMode, string> = {
