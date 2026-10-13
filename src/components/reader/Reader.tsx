@@ -2246,15 +2246,17 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       </Sheet>
 
       {/* ---- toast ----
-          `overlay`, not `ink`: ink turns pale in the dark theme, and white
-          on it was unreadable — the selection bar's dark, which no theme
-          moves, with a hairline so it still stands off the Dark page. */}
+          The page turned inside out: its ink for the fill, its paper for
+          the words. Dark on a light page and light on a dark one, so it
+          always stands off whatever is behind it — white on the app's ink
+          was unreadable in dark mode, and a fixed dark pill vanished into a
+          dark page (the designer, 13 Oct 2026). */}
       {toast && (
         <div
           className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
           style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
         >
-          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-overlay px-4 py-2 text-sm text-white shadow-lg ring-1 ring-white/15">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-(--reader-ink) px-4 py-2 text-sm text-(--reader-bg) shadow-lg">
             {toast.text}
             {toast.href && (
               <Link href={toast.href} className="font-semibold underline underline-offset-2">
