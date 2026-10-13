@@ -30,8 +30,9 @@ import { textNodes } from "@/lib/highlights";
 
 const HOLD_MS = 450;
 const SLOP = 10;
-/** the handle sits under the line, so the point it means is above the finger */
-const HANDLE_LIFT = 26;
+/** the knob's diameter, and the square a finger can grab it by */
+const KNOB = 26;
+const GRAB = 60;
 
 interface Sel {
   host: HTMLElement;
@@ -74,7 +75,7 @@ function rangeOf(host: HTMLElement, start: number, end: number): Range | null {
  * The character nearest a point, as an offset into the host's text. Vertical
  * distance is weighted so a point between two lines lands on the nearer line
  * rather than on a nearer letter of the wrong one. `strict` asks for a point
- * actually on a letter — a long press on blank space selects nothing.
+ * near a letter — a long press out in blank space selects nothing.
  */
 function charAt(host: HTMLElement, x: number, y: number, strict: boolean): number | null {
   let best = Infinity;
@@ -103,7 +104,10 @@ function charAt(host: HTMLElement, x: number, y: number, strict: boolean): numbe
     }
     seen += n.data.length;
   }
-  if (strict && best > 6) return null;
+  // A finger is not a cursor: the lines are set wide apart, and a press in
+  // the gap between two of them, or just past a line's end, still means the
+  // word beside it. (Weighted: about 15px off the line, or 45 along it.)
+  if (strict && best > 45) return null;
   return at;
 }
 
@@ -155,6 +159,8 @@ export function useTouchSelection({
   const [sel, setSel] = useState<Sel | null>(null);
   const selRef = useRef<Sel | null>(null);
   const lastSelectAt = useRef(0);
+  /** when the last press-and-hold landed on a word */
+  const heldAt = useRef(0);
   const onSelectRef = useRef(onSelect);
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -190,11 +196,15 @@ export function useTouchSelection({
     return s ? rangeOf(s.host, s.start, s.end) : null;
   }, []);
   const justSelected = useCallback(() => Date.now() - lastSelectAt.current < 500, []);
+  const madeSince = useCallback((t: number) => heldAt.current >= t, []);
 
   // ---- press and hold, then drag to extend ----
+  // On the document, with the text area looked up per press: the reader
+  // mounts its text after the first render, and a listener attached to the
+  // element at that moment was attached to nothing.
   useEffect(() => {
-    const root = contentRef.current;
-    if (!enabled || !root) return;
+    if (!enabled) return;
+    const inText = (el: Element | null) => !!el && !!contentRef.current?.contains(el);
     let timer: ReturnType<typeof setTimeout> | null = null;
     let origin: { x: number; y: number } | null = null;
     let anchor: { host: HTMLElement; start: number; end: number } | null = null;
@@ -210,18 +220,20 @@ export function useTouchSelection({
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       const el = e.target as HTMLElement;
+      if (!inText(el)) return;
       if (el.closest("[data-sel-handle],a,button,input,textarea,select,label,[data-margin]")) return;
       origin = { x: t.clientX, y: t.clientY };
       timer = setTimeout(() => {
         timer = null;
         const { x, y } = origin!;
         const host = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-ref]");
-        if (!host || !root.contains(host) || host.closest("[data-margin]")) return;
+        if (!host || !inText(host) || host.closest("[data-margin]")) return;
         const at = charAt(host, x, y, true);
         if (at === null) return;
         const text = textOf(host);
         const w = wordAt(text, Math.min(at, text.length - 1));
         anchor = { host, ...w };
+        heldAt.current = Date.now();
         set({ host, ...w });
         navigator.vibrate?.(8);
       }, HOLD_MS);
@@ -255,20 +267,22 @@ export function useTouchSelection({
 
     // Android's long-press menu (and an image's "save" sheet) is the
     // phone's, not the reader's.
-    const onMenu = (e: Event) => e.preventDefault();
+    const onMenu = (e: Event) => {
+      if (inText(e.target as Element)) e.preventDefault();
+    };
 
-    root.addEventListener("touchstart", onStart, { passive: true });
-    root.addEventListener("touchmove", onMove, { passive: false });
-    root.addEventListener("touchend", onEnd);
-    root.addEventListener("touchcancel", onEnd);
-    root.addEventListener("contextmenu", onMenu);
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onEnd);
+    document.addEventListener("contextmenu", onMenu);
     return () => {
       cancel();
-      root.removeEventListener("touchstart", onStart);
-      root.removeEventListener("touchmove", onMove);
-      root.removeEventListener("touchend", onEnd);
-      root.removeEventListener("touchcancel", onEnd);
-      root.removeEventListener("contextmenu", onMenu);
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+      document.removeEventListener("contextmenu", onMenu);
     };
   }, [enabled, contentRef, set, commit]);
 
@@ -299,10 +313,18 @@ export function useTouchSelection({
 
   // ---- the handles ----
   const drag = useRef<"start" | "end" | null>(null);
-  const onHandleDown = (which: "start" | "end") => (e: React.PointerEvent) => {
+  /**
+   * How far below the line it moves the finger is. The handle hangs under the
+   * text, so the point a finger means is above where it is; measured at the
+   * press rather than fixed, so it holds at every text size.
+   */
+  const lift = useRef(0);
+  const onHandleDown = (which: "start" | "end", lineHeight: number) => (e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
     drag.current = which;
+    const lineMid = (e.currentTarget as HTMLElement).getBoundingClientRect().top - lineHeight / 2;
+    lift.current = e.clientY - lineMid;
     try {
       // so the drag keeps coming here once the finger leaves the handle
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -314,7 +336,7 @@ export function useTouchSelection({
     const s = selRef.current;
     if (!drag.current || !s) return;
     e.stopPropagation();
-    const at = charAt(s.host, e.clientX, e.clientY - HANDLE_LIFT, false);
+    const at = charAt(s.host, e.clientX, e.clientY - lift.current, false);
     if (at === null) return;
     const text = textOf(s.host);
     const w = wordAt(text, Math.min(at, text.length - 1));
@@ -341,19 +363,37 @@ export function useTouchSelection({
 
   const first = rects[0];
   const last = rects[rects.length - 1];
-  const handle = (which: "start" | "end", left: number, top: number) => (
+  /*
+   * A stem up the selected line's edge, so it is plain which letter the
+   * selection starts or stops at, and under it a knob big enough for a thumb —
+   * the designer's call, 13 Oct 2026, after 16px proved too small to catch.
+   * The knob wears a ring of the page so it stands off the tint behind it.
+   */
+  const handle = (which: "start" | "end", left: number, top: number, lineHeight: number) => (
     <span
       key={which}
       data-sel-handle
       aria-hidden
-      onPointerDown={onHandleDown(which)}
+      onPointerDown={onHandleDown(which, lineHeight)}
       onPointerMove={onHandleMove}
       onPointerUp={onHandleUp}
       onPointerCancel={onHandleUp}
-      className="pointer-events-auto absolute flex h-11 w-11 -translate-x-1/2 touch-none items-start justify-center"
-      style={{ left, top }}
+      className="pointer-events-auto absolute flex -translate-x-1/2 touch-none justify-center"
+      style={{ left, top, width: GRAB, height: GRAB }}
     >
-      <span className="mt-0.5 block h-4 w-4 rounded-full" style={{ background: "var(--ws-color)" }} />
+      <span
+        className="absolute bottom-full w-0.5"
+        style={{ height: lineHeight, background: "var(--ws-color)" }}
+      />
+      <span
+        className="block rounded-full"
+        style={{
+          width: KNOB,
+          height: KNOB,
+          background: "var(--ws-color)",
+          boxShadow: "0 0 0 2px var(--reader-bg), 0 1px 4px rgb(0 0 0 / 0.3)",
+        }}
+      />
     </span>
   );
 
@@ -370,8 +410,8 @@ export function useTouchSelection({
             }}
           />
         ))}
-        {handle("start", first.left, first.top + first.height)}
-        {handle("end", last.left + last.width, last.top + last.height)}
+        {handle("start", first.left, first.top + first.height, first.height)}
+        {handle("end", last.left + last.width, last.top + last.height, last.height)}
       </div>
     ) : null;
 
@@ -384,6 +424,8 @@ export function useTouchSelection({
     clear,
     /** a press-and-hold just ended: the tap it leaves behind is not a tap */
     justSelected,
+    /** whether a press that began at `t` is the one that made the selection */
+    madeSince,
     overlay,
   };
 }

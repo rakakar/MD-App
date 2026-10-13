@@ -802,7 +802,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     contentRef,
     onSelect: (host, range) => setSelection(selectionFrom(host, range)),
   });
-  const { clear: clearTouch, justSelected, active: touchActive } = touchSel;
+  const { clear: clearTouch, justSelected, madeSince, active: touchActive } = touchSel;
   /** the tap that clears a selection is not also a tap on what is under it */
   const swallowClick = useRef(false);
 
@@ -835,8 +835,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed) return;
       if (justSelected()) return;
-      // the reader's own selection: a tap or a swipe puts it down, and does
-      // nothing else
+      // The reader's own selection. A press that *made* it lifts here before
+      // its touchend commits it — a phone sends pointerup first — so that
+      // press is left alone. Any other tap or swipe puts the selection down,
+      // and does nothing else.
+      if (touchActive && madeSince(g.t)) return;
       if (touchActive) {
         clearTouch();
         setSelection(null);
@@ -867,7 +870,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         chrome.toggle();
       }
     },
-    [mode, tapZones, advance, chrome, justSelected, touchActive, clearTouch]
+    [mode, tapZones, advance, chrome, justSelected, madeSince, touchActive, clearTouch]
   );
 
   /**
@@ -2412,8 +2415,12 @@ function ParaWrap({
           taken deeper — the painted words say the same, and the dot lets a
           reader find them down a long page at a glance. */}
       {gutter && (
+        // `data-not-text`: the chapter and page labels sit inside the
+        // paragraph's box but are not its words — counted, they shifted a
+        // highlight's offsets on a page's first paragraph.
         <p
           aria-hidden
+          data-not-text
           lang="hi"
           className="hi hi-tight absolute -left-32 top-[0.5em] hidden w-20 text-right text-sm tracking-wide text-(--reader-ink-soft) lg:block max-[90rem]:group-data-[panel=open]/reader:hidden"
         >
