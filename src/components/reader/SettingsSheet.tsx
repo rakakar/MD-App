@@ -200,7 +200,9 @@ export function SettingsSheet(p: SettingsSheetProps) {
                   aria-label={f.label}
                   onClick={() => p.onFace(f.id)}
                   className={`min-h-11 flex-1 rounded-control py-1 transition-colors ${
-                    active ? "bg-(--reader-bg) font-semibold shadow-card" : "text-(--reader-ink-soft)"
+                    active
+                      ? "bg-(--reader-bg) font-semibold shadow-card inset-ring inset-ring-(color:--ws-ink)"
+                      : "text-(--reader-ink-soft)"
                   }`}
                 >
                   <span lang="hi" className="block text-lg leading-tight" style={{ fontFamily: f.stack }}>
@@ -424,10 +426,17 @@ function Segmented<T extends string | number>({
                stack in this sheet, and four filled accent segments in one panel
                is the accent shouting over the settings it is describing. The
                sheet is also the one place a reader is *comparing* options
-               rather than switching between two views. */
+               rather than switching between two views.
+               A hairline of the accent round the chosen one, though: most
+               readers are past 45, and a soft shadow alone was too faint a
+               "this one" — the designer's call, 13 Oct 2026. `--ws-ink`, not
+               `--ws-color`, so the line still shows on the Dark page. Inset,
+               so choosing never nudges the label — and `inset-ring`, never
+               `ring-inset`: the app's `--color-inset` token makes
+               `ring-inset` a colour as well, and it paints the line cream. */
             className={`flex-1 rounded-control px-2 text-sm transition-colors ${compact ? "min-h-9" : "min-h-11"} ${
               active
-                ? "bg-(--reader-bg) font-semibold shadow-card"
+                ? "bg-(--reader-bg) font-semibold shadow-card inset-ring inset-ring-(color:--ws-ink)"
                 : "text-(--reader-ink-soft)"
             }`}
           >
