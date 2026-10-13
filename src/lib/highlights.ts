@@ -29,7 +29,7 @@ import type { HighlightColour, HighlightRange } from "./storage";
 const NOT_TEXT = "[data-not-text]";
 
 /** Every text node of a paragraph that its `text_hi` is actually made of. */
-function textNodes(host: HTMLElement): Text[] {
+export function textNodes(host: HTMLElement): Text[] {
   const out: Text[] = [];
   const walk = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {

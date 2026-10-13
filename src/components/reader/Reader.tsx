@@ -63,6 +63,7 @@ import { MarginNote } from "./MarginNote";
 import { ReaderSidePanel, pageOf, when, type PanelTab } from "./ReaderSidePanel";
 import { TocSheet } from "./TocSheet";
 import { useReaderChrome } from "./useReaderChrome";
+import { useTouchSelection } from "./useTouchSelection";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
 import {
   SCRIPT_LABEL,
@@ -779,6 +780,32 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     return () => window.removeEventListener("keydown", onKey);
   }, [mode, advance]);
 
+  /** A selection inside paragraph `host`, as the action bar wants it. */
+  const selectionFrom = useCallback(
+    (host: HTMLElement, range: Range): Selection | null => {
+      const para = paraByRef.get(host.getAttribute("data-ref") ?? "");
+      if (!para) return null;
+      const text = range.toString().trim();
+      if (!text) return null;
+      return {
+        para,
+        text,
+        span: selectionSpan(host, range, para.text_hi) ?? undefined,
+      };
+    },
+    [paraByRef]
+  );
+
+  // On a touch screen the reader selects text itself, so the phone's own
+  // menu and Google's search sheet never appear (useTouchSelection).
+  const touchSel = useTouchSelection({
+    contentRef,
+    onSelect: (host, range) => setSelection(selectionFrom(host, range)),
+  });
+  const { clear: clearTouch, justSelected, active: touchActive } = touchSel;
+  /** the tap that clears a selection is not also a tap on what is under it */
+  const swallowClick = useRef(false);
+
   // ---- gestures: tap zones, swipe, tap-to-toggle-chrome ----
   const gesture = useRef<{ x: number; y: number; t: number } | null>(null);
 
@@ -807,6 +834,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       // a highlight is an intent of its own — leave it alone
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed) return;
+      if (justSelected()) return;
+      // the reader's own selection: a tap or a swipe puts it down, and does
+      // nothing else
+      if (touchActive) {
+        clearTouch();
+        setSelection(null);
+        swallowClick.current = true;
+        return;
+      }
 
       const dx = e.clientX - g.x;
       const dy = e.clientY - g.y;
@@ -831,7 +867,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         chrome.toggle();
       }
     },
-    [mode, tapZones, advance, chrome]
+    [mode, tapZones, advance, chrome, justSelected, touchActive, clearTouch]
   );
 
   /**
@@ -842,6 +878,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    * phrase, and yanking a dictionary over it is not what they asked for.
    */
   const onContentClick = useCallback((e: React.MouseEvent) => {
+    if (swallowClick.current || justSelected()) {
+      swallowClick.current = false;
+      return;
+    }
     const mark = (e.target as HTMLElement).closest?.("[data-paribhasha]");
     if (!mark) return;
     const sel = window.getSelection();
@@ -852,7 +892,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const r = mark.getBoundingClientRect();
     setDefineAnchor({ left: r.left, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY });
     setDefineWord(word);
-  }, []);
+  }, [justSelected]);
 
   /** the selection bar's Paribhasha action — shown only for an exact headword */
   const selectedHeadword = useMemo(() => {
@@ -1060,8 +1100,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 
   const clearSelection = useCallback(() => {
     window.getSelection()?.removeAllRanges();
+    clearTouch();
     setSelection(null);
-  }, []);
+  }, [clearTouch]);
 
   const playFromPara = useCallback(
     (p: Paragraph) => {
@@ -1082,6 +1123,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // accident while reading. Highlighting text is deliberate, native on every
   // platform, and tells us exactly what to cite.
   useEffect(() => {
+    if (touchSel.enabled) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const read = () => {
       const sel = document.getSelection();
@@ -1097,17 +1139,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         setSelection(null);
         return;
       }
-      const para = paraByRef.get(host.getAttribute("data-ref") ?? "");
-      if (!para) {
-        setSelection(null);
-        return;
-      }
-      const range = sel.getRangeAt(0);
-      setSelection({
-        para,
-        text: sel.toString().trim(),
-        span: selectionSpan(host as HTMLElement, range, para.text_hi) ?? undefined,
-      });
+      setSelection(selectionFrom(host as HTMLElement, sel.getRangeAt(0)));
     };
     const onChange = () => {
       // settle until the drag stops, so the bar doesn't flicker mid-swipe
@@ -1119,7 +1151,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       document.removeEventListener("selectionchange", onChange);
       if (timer) clearTimeout(timer);
     };
-  }, [paraByRef]);
+  }, [touchSel.enabled, selectionFrom]);
 
   // ---- selection actions ----
   // Saving always succeeds and always feels instant, because it is a local
@@ -1768,8 +1800,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         <div
           ref={contentRef}
           onClick={onContentClick}
-          className="reader-content min-h-[70dvh] pb-24 pt-3"
+          data-touch-select={touchSel.enabled ? "" : undefined}
+          className="reader-content relative min-h-[70dvh] pb-24 pt-3"
         >
+          {touchSel.overlay}
           {chapterLoading && (
             <p className="py-16 text-center text-sm text-(--reader-ink-soft)">Loading…</p>
           )}
@@ -2001,7 +2035,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             selectedHeadword
               ? () => {
                   track("paribhasha_lookup", { source: "selection" });
-                  const r = window.getSelection()?.getRangeAt(0)?.getBoundingClientRect();
+                  const r = (
+                    touchSel.range() ?? window.getSelection()?.getRangeAt(0)
+                  )?.getBoundingClientRect();
                   setDefineAnchor(
                     r ? { left: r.left, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY } : null
                   );

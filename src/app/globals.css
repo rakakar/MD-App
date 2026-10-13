@@ -986,6 +986,16 @@ html[data-reader-face="sans"] .reader-surface .hi {
   font-size: calc(1.125rem * var(--reader-font-scale, 1));
 }
 
+/* Touch screens: the reader draws its own selection (useTouchSelection), so
+   the phone's — and its Copy · Select all · Web search pill, and Google's
+   search sheet under it — never starts. The paragraphs only: a note's
+   textarea in the margin stays a textarea. */
+.reader-content[data-touch-select] [data-ref] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* The text column. Width and gutters come from the margin preset. */
 .reader-content {
   margin-inline: auto;
