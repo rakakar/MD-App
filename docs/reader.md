@@ -111,6 +111,12 @@ Quiet · Paper · Bold · Calm · Focus — पर app अपने चार (A
 है: **Auto** ही वह चीज़ है जो सूरज ढलते ही फ़ोन के साथ app को भी बदल देती है, और
 जिस किताब को क्रीम काग़ज़ पर चुना गया वह शाम होने से धूसर नहीं होनी चाहिए।
 
+**नाम बदले (13 अक्टूबर 2026)।** Sheet में अब heading "Page colour" है और नाम
+Original · Dark · Grey · Bold text · Warm · Cream — mood वाले नाम (Quiet, Calm,
+Focus) देखकर पता नहीं चलता था कि पन्ना कैसा दिखेगा। Ids (`quiet`, `paper`, `bold`,
+`calm`, `focus`) वही हैं, इसलिए सहेजी हुई पसंद नहीं बदली; इस doc और code में surfaces
+अब भी ids से बुलाए जाते हैं।
+
 `original` कुछ भी declare नहीं करता — वह app theme के aliases हैं, यानी जिसने
 sheet कभी खोली ही नहीं उसे बिल्कुल वही मिलता है जो पहले मिलता था। `bold` surface
 है ही नहीं, **weight** है (Tiro में एक weight है, इसलिए किताब की देवनागरी Mukta

@@ -32,14 +32,18 @@ import { Sheet } from "./Sheet";
  * chip is painted from the live reader tokens and follows whatever the app is
  * currently set to. That is exactly what choosing it does.
  */
+/* Labels say what each one looks like, not a mood: "Quiet · Paper · Calm ·
+   Focus" left readers tapping each to find out — the designer's call, 13 Oct
+   2026. "Original" stays; "Auto" and "Match app" read worse. The ids, and so
+   every saved choice, are unchanged. */
 const SURFACES: Record<ReaderSurface, { label: string; bg: string; ink: string; bold?: boolean }> =
   {
     original: { label: "Original", bg: "var(--color-surface)", ink: "var(--color-ink)" },
-    quiet: { label: "Quiet", bg: "var(--color-surface-quiet)", ink: "var(--color-surface-quiet-ink)" },
-    paper: { label: "Paper", bg: "var(--color-surface-paper)", ink: "var(--color-surface-paper-ink)" },
-    bold: { label: "Bold", bg: "var(--color-surface)", ink: "var(--color-ink)", bold: true },
-    calm: { label: "Calm", bg: "var(--color-surface-calm)", ink: "var(--color-surface-calm-ink)" },
-    focus: { label: "Focus", bg: "var(--color-surface-focus)", ink: "var(--color-surface-focus-ink)" },
+    quiet: { label: "Dark", bg: "var(--color-surface-quiet)", ink: "var(--color-surface-quiet-ink)" },
+    paper: { label: "Grey", bg: "var(--color-surface-paper)", ink: "var(--color-surface-paper-ink)" },
+    bold: { label: "Bold text", bg: "var(--color-surface)", ink: "var(--color-ink)", bold: true },
+    calm: { label: "Warm", bg: "var(--color-surface-calm)", ink: "var(--color-surface-calm-ink)" },
+    focus: { label: "Cream", bg: "var(--color-surface-focus)", ink: "var(--color-surface-focus-ink)" },
   };
 
 const FACES: { id: ReaderFace; label: string; stack: string }[] = [
@@ -115,7 +119,7 @@ export function SettingsSheet(p: SettingsSheetProps) {
           />
         )}
 
-        <Row label="Theme">
+        <Row label="Page colour">
           <div role="radiogroup" aria-label="Reading surface" className="grid grid-cols-3 gap-2.5">
             {READER_SURFACES.map((id) => {
               const s = SURFACES[id];
@@ -150,8 +154,8 @@ export function SettingsSheet(p: SettingsSheetProps) {
             })}
           </div>
           <p className="mt-2 text-xs text-(--reader-ink-soft)">
-            The book&apos;s own paper. Original follows the app&apos;s theme, so it goes dark
-            at night with everything else.
+            Choose the page colour. Original uses the same colours as the rest of the app,
+            so the page turns dark when the app does.
           </p>
         </Row>
 
@@ -495,7 +499,7 @@ export function SettingsPanel(
           />
         )}
 
-        <Row label="Theme">
+        <Row label="Page colour">
           <div role="radiogroup" aria-label="Reading surface" className="grid grid-cols-3 gap-2">
             {READER_SURFACES.map((id) => {
               const s = SURFACES[id];
@@ -524,8 +528,8 @@ export function SettingsPanel(
             })}
           </div>
           <p className="mt-2.5 text-xs text-(--reader-ink-soft)">
-            The book&apos;s own paper. Original follows the app&apos;s theme, so it goes dark at
-            night with everything else.
+            Choose the page colour. Original uses the same colours as the rest of the app,
+            so the page turns dark when the app does.
           </p>
         </Row>
 
