@@ -120,7 +120,7 @@ export default async function OriginalsHome() {
             Books
           </SectionHeading>
           {books.length > 0 ? (
-            <BookRail books={books} />
+            <BookRail books={books} allHref="/books" />
           ) : (
             <EmptyState title="No books available yet" hint="Published books will appear here." />
           )}

@@ -17,10 +17,16 @@ import type { BookSummary } from "@/lib/types";
 export function BookRail({
   books,
   rail = false,
+  allHref,
+  total,
 }: {
   books: BookSummary[];
   /** a rail at every width — onboarding's stage, which is phone-sized on desktop too */
   rail?: boolean;
+  /** the whole shelf — drawn as a last tile where the rail scrolls */
+  allHref?: string;
+  /** how many books that is, for the tile's words; defaults to these */
+  total?: number;
 }) {
   return (
     // The rail bleeds to the screen edge so covers scroll out of frame rather
@@ -69,6 +75,35 @@ export function BookRail({
           </Link>
         </li>
       ))}
+      {/* The way on, at the end of the swipe (designer, 14 Oct 2026): the
+          heading's "All books →" is small and up in the corner, away from
+          where the eyes are while swiping. A cover-sized tile is found by
+          anyone who reaches the end. Only where the rail scrolls — from lg the
+          covers are a grid and the heading's link sits right above them. */}
+      {allHref && (
+        <li className={`w-[7.75rem] shrink-0 snap-start ${rail ? "" : "lg:hidden"}`}>
+          <Link
+            href={allHref}
+            className="flex aspect-[102/139] w-full flex-col items-center justify-center gap-2 rounded-cover border-2 border-dashed p-3 text-center transition-colors active:bg-accent-tint"
+            style={{
+              borderColor: "color-mix(in srgb, var(--ws-color) 45%, var(--color-card))",
+              background: "color-mix(in srgb, var(--ws-color) 6%, var(--color-card))",
+              color: "var(--ws-ink)",
+            }}
+          >
+            <span
+              aria-hidden
+              className="flex h-10 w-10 items-center justify-center rounded-full text-lg text-white"
+              style={{ background: "var(--ws-color)" }}
+            >
+              →
+            </span>
+            <span className="text-sm font-semibold leading-snug">
+              See all {total ?? books.length} books
+            </span>
+          </Link>
+        </li>
+      )}
     </ul>
   );
 }
