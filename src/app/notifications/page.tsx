@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationList } from "@/components/notifications/NotificationList";
 import { useInbox } from "@/components/notifications/useInbox";
 import { BackIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
-import { PageContainer } from "@/components/ui";
+import { PageContainer, ctaPrimary } from "@/components/ui";
+import { signInHref } from "@/lib/routes";
 
 /**
  * **Notifications** — the phone's screen for the inbox (designer's comp,
@@ -18,6 +21,7 @@ import { PageContainer } from "@/components/ui";
  */
 export default function NotificationsPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const { unread, markAllRead } = useInbox();
 
   return (
@@ -33,7 +37,7 @@ export default function NotificationsPage() {
             <BackIcon className="h-5 w-5" />
           </button>
           <h1 className="min-w-0 flex-1 font-display text-2xl font-medium">Notifications</h1>
-          {unread > 0 && (
+          {user && unread > 0 && (
             <button
               type="button"
               onClick={markAllRead}
@@ -44,9 +48,24 @@ export default function NotificationsPage() {
             </button>
           )}
         </div>
-        <div className="mt-4">
-          <NotificationList />
-        </div>
+        {/* Signed-in readers only, as the doors to it are — this covers a
+            link followed while signed out. */}
+        {loading ? null : user ? (
+          <div className="mt-4">
+            <NotificationList />
+          </div>
+        ) : (
+          <div className="mt-4 rounded-2xl border border-rule bg-card p-4">
+            <p className="text-sm text-ink-soft">Sign in to see your notifications.</p>
+            <Link
+              href={signInHref("/notifications")}
+              className={`mt-3 ${ctaPrimary}`}
+              style={{ background: "var(--ws-color)" }}
+            >
+              Sign in
+            </Link>
+          </div>
+        )}
       </PageContainer>
     </AppAccent>
   );

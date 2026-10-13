@@ -4,6 +4,10 @@ The bell on desktop, the dot on the avatar, the Notifications row in the
 account menu and the `/notifications` screen all show one list: what this
 device has been sent. Designer's comps, 13 Oct 2026.
 
+**For signed-in readers only.** Signed out there is no bell, and the page
+asks the reader to sign in. Pushes are still saved while signed out, so they
+are waiting after sign-in.
+
 ## Where the list comes from: this device
 
 There is no inbox on the server yet, so the app keeps one itself, in its own
@@ -52,4 +56,5 @@ POST /api/v1/me/notifications/read/      { ids: [...] } | { all: true }
   also add it to the push's `data` payload. The local inbox already reads it.
 - Feedback replies, shivir reminders and stage updates would be written by
   their own features, not only by the panel's broadcast.
-- Signed out there is no `me`, so the local inbox would stay for those readers.
+- The inbox is signed-in only, so `me` covers every reader who can see it.
+  The local store can go once this exists.

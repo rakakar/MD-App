@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { BellIcon, CloseIcon } from "@/components/shell/icons";
 import { NotificationList, UnreadBadge } from "./NotificationList";
 import { useInbox } from "./useInbox";
@@ -10,8 +11,13 @@ import { useInbox } from "./useInbox";
  * it, opening the inbox in a panel over the page (designer's comp, 13 Oct
  * 2026). The phone reaches the same list through the account sheet instead:
  * its app bar has no room for a third control.
+ *
+ * Signed-in readers only (the designer's call, 13 Oct 2026), like the account
+ * menu that is the phone's way in. Pushes that arrive signed out are still
+ * kept, and are there after signing in.
  */
 export function NotificationBell() {
+  const { user } = useAuth();
   const { unread, markAllRead } = useInbox();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -31,6 +37,8 @@ export function NotificationBell() {
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  if (!user) return null;
 
   return (
     <div ref={ref} className="relative">
