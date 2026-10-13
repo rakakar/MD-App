@@ -44,6 +44,7 @@ export type GaEvent =
   // guessed. A high share of guesses followed by a second ask of the same
   // words under another chip is what a wrong guess looks like.
   | "assistant_ask"
+  | "assistant_deep_cancel"
   // Expanding a result in place vs opening the book — the ratio tells us
   // whether readers can judge a passage from the list, or need its context.
   | "search_result_expand"

@@ -283,6 +283,12 @@ export function AssistantScreen() {
     track("assistant_ask", { intent: "research", chosen: "deepen", length: of.query.length });
   }, []);
 
+  /** Cancel on a deep research still waiting: the turn goes, as if never asked. */
+  const drop = useCallback((turnId: string) => {
+    setConv((c) => (c ? { ...c, turns: c.turns.filter((t) => t.id !== turnId) } : c));
+    track("assistant_deep_cancel");
+  }, []);
+
   const settle = useCallback((turnId: string, patch: Partial<Turn>) => {
     setConv((c) =>
       c ? { ...c, turns: c.turns.map((t) => (t.id === turnId ? { ...t, ...patch } : t)) } : c
@@ -350,8 +356,11 @@ export function AssistantScreen() {
     setPicking(false);
     setDraftScope(null);
   }, []);
+  const last = turns[turns.length - 1];
   const placeholder = conv
-    ? turns[turns.length - 1]?.intent === "books"
+    ? last?.deep && !last.answer
+      ? "Researching…"
+      : last?.intent === "books"
       ? "Narrow this, or ask about it"
       : "Ask a follow-up"
     : INTENT_PLACEHOLDER[mode ?? "auto"];
@@ -462,11 +471,14 @@ export function AssistantScreen() {
                         }
                         onAsk={ask}
                         onQuota={setQuota}
-                        onSettle={(answer) =>
+                        took={t.took}
+                        onCancel={t.deep ? () => drop(t.id) : undefined}
+                        onSettle={(answer, took) =>
                           settle(t.id, {
                             answer,
                             summary: firstSentence(answer.answer),
                             count: answer.citations.length,
+                            ...(t.deep && took != null ? { took } : {}),
                           })
                         }
                       />

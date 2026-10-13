@@ -36,6 +36,8 @@ export interface Turn {
   deepens?: string;
   /** Research only — the answer as it arrived, so reopening is free */
   answer?: ChatAnswer;
+  /** Deep research only — how long it was waited for, in ms */
+  took?: number;
   /** one line for the conversation list, written when the turn settles */
   summary?: string;
   /** passages found, entries matched — whatever the turn counts */

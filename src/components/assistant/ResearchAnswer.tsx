@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
+import { CheckIcon, ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
 import { ctaPrimary } from "@/components/ui";
 import { answerAsText, parseAnswer, type Run } from "@/lib/assistant/answer";
 import { glossaryWordsIn } from "@/lib/assistant/related";
@@ -19,6 +19,7 @@ import { parseRef } from "@/lib/refs";
 import type { BookSummary, ChatAnswer, ChatCitation, ChatQuota, ParibhashaWord } from "@/lib/types";
 import { WORKSPACES } from "@/lib/workspaceConfig";
 import { CitationSheet } from "./CitationSheet";
+import { DeepResearchProgress, clock } from "./DeepResearchProgress";
 import { useSourcePanel } from "./SourcePanel";
 import { CopyIcon, NoteIcon } from "./icons";
 import { Eyebrow, SuggestionChip, Thinking } from "./parts";
@@ -32,7 +33,10 @@ import type { Ask } from "./types";
  * here, outside the component, keyed by the turn. A remount picks up the same
  * promise instead of asking again.
  */
-const inflight = new Map<string, Promise<{ answer: ChatAnswer; quota: ChatQuota }>>();
+const inflight = new Map<
+  string,
+  { job: Promise<{ answer: ChatAnswer; quota: ChatQuota }>; startedAt: number }
+>();
 
 type Failure =
   | { kind: "signin" }
@@ -69,6 +73,8 @@ export function ResearchAnswer({
   onAsk,
   onSettle,
   onQuota,
+  onCancel,
+  took,
 }: {
   turnId: string;
   query: string;
@@ -94,8 +100,13 @@ export function ResearchAnswer({
   saved: boolean;
   onToggleSaved: () => void;
   onAsk: Ask;
-  onSettle: (answer: ChatAnswer) => void;
+  /** `took` — how long it was waited for, in ms; only when it was asked now */
+  onSettle: (answer: ChatAnswer, took?: number) => void;
   onQuota: (quota: ChatQuota) => void;
+  /** Deep research: stop waiting and take the turn away */
+  onCancel?: () => void;
+  /** how long a deep answer took, as recorded when it arrived */
+  took?: number;
 }) {
   const { user, loading } = useAuth();
   const [answer, setAnswer] = useState<ChatAnswer | null>(stored ?? null);
@@ -116,17 +127,21 @@ export function ResearchAnswer({
     setFailure(null);
     let alive = true;
     const key = `${turnId}:${attempt}`;
-    let job = inflight.get(key);
-    if (!job) {
-      job = askChat(query, { continueFrom, books, mode: deep ? "deep" : "quick" });
-      inflight.set(key, job);
+    let entry = inflight.get(key);
+    if (!entry) {
+      entry = {
+        job: askChat(query, { continueFrom, books, mode: deep ? "deep" : "quick" }),
+        startedAt: Date.now(),
+      };
+      inflight.set(key, entry);
     }
-    job
+    const { startedAt: began } = entry;
+    entry.job
       .then(({ answer: a, quota }) => {
         if (!alive) return;
         setAnswer(a);
         onQuota(quota);
-        onSettle(a);
+        onSettle(a, Date.now() - began);
       })
       .catch((e: unknown) => {
         inflight.delete(key);
@@ -160,6 +175,23 @@ export function ResearchAnswer({
   }, [answer, dictionary]);
 
   if (failure) return <FailureCard failure={failure} onRetry={() => setAttempt((n) => n + 1)} onAsk={onAsk} query={query} />;
+
+  if (!answer && deep) {
+    return (
+      <DeepResearchProgress
+        // From the in-flight entry, so a remount keeps the clock running.
+        startedAt={inflight.get(`${turnId}:${attempt}`)?.startedAt ?? null}
+        onCancel={
+          onCancel &&
+          (() => {
+            // The request cannot be called back; its answer is let go instead.
+            inflight.delete(`${turnId}:${attempt}`);
+            onCancel();
+          })
+        }
+      />
+    );
+  }
 
   if (!answer) {
     return (
@@ -224,6 +256,16 @@ export function ResearchAnswer({
           <p className="text-sm font-semibold" style={{ color: "var(--color-accent-deep)" }}>
             Deep research
           </p>
+          {/* How long the progress card's clock ran. What was read is the
+              "Read N passages" line just below — not repeated here. */}
+          {took != null && (
+            <p className="flex items-center gap-2 text-sm text-ink-soft">
+              <span aria-hidden className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-600 text-white">
+                <CheckIcon className="h-3 w-3" />
+              </span>
+              Researched in <span className="tabular-nums">{clock(took / 1000)}</span>
+            </p>
+          )}
           {readAs && (
             <p className="text-sm text-ink-soft">
               Read as{" "}
@@ -333,19 +375,22 @@ export function ResearchAnswer({
         )}
       </div>
 
-      {/* The answer's own standing, said plainly — it is assembled, not taught. */}
-      <div className="flex gap-3 rounded-card border border-rule bg-inset p-4 text-sm leading-relaxed text-ink-soft">
-        <InfoIcon className="mt-0.5 h-5 w-5 shrink-0" />
-        <p>
-          {answer.status === "not_found"
-            ? answer.off_topic
+      {/* Why there is no answer, when there is none. An answer that was
+          found carries no note under it: the standing line ("assembled from
+          cited passages only…") came off at the designer's call, 13 Oct 2026 —
+          the citations on every sentence already say it. */}
+      {answer.status === "not_found" && (
+        <div className="flex gap-3 rounded-card border border-rule bg-inset p-4 text-sm leading-relaxed text-ink-soft">
+          <InfoIcon className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>
+            {answer.off_topic
               ? "This isn’t something the books of Madhyasth Darshan speak about, so it isn’t answered here."
               : deep || answer.mode === "deep"
-              ? "The books don’t answer this directly, so nothing has been assembled. Try Book search for the words themselves."
-              : "The passages this search found don’t answer it, so nothing has been assembled. Deep research below searches each part of the question on its own; Book search finds the words themselves."
-            : "Assembled from cited passages only. Where the books differ, both readings are shown — this is not a prabodhak’s interpretation."}
-        </p>
-      </div>
+                ? "The books don’t answer this directly, so nothing has been assembled. Try Book search for the words themselves."
+                : "The passages this search found don’t answer it, so nothing has been assembled. Deep research below searches each part of the question on its own; Book search finds the words themselves."}
+          </p>
+        </div>
+      )}
 
       {/* Deep research is offered after an answer, never chosen up front: the
           quick one is usually enough, and deep costs about ten times as much.
