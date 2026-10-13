@@ -63,8 +63,15 @@ const SEGMENT_ON_STYLE = { background: "var(--ws-color)" };
  * front edge of the thing below it, which is a relationship the accent cannot
  * express and would talk over. Everywhere else the panel is the page, the pill
  * had nothing to be lighter than, and the fill is what makes it legible.
+ *
+ * With a hairline of the accent round it (the designer's call, 13 Oct 2026):
+ * most readers are past 45, and white on near-white with a soft shadow was
+ * too faint a "this one". The reader's settings segments wear the same line.
+ * `inset-ring`, never `ring-inset` — the `--color-inset` token makes
+ * `ring-inset` a colour too, and it paints the line cream.
  */
-const SEGMENT_ON_RAISED = "bg-card font-semibold shadow-card";
+const SEGMENT_ON_RAISED =
+  "bg-card font-semibold shadow-card inset-ring inset-ring-(color:--ws-ink)";
 
 /** The count beside a segment's label — a chip, so it is not read as part of
  *  the name. On the filled pill it sits in a wash of white rather than a fill
