@@ -1968,16 +1968,23 @@ html[data-first-run] body > :not(.launch) {
    painted by the pre-hydration script (layout.tsx) — a card the reader folded
    must not render open and then close. The fold itself is animated by
    SutraCard, which measures both heights and tweens between them; these rules
-   are only where it comes to rest. */
-html[data-sutra-collapsed] .sutra-verse {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  overflow: hidden;
-}
-html[data-sutra-collapsed] .sutra-more {
-  display: none;
+   are only where it comes to rest.
+
+   Phone and tablet only. Desktop has no Hide / Show (the designer's call,
+   13 Oct 2026) and always shows the whole card — including for a reader who
+   folded it on this device before, who would otherwise be left with a folded
+   card and no way to open it. */
+@media not all and (min-width: 64rem) {
+  html[data-sutra-collapsed] .sutra-verse {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    overflow: hidden;
+  }
+  html[data-sutra-collapsed] .sutra-more {
+    display: none;
+  }
 }
 /* `visibility`, not `display`: the two words share one grid cell so the
    button keeps the wider one's width either way. */
@@ -1987,26 +1994,20 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
 }
 
 /* Desktop Home puts the card beside Upcoming shivirs, one row, one height
-   (desktop revision, 29 Sep 2026). Open, it stretches to that row and pins the
-   book and Share to its foot; folded, it gives the height back rather than
-   standing as a tall card holding one line. The fold still animates the
-   verse, but on desktop the card's outline settles at the end rather than
-   tracking it — the row, not the card, owns the height there. */
+   (desktop revision, 29 Sep 2026): it stretches to that row and pins the book
+   and Share to its foot. */
 @media (min-width: 64rem) {
-  html:not([data-sutra-collapsed]) .sutra-card {
+  .sutra-card {
     display: flex;
     flex-direction: column;
   }
-  html:not([data-sutra-collapsed]) .sutra-body {
+  .sutra-body {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
   }
-  html:not([data-sutra-collapsed]) .sutra-more {
+  .sutra-more {
     margin-top: auto;
-  }
-  html[data-sutra-collapsed] .sutra-card {
-    align-self: start;
   }
 }
 

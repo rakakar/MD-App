@@ -210,7 +210,9 @@ export function SutraCard({
             onClick={toggle}
             aria-expanded={!collapsed}
             aria-controls="sutra-body"
-            className="group relative -my-2 -me-1.5 flex min-h-11 items-center ps-1 pe-1.5"
+            // Phone and tablet only: on desktop the card shares a row with
+            // the shivirs and is always shown whole (designer, 13 Oct 2026).
+            className="group relative -my-2 -me-1.5 flex min-h-11 items-center ps-1 pe-1.5 lg:hidden"
           >
             <span
               // Both words stacked in one cell, the idle one invisible, so the
