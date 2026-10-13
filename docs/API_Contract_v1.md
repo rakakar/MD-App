@@ -127,8 +127,8 @@ The whole chapter: metadata, prev/next pointers, and every paragraph.
 Use `prev`/`next` to render chapter navigation without re-reading the TOC.
 
 **Read-aloud (multi-voice, TTS Plan v2).** A chapter can carry several audio
-renditions, one per voice; the list is ordered **fresh-first** (non-stale,
-then the voice currently active on the panel, then newest) — playing `audio_renditions[0]` is the correct default. To play from
+renditions, one per voice; the readers' default voice comes first whenever
+the chapter has it (even stale); after it, non-stale then newest — playing `audio_renditions[0]` is the correct default. To play from
 a page or highlight the current paragraph, look the paragraph's `sequence` up
 in the chosen rendition's `para_timings` and seek the chapter audio to its
 `start_ms` — timings are per-voice, so always read them from the rendition
