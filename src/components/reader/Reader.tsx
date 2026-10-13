@@ -9,6 +9,7 @@ import { spokenParas } from "@/components/player/deviceSpeech";
 import {
   activeRendition,
   paraAtPosition,
+  startingRendition,
   usePlayer,
 } from "@/components/player/PlayerProvider";
 import { track } from "@/lib/analytics";
@@ -1053,12 +1054,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         opts.fromSeq === undefined && opts.resume !== false ? savedListening() : null;
       const seq = opts.fromSeq ?? resume?.fromSeq;
       if (payload.audio_renditions.length > 0) {
-        const def = payload.audio_renditions[0];
+        // The voice picked last time, when this chapter has it.
+        const def = startingRendition(payload.audio_renditions, getPrefs().ttsVoice)!;
         const startMs =
           seq !== undefined
             ? (def.para_timings[String(seq)]?.[0] ?? 0)
             : (resume?.startMs ?? 0);
-        playTts({ ...common, renditions: payload.audio_renditions }, { startMs });
+        playTts(
+          { ...common, renditions: payload.audio_renditions },
+          { startMs, voiceKey: def.voice_key }
+        );
         return;
       }
       // No generated rendition — read it with the device's own Hindi voice.

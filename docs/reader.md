@@ -240,5 +240,3 @@ highlights मिटा देता। Push पर spans **replace** होत�
 
 - **पर्दा बंद होने पर audio:** device TTS screen lock पार नहीं कर सकती। यह
   सिर्फ़ BE की बनाई हुई renditions से हो सकता है — FE का काम नहीं।
-- **Voice picker UX** — model में कई renditions पहले से बैठ सकती हैं
-  (BE: `docs/manuals/tts_manual.md` §9), FE पर चुनने का तरीक़ा अभी नहीं है।

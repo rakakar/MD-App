@@ -23,6 +23,8 @@ import type { AudioRendition, Paragraph } from "@/lib/types";
 import {
   CoverArt,
   FootBtn,
+  Menu,
+  MenuItem,
   NextChapterIcon,
   PrevChapterIcon,
   RATES,
@@ -31,7 +33,13 @@ import {
   fmt,
   useSheetDismiss,
 } from "./audioChrome";
-import { SKIP_SECONDS, activeRendition, usePlayer, type TtsSource } from "./PlayerProvider";
+import {
+  SKIP_SECONDS,
+  activeRendition,
+  usePlayer,
+  voiceNames,
+  type TtsSource,
+} from "./PlayerProvider";
 
 export interface AudioModeProps {
   /** the chapter's paragraphs, in reading order — the text that gets sung */
@@ -259,12 +267,14 @@ export function AudioMode({
             was the engine that made the file, which is a fact about how this
             was produced rather than about what is playing, and it sat on the
             one line under the chapter where a listener looks to see how far in
-            they are. */}
+            they are. It is named below only where there is a second voice to
+            choose instead. */}
         <p className="mt-1 text-xs tabular-nums text-audio-ink/55">
           {device
             ? `Para ${paraProgress}`
             : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
         </p>
+        {source.kind === "tts" && <VoicePicker source={source} className="mt-3" />}
         {/* The one honest sentence this mode owes the listener: the device
             voice is not background audio, and finding that out with the phone
             already in a pocket is how an app loses trust. */}
@@ -411,8 +421,61 @@ export function AudioMode({
 
             The other three lost nothing. Chapters is the two chapter buttons
             in the transport above; Read is the chevron in the header, which
-            does exactly what it did; Voice is on the shelf's bar. */}
+            does exactly what it did; Voice is `VoicePicker`, under the clock,
+            on the chapters that have more than one. */}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Which voice is reading, and the others this chapter has.
+ *
+ * **Drawn only when there is a choice.** Most chapters have one voice, and a
+ * control with one option is a label pretending to be a button — on those the
+ * screen is exactly the comp. Switching carries on from the paragraph being
+ * spoken, not from the clock: the two recordings are different lengths, so
+ * the same minute is a different sentence in each.
+ */
+function VoicePicker({ source, className = "" }: { source: TtsSource; className?: string }) {
+  const player = usePlayer();
+  const [open, setOpen] = useState(false);
+  if (source.renditions.length < 2) return null;
+  const names = voiceNames(source.renditions);
+  const current = names.get(source.voiceKey) ?? "";
+  return (
+    <div className={`relative flex max-w-full justify-center ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Voice: ${current}. Change voice`}
+        className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-control bg-audio-ink/10 px-3.5 text-sm font-semibold text-audio-ink/85 transition-colors hover:bg-audio-ink/15 active:bg-audio-ink/20"
+      >
+        <span lang="hi" className="hi hi-tight truncate">
+          {current}
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-audio-ink/60" />
+      </button>
+      {open && (
+        <Menu className="start-1/2 top-full mt-1 w-60 max-w-[80vw] -translate-x-1/2">
+          {source.renditions.map((r) => (
+            <MenuItem
+              key={r.voice_key}
+              selected={r.voice_key === source.voiceKey}
+              onClick={() => {
+                player.switchVoice(r.voice_key);
+                setOpen(false);
+              }}
+            >
+              <span lang="hi" className="hi hi-tight">
+                {names.get(r.voice_key)}
+              </span>
+            </MenuItem>
+          ))}
+        </Menu>
+      )}
     </div>
   );
 }
@@ -628,6 +691,7 @@ function DesktopAudioMode({
               {where}
             </p>
           )}
+          {source.kind === "tts" && <VoicePicker source={source} className="mt-4" />}
           {device && (
             <p className="mt-4 text-center text-sm text-audio-accent/90">
               Device voice. Stops when the screen locks.

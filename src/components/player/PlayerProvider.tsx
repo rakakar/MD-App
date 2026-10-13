@@ -143,6 +143,34 @@ export function activeRendition(source: PlayerSource | null): AudioRendition | n
   return source.renditions.find((r) => r.voice_key === source.voiceKey) ?? null;
 }
 
+/**
+ * The rendition a chapter starts in: the voice this reader picked before, if
+ * the chapter has it, else the first one — which the API puts there as its
+ * suggested default (contract §2.3).
+ */
+export function startingRendition(
+  renditions: AudioRendition[],
+  preferred: string | null
+): AudioRendition | undefined {
+  return renditions.find((r) => r.voice_key === preferred) ?? renditions[0];
+}
+
+/**
+ * What to call each voice in the picker: its label, numbered where two voices
+ * were given the same one — two entries a listener cannot tell apart are not
+ * a choice.
+ */
+export function voiceNames(renditions: AudioRendition[]): Map<string, string> {
+  const seen = new Map<string, number>();
+  const names = new Map<string, string>();
+  for (const r of renditions) {
+    const n = (seen.get(r.voice_label) ?? 0) + 1;
+    seen.set(r.voice_label, n);
+    names.set(r.voice_key, n === 1 ? r.voice_label : `${r.voice_label} · ${n}`);
+  }
+  return names;
+}
+
 /** paragraph sequence bracketed by [start_ms,end_ms] at the given position */
 export function paraAtPosition(timings: ParaTimings, positionMs: number): number | null {
   for (const [seq, [start, end]] of Object.entries(timings)) {
@@ -348,22 +376,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const switchVoice = useCallback(
     (voiceKey: string) => {
-      setSource((prev) => {
-        if (!prev || prev.kind !== "tts") return prev;
-        const from = prev.renditions.find((r) => r.voice_key === prev.voiceKey);
-        const to = prev.renditions.find((r) => r.voice_key === voiceKey);
-        if (!to) return prev;
-        // re-resolve by paragraph, not timestamp (PRD §5)
-        const el = audio();
-        const seq = from ? paraAtPosition(from.para_timings, el.currentTime * 1000) : null;
-        const startMs = seq !== null ? (to.para_timings[String(seq)]?.[0] ?? 0) : 0;
-        setDurationMs(to.duration_ms);
-        load(to.audio_url, startMs);
-        ga("tts_play", { voice: to.voice_label });
-        return { ...prev, voiceKey };
-      });
+      // Remembered, so the next chapter opens in the voice just chosen.
+      setPrefs({ ttsVoice: voiceKey });
+      if (source?.kind !== "tts") return;
+      const from = source.renditions.find((r) => r.voice_key === source.voiceKey);
+      const to = source.renditions.find((r) => r.voice_key === voiceKey);
+      if (!to || to === from) return;
+      // Re-resolve by paragraph, not timestamp (PRD §5). Done here and not in
+      // a state updater: an updater may run twice, and the second run would
+      // read the new file's clock against the old voice's timings and land a
+      // paragraph further on.
+      const seq = from ? paraAtPosition(from.para_timings, audio().currentTime * 1000) : null;
+      const startMs = seq !== null ? (to.para_timings[String(seq)]?.[0] ?? 0) : 0;
+      setSource({ ...source, voiceKey });
+      setDurationMs(to.duration_ms);
+      load(to.audio_url, startMs);
+      ga("tts_play", { voice: to.voice_label });
     },
-    [audio, load]
+    [audio, load, source]
   );
 
   const toggle = useCallback(() => {

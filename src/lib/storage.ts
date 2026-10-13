@@ -164,6 +164,12 @@ export interface Prefs {
   lastWorkspace: WorkspaceId;
   consent: "granted" | "denied" | null;
   playbackRate: number;
+  /**
+   * The read-aloud voice this reader last picked (`voice_key`). Honoured only
+   * on a chapter that has that voice; otherwise the chapter's own default
+   * plays and this is left alone.
+   */
+  ttsVoice: string | null;
   syncNudgeShown: boolean;
   /** one-time "tap the middle for controls" coach mark */
   immersiveHintShown: boolean;
@@ -276,6 +282,7 @@ export const DEFAULT_PREFS: Prefs = {
   lastWorkspace: "originals",
   consent: null,
   playbackRate: 1,
+  ttsVoice: null,
   syncNudgeShown: false,
   immersiveHintShown: false,
   onboardingSeen: false,

@@ -715,6 +715,7 @@ Two things follow, and both are in the code:
 | Comp | Shipped | Reason |
 |---|---|---|
 | Audio Mode's unspoken lines at ~3.4:1 | `audio-ink` at 55%, 5.4:1 | The karaoke contrast is the point of the screen and survives the change: the spoken line is still 16:1 against lines that recede. A line you cannot read is not a line you are being invited to tap, and tapping one is what this screen is for. |
+| Nothing under Audio Mode's clock | A voice button there, **only on a chapter with two or more voices** | The owner's call, 13 Oct 2026: a chapter can now be read in more than one voice (the same narrator cloned on two services) and there was no way to choose. A chapter with one voice — nearly all of them — is the comp exactly. It sits under the clock because it says *who* is reading, beside what is being read; switching carries on from the paragraph, and the choice is remembered for the next chapter. |
 | Nothing below Audio Mode's transport | Chapters · Voice · Sleep · offline save · Read | The comp draws the listening controls; these are the ones that make it a listening *app*, and the reader-side bar they used to live on is a pill now. |
 
 ### The reader
