@@ -201,7 +201,7 @@ export function SettingsSheet(p: SettingsSheetProps) {
         {p.showTapZones && (
           <Toggle
             label="Tap edges to turn pages"
-            hint="Off: swipe to turn, tap anywhere for controls."
+            hint="Tap the right side for the next page, the left side to go back. When off, swipe instead."
             checked={p.tapZones}
             onChange={p.onTapZones}
           />
@@ -550,7 +550,7 @@ export function SettingsPanel(
         {p.showTapZones && (
           <Toggle
             label="Tap edges to turn pages"
-            hint="Off: swipe to turn, tap anywhere for controls."
+            hint="Tap the right side for the next page, the left side to go back. When off, swipe instead."
             checked={p.tapZones}
             onChange={p.onTapZones}
           />

@@ -104,19 +104,21 @@ export default function SettingsPage() {
       <div className="rounded-2xl  border border-rule bg-card p-4">
         <p className="text-sm font-medium">Reading style</p>
         <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Reading style">
-          {([[null, "Automatic"], ...MODES.map((o) => [o.value, o.label] as const)] as const).map(([m, label]) => (
+          {/* No "Automatic": it detected nothing, just fell back to the
+              reader's default. Unset now shows as that default, Chapter-wise. */}
+          {MODES.map(({ value: m, label }) => (
             <button
               key={label}
               type="button"
               role="radio"
-              aria-checked={prefs.readingMode === m}
+              aria-checked={(prefs.readingMode ?? "scroll") === m}
               onClick={() => update({ readingMode: m })}
               className={`inline-flex min-h-11 items-center rounded-full border px-4 text-xs ${
-                prefs.readingMode === m
+                (prefs.readingMode ?? "scroll") === m
                   ? "border-transparent font-semibold text-white"
                   : "border-rule"
               }`}
-              style={prefs.readingMode === m ? { background: "var(--ws-color)" } : undefined}
+              style={(prefs.readingMode ?? "scroll") === m ? { background: "var(--ws-color)" } : undefined}
             >
               {label}
             </button>
