@@ -28,11 +28,23 @@ export default function AboutPage() {
             <p className="tabular-nums text-ink-soft">v{pkg.version}</p>
           </Section>
 
+          {/* The vision and purpose from the project's founding PRD
+              (MD_Study_App_PRD.docx, May 2026), as the designer asked. The
+              free-of-charge line stays under it: it is what a reader may do
+              with the contents, which the vision does not say. */}
           <Section title="Purpose of the app">
             <p className="text-ink-soft">
-              This Madhyasth Darshan App is being provided free of charge with the purpose of
-              furthering the Study &amp; Practice of Madhyasth Darshan, by Shri A. Nagraj. The
-              contents herein may be used for personal study.
+              A unified digital ecosystem for studying, understanding, practicing and sharing
+              Madhyasth Darshan, by Shri A. Nagraj — through reading, listening, watching, guided
+              learning journeys, community engagement and AI-powered assistance.
+            </p>
+            <ul className="mt-3 flex list-disc flex-col gap-1 ps-5 text-ink-soft marker:text-ink-soft/60">
+              {PURPOSE.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+            <p className="mt-3 text-sm text-ink-soft">
+              Provided free of charge. The contents may be used for personal study.
             </p>
           </Section>
 
@@ -63,6 +75,15 @@ export default function AboutPage() {
     </AppAccent>
   );
 }
+
+const PURPOSE = [
+  "Structured access to MD literature and study resources",
+  "Self-study and guided learning",
+  "Access in many languages",
+  "A connected learning community",
+  "AI-assisted understanding and research",
+  "One place for publishers, learners and contributors",
+];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
