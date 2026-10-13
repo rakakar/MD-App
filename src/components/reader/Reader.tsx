@@ -2245,13 +2245,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         </form>
       </Sheet>
 
-      {/* ---- toast ---- */}
+      {/* ---- toast ----
+          `overlay`, not `ink`: ink turns pale in the dark theme, and white
+          on it was unreadable — the selection bar's dark, which no theme
+          moves, with a hairline so it still stands off the Dark page. */}
       {toast && (
         <div
           className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
           style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
         >
-          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-ink px-4 py-2 text-sm text-white shadow-lg">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-overlay px-4 py-2 text-sm text-white shadow-lg ring-1 ring-white/15">
             {toast.text}
             {toast.href && (
               <Link href={toast.href} className="font-semibold underline underline-offset-2">
