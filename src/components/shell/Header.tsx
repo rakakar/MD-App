@@ -25,6 +25,7 @@ import {
   PaletteIcon,
   SettingsIcon,
   BellIcon,
+  InfoIcon,
   UserIcon,
   WorkspaceIcon,
 } from "./icons";
@@ -498,6 +499,21 @@ function AvatarMenu() {
           </span>
           My feedback
         </Link>
+        {/* Last: the app's version, purpose and contact — read once, rarely
+            looked for, so it does not stand between a reader and Settings. */}
+        <Link
+          href="/about"
+          onClick={() => {
+            keepWorkspace();
+            setOpen(false);
+          }}
+          className={row}
+        >
+          <span aria-hidden className={glyph}>
+            <InfoIcon className="h-5 w-5" />
+          </span>
+          About
+        </Link>
         {/* No "Sign out" row. Signing out is not a thing to be one careless
             tap from a menu a reader opens for the theme: it costs them their
             synced bookmarks and notes on this device, and it is the one action
@@ -710,6 +726,20 @@ export function SidebarAccount() {
               <FeedbackListIcon className="h-4.5 w-4.5" />
             </span>
             My feedback
+          </Link>
+          <Link
+            href="/about"
+            role="menuitem"
+            onClick={() => {
+              keepWorkspace();
+              setOpen(false);
+            }}
+            className={row}
+          >
+            <span aria-hidden className={glyph}>
+              <InfoIcon className="h-4.5 w-4.5" />
+            </span>
+            About
           </Link>
         </div>
       )}
