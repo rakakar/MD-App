@@ -181,12 +181,12 @@ export function SettingsSheet(p: SettingsSheetProps) {
           />
         </Row>
 
-        <Row label="Typeface">
+        <Row label="Font style">
           {/* Each option is set in the face it selects — the sample is the
               only description that actually tells you anything here. */}
           <div
             role="radiogroup"
-            aria-label="Typeface"
+            aria-label="Font style"
             className="flex gap-1 rounded-control bg-current/[0.06] p-1"
           >
             {FACES.map((f) => {
@@ -561,10 +561,10 @@ export function SettingsPanel(
           />
         </Row>
 
-        <Row label="Typeface">
+        <Row label="Font style">
           <Segmented
             compact
-            ariaLabel="Typeface"
+            ariaLabel="Font style"
             options={FACES.map((f) => ({ label: f.label, value: f.id }))}
             value={p.face}
             onChange={p.onFace}
