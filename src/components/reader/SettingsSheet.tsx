@@ -93,14 +93,27 @@ export function SettingsSheet(p: SettingsSheetProps) {
       <div className="space-y-6 px-5 pt-4">
         <FontSize fontScale={p.fontScale} face={p.face} onFontScale={p.onFontScale} />
 
-        <Row label="Line height">
+        {/* Named for what the reader does, not what the screen is: "Layout"
+            and "Pages / Scroll" left readers guessing — the designer's call,
+            13 Oct 2026. The line under it says what the chosen one is like. */}
+        <Row label="Reading style">
           <Segmented
-            ariaLabel="Line height"
-            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
-            value={p.lineHeight}
-            onChange={p.onLineHeight}
+            ariaLabel="Reading style"
+            options={MODES}
+            value={p.mode}
+            onChange={p.onMode}
           />
+          <p className="mt-2 text-xs text-(--reader-ink-soft)">{MODE_HINT[p.mode]}</p>
         </Row>
+
+        {p.showTapZones && (
+          <Toggle
+            label="Tap edges to turn pages"
+            hint="Tap the right side for the next page, the left side to go back. When off, swipe instead."
+            checked={p.tapZones}
+            onChange={p.onTapZones}
+          />
+        )}
 
         <Row label="Theme">
           <div role="radiogroup" aria-label="Reading surface" className="grid grid-cols-3 gap-2.5">
@@ -153,6 +166,15 @@ export function SettingsSheet(p: SettingsSheetProps) {
           onChange={p.onGlossaryUnderline}
         />
 
+        <Row label="Line height">
+          <Segmented
+            ariaLabel="Line height"
+            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
+            value={p.lineHeight}
+            onChange={p.onLineHeight}
+          />
+        </Row>
+
         <Row label="Typeface">
           {/* Each option is set in the face it selects — the sample is the
               only description that actually tells you anything here. */}
@@ -184,28 +206,6 @@ export function SettingsSheet(p: SettingsSheetProps) {
             })}
           </div>
         </Row>
-
-        {/* Named for what the reader does, not what the screen is: "Layout"
-            and "Pages / Scroll" left readers guessing — the designer's call,
-            13 Oct 2026. The line under it says what the chosen one is like. */}
-        <Row label="Reading style">
-          <Segmented
-            ariaLabel="Reading style"
-            options={MODES}
-            value={p.mode}
-            onChange={p.onMode}
-          />
-          <p className="mt-2 text-xs text-(--reader-ink-soft)">{MODE_HINT[p.mode]}</p>
-        </Row>
-
-        {p.showTapZones && (
-          <Toggle
-            label="Tap edges to turn pages"
-            hint="Tap the right side for the next page, the left side to go back. When off, swipe instead."
-            checked={p.tapZones}
-            onChange={p.onTapZones}
-          />
-        )}
 
         {p.showTapZones && (
           <button
@@ -470,20 +470,30 @@ export function SettingsPanel(
       </div>
 
       {/* The phone sheet's order, one list with no group headings — the
-          designer's call, 3 Oct 2026: size, spacing, paper, the overlay,
-          face, layout, then the ways of moving through the book. */}
+          designer's call, 13 Oct 2026: size, reading style (with its tap
+          edges), paper, the overlay, spacing, face, then go-to-page. */}
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-5 py-5">
         <FontSize fontScale={p.fontScale} face={p.face} onFontScale={p.onFontScale} />
 
-        <Row label="Line height">
+        <Row label="Reading style">
           <Segmented
             compact
-            ariaLabel="Line height"
-            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
-            value={p.lineHeight}
-            onChange={p.onLineHeight}
+            ariaLabel="Reading style"
+            options={MODES}
+            value={p.mode}
+            onChange={p.onMode}
           />
+          <p className="mt-2.5 text-xs text-(--reader-ink-soft)">{MODE_HINT[p.mode]}</p>
         </Row>
+
+        {p.showTapZones && (
+          <Toggle
+            label="Tap edges to turn pages"
+            hint="Tap the right side for the next page, the left side to go back. When off, swipe instead."
+            checked={p.tapZones}
+            onChange={p.onTapZones}
+          />
+        )}
 
         <Row label="Theme">
           <div role="radiogroup" aria-label="Reading surface" className="grid grid-cols-3 gap-2">
@@ -526,6 +536,16 @@ export function SettingsPanel(
           onChange={p.onGlossaryUnderline}
         />
 
+        <Row label="Line height">
+          <Segmented
+            compact
+            ariaLabel="Line height"
+            options={SPACING.map((s) => ({ label: s.label, value: s.value }))}
+            value={p.lineHeight}
+            onChange={p.onLineHeight}
+          />
+        </Row>
+
         <Row label="Typeface">
           <Segmented
             compact
@@ -535,26 +555,6 @@ export function SettingsPanel(
             onChange={p.onFace}
           />
         </Row>
-
-        <Row label="Reading style">
-          <Segmented
-            compact
-            ariaLabel="Reading style"
-            options={MODES}
-            value={p.mode}
-            onChange={p.onMode}
-          />
-          <p className="mt-2.5 text-xs text-(--reader-ink-soft)">{MODE_HINT[p.mode]}</p>
-        </Row>
-
-        {p.showTapZones && (
-          <Toggle
-            label="Tap edges to turn pages"
-            hint="Tap the right side for the next page, the left side to go back. When off, swipe instead."
-            checked={p.tapZones}
-            onChange={p.onTapZones}
-          />
-        )}
 
           {p.onGoToPrintedPage && (
             <form
