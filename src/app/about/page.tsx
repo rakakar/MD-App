@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { BackButton } from "@/components/ui/BackButton";
+import { VersionTap } from "@/components/shell/VersionTap";
 import pkg from "../../../package.json";
 
 export const metadata: Metadata = { title: "About" };
@@ -25,7 +26,7 @@ export default function AboutPage() {
 
         <div className="mt-4 flex flex-col gap-3">
           <Section title="App version">
-            <p className="tabular-nums text-ink-soft">v{pkg.version}</p>
+            <VersionTap version={pkg.version} />
           </Section>
 
           {/* The vision and purpose from the project's founding PRD
