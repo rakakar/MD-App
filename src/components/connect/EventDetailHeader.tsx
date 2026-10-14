@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BackIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
-import { EventShare } from "./EventShare";
+import { EventShare, type EventInvite } from "./EventShare";
 
 /**
  * **The detail screen's own header row: back · where you are · share.**
@@ -31,11 +31,14 @@ import { EventShare } from "./EventShare";
 export function EventDetailHeader({
   title,
   path,
+  invite,
   /** the id of the `h1` this row takes over from */
   watch,
 }: {
   title: string;
   path: string;
+  /** what Share sends — see `EventShare` */
+  invite?: EventInvite;
   watch: string;
 }) {
   const [passed, setPassed] = useState(false);
@@ -84,7 +87,7 @@ export function EventDetailHeader({
       >
         {passed ? title : "Events"}
       </p>
-      <EventShare title={title} path={path} variant="icon" />
+      <EventShare title={title} path={path} invite={invite} variant="icon" />
     </div>
   );
 }

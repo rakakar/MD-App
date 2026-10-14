@@ -16,15 +16,24 @@ import { DownloadIcon, ImageIcon } from "@/components/shell/icons";
  * origin, and a cross-origin `download` attribute is ignored — the browser
  * navigates to the image instead of saving it, which on a phone means leaving
  * the app to look at the picture that was already on screen. So it is fetched
- * into a blob and saved from a same-origin object URL, and if that is refused
- * (no CORS header on the bucket) it opens in a new tab, which is at least the
- * thing the reader can then long-press.
+ * into a blob — through this app's own `/connect/events/{slug}/poster`, since
+ * the bucket sends no CORS header — and saved from a same-origin object URL.
+ * If that fails it opens in a new tab, which is at least the thing the reader
+ * can then long-press.
  *
  * `<img>` rather than `next/image`: the host is a media bucket whose domain is
  * configuration, and an optimiser that has not been told about it fails the
  * whole render rather than the one picture.
  */
-export function EventPoster({ src, title }: { src: string | null; title: string }) {
+export function EventPoster({
+  src,
+  slug,
+  title,
+}: {
+  src: string | null;
+  slug: string;
+  title: string;
+}) {
   const [busy, setBusy] = useState(false);
 
   if (!src) {
@@ -41,7 +50,7 @@ export function EventPoster({ src, title }: { src: string | null; title: string 
   const save = async () => {
     setBusy(true);
     try {
-      const res = await fetch(src, { mode: "cors" });
+      const res = await fetch(`/connect/events/${encodeURIComponent(slug)}/poster`);
       if (!res.ok) throw new Error(String(res.status));
       const blob = await res.blob();
       const href = URL.createObjectURL(blob);

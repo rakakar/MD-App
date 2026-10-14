@@ -91,10 +91,16 @@ export default async function EventDetailPage({
       <EventDetailHeader
         title={event.title}
         path={`/connect/events/${event.slug}`}
+        invite={{
+          slug: event.slug,
+          note: event.invitation_note,
+          registrationUrl: event.registration_url,
+          hasPoster: Boolean(event.poster),
+        }}
         watch="event-title"
       />
 
-      <EventPoster src={event.poster} title={event.title} />
+      <EventPoster src={event.poster} slug={event.slug} title={event.title} />
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <CategoryChip category={event.category} />
