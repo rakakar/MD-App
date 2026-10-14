@@ -996,6 +996,24 @@ html[data-reader-face="sans"] .reader-surface .hi {
   -webkit-touch-callout: none;
 }
 
+/* ---- No rubber band on the page, in the installed app ----------------
+   Measured on an iPhone (iOS 27, home-screen app, 14 Oct 2026): scrolling
+   into the bounce past the end of a page detaches the visual viewport from
+   the layout one (visualViewport.offsetTop 21 → 146px), and the sticky app
+   bar rides up off the screen with it — leaving the shelf's filter row pinned
+   under an empty gap. With the bounce off, the page stops at its end and the
+   bar stays. Only installed: a Safari tab keeps its bounce, which is its
+   pull-to-refresh. The native shells (`data-shell`, from the pre-paint
+   script) run the same WebKit. Inner scrollers — rails, sheets — keep theirs. */
+@media (display-mode: standalone) {
+  html {
+    overscroll-behavior-y: none;
+  }
+}
+html[data-shell="native"] {
+  overscroll-behavior-y: none;
+}
+
 /* The text column. Width and gutters come from the margin preset. */
 .reader-content {
   margin-inline: auto;

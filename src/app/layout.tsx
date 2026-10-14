@@ -196,6 +196,7 @@ d.setAttribute("data-reader-face",p.face||"sans");
 if(p.appTextScale)d.style.setProperty("--app-text-scale",String(p.appTextScale));
 if(p.boldText)d.setAttribute("data-bold","1");
 if(p.sutraCollapsed)d.setAttribute("data-sutra-collapsed","1");
+var C=window.Capacitor;if(C&&C.isNativePlatform&&C.isNativePlatform())d.setAttribute("data-shell","native");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
 var bare=reading||/^\\/(login|signup)$|^\\/a\\//.test(location.pathname);
