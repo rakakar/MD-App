@@ -286,7 +286,7 @@ export function EventCardView({
               View Details
             </span>
             <span className="relative z-10 flex">
-              <EventShare title={event.title} path={href} variant="icon" />
+              <EventShare title={event.title} path={href} slug={event.slug} variant="icon" />
             </span>
           </div>
         )}

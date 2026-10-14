@@ -91,6 +91,7 @@ export default async function EventDetailPage({
       <EventDetailHeader
         title={event.title}
         path={`/connect/events/${event.slug}`}
+        slug={event.slug}
         invite={{
           slug: event.slug,
           note: event.invitation_note,

@@ -31,12 +31,14 @@ import { EventShare, type EventInvite } from "./EventShare";
 export function EventDetailHeader({
   title,
   path,
+  slug,
   invite,
   /** the id of the `h1` this row takes over from */
   watch,
 }: {
   title: string;
   path: string;
+  slug: string;
   /** what Share sends — see `EventShare` */
   invite?: EventInvite;
   watch: string;
@@ -87,7 +89,7 @@ export function EventDetailHeader({
       >
         {passed ? title : "Events"}
       </p>
-      <EventShare title={title} path={path} invite={invite} variant="icon" />
+      <EventShare title={title} path={path} slug={slug} invite={invite} variant="icon" />
     </div>
   );
 }
