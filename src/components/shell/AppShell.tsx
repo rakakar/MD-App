@@ -1,6 +1,5 @@
 "use client";
 
-import { ChromeDebug } from "./ChromeDebug";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
@@ -108,8 +107,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Outside `bare` so a notification arriving mid-chapter is still
               seen — it is the reader's own opt-in, not app chrome. */}
           <PushProvider />
-          {/* Off unless switched on in About — see ChromeDebug. */}
-          <ChromeDebug />
         </PlayerProvider>
         </FeedbackProvider>
       </WorkspaceProvider>
