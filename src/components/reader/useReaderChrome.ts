@@ -12,6 +12,9 @@ import type { ReadingMode } from "@/lib/storage";
  *  - in Scroll mode it follows scroll direction — reading (down) hides it,
  *    reaching for it (up) brings it back;
  *  - a tap in the middle of the page toggles it, in either mode;
+ *  - on a desktop, the pointer at the top of the window brings it in, and
+ *    moving back down into the page takes it away again — unless a click
+ *    brought it, which pins it as before (designer, 14 Oct 2026);
  *  - anything modal (a sheet, the note dialog) pins it visible, because the
  *    controls that opened it must not vanish underneath.
  *
@@ -27,9 +30,21 @@ export function useReaderChrome(
 ) {
   const [visible, setVisible] = useState(true);
 
-  const show = useCallback(() => setVisible(true), []);
-  const hide = useCallback(() => setVisible(false), []);
-  const toggle = useCallback(() => setVisible((v) => !v), []);
+  /** shown by hovering at the top, so leaving the top may take it away */
+  const peeking = useRef(false);
+  const show = useCallback(() => {
+    peeking.current = false;
+    setVisible(true);
+  }, []);
+  const hide = useCallback(() => {
+    peeking.current = false;
+    setVisible(false);
+  }, []);
+  const toggle = useCallback(() => {
+    // a click is a decision: whatever hovering did, this one stays
+    peeking.current = false;
+    setVisible((v) => !v);
+  }, []);
 
   // settle into the text shortly after arriving — once, not on every change.
   // Read `locked` through a ref so opening a sheet inside the first couple of
@@ -44,8 +59,37 @@ export function useReaderChrome(
 
   useEffect(() => {
     lockedRef.current = locked;
-    if (locked) setVisible(true);
+    if (locked) {
+      // a sheet opened from a bar that was only peeking: it is pinned now
+      peeking.current = false;
+      setVisible(true);
+    }
   }, [locked]);
+
+  // ---- desktop: hover at the top to peek ----
+  // A mouse only (hover + a fine pointer); a finger has no hover, and a touch
+  // laptop's taps already toggle. The bar is 64px; it comes in within that and
+  // goes once the pointer is past 112px, so the edge between does not flicker.
+  const visibleRef = useRef(visible);
+  useEffect(() => {
+    visibleRef.current = visible;
+  }, [visible]);
+  useEffect(() => {
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const onMove = (e: MouseEvent) => {
+      if (e.clientY <= 64) {
+        if (!visibleRef.current) {
+          peeking.current = true;
+          setVisible(true);
+        }
+      } else if (e.clientY > 112 && peeking.current && !lockedRef.current) {
+        peeking.current = false;
+        setVisible(false);
+      }
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
 
   useEffect(() => {
     if (mode !== "scroll" || locked) return;
