@@ -239,6 +239,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
   const [hint, setHint] = useState(false);
+  /** the one-time "your highlights and notes are kept here", on the bar */
+  const [marksHint, setMarksHint] = useState(false);
   const [currentRef, setCurrentRef] = useState<string | null>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -1202,8 +1204,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       } else {
         showToast({ text: `${what}.` });
       }
+      // The first thing a reader keeps, they have nowhere yet to find it
+      // again. Bring the bar up and point at where it went — once, ever.
+      if (!p.marksHintShown) {
+        setPrefs({ marksHintShown: true });
+        setMarksHint(true);
+        chrome.show();
+        setTimeout(() => setMarksHint(false), 7000);
+      }
     },
-    [user, showToast]
+    [user, showToast, chrome]
   );
 
   /**
@@ -1652,7 +1662,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         highlightCount={highlightCount}
         panel={showPanel ? panelTab : null}
         onContents={() => togglePanel("contents")}
-        onHighlights={() => togglePanel("highlights")}
+        onHighlights={() => {
+          setMarksHint(false);
+          togglePanel("highlights");
+        }}
+        marksHint={marksHint && !showPanel}
         // The position is where a reader goes to *change* it — the phone's
         // bottom bar opened "Go to printed page" from its page number, and this
         // is that number. A digital-first book has no printed page to ask for,
@@ -2019,7 +2033,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         hidden={!chrome.visible}
         bottom={dockOffset}
         position={positionLabel}
-        onContents={() => setTocOpen(true)}
+        onContents={() => {
+          setMarksHint(false);
+          setTocOpen(true);
+        }}
+        marksHint={marksHint && !modalOpen}
         // Only on a printed book: the sheet asks for a printed page number, and
         // a digital-first edition has none to ask for.
         onPosition={book.book_type === "print" ? () => setGotoOpen(true) : undefined}
@@ -2259,7 +2277,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {toast && (
         <div
           className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
-          style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
+          // Lifted clear of the "your highlights are here" tooltip while it
+          // stands over the bottom bar's Contents button.
+          style={{ bottom: `calc(${bottomOffset} + ${marksHint && !desktop ? "8.5rem" : "4.5rem"})` }}
         >
           <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-(--reader-ink) px-4 py-2 text-sm text-(--reader-bg) shadow-lg">
             {toast.text}

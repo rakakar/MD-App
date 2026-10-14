@@ -173,6 +173,8 @@ export interface Prefs {
   syncNudgeShown: boolean;
   /** one-time "tap the middle for controls" coach mark */
   immersiveHintShown: boolean;
+  /** one-time "your highlights and notes are kept here", after the first save */
+  marksHintShown: boolean;
   /**
    * Whether the six-card first-run deck has been through once.
    *
@@ -285,6 +287,7 @@ export const DEFAULT_PREFS: Prefs = {
   ttsVoice: null,
   syncNudgeShown: false,
   immersiveHintShown: false,
+  marksHintShown: false,
   onboardingSeen: false,
   switcherHintShown: false,
   journeyStage: null,
