@@ -55,38 +55,6 @@ function SquareBtn({
 }
 
 /**
- * **"Your highlights and notes are kept here."** Shown once, on the bar, the
- * first time a reader highlights or writes a note — the moment they have
- * something to come back for and no idea yet where it went.
- *
- * Pinned to the button it means rather than floated in the middle of the page,
- * so the arrow does the explaining. On a phone that button is Contents: the
- * bottom bar has no highlights button of its own, and the list is a tab in the
- * Contents sheet. Dark in every reading surface, like the selection bar —
- * it sits on top of the page, and in the page's own colours it would read as
- * part of it.
- */
-function MarksHint({ below, children }: { below?: boolean; children: React.ReactNode }) {
-  return (
-    <span
-      role="status"
-      className={`pointer-events-none absolute start-0 z-10 w-max max-w-60 rounded-control bg-(--reader-ink) px-3 py-2 text-start text-xs leading-snug font-medium text-(--reader-bg) shadow-lg ${
-        below ? "top-full mt-2.5" : "bottom-full mb-2.5"
-      }`}
-    >
-      {children}
-      {/* the arrow, centred on a 44px button */}
-      <span
-        aria-hidden
-        className={`absolute start-4 h-2.5 w-2.5 rotate-45 bg-(--reader-ink) ${
-          below ? "-top-1" : "-bottom-1"
-        }`}
-      />
-    </span>
-  );
-}
-
-/**
  * Top bar: back · what you are reading · Aa · Assistant.
  *
  * Left-aligned, not centred, as drawn — the chapter name is long Devanagari
@@ -317,7 +285,6 @@ export function ReaderBottomBar({
   listening,
   deviceFallback,
   languages,
-  marksHint,
 }: {
   hidden: boolean;
   bottom: string;
@@ -337,8 +304,6 @@ export function ReaderBottomBar({
   deviceFallback: boolean;
   /** the two sides of a bilingual edition; absent on every other book */
   languages?: LanguageToggle;
-  /** the one-time "your highlights are here" tooltip, on Contents */
-  marksHint?: boolean;
 }) {
   return (
     <div
@@ -370,13 +335,12 @@ export function ReaderBottomBar({
           reader who widens the margins would otherwise watch the bottom row
           step inward while the top row stayed put. */}
       <div className="flex items-center gap-2 px-4 py-1.5">
-        <span className="relative flex shrink-0">
+        {/* `data-marks-anchor`: on a phone, highlights and notes are a tab
+            of the Contents sheet, so the first-save coach mark points here. */}
+        <span data-marks-anchor className="flex shrink-0 rounded-control">
           <SquareBtn onClick={onContents} label="Contents">
             <TocIcon className="h-5 w-5" />
           </SquareBtn>
-          {marksHint && (
-            <MarksHint>Your highlights and notes are kept here, under Contents → Highlights.</MarksHint>
-          )}
         </span>
 
         {/* The comps put this in its own sunk field rather than loose on the
@@ -593,7 +557,6 @@ export function ReaderDesktopBar({
   canListen,
   listening,
   languages,
-  marksHint,
 }: {
   hidden: boolean;
   backHref: string;
@@ -620,8 +583,6 @@ export function ReaderDesktopBar({
   canListen: boolean;
   listening: boolean;
   languages?: LanguageToggle;
-  /** the one-time "your highlights are here" tooltip, on the pencil */
-  marksHint?: boolean;
 }) {
   const seg = (on: boolean) =>
     `flex h-9 min-w-9 items-center justify-center gap-1 rounded-md px-2 text-xs font-bold transition-colors ${
@@ -656,7 +617,7 @@ export function ReaderDesktopBar({
             >
               <TocIcon className="h-4.5 w-4.5" />
             </button>
-            <span className="relative flex">
+            <span data-marks-anchor className="flex rounded-control">
               <button
                 type="button"
                 onClick={onHighlights}
@@ -669,7 +630,6 @@ export function ReaderDesktopBar({
                 <Icon name="highlights" className="h-4 w-4" />
                 {highlightCount > 0 && <span className="tabular-nums">{highlightCount}</span>}
               </button>
-              {marksHint && <MarksHint below>Your highlights and notes are kept here.</MarksHint>}
             </span>
           </div>
           {languages && (

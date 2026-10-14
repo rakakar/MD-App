@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
+import { CoachMark } from "@/components/onboarding/CoachMark";
 import { AudioMode } from "@/components/player/AudioMode";
+import { Icon } from "@/components/shell/icons";
 import { spokenParas } from "@/components/player/deviceSpeech";
 import {
   activeRendition,
@@ -270,7 +272,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // the phone's does: away as you scroll down, back on a click anywhere in the
   // page (the designer's call, 3 Oct 2026, replacing a focus mode).
   const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
-  const chrome = useReaderChrome(mode, modalOpen || showPanel || showSettings || gotoPop);
+  // The first-save coach mark points at a button on the bar, so the bar stays
+  // up for as long as it is showing.
+  const chrome = useReaderChrome(
+    mode,
+    modalOpen || showPanel || showSettings || gotoPop || marksHint
+  );
   /** the bar's two doors: open on that tab, or close it if it is already showing */
   const togglePanel = (t: PanelTab) => {
     if (showPanel && (panelTab === t || (t === "highlights" && panelTab === "notes"))) {
@@ -1194,6 +1201,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const confirmSaved = useCallback(
     (what: string) => {
       const p = getPrefs();
+      // The first thing a reader keeps, they have nowhere yet to find it
+      // again, so it is answered by pointing at where it went — once, ever.
+      // That mark is the confirmation; a toast under its scrim would be read
+      // by nobody, and the sync nudge waits for the next save rather than
+      // being spent there.
+      if (!p.marksHintShown) {
+        setPrefs({ marksHintShown: true });
+        setMarksHint(true);
+        return;
+      }
       if (!user && !p.syncNudgeShown) {
         setPrefs({ syncNudgeShown: true });
         showToast({
@@ -1204,16 +1221,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       } else {
         showToast({ text: `${what}.` });
       }
-      // The first thing a reader keeps, they have nowhere yet to find it
-      // again. Bring the bar up and point at where it went — once, ever.
-      if (!p.marksHintShown) {
-        setPrefs({ marksHintShown: true });
-        setMarksHint(true);
-        chrome.show();
-        setTimeout(() => setMarksHint(false), 7000);
-      }
     },
-    [user, showToast, chrome]
+    [user, showToast]
   );
 
   /**
@@ -1662,11 +1671,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         highlightCount={highlightCount}
         panel={showPanel ? panelTab : null}
         onContents={() => togglePanel("contents")}
-        onHighlights={() => {
-          setMarksHint(false);
-          togglePanel("highlights");
-        }}
-        marksHint={marksHint && !showPanel}
+        onHighlights={() => togglePanel("highlights")}
         // The position is where a reader goes to *change* it — the phone's
         // bottom bar opened "Go to printed page" from its page number, and this
         // is that number. A digital-first book has no printed page to ask for,
@@ -2033,11 +2038,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         hidden={!chrome.visible}
         bottom={dockOffset}
         position={positionLabel}
-        onContents={() => {
-          setMarksHint(false);
-          setTocOpen(true);
-        }}
-        marksHint={marksHint && !modalOpen}
+        onContents={() => setTocOpen(true)}
         // Only on a printed book: the sheet asks for a printed page number, and
         // a digital-first edition has none to ask for.
         onPosition={book.book_type === "print" ? () => setGotoOpen(true) : undefined}
@@ -2056,6 +2057,23 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             : undefined
         }
       />
+
+      {/* After the first highlight or note: where they are kept. On a phone
+          that is the Contents button — the list is a tab of its sheet — and
+          on a desktop the bar's own highlights button; both carry the anchor
+          and only the one on screen has a box. */}
+      {marksHint && !modalOpen && !showPanel && (
+        <CoachMark
+          anchor="[data-marks-anchor]"
+          icon={<Icon name="highlights" className="h-5 w-5" />}
+          title="Your highlights and notes are kept here"
+          onDone={() => setMarksHint(false)}
+        >
+          {desktop
+            ? "Open this to see everything you have marked in this book, and to go straight back to it."
+            : "Open Contents and choose Highlights to see everything you have marked in this book, and to go straight back to it."}
+        </CoachMark>
+      )}
 
       {/* one-time coach mark */}
       {hint && !chrome.visible && !desktop && (
@@ -2277,9 +2295,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {toast && (
         <div
           className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
-          // Lifted clear of the "your highlights are here" tooltip while it
-          // stands over the bottom bar's Contents button.
-          style={{ bottom: `calc(${bottomOffset} + ${marksHint && !desktop ? "8.5rem" : "4.5rem"})` }}
+          style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
         >
           <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-(--reader-ink) px-4 py-2 text-sm text-(--reader-bg) shadow-lg">
             {toast.text}
