@@ -81,8 +81,10 @@ export const metadata: Metadata = {
   // Without these an iOS home-screen install gets a screenshot for an icon and
   // a browser-chrome title bar — most of this audience installs from Safari.
   icons: {
+    // No SVG here, though the logo is one: a browser that can take an SVG
+    // favicon prefers it to favicon.ico, and at 16px the full mark's ring of
+    // lettering is noise. favicon.ico is the tree alone, drawn for that size.
     icon: [
-      { url: "/brand/logo.svg", type: "image/svg+xml" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
