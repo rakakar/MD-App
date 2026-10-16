@@ -1,4 +1,5 @@
 import type { LibraryFile, FileKind, NodeCard, NodeRollup } from "@/lib/types";
+import { formatYear, splitAlbumName } from "@/lib/albumName";
 
 /** Type, as a reader reads it. The sieve puts this axis last on purpose. */
 export const KIND_LABEL: Record<FileKind, string> = {
@@ -192,7 +193,10 @@ export function fileFacts(file: LibraryFile): string {
 
 /** the folder's own facts line — year · place · people · language */
 export function nodeFacts(card: NodeCard): string {
-  return [card.year, card.place, card.people, card.language_label].filter(Boolean).join(" · ");
+  // The year as a date ("Jan 2013"), or the date an album's name carries
+  // where the folder states no year of its own — see `albumName`.
+  const when = formatYear(card.year) || splitAlbumName(card.name).date;
+  return [when, card.place, card.people, card.language_label].filter(Boolean).join(" · ");
 }
 
 /**

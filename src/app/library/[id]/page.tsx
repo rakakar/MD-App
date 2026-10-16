@@ -7,6 +7,7 @@ import { ApiError, getNode } from "@/lib/api";
 import { readFind } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
 import { libraryWorkspace } from "@/lib/workspaceConfig";
+import { albumName } from "@/lib/albumName";
 
 export const revalidate = 900;
 export const dynamicParams = true;
@@ -41,13 +42,14 @@ export async function generateMetadata({
   const { id } = await params;
   const node = await load(id).catch(() => null);
   if (!node) return { title: "Library" };
-  const trail = node.breadcrumb.map((s) => s.name).join(" · ");
+  const trail = node.breadcrumb.map((s) => albumName(s.name)).join(" · ");
+  const name = albumName(node.name);
   return {
-    title: trail ? `${node.name} · ${trail}` : node.name,
+    title: trail ? `${name} · ${trail}` : name,
     description: node.description || undefined,
     alternates: { canonical: `/library/${node.id}` },
     openGraph: {
-      title: node.name,
+      title: name,
       description: node.description || undefined,
       images: node.cover_url ? [node.cover_url] : undefined,
     },

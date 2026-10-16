@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SERIES_PORTRAIT } from "@/lib/media";
+import { albumName, formatYear, splitAlbumName } from "@/lib/albumName";
 import { FolderFiles } from "@/components/library/FolderFiles";
 import { DownloadAllButton, PlayAllButton } from "@/components/library/FolderHeroActions";
 import { FindBar } from "@/components/library/FindBar";
@@ -124,7 +125,7 @@ export async function NodeView({
 
       {searchable && find && (
         <>
-          <FindBar basePath={basePath} state={state} scope={node.name} />
+          <FindBar basePath={basePath} state={state} scope={albumName(node.name)} />
           <Sieve facets={find.facets} state={state} basePath={basePath} />
         </>
       )}
@@ -193,7 +194,7 @@ export async function NodeView({
             /* The catalogue search looks beneath a folder; one that holds only
                files gets a box that narrows those files instead. */
             searchable={!searchable && files.length > 1}
-            albumTitle={node.name}
+            albumTitle={albumName(node.name)}
             coverUrl={node.cover_url}
             /* The shared portrait of Nagraj ji stands in for a still only where
                the recording is him — see `AlbumAudio`. On any other shelf the
@@ -284,7 +285,12 @@ function Header({
   const trail = node.breadcrumb.slice(0, -1).filter((step) => !shelves[step.id]);
 
   // Where it is from, then what is in it and how much.
-  const where = [node.year, node.place, languageInEnglish(node)].filter(Boolean).join(" · ");
+  // The name without the date pCloud put in front of it, and that date drawn
+  // as a date where the folder states no year of its own (`albumName`).
+  const named = splitAlbumName(node.name);
+  const where = [formatYear(node.year) || named.date, node.place, languageInEnglish(node)]
+    .filter(Boolean)
+    .join(" · ");
   const counts = [
     filesSummary(files),
     totalRunTime(files),
@@ -322,7 +328,7 @@ function Header({
                      name to be what takes them back — "Library" on Originals,
                      "Student Materials" here. Any other parent is a folder the
                      reader has actually seen, so it keeps its own name. */
-                  label: shelves[parent.id] ? libraryTabLabel(ws) : parent.name,
+                  label: shelves[parent.id] ? libraryTabLabel(ws) : albumName(parent.name),
                 }
               : undefined
       }
@@ -330,7 +336,7 @@ function Header({
          set where it also lives, and the link to this page. They were a row
          apart — the link sitting alone under the description, where it was the
          last thing on a panel that had already finished. */
-      topRight={<ShareButton title={node.name} />}
+      topRight={<ShareButton title={albumName(node.name)} />}
       kicker={`${isRecordings ? "Series" : parent && shelves[parent.id] ? "Collection" : "Folder"} · ${
         av ? "Media" : libraryTabLabel(ws)
       }`}
@@ -362,7 +368,7 @@ function Header({
           <div className="w-24 shrink-0 lg:w-28">
             <CoverTile
               book={{
-                title_hi: node.name,
+                title_hi: named.title,
                 cover_image: node.cover_url,
                 code: `node-${node.id}`,
               }}
@@ -381,14 +387,14 @@ function Header({
               <span key={step.id} className="flex items-center gap-x-1">
                 {i > 0 && <span aria-hidden>/</span>}
                 <Link href={nodeHref(step.id, shelves)} className="hover:underline">
-                  {step.name}
+                  {albumName(step.name)}
                 </Link>
               </span>
             ))}
           </nav>
         ) : undefined
       }
-      title={node.name}
+      title={named.title}
       /* **Where it is from — year, place, language.** Three facts of one
          kind, which is what makes the line scannable. The language is named
          once and in English (`languageInEnglish`), since the interface is
@@ -417,7 +423,11 @@ function Header({
       chipsClassName="lg:hidden"
       /* Not when it only repeats the title, as a folder's often does. */
       description={
-        node.description && node.description.trim() !== node.name.trim() ? node.description : undefined
+        node.description &&
+        node.description.trim() !== node.name.trim() &&
+        node.description.trim() !== named.title.trim()
+          ? node.description
+          : undefined
       }
     />
   );

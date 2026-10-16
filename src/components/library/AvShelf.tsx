@@ -17,6 +17,7 @@ import {
 import { CollectionGridCard, CollectionListRow } from "./CollectionShell";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
+import { albumName, splitAlbumName } from "@/lib/albumName";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
 import type {
@@ -386,14 +387,15 @@ function collectionsOf(albums: LibraryAlbum[] | undefined, groups: FolderGroup[]
  */
 function CollectionCard({ album, shelves }: { album: Collection; shelves: ShelfMap }) {
   const kind = onlyKind(album.kinds);
+  const { title, date } = splitAlbumName(album.name);
   return (
     <CollectionGridCard
       href={nodeHref(album.id, shelves)}
-      name={album.name}
+      name={title}
       tile={<KindTile kind={kind} size="sm" />}
       chip={albumSummary(album.items, album.kinds)}
       chipTint={CHIP_TINT[kind]}
-      note={collectionLength(album.duration)}
+      note={cardNote(date, album.duration)}
     />
   );
 }
@@ -449,16 +451,23 @@ function CollectionLayout({
  */
 function CollectionRow({ album, shelves }: { album: Collection; shelves: ShelfMap }) {
   const kind = onlyKind(album.kinds);
+  const { title, date } = splitAlbumName(album.name);
   return (
     <CollectionListRow
       href={nodeHref(album.id, shelves)}
-      name={album.name}
+      name={title}
       tile={<KindTile kind={kind} size="xl" />}
       chip={albumSummary(album.items, album.kinds)}
       chipTint={CHIP_TINT[kind]}
-      note={collectionLength(album.duration)}
+      note={cardNote(date, album.duration)}
     />
   );
+}
+
+/** "Jan 2013 · 2 hours" — the date the name no longer carries (`albumName`),
+ *  then the length. */
+function cardNote(date: string | null, seconds: number): string {
+  return [date, collectionLength(seconds)].filter(Boolean).join(" · ");
 }
 
 /**
@@ -490,6 +499,7 @@ function collectionLength(seconds: number): string {
 /** one folder's recordings, under a heading that says which folder and where */
 function FolderGroup({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
   const duration = group.files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0);
+  const { title, date } = splitAlbumName(group.name);
 
   return (
     <section className="border-b border-rule py-6 first:pt-4 last:border-0">
@@ -503,7 +513,7 @@ function FolderGroup({ group, shelves }: { group: FolderGroup; shelves: ShelfMap
             <span key={step.id} className="flex items-center gap-x-1">
               {i > 0 && <span aria-hidden>/</span>}
               <Link href={nodeHref(step.id, shelves)} className="hover:underline">
-                {step.name}
+                {albumName(step.name)}
               </Link>
             </span>
           ))}
@@ -516,17 +526,17 @@ function FolderGroup({ group, shelves }: { group: FolderGroup; shelves: ShelfMap
       <h2 className="text-base font-semibold leading-tight lg:text-lg">
         <Link
           href={nodeHref(group.id, shelves)}
-          {...contentLang(group.name)}
+          {...contentLang(title)}
           className="hover:underline"
         >
-          {group.name}
+          {title}
         </Link>
       </h2>
       <p lang="hi" className="hi mt-0.5 text-xs text-ink-soft">
-        {[filesSummary(group.files), formatDuration(duration)].filter(Boolean).join(" · ")}
+        {[date, filesSummary(group.files), formatDuration(duration)].filter(Boolean).join(" · ")}
       </p>
 
-      <FileList files={group.files} albumTitle={group.name} />
+      <FileList files={group.files} albumTitle={albumName(group.name)} />
     </section>
   );
 }

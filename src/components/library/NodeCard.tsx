@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cardSummary, nodeFacts, tileSummary } from "@/components/library/format";
 import { contentLang } from "@/lib/script";
+import { albumName, splitAlbumName } from "@/lib/albumName";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { ChevronRight } from "@/components/shell/icons";
 import { CollectionCard, KindTile, ListRow, RowCard } from "@/components/ui";
@@ -57,6 +58,9 @@ export function NodeCardView({
 }) {
   const summary = cardSummary(card);
   const facts = nodeFacts(card);
+  // "Anubhav Shivir", not "2013 01 Jan Anubhav Shivir" — the date is drawn as
+  // a date: in `facts` on a row, beside the weight on a tile.
+  const { title, date } = splitAlbumName(card.name);
   // A cross-posted folder says where it really lives and jumps there — never
   // nested under the folder that borrowed it (§13.6). Without the path a
   // cross-post reads as a duplicate, which is the confusion it exists to
@@ -77,9 +81,15 @@ export function NodeCardView({
         // and the folder icon on every tile is the folder icon on no tile.
         kind={kinds.length === 1 ? kinds[0] : "folder"}
         cover={card.cover_url}
-        title={card.name}
+        title={title}
         description={card.description || null}
-        meta={weight || <span className="text-ink-soft">Nothing yet</span>}
+        meta={
+          weight ? (
+            [date, weight].filter(Boolean).join(" · ")
+          ) : (
+            <span className="text-ink-soft">Nothing yet</span>
+          )
+        }
         badge={<ProvenanceBadge provenance={card.provenance} />}
       />
     );
@@ -93,10 +103,10 @@ export function NodeCardView({
       >
         <span className="min-w-0 flex-1">
           <span
-            {...contentLang(card.name)}
-            className={`${contentLang(card.name).className} block text-[1.1875rem] font-semibold leading-snug group-hover:underline`}
+            {...contentLang(title)}
+            className={`${contentLang(title).className} block text-[1.1875rem] font-semibold leading-snug group-hover:underline`}
           >
-            {card.name}
+            {title}
           </span>
           {card.description && (
             <span
@@ -143,7 +153,7 @@ export function NodeCardView({
             size="lg"
           />
         }
-        title={card.name}
+        title={title}
         meta={
           <>
             {home && home.length > 0 && <BreadcrumbLine steps={home} />}
@@ -193,7 +203,7 @@ export function NodeCardView({
 export function BreadcrumbLine({ steps }: { steps: BreadcrumbStep[] }) {
   return (
     <span lang="hi" className="hi mb-0.5 block truncate text-xs text-ink-soft">
-      {steps.map((s) => s.name).join(" / ")}
+      {steps.map((s) => albumName(s.name)).join(" / ")}
     </span>
   );
 }
