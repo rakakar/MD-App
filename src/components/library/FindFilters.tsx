@@ -7,7 +7,7 @@ import { useIsDesktop } from "@/components/ui/Dialog";
 import { KIND_LABEL, KIND_ORDER } from "./format";
 import { AXIS_LABEL, chipLabel } from "./Sieve";
 import { yearBands, yearSpan } from "./years";
-import { FilterIcon, PinIcon, SortIcon, TagIcon, UserIcon } from "@/components/shell/icons";
+import { CalendarChipIcon, FilterIcon, SortIcon, TagIcon, UserIcon } from "@/components/shell/icons";
 import {
   ActiveFilters,
   Chip,
@@ -99,7 +99,10 @@ const AXIS_HEADING: Record<FindAxis, string> = {
  */
 function axisIcon(axis: FindAxis) {
   if (axis === "topic") return <TagIcon className="h-4 w-4" />;
-  if (axis === "type") return <PinIcon className="h-4 w-4" />;
+  // A gathering is a date in a diary before it is anything else, and the app
+  // owns no glyph for शिविर. The pin that sat here belonged to the place axis
+  // this replaced, and a pin over शिविर/सम्मेलन says the wrong thing outright.
+  if (axis === "type") return <CalendarChipIcon className="h-4 w-4" />;
   if (axis === "person") return <UserIcon className="h-4 w-4" />;
   return <FilterIcon className="h-4 w-4" />;
 }
