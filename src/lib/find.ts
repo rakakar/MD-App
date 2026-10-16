@@ -160,10 +160,12 @@ export function readFind(params: RawParams): FindState {
  * order is the manager's (`sequence`, then name). Claiming a sort over a list
  * this does not control would be a control that lies.
  *
- * **A find with no words** → `-added`, which is what the comp draws selected.
- * It is not an invented default: with no query every row scores zero, so the
- * "ranking" is only the folder/sequence/name tiebreak, and newest-first is a
- * better answer to "show me this topic" than alphabetical is.
+ * **A find with no words** → `added`, oldest first. With no query every row
+ * scores zero, so the "ranking" is only the folder/sequence/name tiebreak, and
+ * a date order is a better answer to "show me this topic" than alphabetical
+ * is. Oldest rather than the comp's Newest: the designer's call, 16 Oct 2026 —
+ * the earliest shivirs come first, so a series reads in the order it was
+ * given. (`added` is `created_at`, contract §13.8.)
  *
  * **A find with words** → `""`, relevance. The reader asked something only the
  * score can answer, and the comp offers no radio for it — so the section shows
@@ -172,7 +174,7 @@ export function readFind(params: RawParams): FindState {
 export function effectiveOrdering(state: FindState): FindSort {
   if (state.ordering) return state.ordering;
   if (!isAsked(state)) return "";
-  return state.q.length >= MIN_QUERY_CHARS ? "" : "-added";
+  return state.q.length >= MIN_QUERY_CHARS ? "" : "added";
 }
 
 /** One sort chosen, the rest of the find untouched. */

@@ -371,7 +371,7 @@ function FilterPopover({
   }, [open, onClose]);
 
   // "Best" is relevance, which only exists with words in the box; without
-  // them the list is newest first, and a Best beside Newest would be two
+  // them the list is oldest first, and a Best beside Oldest would be two
   // names for one order.
   const asked = state.q.length >= MIN_QUERY_CHARS;
   const current = effectiveOrdering(state);
