@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useId, useMemo, useState } from "react";
 import { provenanceLabel } from "@/components/library/ProvenanceBadge";
 import { formatBytes, formatDuration } from "@/components/library/format";
 import { ArrowRightIcon, ChevronDown, DownloadIcon, FolderIcon } from "@/components/shell/icons";
@@ -31,10 +31,12 @@ import { downloadProps } from "@/lib/download";
  * groups they belong to rather than opening a second "photos" header further
  * down.
  *
- * **A header folds its group away.** A tap on it collapses that folder's
- * rows, so a reader can pass over a sammelan they did not mean and get to the
- * next one without scrolling its sixteen tracks; another tap brings them back.
- * The folder itself is still a tap away, on the arrow at the header's end.
+ * **Folders arrive folded, all but the first.** A search for "parichay" hits
+ * a dozen folders, one of them sixteen tracks long; open, the folders after it
+ * were screens away. Folded, the results read as a list of folders to choose
+ * from, and the first one is left open so a reader can see that a header
+ * holds rows and opens. A tap on any header opens or folds it. The folder
+ * itself is still a tap away, on the arrow at the header's end.
  */
 export function FindTable({
   first,
@@ -52,10 +54,20 @@ export function FindTable({
   const [more, setMore] = useState<LibrarySearchRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  // folders the reader has folded away, by group key — open unless listed
-  const [folded, setFolded] = useState<ReadonlySet<string>>(new Set());
+  // Headers the reader has tapped, by group key — each flips its folder from
+  // the default (the first open, the rest folded). Reset when a new search
+  // arrives, so its first folder is open again however the last one was left.
+  // The Library renders this table twice (one copy hidden per layout), so
+  // the ids that tie a header to its rows need a per-table prefix.
+  const idBase = useId();
+  const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
+  const [flippedFor, setFlippedFor] = useState(first);
+  if (flippedFor !== first) {
+    setFlippedFor(first);
+    setFlipped(new Set());
+  }
   const toggle = (key: string) =>
-    setFolded((prev) => {
+    setFlipped((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -81,6 +93,9 @@ export function FindTable({
     }
     return out;
   }, [rows]);
+
+  const firstKey = groups[0]?.key;
+  const isFolded = (key: string) => (key !== firstKey) !== flipped.has(key);
 
   async function loadMore() {
     setBusy(true);
@@ -108,8 +123,8 @@ export function FindTable({
                 <button
                   type="button"
                   onClick={() => toggle(g.key)}
-                  aria-expanded={!folded.has(g.key)}
-                  aria-controls={`find-group-${g.key}`}
+                  aria-expanded={!isFolded(g.key)}
+                  aria-controls={`${idBase}-group-${g.key}`}
                   {...contentLang(g.folder.name)}
                   className={`${contentLang(g.folder.name).className} block max-w-full truncate text-start text-sm font-semibold after:absolute after:inset-0 lg:shrink-0`}
                 >
@@ -125,7 +140,7 @@ export function FindTable({
                 {g.rows.length} {g.rows.length === 1 ? "item" : "items"}
               </span>
               <ChevronDown
-                className={`h-4 w-4 shrink-0 text-ink-soft transition-transform ${folded.has(g.key) ? "-rotate-90" : ""}`}
+                className={`h-4 w-4 shrink-0 text-ink-soft transition-transform ${isFolded(g.key) ? "-rotate-90" : ""}`}
               />
               <Link
                 href={nodeHref(g.folder.id, shelves)}
@@ -138,8 +153,9 @@ export function FindTable({
             </div>
           )}
           <ul
-            id={`find-group-${g.key}`}
-            hidden={folded.has(g.key)}
+            id={`${idBase}-group-${g.key}`}
+            // A group with no folder has no header to open it by, so it never folds.
+            hidden={!!g.folder && isFolded(g.key)}
             className="divide-y divide-rule"
           >
             {g.rows.map((r) => (
