@@ -33,7 +33,7 @@ export function FindRow({
   const title = row.type === "folder" ? row.name : row.title;
   const facts =
     row.type === "folder"
-      ? [row.year, row.place, cardSummary(row)].filter(Boolean).join(" · ")
+      ? [row.year, row.session_type_label, cardSummary(row)].filter(Boolean).join(" · ")
       : fileFacts(row);
 
   return (

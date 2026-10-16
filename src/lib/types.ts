@@ -331,7 +331,18 @@ export interface NodeCard {
   tags: string[];
   /** approximate allowed, e.g. "2005" or "2005-03"; "" when unknown */
   year: string;
-  place: string;
+  /**
+   * **Type** — the occasion, not the format: `"shivir"`, `"sammelan"`,
+   * `"samvad"`, from the panel's own editable list. Already the *effective*
+   * one, its own or inherited from the season above it, like `provenance`.
+   *
+   * Spelled out rather than called `type`, which on a search row already means
+   * folder-or-file. The URL and the facets call the axis `type`, where no such
+   * row exists to confuse it with.
+   */
+  session_type: string | null;
+  /** what the chip says — the Hindi a manager typed, never a code */
+  session_type_label: string | null;
   /** speakers/authors involved, comma-separated */
   people: string;
   language: string;
@@ -410,7 +421,7 @@ export interface LibraryFile {
   description: string;
   /** already the effective one — its own, else inherited from its branch */
   provenance: Provenance;
-  // No `tags` — a file has none. Its folder carries topics, year, place,
+  // No `tags` — a file has none. Its folder carries topics, year, type,
   // people and tags, and search reaches the file through them.
   /** bytes; null for a catalogued file whose bytes haven't moved yet */
   file_size: number | null;
@@ -533,7 +544,7 @@ export type LibrarySearchRow =
  * shape to render beats a special case per axis. `label` is a courtesy rather
  * than an instruction: the FE holds its own English for Source and Type and
  * keeps using it (§13.8), because the BE's are long admin strings and bare
- * codes. Everything else — a place, a person, a year, a topic — is content and
+ * codes. Everything else — a type, a person, a year, a topic — is content and
  * is rendered as it arrives.
  */
 export interface FacetValue {
@@ -617,6 +628,10 @@ export interface LibraryAlbum {
   kinds: FileKind[];
   /** seconds */
   duration: number;
+  /** the album's effective Type — `"shivir"`, its own or its season's */
+  session_type?: string | null;
+  /** the words the card prints beside the date: "शिविर" */
+  session_type_label?: string | null;
 }
 
 /**

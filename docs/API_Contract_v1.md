@@ -960,7 +960,10 @@ component recursively.
   "provenance": "moola",          // resolved through inheritance
   "topics": ["shivir", "vyavastha"],
   "tags": ["अमरकंटक", "1998"],    // folders only, free text, search only — never a chip
-  "year": "2019", "place": "अमरकंटक", "people": "…",
+  "year": "2019",
+  "session_type": "shivir",        // the occasion — its own or inherited
+  "session_type_label": "शिविर",    // what a chip says; a manager's own word
+  "people": "…",
   "language": "hi", "language_label": "हिन्दी (Hindi)",
   "child_count": 0,               // published child folders
   "item_count": 15,               // servable files
@@ -1093,7 +1096,7 @@ API with the Hindi in the FE.
 **विषय is not the same kind of control as the chips beside it**, and an
 earlier draft of this section listed them in one row as though it were.
 
-| | विषय | वर्ष · स्थान · व्यक्ति · भाषा · प्रकार |
+| | विषय | प्रकार · वर्ष · व्यक्ति · भाषा · format |
 |---|---|---|
 | What it is | a **door** onto the whole library | a **sieve** over the scope you are looking at |
 | Tapping it | leaves the current folder | stays put and narrows |
@@ -1101,7 +1104,9 @@ earlier draft of this section listed them in one row as though it were.
 | Server filter | `nodes/?topic=vyavastha`, at any depth (§13.2) | §13.8, the same call that returns the rows |
 
 So: one विषय row that navigates, and beneath it the sieves, in the order
-वर्ष → स्थान → व्यक्ति → भाषा → and *last* प्रकार (kind).
+प्रकार (`type` — शिविर/सम्मेलन/संवाद) → वर्ष → व्यक्ति → भाषा → and *last* the
+format (`kind`), which the FE labels **Format** so one screen never calls two
+things Type.
 
 **The sieve moved to the server on 2026-08-03, and it changed meaning when it
 moved.** It used to be derived from the children the FE already held, which made
@@ -1211,8 +1216,7 @@ and original pCloud path. **Never file contents.**
 | `q` | **Optional.** 2+ characters. Absent = a pure facet filter, which is what a chip tap with an empty box is. |
 | `workspace` | `originals` · `translations` · `resources` · `connect`. Scopes to one shelf. |
 | `under` | A node id. Scopes to that folder's **descendants** — not the folder itself, which is the page you are standing on. Wins over `workspace`, which it already implies. |
-| `topic` · `provenance` · `year` · `place` · `person` · `language` · `kind` | The sieve axes. Repeatable within an axis (OR); across axes they AND. |
-| `type` | `folder` or `file`. Omit for both. |
+| `topic` · `provenance` · `type` · `year` · `person` · `language` · `kind` | The sieve axes. Repeatable within an axis (OR); across axes they AND. `type` is the **occasion** — `shivir` · `sammelan` · `samvad`, from `core.SessionType`, which the panel edits; `kind` is the file format. (`type` replaced `place` on 16 Oct 2026; a `?type=folder|file` filter was listed here once and never existed.) |
 | `raw=1` | Search exactly as typed; skip the Devanagari rewrite. |
 | `ordering` | `-added` · `added` · `-duration` · `duration`. Omit for the ranking below. See *Ordering*. |
 | `limit` · `offset` | Default 25, max 100. |
@@ -1226,9 +1230,9 @@ and what U11's "पूरी library में खोजें?" escape widens t
 This is the rule that makes a shelf-level chip mean anything, so it is worth
 stating on its own.
 
-**`year`, `place` and `person` resolve to the nearest ancestor that states
+**`year`, `type` and `person` resolve to the nearest ancestor that states
 one** — the treatment §7 already gives `provenance`, extended to the facets that
-behave the same way. A shivir folder marked `year=2019, place=अमरकंटक` is
+behave the same way. A shivir folder marked `year=2019, type=shivir` is
 describing every session inside it; the manager states it once at the top of the
 branch and does not retype it onto each of forty days. Without inheritance,
 वर्ष 2019 would match the one folder carrying the string and none of the
@@ -1270,7 +1274,7 @@ facet count is a count of *rows*, not of shivirs.
   "facets": {
     "provenance": [{ "value": "moola",   "label": "मूल",      "count": 41 }, …],
     "year":       [{ "value": "2019",    "label": "2019",     "count": 22 }, …],
-    "place":      [{ "value": "अमरकंटक",  "label": "अमरकंटक",  "count": 18 }, …],
+    "type":       [{ "value": "shivir",  "label": "शिविर",     "count": 18 }, …],
     "person":     [ … ],
     "language":   [{ "value": "hi",      "label": "हिन्दी",     "count": 130 }, …],
     "kind":       [{ "value": "audio",   "label": "audio",    "count": 88 }, …],
@@ -1304,7 +1308,7 @@ Rows come back scored, best first:
 | 2 | `name` / `title` — starts with |
 | 3 | `name` / `title` — contains |
 | 4 | `description` |
-| 5 | facets — `year`, `place`, `people`, विषय name |
+| 5 | facets — `year`, the type's name, `people`, विषय name |
 | 6 | `tags` |
 | 7 | **filename** and `source_path` |
 

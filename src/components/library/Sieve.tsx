@@ -15,7 +15,7 @@ import { contentLang } from "@/lib/script";
 import type { FacetValue, FileKind, LibraryFacets, Provenance } from "@/lib/types";
 
 /**
- * The **sieve** — Source · Year · Place · Person · Language · Type over the
+ * The **sieve** — Source · Type · Year · Person · Language · Format over the
  * whole scope the reader is looking at (contract §13.4).
  *
  * Topic is drawn above this on a shelf, in its own panel, and it narrows in
@@ -44,11 +44,14 @@ import type { FacetValue, FileKind, LibraryFacets, Provenance } from "@/lib/type
  */
 export const AXIS_LABEL: Record<FindAxis, string> = {
   provenance: "Source",
+  // शिविर / सम्मेलन / संवाद — what the gathering was. The *format* axis below
+  // is called Format for exactly this reason: it used to be Type, and one
+  // screen cannot call two different questions by the same word.
+  type: "Type",
   year: "Year",
-  place: "Place",
   person: "Person",
   language: "Language",
-  kind: "Type",
+  kind: "Format",
   topic: "Topic",
 };
 
@@ -66,6 +69,8 @@ export function chipLabel(axis: FindAxis, chip: FacetValue): string {
     return provenanceLabel(chip.value as Provenance)?.label ?? chip.value;
   }
   if (axis === "kind") return KIND_LABEL[chip.value as FileKind] ?? chip.value;
+  // Type is the manager's own vocabulary, editable in the panel — the FE has
+  // never seen the words and renders what the endpoint labels them with.
   return chip.label || chip.value;
 }
 
@@ -95,7 +100,7 @@ function SieveRow({
       <div className="flex flex-wrap gap-1.5" role="group" aria-label={AXIS_LABEL[axis]}>
         {options.map((chip) => {
           const selected = isChipOn(state, axis, chip.value);
-          // The value may be either: "Audio" and "Original" are ours, a place
+          // The value may be either: "Audio" and "Original" are ours, a type
           // or a person or a topic is the manager's and often Devanagari.
           const label = chipLabel(axis, chip);
           return (

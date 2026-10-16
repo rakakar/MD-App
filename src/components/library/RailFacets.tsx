@@ -77,11 +77,21 @@ export function RailFacets({
   // against an archive that runs 1997 to 2015. A band is only a shorthand for
   // the years inside it; nothing below this knows they exist. See `years.ts`.
   const years = hideAxes.includes("year") ? [] : yearBands(facets.year);
-  // Type and Year are drawn where the design puts them; the rest keep their
-  // canonical order underneath, so a shelf with places and speakers still
-  // offers them rather than losing them to a layout that only knew three.
+  // शिविर / सम्मेलन / संवाद, drawn immediately above the years: the two are
+  // one question asked twice ("the 2008 shivirs"), and a reader who has just
+  // chosen an occasion is reaching for a year next.
+  const types =
+    hideAxes.includes("type") ||
+    ((facets.type ?? []).length < 2 && !(state.selection.type?.length ?? 0))
+      ? []
+      : (facets.type ?? []);
+  // Category, Type and Year are drawn where the design puts them; the rest
+  // keep their canonical order underneath, so a shelf with speakers and
+  // languages still offers them rather than losing them to a layout that only
+  // knew three.
   const rest = FIND_AXES.filter(
-    (axis) => axis !== "kind" && axis !== "year" && !hideAxes.includes(axis)
+    (axis) =>
+      axis !== "kind" && axis !== "year" && axis !== "type" && !hideAxes.includes(axis)
   );
 
   const blocks = [
@@ -95,6 +105,19 @@ export function RailFacets({
             count={chip.count}
             on={isChipOn(state, "kind", chip.value)}
             icon={<KindIcon kind={chip.value as FileKind} />}
+          />
+        ))}
+      </Axis>
+    ),
+    types.length > 0 && (
+      <Axis key="type" en={AXIS_EN.type}>
+        {types.map((chip) => (
+          <FacetRow
+            key={chip.value}
+            href={findHref(basePath, toggleChip(state, "type", chip.value))}
+            label={chipLabel("type", chip)}
+            count={chip.count}
+            on={isChipOn(state, "type", chip.value)}
           />
         ))}
       </Axis>
@@ -146,7 +169,7 @@ export function RailFacets({
       );
     }),
     // Last, where the design puts it, and where it stopped costing the fold:
-    // at six topics heading the rail, Year and Place sat below the crease on an
+    // at six topics heading the rail, Year and Type sat below the crease on an
     // 800px laptop — the two axes with the most useful counts on this shelf.
     !hideAxes.includes("topic") && (
       <TopicRows
@@ -204,8 +227,8 @@ function withoutAxes(state: FindState, axes: FindAxis[]): FindState {
 
 const AXIS_EN: Record<FindAxis, string> = {
   provenance: "Provenance",
+  type: "Types",
   year: "Years",
-  place: "Places",
   person: "People",
   language: "Languages",
   kind: "Category",
@@ -255,7 +278,7 @@ function FacetRow({
       }
     >
       {icon && <span className="shrink-0 text-ink-soft">{icon}</span>}
-      {/* Ours for a kind or a source, the manager's for a place, a person or
+      {/* Ours for a kind or a source, the manager's for a type, a person or
           a topic — so the script of the label decides its face. */}
       <span {...contentLang(label)} className={`${contentLang(label).className} min-w-0 flex-1 truncate`}>
         {label}

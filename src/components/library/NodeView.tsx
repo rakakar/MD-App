@@ -289,7 +289,11 @@ function Header({
   // The name without the date pCloud put in front of it, and that date drawn
   // as a date where the folder states no year of its own (`albumName`).
   const named = splitAlbumName(node.name);
-  const where = [formatYear(node.year) || named.date, node.place, languageInEnglish(node)]
+  const where = [
+    formatYear(node.year) || named.date,
+    node.session_type_label,
+    languageInEnglish(node),
+  ]
     .filter(Boolean)
     .join(" · ");
   const counts = [

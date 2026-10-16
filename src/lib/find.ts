@@ -18,9 +18,16 @@
  * The sieve, in the order it is drawn.
  *
  * Source first: "which of these is his own?" is the question this collection
- * exists to answer, and it outranks which year a thing is from. Type last:
+ * exists to answer, and it outranks which year a thing is from. Format last:
  * "just show me audio" is a real need but never the first one, and
  * a format filter at the top turns a library back into a file browser.
+ *
+ * **`type` is the occasion; `kind` is the format.** `type` is शिविर /
+ * सम्मेलन / संवाद — what the gathering *was* — and sits immediately before the
+ * year, because "the 2008 shivirs" is one question asked twice. `kind` is
+ * audio/video/pdf, and the sieve labels it **Format** so one screen never
+ * calls two different things Type. (`type` replaced `place`, an axis four
+ * folders in the whole library had ever filled in.)
  *
  * Topic is not in this list, and that is a layout fact rather than a semantic
  * one now. It **is** a filter — see `ALL_AXES` — but it is drawn in its own
@@ -29,8 +36,8 @@
  */
 export const FIND_AXES = [
   "provenance",
+  "type",
   "year",
-  "place",
   "person",
   "language",
   "kind",

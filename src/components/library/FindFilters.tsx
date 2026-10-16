@@ -72,9 +72,12 @@ import type { FacetValue, FileKind, LibraryFacets, Topic } from "@/lib/types";
 /** the axes the sheet offers, in the order the comp stacks them */
 const SHEET_AXES: FindAxis[] = [
   "topic",
+  // Type above Year, as on the rail and for the same reason: "which shivir"
+  // and "which year" are one question, and the reader asks them in that order.
+  "type",
   "year",
   "kind",
-  ...FIND_AXES.filter((a) => a !== "year" && a !== "kind"),
+  ...FIND_AXES.filter((a) => a !== "type" && a !== "year" && a !== "kind"),
 ];
 
 const AXIS_HEADING: Record<FindAxis, string> = {
@@ -82,7 +85,7 @@ const AXIS_HEADING: Record<FindAxis, string> = {
   year: "By year",
   kind: "By category",
   provenance: "By source",
-  place: "By place",
+  type: "By type",
   person: "By person",
   language: "By language",
 };
@@ -96,7 +99,7 @@ const AXIS_HEADING: Record<FindAxis, string> = {
  */
 function axisIcon(axis: FindAxis) {
   if (axis === "topic") return <TagIcon className="h-4 w-4" />;
-  if (axis === "place") return <PinIcon className="h-4 w-4" />;
+  if (axis === "type") return <PinIcon className="h-4 w-4" />;
   if (axis === "person") return <UserIcon className="h-4 w-4" />;
   return <FilterIcon className="h-4 w-4" />;
 }

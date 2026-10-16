@@ -191,12 +191,14 @@ export function fileFacts(file: LibraryFile): string {
     .join(" · ");
 }
 
-/** the folder's own facts line — year · place · people · language */
+/** the folder's own facts line — year · type · people · language */
 export function nodeFacts(card: NodeCard): string {
   // The year as a date ("Jan 2013"), or the date an album's name carries
   // where the folder states no year of its own — see `albumName`.
   const when = formatYear(card.year) || splitAlbumName(card.name).date;
-  return [when, card.place, card.people, card.language_label].filter(Boolean).join(" · ");
+  return [when, card.session_type_label, card.people, card.language_label]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 /**

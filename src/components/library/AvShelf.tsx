@@ -363,7 +363,10 @@ function groupByFolder(results: LibraryFindResponse["results"]): FolderGroup[] {
 }
 
 /** what a card needs to know about its album — counts, not files */
-type Collection = Pick<LibraryAlbum, "id" | "name" | "items" | "kinds" | "duration">;
+type Collection = Pick<
+  LibraryAlbum,
+  "id" | "name" | "items" | "kinds" | "duration" | "session_type_label"
+>;
 
 /**
  * The cards: the BE's `albums` where it sent them, else the page's own groups
@@ -377,6 +380,9 @@ function collectionsOf(albums: LibraryAlbum[] | undefined, groups: FolderGroup[]
     items: group.files.length,
     kinds: [...new Set(group.files.map((f) => f.kind))],
     duration: group.files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0),
+    // A page of files does not carry its album's Type — only the BE's
+    // `albums` does — so a card built this way simply has none to print.
+    session_type_label: null,
   }));
 }
 
@@ -401,15 +407,15 @@ function collectionsOf(albums: LibraryAlbum[] | undefined, groups: FolderGroup[]
  */
 function CollectionCard({ album, shelves }: { album: Collection; shelves: ShelfMap }) {
   const kind = onlyKind(album.kinds);
-  const { title, date } = splitAlbumName(album.name);
+  const { head, note } = albumLines(album);
   return (
     <CollectionGridCard
       href={nodeHref(album.id, shelves)}
-      name={title}
+      name={head}
       tile={<KindTile kind={kind} size="sm" />}
       chip={albumSummary(album.items, album.kinds)}
       chipTint={CHIP_TINT[kind]}
-      note={cardNote(date, album.duration)}
+      note={note}
     />
   );
 }
@@ -465,23 +471,42 @@ function CollectionLayout({
  */
 function CollectionRow({ album, shelves }: { album: Collection; shelves: ShelfMap }) {
   const kind = onlyKind(album.kinds);
-  const { title, date } = splitAlbumName(album.name);
+  const { head, note } = albumLines(album);
   return (
     <CollectionListRow
       href={nodeHref(album.id, shelves)}
-      name={title}
+      name={head}
       tile={<KindTile kind={kind} size="xl" />}
       chip={albumSummary(album.items, album.kinds)}
       chipTint={CHIP_TINT[kind]}
-      note={cardNote(date, album.duration)}
+      note={note}
     />
   );
 }
 
-/** "Jan 2013 · 2 hours" — the date the name no longer carries (`albumName`),
- *  then the length. */
-function cardNote(date: string | null, seconds: number): string {
-  return [date, collectionLength(seconds)].filter(Boolean).join(" · ");
+/**
+ * The two lines of a collection card — **when and what it was** on top, the
+ * album's own name and its length underneath.
+ *
+ *     Oct 1997 · शिविर
+ *     [16 Audio]  Jeevan Vidya Ek Parichay · 11 hours
+ *
+ * The names are pCloud's and they are names of *people*, not of occasions —
+ * "2008 12 Dec Praveen Atishi" tells a reader nothing they can choose on,
+ * while "Dec 2008 · शिविर" is both questions answered at a glance. So the
+ * heading is the date and the Type, and the name moves down beside the length
+ * where it is still there for anyone looking for it by name.
+ *
+ * An album with neither date nor Type keeps its name as the heading, which is
+ * every folder outside the recordings archive: no fact is invented to fill a
+ * line, and nothing is printed twice.
+ */
+function albumLines(album: Collection): { head: string; note: string } {
+  const { title, date } = splitAlbumName(album.name);
+  const head = [date, album.session_type_label].filter(Boolean).join(" · ");
+  const length = collectionLength(album.duration);
+  if (!head) return { head: title, note: length };
+  return { head, note: [title, length].filter(Boolean).join(" · ") };
 }
 
 /**
