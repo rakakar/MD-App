@@ -162,7 +162,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               keyboard ? "opacity-0" : "opacity-100"
             }`}
           >
-            <p lang="hi" className="auth-name font-devanagari" style={{ color: "var(--ws-ink)" }}>
+            <p lang="hi" className="auth-name font-devanagari-sans" style={{ color: "var(--ws-ink)" }}>
               {LAUNCH.founderLine}
             </p>
             <p className="launch-eyebrow font-semibold uppercase text-ink-soft">{LAUNCH.eyebrow}</p>

@@ -838,10 +838,19 @@ body {
   font-weight: 400;
 }
 
-/* Hindi content: Tiro Devanagari Hindi, generous line-height (PRD §5) */
+/* Hindi content: Mukta, generous line-height (PRD §5).
+
+   Mukta everywhere in the app, Tiro only in the book text itself (Raka, 16 Oct
+   2026). Tiro is the face these texts are printed in and it earns a chapter;
+   on titles, cards, notes and labels it read as a second voice beside the UI
+   sans. Placed before `.hi.font-*` below so a bold heading inside a chapter
+   still goes to Mukta, which has real weights. */
 .hi {
-  font-family: var(--font-devanagari);
+  font-family: var(--font-devanagari-sans);
   line-height: 1.85;
+}
+.reader-content .hi {
+  font-family: var(--font-devanagari);
 }
 
 /* A Devanagari *description* — the sentence under a collection's title, in the
@@ -903,8 +912,8 @@ body {
     system-ui, sans-serif;
 }
 
-/* Reader typeface choice. Only the book text follows it — titles and nav
-   labels elsewhere stay in the serif, which is the app's voice. */
+/* Reader typeface choice. Only the book text follows it — everything else is
+   already in the sans. */
 html[data-reader-face="sans"] .reader-surface .hi {
   font-family: var(--font-devanagari-sans);
 }
