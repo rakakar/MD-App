@@ -56,6 +56,8 @@ const PALETTE: BookHue[] = [
 const COVER_HUES: Record<string, BookHue> = {
   // terracotta — 3.27:1 / 4.50:1
   ABVP: { from: "#cd7a30", to: "#ab6628" },
+  // दिव्य पथ — its own orange band, 3.57:1 / 4.52:1
+  DP: { from: "#c27532", to: "#aa662c" },
   JVEP: { from: "#cd7a30", to: "#ab6628" },
   // pine — 3.49:1 / 4.55:1
   ADVD: { from: "#4f958d", to: "#44807a" },
@@ -63,7 +65,7 @@ const COVER_HUES: Record<string, BookHue> = {
   VJVD: { from: "#4f958d", to: "#44807a" },
   // iris — 4.00:1 / 5.13:1
   AVAS: { from: "#8179ab", to: "#70669f" },
-  MSMV: { from: "#8179ab", to: "#70669f" },
+  MSMN: { from: "#8179ab", to: "#70669f" },
   VYSS: { from: "#8179ab", to: "#70669f" },
   // olive — 3.27:1 / 4.51:1
   MABD: { from: "#9c9025", to: "#82781f" },
