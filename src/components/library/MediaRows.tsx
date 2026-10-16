@@ -3,8 +3,8 @@
 import { ViewToggle, useCollectionView } from "@/components/library/CollectionLayout";
 import { RowMenu, type RowMenuItem } from "@/components/library/RowMenu";
 import { parseMediaTitle } from "@/components/library/folderActions";
-import { formatDuration } from "@/components/library/format";
-import { PlayIcon } from "@/components/shell/icons";
+import { formatBytes, formatDuration } from "@/components/library/format";
+import { DownloadIcon, PlayIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 
 /**
@@ -34,6 +34,8 @@ export interface MediaItem {
   percent?: number;
   menu: RowMenuItem[];
   share: { title: string; url: string };
+  /** the file itself, where the row offers it to save — audio does, video streams */
+  download?: { url: string; bytes?: number | null };
 }
 
 export function MediaRows({ items, verb }: { items: MediaItem[]; verb: "watched" | "listened" }) {
@@ -144,6 +146,22 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
 
       {length && (
         <span className="hidden shrink-0 text-sm tabular-nums text-ink-soft sm:block">{length}</span>
+      )}
+      {/* On a phone too, as on a PDF row: saving a recording for the road is
+          the one thing a reader does to a row besides playing it. Above the
+          title's stretched button, so a tap here saves rather than plays. */}
+      {item.download && (
+        <a
+          href={item.download.url}
+          download=""
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Download ${item.title}`}
+          title={item.download.bytes ? `Download · ${formatBytes(item.download.bytes)}` : "Download"}
+          className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+        >
+          <DownloadIcon className="h-4 w-4" />
+        </a>
       )}
       <div className="hidden sm:block">
         <RowMenu items={item.menu} share={item.share} label={title} />

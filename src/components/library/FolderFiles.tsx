@@ -50,9 +50,10 @@ export function FolderFiles({
   const none = needle && shown.length + shownLinked.length === 0;
 
   // What Download all takes: every file a reader would save — not a link to
-  // somewhere else, and not the recordings, which play.
+  // somewhere else, and not a video, which streams. Audio is in: a shivir's
+  // recordings are what a reader takes on a journey with no signal.
   const downloadable = [...files, ...linked].filter(
-    (f) => f.kind !== "link" && f.kind !== "audio" && f.kind !== "video"
+    (f) => f.kind !== "link" && f.kind !== "video"
   );
   const large = downloadable.some((f) => (f.file_size ?? 0) >= LARGE_BYTES);
 

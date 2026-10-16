@@ -104,6 +104,7 @@ export function AlbumAudio({
             : 0,
           menu: [{ label: "Play", onClick: start }],
           share: { title: item.title, url: item.url },
+          download: { url: item.url, bytes: item.file_size },
         };
       })}
     />

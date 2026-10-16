@@ -269,8 +269,9 @@ function Header({
   // this field. Without it that window is `undefined + 0` — `NaN`, which is
   // falsy here by luck rather than by decision.
   // What Download all takes: the files a reader would save, which is every
-  // one except a link to somewhere else and the recordings, which play.
-  const downloadable = files.filter((f) => f.kind !== "link" && f.kind !== "audio" && f.kind !== "video");
+  // one except a link to somewhere else and a video, which streams. Audio is
+  // in — see `FolderFiles`, which offers the same set at the phone list's foot.
+  const downloadable = files.filter((f) => f.kind !== "link" && f.kind !== "video");
   const readingCount =
     (node.reading_count ?? 0) + node.linked_items.filter((f) => f.reading).length;
 
@@ -344,11 +345,8 @@ function Header({
         isRecordings || node.external_url || downloadable.length > 1 ? (
           <>
             {node.external_url && <WholeSetLink url={node.external_url} />}
-            {isRecordings && isAlbum ? (
-              <PlayAllButton />
-            ) : downloadable.length > 1 ? (
-              <DownloadAllButton files={downloadable} />
-            ) : null}
+            {isRecordings && isAlbum && <PlayAllButton />}
+            {downloadable.length > 1 && <DownloadAllButton files={downloadable} />}
           </>
         ) : undefined
       }
