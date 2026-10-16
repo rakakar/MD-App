@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { provenanceLabel } from "@/components/library/ProvenanceBadge";
 import { formatBytes, formatDuration } from "@/components/library/format";
-import { DownloadIcon, FolderIcon } from "@/components/shell/icons";
+import { ArrowRightIcon, ChevronDown, DownloadIcon, FolderIcon } from "@/components/shell/icons";
 import { KindTile } from "@/components/ui/KindTile";
 import { findLibrary } from "@/lib/api";
 import { FIND_PAGE, type FindState } from "@/lib/find";
@@ -30,6 +30,11 @@ import { downloadProps } from "@/lib/download";
  * still leads; within a group, rows keep their rank. Later pages fold into the
  * groups they belong to rather than opening a second "photos" header further
  * down.
+ *
+ * **A header folds its group away.** A tap on it collapses that folder's
+ * rows, so a reader can pass over a sammelan they did not mean and get to the
+ * next one without scrolling its sixteen tracks; another tap brings them back.
+ * The folder itself is still a tap away, on the arrow at the header's end.
  */
 export function FindTable({
   first,
@@ -47,6 +52,15 @@ export function FindTable({
   const [more, setMore] = useState<LibrarySearchRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  // folders the reader has folded away, by group key — open unless listed
+  const [folded, setFolded] = useState<ReadonlySet<string>>(new Set());
+  const toggle = (key: string) =>
+    setFolded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const rows = useMemo(() => [...first, ...more], [first, more]);
   const remaining = total - rows.length;
@@ -86,16 +100,21 @@ export function FindTable({
       {groups.map((g) => (
         <Fragment key={g.key}>
           {g.folder && (
-            <div className="flex items-center gap-2.5 border-b border-rule bg-inset px-4 py-2.5 [&:not(:first-child)]:border-t">
+            <div className="relative flex items-center gap-2.5 border-b border-rule bg-inset px-4 py-2.5 [&:not(:first-child)]:border-t">
               <FolderIcon className="h-4 w-4 shrink-0 self-start text-ink-soft max-lg:mt-0.5 lg:self-center" />
               <div className="min-w-0 flex-1 lg:flex lg:items-baseline lg:gap-2.5">
-                <Link
-                  href={nodeHref(g.folder.id, shelves)}
+                {/* The name is the toggle, stretched over the whole header;
+                    the arrow at the end sits above it and opens the folder. */}
+                <button
+                  type="button"
+                  onClick={() => toggle(g.key)}
+                  aria-expanded={!folded.has(g.key)}
+                  aria-controls={`find-group-${g.key}`}
                   {...contentLang(g.folder.name)}
-                  className={`${contentLang(g.folder.name).className} block truncate text-sm font-semibold hover:underline lg:shrink-0`}
+                  className={`${contentLang(g.folder.name).className} block max-w-full truncate text-start text-sm font-semibold after:absolute after:inset-0 lg:shrink-0`}
                 >
                   {g.folder.name}
-                </Link>
+                </button>
                 {g.path.length > 0 && (
                   <span lang="hi" className="hi block min-w-0 truncate text-xs text-ink-soft">
                     {g.path.map((s) => s.name).join(" / ")}
@@ -105,9 +124,24 @@ export function FindTable({
               <span className="shrink-0 text-xs tabular-nums text-ink-soft">
                 {g.rows.length} {g.rows.length === 1 ? "item" : "items"}
               </span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-ink-soft transition-transform ${folded.has(g.key) ? "-rotate-90" : ""}`}
+              />
+              <Link
+                href={nodeHref(g.folder.id, shelves)}
+                aria-label={`Open ${g.folder.name}`}
+                title="Open folder"
+                className="relative z-10 -my-1 -me-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+              >
+                <ArrowRightIcon className="h-4 w-4" />
+              </Link>
             </div>
           )}
-          <ul className="divide-y divide-rule">
+          <ul
+            id={`find-group-${g.key}`}
+            hidden={folded.has(g.key)}
+            className="divide-y divide-rule"
+          >
             {g.rows.map((r) => (
               <li key={`${r.type}-${r.id}`}>
                 <Row row={r} shelves={shelves} />
