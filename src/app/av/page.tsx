@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AV_KINDS, AV_PAGE, AvShelf } from "@/components/library/AvShelf";
+import { AV_KINDS, AV_PAGE, AvShelf, avAsked } from "@/components/library/AvShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { findLibrary, getTopics } from "@/lib/api";
@@ -43,7 +43,9 @@ export default async function AvPage({
   // The Type axis is this page rather than a filter on it, so it is read from
   // the URL and then clamped to what the page can honestly show.
   const state = lockAxis(readFind(params), "kind", AV_KINDS);
-  const offset = pageOffset(params.offset);
+  // A search pages with "Show more" from the top, so an old `?offset=` link
+  // would only skip the best matches.
+  const offset = avAsked(state) ? 0 : pageOffset(params.offset);
 
   const [find, topics, shelves] = await Promise.all([
     findLibrary({ workspace: "originals", state, limit: AV_PAGE, offset }).catch(

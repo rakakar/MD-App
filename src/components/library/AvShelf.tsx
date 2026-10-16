@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ContinueAv } from "./ContinueAv";
-import { FileList } from "./FileList";
+import { FindTable } from "./FindTable";
 import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
-import { albumSummary, filesSummary, formatDuration } from "./format";
+import { albumSummary } from "./format";
 import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState, KindTile } from "@/components/ui";
 import type { TileKind } from "@/components/ui/KindTile";
@@ -17,9 +17,8 @@ import {
 import { CollectionGridCard, CollectionListRow } from "./CollectionShell";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { chipCount, findHref, type FindAxis, type FindState } from "@/lib/find";
-import { albumName, splitAlbumName } from "@/lib/albumName";
+import { splitAlbumName } from "@/lib/albumName";
 import { nodeHref, type ShelfMap } from "@/lib/library";
-import { contentLang } from "@/lib/script";
 import type {
   FileKind,
   LibraryAlbum,
@@ -68,7 +67,8 @@ export const AV_PAGE = 100;
  * - **Finding** (a word typed, or a year/place/topic chip) → the files
  *   themselves, grouped under the folder each came from — because a reader who
  *   searched for "Anubhav" wants the recordings that match, and a page of
- *   folder cards would be hiding the answer behind one more tap.
+ *   folder cards would be hiding the answer behind one more tap. Drawn by the
+ *   Library's own `FindTable`, so a search looks the same on both tabs.
  *
  * Both shapes come out of the **same response**. The cards are its `albums` —
  * every folder holding a matched file, counted by the BE over the whole match
@@ -76,9 +76,11 @@ export const AV_PAGE = 100;
  * The search groups are the page's own file rows, gathered under the folder
  * each breadcrumb ends with.
  *
- * In find mode `FileList` draws each kind as the thing it is — audio through
- * the app's one player in album mode, video embedded — the same as on the
- * folder's own page.
+ * **A search is a list to scan, not a player.** It used to open every matched
+ * folder inline, with its player and a poster per video; a search for
+ * "shivir" became screens of thumbnails. Now each row is a line — kind, title,
+ * length, download — and the folder it opens is where it plays, as on the
+ * Library's search.
  */
 export function AvShelf({
   title,
@@ -111,7 +113,7 @@ export function AvShelf({
   // Everything the reader has narrowed by *besides* the lock, which is what
   // decides whether there is anything to clear.
   const narrowed = chipCount({ ...state, selection: { ...state.selection, kind: [] } });
-  const asked = narrowed > 0 || state.q.length > 0;
+  const asked = avAsked(state);
   // Browsing draws every album; a search draws the page's files grouped.
   const collections = asked ? [] : collectionsOf(find.albums, groups);
   const shown = asked ? groups.length : collections.length;
@@ -241,11 +243,13 @@ export function AvShelf({
 
       {shown > 0 ? (
         asked ? (
-          <div className="mt-2 flex flex-col">
-            {groups.map((group) => (
-              <FolderGroup key={group.id} group={group} shelves={shelves} />
-            ))}
-          </div>
+          <FindTable
+            first={find.results}
+            scope={{ workspace: "originals" }}
+            state={state}
+            total={find.count}
+            shelves={shelves}
+          />
         ) : (
           <div className="mt-3">
             <CollectionLayout collections={collections} shelves={shelves} />
@@ -264,13 +268,23 @@ export function AvShelf({
         </div>
       )}
 
-      {/* Browsing has every album on one page; only a search pages its files
-          (or a BE too old to send `albums`, where the cards are page-bound). */}
-      {(asked || !find.albums) && (
+      {/* Browsing has every album on one page — except on a BE too old to send
+          `albums`, where the cards are page-bound. A search pages itself, with
+          the table's own "Show more". */}
+      {!asked && !find.albums && (
         <Pager find={find} state={state} basePath={basePath} offset={offset} />
       )}
     </CollectionViewProvider>
   );
+}
+
+/**
+ * Whether the reader asked anything besides the two kinds this page is — the
+ * browse/find switch, and the page's reason to ignore `?offset=` on a search.
+ */
+export function avAsked(state: FindState): boolean {
+  const narrowed = chipCount({ ...state, selection: { ...state.selection, kind: [] } });
+  return narrowed > 0 || state.q.length > 0;
 }
 
 /** All · Audios · Videos — see `KindChips`, which the Library shelves share. */
@@ -496,64 +510,12 @@ function collectionLength(seconds: number): string {
   return seconds > 0 ? `${Math.max(1, Math.round(seconds / 60))} min` : "";
 }
 
-/** one folder's recordings, under a heading that says which folder and where */
-function FolderGroup({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
-  const duration = group.files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0);
-  const { title, date } = splitAlbumName(group.name);
-
-  return (
-    <section className="border-b border-rule py-6 first:pt-4 last:border-0">
-      {group.trail.length > 0 && (
-        <nav
-          aria-label="Breadcrumb"
-          lang="hi"
-          className="hi mb-0.5 flex flex-wrap items-center gap-x-1 text-xs font-semibold text-ink-soft"
-        >
-          {group.trail.map((step, i) => (
-            <span key={step.id} className="flex items-center gap-x-1">
-              {i > 0 && <span aria-hidden>/</span>}
-              <Link href={nodeHref(step.id, shelves)} className="hover:underline">
-                {albumName(step.name)}
-              </Link>
-            </span>
-          ))}
-        </nav>
-      )}
-
-      {/* The heading is a link, because the folder is where the rest of it is:
-          its description, its photographs, its transcript — everything this
-          page filtered away. */}
-      <h2 className="text-base font-semibold leading-tight lg:text-lg">
-        <Link
-          href={nodeHref(group.id, shelves)}
-          {...contentLang(title)}
-          className="hover:underline"
-        >
-          {title}
-        </Link>
-      </h2>
-      <p lang="hi" className="hi mt-0.5 text-xs text-ink-soft">
-        {[date, filesSummary(group.files), formatDuration(duration)].filter(Boolean).join(" · ")}
-      </p>
-
-      <FileList files={group.files} albumTitle={albumName(group.name)} />
-    </section>
-  );
-}
-
 /**
  * Pages, when the scope is bigger than one request can carry.
  *
- * `library/search/` caps a page at {@link AV_PAGE} rows. Browsing never needs
- * this — its cards come from `albums`, which covers every page — but a search
- * that matches more than one page of files does: the rest is a link away
- * rather than silently missing (U12).
- *
- * **Pages rather than the "Show more" the ranked lists use.** That control
- * appends, which is right for a flat list of rows and wrong here: a group is a
- * folder with its player, and appending across a page boundary would split one
- * album into two headed sections with no way for the reader to tell why. A page
- * is self-contained, and its address is shareable, which the append is not.
+ * `library/search/` caps a page at {@link AV_PAGE} rows. Browsing needs this
+ * only on a BE too old to send `albums`; a search no longer does, since
+ * `FindTable`'s "Show more" folds later rows into the groups they belong to.
  */
 function Pager({
   find,
