@@ -203,7 +203,7 @@ export async function renderSutraCard({
   plate = SUTRA_PLATES[0],
 }: SutraCardInput): Promise<Blob> {
   const pageLine = page ? `पृष्ठ क्र. ${page}` : "";
-  const devanagari = family("--font-mukta", "sans-serif");
+  const devanagari = family("--font-tiro-devanagari", "serif");
   const ui = family("--font-mukta", "sans-serif");
 
   // Canvas silently falls back to a default face for a font that has not

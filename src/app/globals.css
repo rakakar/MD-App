@@ -849,7 +849,8 @@ body {
   font-family: var(--font-devanagari-sans);
   line-height: 1.85;
 }
-.reader-content .hi {
+.reader-content .hi,
+.hi.sutra-verse {
   font-family: var(--font-devanagari);
 }
 
