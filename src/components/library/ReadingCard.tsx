@@ -15,6 +15,7 @@ import { documentHref, documentTextHref } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
 import { getLocalProgress, getPdfPlace } from "@/lib/storage";
 import type { LibraryFile, LocatedFile, ReadingEdition } from "@/lib/types";
+import { downloadProps } from "@/lib/download";
 
 /**
  * A document that also reads as text, drawn as the thing it has become.
@@ -233,10 +234,7 @@ export function ReadingCard({
           Original pages
         </Link>
         <a
-          href={file.url}
-          download
-          target="_blank"
-          rel="noopener noreferrer"
+          {...downloadProps(file.url, file.title)}
           aria-label={`Download the PDF${formatBytes(file.file_size) ? `, ${formatBytes(file.file_size)}` : ""}`}
           className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule text-ink transition-colors hover:bg-ink/5"
         >
@@ -330,10 +328,7 @@ export function ReadingCard({
           <span>Original pages</span>
         </Link>
         <a
-          href={file.url}
-          download
-          target="_blank"
-          rel="noopener noreferrer"
+          {...downloadProps(file.url, file.title)}
           title={`Download the PDF${formatBytes(file.file_size) ? ` — ${formatBytes(file.file_size)}` : ""}`}
           className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-control px-2.5 text-sm text-ink transition-colors hover:bg-ink/5 sm:px-3"
         >

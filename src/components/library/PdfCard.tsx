@@ -11,6 +11,7 @@ import { KindTile } from "@/components/ui";
 import { contentLang } from "@/lib/script";
 import { getPdfPlace } from "@/lib/storage";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
+import { downloadProps } from "@/lib/download";
 
 /**
  * A document, as a row in its folder.
@@ -178,17 +179,13 @@ export function PdfCard({
         file is and a second reading of "PDF" is not what the space is for. The
         name survives for anyone who cannot see the mark.
 
-        `download` *and* `target`: browsers honour the attribute only
-        same-origin, or where the server sends `Content-Disposition:
-        attachment`, and these files come from an R2 bucket that sends neither.
-        So where it is honoured the file saves, and where it is not the PDF
-        opens in a tab of its own rather than navigating the app away.
+        Through `/api/download` (`downloadProps`): browsers honour `download`
+        only same-origin or on a `Content-Disposition: attachment`, and the R2
+        bucket the files come from sends neither, so straight at the bucket the
+        PDF opened instead of saving.
       */}
       <a
-        href={file.url}
-        download=""
-        target="_blank"
-        rel="noopener noreferrer"
+        {...downloadProps(file.url, file.title)}
         aria-label={`Download ${file.title}`}
         title="Download PDF"
         className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/[.04] hover:text-ink"

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BackIcon, DownloadIcon } from "@/components/shell/icons";
+import { downloadProps } from "@/lib/download";
 
 /**
  * What a reader gets when the in-app reader cannot run.
@@ -99,8 +100,7 @@ export function PdfFallback({
                 Open the document
               </a>
               <a
-                href={url}
-                download
+                {...downloadProps(url)}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-rule px-4 py-2.5 text-sm font-semibold"
                 style={{ color: "var(--ws-ink)" }}
               >

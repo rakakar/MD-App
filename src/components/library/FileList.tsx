@@ -9,6 +9,7 @@ import { KIND_LABEL, KIND_ORDER, fileFacts } from "@/components/library/format";
 import { DownloadIcon, ExternalLinkIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import type { FileKind, LibraryFile, LocatedFile, Provenance } from "@/lib/types";
+import { downloadProps } from "@/lib/download";
 
 /**
  * A folder's files, each kind served as the thing it is (contract §13.5):
@@ -135,10 +136,9 @@ function KindGroup({
       {files.map((file) => (
         <li key={file.id}>
           <a
-            href={file.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            {...(opensOut ? {} : { download: true })}
+            {...(opensOut
+              ? { href: file.url, target: "_blank", rel: "noopener noreferrer" }
+              : downloadProps(file.url, file.title))}
             className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-ink/[.03]"
           >
             <span className="min-w-0 flex-1">

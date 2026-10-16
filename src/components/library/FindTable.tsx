@@ -11,6 +11,7 @@ import { FIND_PAGE, type FindState } from "@/lib/find";
 import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
 import type { BreadcrumbStep, LibrarySearchRow } from "@/lib/types";
+import { downloadProps } from "@/lib/download";
 
 /**
  * **A find's results, grouped by folder** (designer's comps, 8 Oct 2026).
@@ -193,10 +194,7 @@ function Row({ row, shelves }: { row: LibrarySearchRow; shelves: ShelfMap }) {
       <span className="hidden text-right text-xs tabular-nums text-ink-soft lg:block">{size}</span>
       {file?.url ? (
         <a
-          href={file.url}
-          download
-          target="_blank"
-          rel="noopener noreferrer"
+          {...downloadProps(file.url, title)}
           aria-label={`Download ${title}`}
           title="Download"
           className="relative z-10 flex h-8 w-8 items-center justify-center justify-self-end rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"

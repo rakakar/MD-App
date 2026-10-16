@@ -13,6 +13,7 @@ import { KindTile } from "@/components/ui/KindTile";
 import { contentLang } from "@/lib/script";
 import { getPdfPlace } from "@/lib/storage";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
+import { downloadProps } from "@/lib/download";
 
 type File = LibraryFile | LocatedFile;
 
@@ -197,10 +198,7 @@ function PdfRow({
         {size}
       </span>
       <a
-        href={file.url}
-        download=""
-        target="_blank"
-        rel="noopener noreferrer"
+        {...downloadProps(file.url, file.title)}
         aria-label={`Download ${file.title}`}
         title={size ? `Download · ${size}` : "Download"}
         className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"

@@ -3,28 +3,34 @@
  * hero's "Play all".
  */
 
+import { downloadHref } from "@/lib/download";
+
 /**
  * Download several files, one after another.
  *
  * There is no zip — each file lives on its own at the media host — so this
  * hands the browser one download at a time, a beat apart. Chrome asks once to
- * allow "multiple downloads"; after that they run. `target` as well as
- * `download`, because the host sends no `Content-Disposition`: where the
- * attribute is ignored the file opens in a tab of its own instead of
- * navigating the app away (see `PdfCard`).
+ * allow "multiple downloads"; after that they run.
+ *
+ * **Each through a hidden frame, never a clicked link.** It used to click one
+ * `<a target="_blank">` per file, straight at the bucket: the bucket sends no
+ * `Content-Disposition`, so the browser opened the file instead of saving it,
+ * and every tab after the first came from a timer rather than the reader's
+ * tap, so the popup blocker ate it — Download all produced one playing MP3.
+ * Through `/api/download` each response is a same-origin attachment, and a
+ * frame that receives an attachment saves it without opening anything.
  */
 export function downloadFiles(files: { url: string; title: string }[]): void {
   files.forEach((f, i) => {
     window.setTimeout(() => {
-      const a = document.createElement("a");
-      a.href = f.url;
-      a.download = "";
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }, i * 450);
+      const frame = document.createElement("iframe");
+      frame.hidden = true;
+      frame.src = downloadHref(f.url, f.title);
+      document.body.appendChild(frame);
+      // Long enough for the response to start; the download carries on
+      // without the frame once the browser has it.
+      window.setTimeout(() => frame.remove(), 120_000);
+    }, i * 800);
   });
 }
 

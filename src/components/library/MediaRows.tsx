@@ -6,6 +6,7 @@ import { parseMediaTitle } from "@/components/library/folderActions";
 import { formatBytes, formatDuration } from "@/components/library/format";
 import { DownloadIcon, PlayIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
+import { downloadProps } from "@/lib/download";
 
 /**
  * **A folder's recordings, as a list or a grid** (designer's comps, 8 Oct
@@ -152,10 +153,7 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
           title's stretched button, so a tap here saves rather than plays. */}
       {item.download && (
         <a
-          href={item.download.url}
-          download=""
-          target="_blank"
-          rel="noopener noreferrer"
+          {...downloadProps(item.download.url, item.title)}
           aria-label={`Download ${item.title}`}
           title={item.download.bytes ? `Download · ${formatBytes(item.download.bytes)}` : "Download"}
           className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
