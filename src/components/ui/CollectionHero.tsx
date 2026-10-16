@@ -200,9 +200,10 @@ export function CollectionHero({
             </div>
             {aside && <div className="hidden shrink-0 items-center gap-2 lg:flex">{aside}</div>}
           </div>
-          {/* No phone copy of `aside`: on a phone its actions sit with the list
-              they act on — Play all under the search, Download all at the
-              list's foot (designer's phone comps, 8 Oct 2026). */}
+          {/* No phone copy of `aside`: on a phone Play all sits with the list
+              it acts on, under the search (designer's phone comps, 8 Oct
+              2026). Download all is passed in `actions` instead, so it stays
+              on the panel at every width. */}
 
           {/* A block, not a flex row. The book's actions arrive as one client
               component that owns its own progress bar as well as its buttons —

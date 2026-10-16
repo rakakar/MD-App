@@ -307,6 +307,17 @@ function Header({
   return (
     <CollectionHero
       tone={hue.to}
+      /* Below a desktop the panel's `aside` is hidden, and Download all used
+         to drop to the list's foot — under every row, where a reader saving a
+         shivir never scrolled to it. It stays on the panel instead, under the
+         facts, at every width; the desktop keeps its copy in `aside`. */
+      actions={
+        downloadable.length > 1 ? (
+          <div className="lg:hidden">
+            <DownloadAllButton files={downloadable} />
+          </div>
+        ) : undefined
+      }
       /* Back goes where the reader came from, which for a collection of
          recordings is the A/V tab and not the folder above it. The tree step
          was literally true and useless: a reader arrives here off `/av`, and

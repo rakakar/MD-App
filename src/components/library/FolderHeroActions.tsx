@@ -43,9 +43,9 @@ export function PlayAllButton() {
 /*
  * The phone's copies (designer's phone comps, 8 Oct 2026). On a phone these
  * leave the hero and sit with the list they act on: Play all and Full series
- * as one row under the search, Download all as a full-width button at the
- * list's foot. On the page's own surface rather than the coloured panel, so
- * they are drawn as the page's buttons, not the hero's.
+ * as one row under the search. On the page's own surface rather than the
+ * coloured panel, so they are drawn as the page's buttons, not the hero's.
+ * Download all is the exception: it stays on the panel at every width.
  */
 
 /** Play all, filled, and the set where it also lives, outlined — one row */
@@ -74,36 +74,6 @@ export function PhonePlayRow({ playAll, fullSeries }: { playAll: boolean; fullSe
           Full series
           <span aria-hidden>↗</span>
         </a>
-      )}
-    </div>
-  );
-}
-
-/** every file a reader would save, at the list's foot, with what it comes to */
-export function PhoneDownloadAll({
-  files,
-  large,
-}: {
-  files: { url: string; title: string; file_size: number | null }[];
-  /** a file in the list wears the Large tag, so the tag gets its footnote */
-  large: boolean;
-}) {
-  const bytes = files.reduce((n, f) => n + (f.file_size ?? 0), 0);
-  return (
-    <div className="mt-4 lg:hidden">
-      <button
-        type="button"
-        onClick={() => downloadFiles(files)}
-        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-control border border-rule bg-card px-4 text-sm font-semibold text-ink transition-colors hover:bg-ink/[.03]"
-      >
-        <DownloadIcon className="h-4 w-4" />
-        Download all
-        {bytes > 0 && <span className="tabular-nums">· {formatBytes(bytes)}</span>}
-      </button>
-      {large && (
-        <p className="mt-2.5 text-center text-xs text-ink-soft">
-          Files marked Large are slow to open on mobile data.
-        </p>
       )}
     </div>
   );

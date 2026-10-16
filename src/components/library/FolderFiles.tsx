@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FileList } from "@/components/library/FileList";
-import { PhoneDownloadAll, PhonePlayRow } from "@/components/library/FolderHeroActions";
+import { PhonePlayRow } from "@/components/library/FolderHeroActions";
 import { LARGE_BYTES } from "@/components/library/folderActions";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
 
@@ -88,7 +88,13 @@ export function FolderFiles({
           folderProvenance={folderProvenance}
         />
       )}
-      {downloadable.length > 1 && <PhoneDownloadAll files={downloadable} large={large} />}
+      {/* Download all itself is on the folder's panel (`NodeView`); what stays
+          here is the footnote for the Large tags in the list above it. */}
+      {large && (
+        <p className="mt-4 text-center text-xs text-ink-soft lg:hidden">
+          Files marked Large are slow to open on mobile data.
+        </p>
+      )}
     </>
   );
 }
