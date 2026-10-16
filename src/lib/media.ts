@@ -23,4 +23,4 @@ export const AUDIO_POSTER = "/audio-cover.jpg";
  * 2026): what a series of recordings with no cover of its own wears in its
  * hero, on Originals.
  */
-export const SERIES_PORTRAIT = "/nagraj-portrait.jpg";
+export const SERIES_PORTRAIT = "/nagraj-portrait.jpeg";
