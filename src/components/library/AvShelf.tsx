@@ -4,7 +4,7 @@ import { FileList } from "./FileList";
 import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
-import { filesSummary, formatDuration } from "./format";
+import { albumSummary, filesSummary, formatDuration } from "./format";
 import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState, KindTile } from "@/components/ui";
 import type { TileKind } from "@/components/ui/KindTile";
@@ -21,8 +21,8 @@ import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
 import type {
   FileKind,
+  LibraryAlbum,
   LibraryFacets,
-  LibraryFile,
   LibraryFindResponse,
   LocatedFile,
   Topic,
@@ -34,10 +34,12 @@ export const AV_KINDS: FileKind[] = ["audio", "video"];
 /**
  * One page of recordings — the endpoint's own ceiling (`catalogue.MAX_LIMIT`).
  *
- * Asking for the cap rather than the default 25 is what lets a folder's files
- * arrive together: the grouping below can only gather what the request brought
- * back, and a fourteen-part shivir split across two pages would read as two
- * albums. At today's totals the whole workspace fits inside one page.
+ * Only a search draws these files: browsing draws album cards from the
+ * response's `albums`, which the BE counts over the whole match set. That is
+ * the fix for the day Originals outgrew one page — 1,158 recordings, of which
+ * the first hundred covered nine albums and cut the last one short. In browse
+ * the page's files are still fetched, for `ContinueAv` to join playheads
+ * against without a request of its own.
  */
 export const AV_PAGE = 100;
 
@@ -67,10 +69,11 @@ export const AV_PAGE = 100;
  *   searched for "Anubhav" wants the recordings that match, and a page of
  *   folder cards would be hiding the answer behind one more tap.
  *
- * Both shapes come out of the **same response**: the find returns every A/V
- * file with its breadcrumb, and a file's breadcrumb ends with its own folder,
- * so the collections are grouped out of the rows already in hand. Switching
- * between the two costs nothing and can never disagree with itself.
+ * Both shapes come out of the **same response**. The cards are its `albums` —
+ * every folder holding a matched file, counted by the BE over the whole match
+ * set, so no album is missing or short however many pages of files there are.
+ * The search groups are the page's own file rows, gathered under the folder
+ * each breadcrumb ends with.
  *
  * In find mode `FileList` draws each kind as the thing it is — audio through
  * the app's one player in album mode, video embedded — the same as on the
@@ -108,6 +111,9 @@ export function AvShelf({
   // decides whether there is anything to clear.
   const narrowed = chipCount({ ...state, selection: { ...state.selection, kind: [] } });
   const asked = narrowed > 0 || state.q.length > 0;
+  // Browsing draws every album; a search draws the page's files grouped.
+  const collections = asked ? [] : collectionsOf(find.albums, groups);
+  const shown = asked ? groups.length : collections.length;
 
   // How much is here — on the title's line now, where it says what the page
   // holds, rather than on a heading of its own above the first collection.
@@ -120,7 +126,7 @@ export function AvShelf({
       // below — so it is said once.
       <span className={narrowed > 0 ? "lg:hidden" : undefined}>
         {countLabel}
-        {groups.length > 1 && <> · {groups.length} collections</>}
+        {shown > 1 && <> · {shown} collections</>}
       </span>
     ) : null;
 
@@ -171,7 +177,7 @@ export function AvShelf({
             folder, which has one shape. */}
         <div className="mt-2.5 flex items-center gap-2">
           <AvKindChips facets={facets} chosen={chosen} state={state} basePath={basePath} />
-          {!asked && groups.length > 0 && (
+          {!asked && collections.length > 0 && (
             <div className="ml-auto">
               <ProvidedViewToggle />
             </div>
@@ -232,7 +238,7 @@ export function AvShelf({
         </p>
       )}
 
-      {groups.length > 0 ? (
+      {shown > 0 ? (
         asked ? (
           <div className="mt-2 flex flex-col">
             {groups.map((group) => (
@@ -241,7 +247,7 @@ export function AvShelf({
           </div>
         ) : (
           <div className="mt-3">
-            <CollectionLayout groups={groups} shelves={shelves} />
+            <CollectionLayout collections={collections} shelves={shelves} />
           </div>
         )
       ) : (
@@ -257,7 +263,11 @@ export function AvShelf({
         </div>
       )}
 
-      <Pager find={find} state={state} basePath={basePath} offset={offset} />
+      {/* Browsing has every album on one page; only a search pages its files
+          (or a BE too old to send `albums`, where the cards are page-bound). */}
+      {(asked || !find.albums) && (
+        <Pager find={find} state={state} basePath={basePath} offset={offset} />
+      )}
     </CollectionViewProvider>
   );
 }
@@ -337,6 +347,24 @@ function groupByFolder(results: LibraryFindResponse["results"]): FolderGroup[] {
   return [...groups.values()];
 }
 
+/** what a card needs to know about its album — counts, not files */
+type Collection = Pick<LibraryAlbum, "id" | "name" | "items" | "kinds" | "duration">;
+
+/**
+ * The cards: the BE's `albums` where it sent them, else the page's own groups
+ * — a BE from before `albums` still draws a shelf, just a page-bound one.
+ */
+function collectionsOf(albums: LibraryAlbum[] | undefined, groups: FolderGroup[]): Collection[] {
+  if (albums) return albums;
+  return groups.map((group) => ({
+    id: group.id,
+    name: group.name,
+    items: group.files.length,
+    kinds: [...new Set(group.files.map((f) => f.kind))],
+    duration: group.files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0),
+  }));
+}
+
 /**
  * One collection, as a card — **what browsing this tab actually shows**.
  *
@@ -351,21 +379,21 @@ function groupByFolder(results: LibraryFindResponse["results"]): FolderGroup[] {
  * out to the full series; the inline copy here had none of those. So the card
  * goes there rather than trying to be it.
  *
- * No cover of its own: these are built from the file rows the find returned,
- * which carry their folder's id and name but not its artwork. The kind glyph
- * and its tint do the work instead — the same pair the Library shelf's tiles
- * use, and on this tab every collection is purely one kind or the other.
+ * No cover of its own: an album arrives as the find's `albums` entry — id,
+ * name and counts, not its artwork. The kind glyph and its tint do the work
+ * instead — the same pair the Library shelf's tiles use, and on this tab every
+ * collection is purely one kind or the other.
  */
-function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
-  const kind = onlyKind(group);
+function CollectionCard({ album, shelves }: { album: Collection; shelves: ShelfMap }) {
+  const kind = onlyKind(album.kinds);
   return (
     <CollectionGridCard
-      href={nodeHref(group.id, shelves)}
-      name={group.name}
+      href={nodeHref(album.id, shelves)}
+      name={album.name}
       tile={<KindTile kind={kind} size="sm" />}
-      chip={filesSummary(group.files)}
+      chip={albumSummary(album.items, album.kinds)}
       chipTint={CHIP_TINT[kind]}
-      note={collectionLength(group.files)}
+      note={collectionLength(album.duration)}
     />
   );
 }
@@ -378,28 +406,28 @@ function CollectionCard({ group, shelves }: { group: FolderGroup; shelves: Shelf
  * the shelf. The toggle that drives it lives up in the sticky controls.
  */
 function CollectionLayout({
-  groups,
+  collections,
   shelves,
 }: {
-  groups: FolderGroup[];
+  collections: Collection[];
   shelves: ShelfMap;
 }) {
   return (
     <ProvidedView
       grid={
         <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
-          {groups.map((group) => (
-            <li key={group.id} className="contents">
-              <CollectionCard group={group} shelves={shelves} />
+          {collections.map((album) => (
+            <li key={album.id} className="contents">
+              <CollectionCard album={album} shelves={shelves} />
             </li>
           ))}
         </ul>
       }
       list={
         <ul className="flex flex-col gap-2.5">
-          {groups.map((group) => (
-            <li key={group.id}>
-              <CollectionRow group={group} shelves={shelves} />
+          {collections.map((album) => (
+            <li key={album.id}>
+              <CollectionRow album={album} shelves={shelves} />
             </li>
           ))}
         </ul>
@@ -419,16 +447,16 @@ function CollectionLayout({
  * tints, so a 165px column spends its width on artwork that carries almost
  * nothing while the name it needs wraps to three lines.
  */
-function CollectionRow({ group, shelves }: { group: FolderGroup; shelves: ShelfMap }) {
-  const kind = onlyKind(group);
+function CollectionRow({ album, shelves }: { album: Collection; shelves: ShelfMap }) {
+  const kind = onlyKind(album.kinds);
   return (
     <CollectionListRow
-      href={nodeHref(group.id, shelves)}
-      name={group.name}
+      href={nodeHref(album.id, shelves)}
+      name={album.name}
       tile={<KindTile kind={kind} size="xl" />}
-      chip={filesSummary(group.files)}
+      chip={albumSummary(album.items, album.kinds)}
       chipTint={CHIP_TINT[kind]}
-      note={collectionLength(group.files)}
+      note={collectionLength(album.duration)}
     />
   );
 }
@@ -441,8 +469,7 @@ function CollectionRow({ group, shelves }: { group: FolderGroup; shelves: ShelfM
  * colour. A mixed folder has no true glyph, and the folder mark is the honest
  * answer rather than picking whichever kind happened to be first.
  */
-function onlyKind(group: FolderGroup): TileKind {
-  const kinds = [...new Set(group.files.map((f) => f.kind))];
+function onlyKind(kinds: FileKind[]): TileKind {
   return kinds.length === 1 ? kinds[0] : "folder";
 }
 
@@ -454,8 +481,7 @@ const CHIP_TINT: Partial<Record<TileKind, string>> = {
 
 /** "21 hours", or minutes below one, or nothing where the BE has no durations.
  *  Both layouts print it, so both read it from here. */
-function collectionLength(files: LibraryFile[]): string {
-  const seconds = files.reduce((n, f) => n + (f.duration_seconds ?? 0), 0);
+function collectionLength(seconds: number): string {
   const hours = seconds / 3600;
   if (hours >= 1) return `${Math.round(hours)} ${Math.round(hours) === 1 ? "hour" : "hours"}`;
   return seconds > 0 ? `${Math.max(1, Math.round(seconds / 60))} min` : "";
@@ -508,11 +534,10 @@ function FolderGroup({ group, shelves }: { group: FolderGroup; shelves: ShelfMap
 /**
  * Pages, when the scope is bigger than one request can carry.
  *
- * `library/search/` caps a page at {@link AV_PAGE} rows and this asks for the
- * cap, so at today's seventy-odd recordings the whole shelf arrives in one
- * request and none of this renders. It exists so that stops being an
- * assumption: the day the import pushes Originals past the cap, the rest is a
- * link away rather than silently missing (U12).
+ * `library/search/` caps a page at {@link AV_PAGE} rows. Browsing never needs
+ * this — its cards come from `albums`, which covers every page — but a search
+ * that matches more than one page of files does: the rest is a link away
+ * rather than silently missing (U12).
  *
  * **Pages rather than the "Show more" the ranked lists use.** That control
  * appends, which is right for a flat list of rows and wrong here: a group is a

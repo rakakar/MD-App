@@ -597,6 +597,26 @@ export interface LibraryFindResponse {
    * asked, because that is exactly when the shelf is on screen.
    */
   rollup: LibraryRollup;
+  /**
+   * Every folder holding a matched file, counted over the **whole match set**
+   * rather than this page — what the Media tab draws as album cards. Empty
+   * when nothing was asked. Optional only so a BE from before it existed
+   * still renders.
+   */
+  albums?: LibraryAlbum[];
+}
+
+/** one album on the Media tab, as `library/search/`'s `albums` describes it */
+export interface LibraryAlbum {
+  id: number;
+  name: string;
+  /** the path down to it, its own step excluded */
+  trail: { id: number; name: string }[];
+  /** matched files in it — all of them when no chip is on */
+  items: number;
+  kinds: FileKind[];
+  /** seconds */
+  duration: number;
 }
 
 /**

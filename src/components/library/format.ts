@@ -143,6 +143,18 @@ export function filesSummary(files: LibraryFile[]): string {
     .join(" · ");
 }
 
+/**
+ * The same line for an album described by counts rather than files in hand
+ * (`library/search/`'s `albums`): named by kind while there is one kind, a
+ * plain file count where there are several, because the count is not split.
+ */
+export function albumSummary(items: number, kinds: FileKind[]): string {
+  const ordered = inKindOrder(kinds);
+  return ordered.length === 1
+    ? countOfKind(items, ordered[0])
+    : `${items} ${items === 1 ? "file" : "files"}`;
+}
+
 export function formatBytes(bytes: number | null | undefined): string {
   if (!bytes) return "";
   if (bytes < 1024) return `${bytes} B`;
