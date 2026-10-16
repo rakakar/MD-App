@@ -500,11 +500,19 @@ function CollectionRow({ album, shelves }: { album: Collection; shelves: ShelfMa
  * An album with neither date nor Type keeps its name as the heading, which is
  * every folder outside the recordings archive: no fact is invented to fill a
  * line, and nothing is printed twice.
+ *
+ * A video album keeps its name as the heading too. Those are named for the
+ * occasion ("जीवन विद्या: एक परिचय", "2010 Nov Banda Sammelan"), so the name
+ * is the thing to choose on, and "शिविर" alone over it said less than the line
+ * it displaced (Raka, 16 Oct 2026).
  */
 function albumLines(album: Collection): { head: string; note: string } {
   const { title, date } = splitAlbumName(album.name);
   const head = [date, album.session_type_label].filter(Boolean).join(" · ");
   const length = collectionLength(album.duration);
+  if (onlyKind(album.kinds) === "video") {
+    return { head: title, note: [head, length].filter(Boolean).join(" · ") };
+  }
   if (!head) return { head: title, note: length };
   return { head, note: [title, length].filter(Boolean).join(" · ") };
 }
