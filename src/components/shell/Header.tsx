@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,7 +15,7 @@ import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceCo
 import { UnreadBadge, UnreadDot } from "@/components/notifications/NotificationList";
 import { useInbox } from "@/components/notifications/useInbox";
 import { useDisplay } from "./DisplayProvider";
-import { DisplaySheet } from "./DisplaySheet";
+import { useEverOpen } from "@/components/ui/useEverOpen";
 import { useWorkspace } from "./WorkspaceProvider";
 import {
   CheckIcon,
@@ -987,3 +988,16 @@ export function Header() {
 }
 
 export { AvatarMenu, WorkspaceSwitcher };
+
+/**
+ * The Display sheet, loaded on demand. Three bars open it and the header is
+ * on every screen, so imported statically its controls were parsed on every
+ * page load of every reader who never opens it. See `ui/useEverOpen`.
+ */
+const loadDisplaySheet = () => import("./DisplaySheet");
+const DisplaySheetLazy = dynamic(() => loadDisplaySheet().then((m) => m.DisplaySheet));
+
+function DisplaySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const mounted = useEverOpen(open, loadDisplaySheet);
+  return mounted ? <DisplaySheetLazy open={open} onClose={onClose} /> : null;
+}

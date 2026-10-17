@@ -2,8 +2,27 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getPrefs, setPrefs } from "@/lib/storage";
-import { FirstRunFlow } from "./FirstRunFlow";
-import { SwitcherHint } from "./SwitcherHint";
+
+/*
+ * **The deck and the hint are loaded only for the visitor who will see them.**
+ *
+ * This gate is in the shell, on every page, and nearly every visit is from a
+ * reader who finished the deck long ago. Imported statically, the launch
+ * screen, all its slides and the switcher hint were parsed and run on each of
+ * those visits for nothing. The pre-paint script in layout.tsx already knows,
+ * before any of this runs, whether the deck is owed — it sets
+ * `data-first-run` — so on that visit the code is asked for the moment this
+ * module evaluates, alongside hydration rather than after it.
+ */
+const loadFlow = () => import("./FirstRunFlow");
+const FirstRunFlow = dynamic(() => loadFlow().then((m) => m.FirstRunFlow), { ssr: false });
+const SwitcherHint = dynamic(() => import("./SwitcherHint").then((m) => m.SwitcherHint), {
+  ssr: false,
+});
+if (typeof document !== "undefined" && document.documentElement.hasAttribute("data-first-run")) {
+  void loadFlow();
+}
+import dynamic from "next/dynamic";
 
 /**
  * Whether the deck is owed, and nothing else.

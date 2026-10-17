@@ -1,11 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ShareIcon, SunIcon } from "@/components/shell/icons";
-import { ShareSutraSheet } from "./ShareSutraSheet";
 import { FormattedText } from "@/components/reader/blocks";
 import { ctaPrimaryCompact } from "@/components/ui";
+import { useEverOpen } from "@/components/ui/useEverOpen";
 import { track } from "@/lib/analytics";
 import { setPrefs } from "@/lib/storage";
 import { dayMonth, parseDay } from "@/lib/dates";
@@ -13,6 +14,14 @@ import { SUTRA } from "@/lib/labels";
 import { citationText, refToHref } from "@/lib/refs";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { SutraOfTheDay } from "@/lib/types";
+
+/**
+ * The share sheet — canvas drawing, image export, the share targets — loaded
+ * on demand. It is on Home, the first screen most visits open, and most
+ * readers never press Share. See `ui/useEverOpen`.
+ */
+const loadShareSheet = () => import("./ShareSutraSheet");
+const ShareSutraSheet = dynamic(() => loadShareSheet().then((m) => m.ShareSutraSheet));
 
 /**
  * Sutra of the day (design 1A) — the one tinted surface on Home, so the verse
@@ -75,6 +84,7 @@ export function SutraCard({
    * files.
    */
   const [sharing, setSharing] = useState(false);
+  const shareMounted = useEverOpen(sharing, loadShareSheet);
 
   /**
    * **Hide / Show** — the designer's mock, 26 Sep 2026. Folded, the card keeps
@@ -322,15 +332,17 @@ export function SutraCard({
         </div>
       </div>
 
-      <ShareSutraSheet
-        open={sharing}
-        onClose={() => setSharing(false)}
-        text={sutra.text_hi}
-        source={sutra.book_title}
-        page={page}
-        citation={citationText(sutra.text_hi, sutra.canonical_ref)}
-        date={sutra.sutra_date}
-      />
+      {shareMounted && (
+        <ShareSutraSheet
+          open={sharing}
+          onClose={() => setSharing(false)}
+          text={sutra.text_hi}
+          source={sutra.book_title}
+          page={page}
+          citation={citationText(sutra.text_hi, sutra.canonical_ref)}
+          date={sutra.sutra_date}
+        />
+      )}
     </figure>
   );
 }

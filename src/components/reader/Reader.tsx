@@ -1,11 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { CoachMark } from "@/components/onboarding/CoachMark";
-import { AudioMode } from "@/components/player/AudioMode";
 import { Icon } from "@/components/shell/icons";
 import { spokenParas } from "@/components/player/deviceSpeech";
 import {
@@ -57,14 +57,13 @@ import {
   SelectionBar,
 } from "./ReaderChrome";
 import { useIsDesktop } from "@/components/ui/Dialog";
-import { ParibhashaTrailSheet, type WordAnchor } from "@/components/paribhasha/WordTrail";
+import { useEverOpen } from "@/components/ui/useEverOpen";
+import type { WordAnchor } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
 import { Sheet } from "./Sheet";
-import { SettingsPanel, SettingsSheet } from "./SettingsSheet";
 import { MarginNote } from "./MarginNote";
 import { ReaderSidePanel, pageOf, when, type PanelTab } from "./ReaderSidePanel";
-import { TocSheet } from "./TocSheet";
 import { useReaderChrome } from "./useReaderChrome";
 import { useTouchSelection } from "./useTouchSelection";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
@@ -74,6 +73,28 @@ import {
   type ReadingSide,
 } from "@/lib/bookLanguage";
 import { ctaPrimary } from "@/components/ui";
+
+/*
+ * **What the reader opens on demand, loaded on demand.**
+ *
+ * Audio Mode, the Paribhasha card, the contents and the two settings surfaces
+ * are ~2,600 lines between them, and none is on screen when a chapter opens.
+ * Imported statically they were parsed and run before the first paragraph
+ * could respond to a tap — on a phone, the part of opening a chapter that is
+ * spent on the CPU rather than the network. Each is mounted on its first
+ * opening (see `ui/useEverOpen`) and its code is fetched once the reader is idle
+ * (see the warm-up effect in ReaderView), so the first tap does not wait on
+ * the network either.
+ */
+const loadAudioMode = () => import("@/components/player/AudioMode");
+const loadWordTrail = () => import("@/components/paribhasha/WordTrail");
+const loadToc = () => import("./TocSheet");
+const loadSettings = () => import("./SettingsSheet");
+const AudioMode = dynamic(() => loadAudioMode().then((m) => m.AudioMode));
+const ParibhashaTrailSheet = dynamic(() => loadWordTrail().then((m) => m.ParibhashaTrailSheet));
+const TocSheet = dynamic(() => loadToc().then((m) => m.TocSheet));
+const SettingsSheet = dynamic(() => loadSettings().then((m) => m.SettingsSheet));
+const SettingsPanel = dynamic(() => loadSettings().then((m) => m.SettingsPanel));
 
 export interface ReaderBook {
   code: string;
@@ -264,6 +285,27 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   /** the desktop's Theme & Settings, docked on the right — one docked panel at a time */
   const [deskSettings, setDeskSettings] = useState(false);
   const showSettings = deskSettings;
+  // The lazily loaded surfaces, each mounted from its first opening on.
+  const tocMounted = useEverOpen(tocOpen);
+  const settingsSheetMounted = useEverOpen(settingsOpen);
+  const settingsPanelMounted = useEverOpen(showSettings);
+  const trailMounted = useEverOpen(defineWord !== null);
+  // Their code, fetched while the reader has nothing else to do, so the first
+  // tap on any of them finds it already here.
+  useEffect(() => {
+    const warm = () => {
+      void loadToc();
+      void loadSettings();
+      void loadWordTrail();
+      void loadAudioMode();
+    };
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(warm, { timeout: 4000 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(warm, 2000);
+    return () => clearTimeout(t);
+  }, []);
   /** the desktop's go-to-page popover, under the position in the bar */
   const [gotoPop, setGotoPop] = useState(false);
 
@@ -959,7 +1001,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       const height = el.offsetHeight;
       const seen = window.scrollY + window.innerHeight - top;
       const pct = height > 0 ? Math.min(1, Math.max(0, seen / height)) : 0;
-      setScrollProgress(pct);
+      // In steps of half a percent. A fresh float on every frame was a new
+      // state on every frame, and each one re-rendered the reader — the whole
+      // chapter's paragraphs with it, 300 on a long one. Rounded, React skips
+      // the frames where nothing visible changed: the label shows whole
+      // percents and the hairline moves under a pixel per step.
+      setScrollProgress(Math.round(pct * 200) / 200);
       if (pct >= 0.8 && chapter?.next) void loadChapter(chapter.next.number);
     };
     const onScroll = () => {
@@ -1557,7 +1604,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    * The right margin's note beside a marked passage — only while nothing is
    * docked, since a docked panel takes the width it would sit in.
    */
-  const marginFor =
+  // Memoised so its identity changes only when a margin note could: the
+  // paragraph lists are memo'd, and a new function on every render would
+  // re-render every paragraph on every scroll step and every audio tick.
+  const marginFor = useMemo(
+    () =>
     showPanel || showSettings
       ? undefined
       : (p: Paragraph) => {
@@ -1589,7 +1640,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
               }}
             />
           );
-        };
+        },
+    [showPanel, showSettings, marks, marginEditing, book.book_type, book.code, book.title_hi, user, confirmSaved]
+  );
 
   /** a highlight or note, picked in the panel: this chapter scrolls, another loads */
   const goToRef = (ref: string) => {
@@ -2137,75 +2190,83 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {/* The same Paribhasha card the glossary uses — recursive underlines and
           the trail included, so a word means the same thing wherever it is
           tapped. */}
-      <ParibhashaTrailSheet
-        word={defineWord}
-        anchor={defineAnchor}
-        onClose={() => {
-          setDefineWord(null);
-          setDefineAnchor(null);
-        }}
-      />
+      {trailMounted && (
+        <ParibhashaTrailSheet
+          word={defineWord}
+          anchor={defineAnchor}
+          onClose={() => {
+            setDefineWord(null);
+            setDefineAnchor(null);
+          }}
+        />
+      )}
 
-      <TocSheet
-        open={tocOpen}
-        onClose={() => setTocOpen(false)}
-        bookCode={book.code}
-        bookTitle={book.title_hi}
-        chapters={book.chapters}
-        current={chapterNumber}
-        bookType={book.book_type}
-        onSelect={(n) => void goToChapter(n)}
-        /* Only when the passage is in the chapter already open: anywhere else
-           the link is a real navigation and the reader remounts, which runs
-           the hash restore below on its own. */
-        onSelectRef={(ref) => {
-          const p = parseRef(ref);
-          if (!p) return;
-          const here = p.chapter === "fm" ? isFrontMatter : Number(p.chapter) === chapterNumber;
-          if (here) jumpToPage(p.page, Number(p.para) || undefined);
-        }}
-      />
+      {tocMounted && (
+        <TocSheet
+          open={tocOpen}
+          onClose={() => setTocOpen(false)}
+          bookCode={book.code}
+          bookTitle={book.title_hi}
+          chapters={book.chapters}
+          current={chapterNumber}
+          bookType={book.book_type}
+          onSelect={(n) => void goToChapter(n)}
+          /* Only when the passage is in the chapter already open: anywhere else
+             the link is a real navigation and the reader remounts, which runs
+             the hash restore below on its own. */
+          onSelectRef={(ref) => {
+            const p = parseRef(ref);
+            if (!p) return;
+            const here = p.chapter === "fm" ? isFrontMatter : Number(p.chapter) === chapterNumber;
+            if (here) jumpToPage(p.page, Number(p.para) || undefined);
+          }}
+        />
+      )}
 
-      <SettingsPanel
-        open={showSettings}
-        onClose={() => setDeskSettings(false)}
-        fontScale={fontScale}
-        onFontScale={changeFontScale}
-        face={face}
-        onFace={changeFace}
-        lineHeight={lineHeight}
-        onLineHeight={changeLineHeight}
-        mode={mode}
-        onMode={changeMode}
-        tapZones={tapZones}
-        onTapZones={changeTapZones}
-        showTapZones={mode === "page"}
-        glossaryUnderline={glossaryUnderline}
-        onGlossaryUnderline={changeGlossaryUnderline}
-        onGoToPrintedPage={book.book_type === "print" ? goToPrintedPage : undefined}
-      />
+      {settingsPanelMounted && (
+        <SettingsPanel
+          open={showSettings}
+          onClose={() => setDeskSettings(false)}
+          fontScale={fontScale}
+          onFontScale={changeFontScale}
+          face={face}
+          onFace={changeFace}
+          lineHeight={lineHeight}
+          onLineHeight={changeLineHeight}
+          mode={mode}
+          onMode={changeMode}
+          tapZones={tapZones}
+          onTapZones={changeTapZones}
+          showTapZones={mode === "page"}
+          glossaryUnderline={glossaryUnderline}
+          onGlossaryUnderline={changeGlossaryUnderline}
+          onGoToPrintedPage={book.book_type === "print" ? goToPrintedPage : undefined}
+        />
+      )}
 
-      <SettingsSheet
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        fontScale={fontScale}
-        onFontScale={changeFontScale}
-        face={face}
-        onFace={changeFace}
-        lineHeight={lineHeight}
-        onLineHeight={changeLineHeight}
-        mode={mode}
-        onMode={changeMode}
-        tapZones={tapZones}
-        onTapZones={changeTapZones}
-        showTapZones={mode === "page"}
-        glossaryUnderline={glossaryUnderline}
-        onGlossaryUnderline={changeGlossaryUnderline}
-        onGoToPage={() => {
-          setSettingsOpen(false);
-          setGotoOpen(true);
-        }}
-      />
+      {settingsSheetMounted && (
+        <SettingsSheet
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          fontScale={fontScale}
+          onFontScale={changeFontScale}
+          face={face}
+          onFace={changeFace}
+          lineHeight={lineHeight}
+          onLineHeight={changeLineHeight}
+          mode={mode}
+          onMode={changeMode}
+          tapZones={tapZones}
+          onTapZones={changeTapZones}
+          showTapZones={mode === "page"}
+          glossaryUnderline={glossaryUnderline}
+          onGlossaryUnderline={changeGlossaryUnderline}
+          onGoToPage={() => {
+            setSettingsOpen(false);
+            setGotoOpen(true);
+          }}
+        />
+      )}
 
       <Sheet
         open={noteOpen && !!noteTarget}
@@ -2341,7 +2402,13 @@ const UNMARKED_BLOCKS = new Set(["heading", "subheading", "figure", "table"]);
  * doing it per chapter would mark a word on page 3 and leave it bare on page
  * 40, where the reader has long since lost the definition.
  */
-function PageParas({
+/**
+ * Memoised, as is `ParaWrap` below: the reader re-renders for things that
+ * have nothing to do with the words — scroll position, the audio clock, the
+ * paragraph at the top of the screen — and without this every one of them
+ * re-rendered every paragraph of the chapter.
+ */
+const PageParas = memo(function PageParas({
   page,
   matcher,
   activeSeq,
@@ -2414,8 +2481,8 @@ function PageParas({
           key={p.canonical_ref}
           para={p}
           pageKey={page.key}
-          activeSeq={activeSeq}
-          selectedRefs={selectedRefs}
+          active={activeSeq === p.sequence}
+          selected={!!selectedRefs?.includes(p.canonical_ref)}
           segments={painting[i] ?? null}
           highlighted={(painted.get(p.canonical_ref)?.length ?? 0) > 0}
           dot={painted.get(p.canonical_ref)?.[0]?.colour}
@@ -2424,7 +2491,7 @@ function PageParas({
       ))}
     </>
   );
-}
+});
 
 /**
  * A whole-paragraph highlight, expressed as a span.
@@ -2441,11 +2508,11 @@ export function wholeParagraph(colour: HighlightColour): HighlightRange[] {
   return [{ start: 0, end: Number.MAX_SAFE_INTEGER, text: "", colour }];
 }
 
-function ParaWrap({
+const ParaWrap = memo(function ParaWrap({
   para,
   pageKey,
-  activeSeq,
-  selectedRefs,
+  active: isActive,
+  selected: isSelected,
   segments,
   highlighted,
   dot,
@@ -2458,16 +2525,16 @@ function ParaWrap({
   gutter?: React.ReactNode;
   para: Paragraph;
   pageKey: string;
-  activeSeq: number | null;
-  selectedRefs?: string[];
+  /** the paragraph being read aloud — a flag, so only it and the last one re-render */
+  active: boolean;
+  /** inside the current selection */
+  selected: boolean;
   segments?: PaintedSegment[] | null;
   /** whether anything in this paragraph is painted — for the selection rule */
   highlighted?: boolean;
   /** desktop: the colour of the margin dot beside a painted paragraph */
   dot?: HighlightColour;
 }) {
-  const isActive = activeSeq === para.sequence;
-  const isSelected = !!selectedRefs?.includes(para.canonical_ref);
   return (
     <div
       id={`p-${pageKey}-${para.para_number}`}
@@ -2510,4 +2577,4 @@ function ParaWrap({
       <Block para={para} segments={segments} />
     </div>
   );
-}
+});
