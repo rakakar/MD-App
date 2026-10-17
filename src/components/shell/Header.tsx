@@ -222,10 +222,6 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
     </div>
   );
 
-  // 10A pins the current workspace to the top of the desktop dropdown, with a
-  // divider before the rest — on a menu you reopen all day, the row you last
-  // chose should be where you last saw it.
-  const rest = WORKSPACE_ORDER.filter((id) => id !== workspace.id);
 
   return (
     <div
@@ -312,10 +308,13 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
 
       {open && variant === "popover" && (
         <div className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-56 rounded-[14px] border border-rule bg-card p-1.5 shadow-[0_20px_44px_-16px_rgba(26,22,19,.35)]">
+          {/* One fixed order, the current workspace highlighted where it
+              stands. 10A pinned it to the top over a divider, but then every
+              choice reshuffled the list under the reader's pointer, so the row
+              they wanted next was never where they had last seen it (Raka,
+              17 Oct 2026). The phone sheet already kept the order. */}
           <ul role="listbox" aria-label="Workspaces" className="flex flex-col gap-0.5">
-            {popoverRow(workspace.id)}
-            <li aria-hidden className="my-1 h-px bg-rule" />
-            {rest.map(popoverRow)}
+            {WORKSPACE_ORDER.map(popoverRow)}
           </ul>
         </div>
       )}
