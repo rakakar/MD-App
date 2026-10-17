@@ -127,7 +127,18 @@ export const FIND_PAGE = 25;
 
 export const EMPTY_FIND: FindState = { q: "", selection: {}, raw: false, ordering: "" };
 
-type RawParams = Record<string, string | string[] | undefined>;
+export type RawParams = Record<string, string | string[] | undefined>;
+
+/**
+ * Every query key `readFind` reads — the whole find, as a URL carries it.
+ *
+ * next.config.ts imports this: a shelf address carrying any of these is
+ * rewritten to the shelf's `find/` route, which renders on request, while the
+ * bare address stays prerendered. A key added to the find and not here would
+ * be silently ignored on a shelf — the static page never sees a query string
+ * — so this list and `readFind` change together.
+ */
+export const FIND_QUERY_KEYS = ["q", ...ALL_AXES, "raw", "ordering"] as const;
 
 function first(value: string | string[] | undefined): string {
   if (value === undefined) return "";

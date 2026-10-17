@@ -9,6 +9,12 @@
  * unchanged, until it came back. The `loading.tsx` files buy back the partial
  * prefetch and give the tap something to land on.
  *
+ * Since 17 Oct 2026 the bare shelf addresses are prerendered and only an
+ * address carrying a filter or a search renders on request (`/translations`
+ * reads no query at all; the others rewrite to a `find/` route — see
+ * next.config.ts). The files stay: they are what a filtered or searched shelf
+ * shows while it renders, and what a first, uncached visit shows.
+ *
  * **What is skeletonised, and what is not.** Every one of these pages opens
  * with a heading and a standfirst that are *written*, not fetched — "Library",
  * "Media", "Student Materials", "Translations". Those are drawn for real,

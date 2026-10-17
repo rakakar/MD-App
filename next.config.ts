@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { FIND_QUERY_KEYS } from "./src/lib/find";
 
 const nextConfig: NextConfig = {
   /**
@@ -58,6 +59,41 @@ const nextConfig: NextConfig = {
    * on a tab someone saved reads as an app that broke rather than a shelf that
    * moved.
    */
+  /**
+   * The library and media shelves: the bare address prerendered, any address
+   * with a find in it rendered on request.
+   *
+   * `/av`, `/originals` and `/resources` read their filters and search from
+   * the query string, and a route that reads `searchParams` is rendered on the
+   * server for every visit — each was a cache MISS (`no-store`, 0.4–1.5s) even
+   * when opened from the tab bar with no query at all, which is nearly every
+   * visit. So each shelf is two routes over one body (`app/<shelf>/shelf.tsx`):
+   * the page, which never sees a query string and is served from the CDN, and
+   * `find/`, which does. A query carrying any key the find reads is sent to
+   * `find/` here; anything else (`?firstrun`, a tracking tag) stays static.
+   *
+   * `beforeFiles`, because the shelves are static pages and those are matched
+   * before ordinary rewrites are tried. The query string carries over as it is.
+   */
+  async rewrites() {
+    const shelves: { path: string; extra: string[] }[] = [
+      { path: "/av", extra: ["offset"] },
+      { path: "/originals", extra: [] },
+      { path: "/resources", extra: ["format"] },
+    ];
+    return {
+      beforeFiles: shelves.flatMap(({ path, extra }) =>
+        [...FIND_QUERY_KEYS, ...extra].map((key) => ({
+          source: path,
+          has: [{ type: "query" as const, key }],
+          destination: `${path}/find`,
+        }))
+      ),
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+
   async redirects() {
     return [
       { source: "/audio", destination: "/resources", permanent: true },

@@ -105,6 +105,17 @@ export function AvShelf({
 }) {
   const groups = groupByFolder(find.results);
   const chosen = state.selection.kind ?? AV_KINDS;
+  // The state every link on this page is built from: the same, minus `kind`
+  // when it is both kinds — the page's own lock rather than a reader's
+  // choice. Spelled out, every search cleared or filter removed landed on
+  // `/av?kind=audio&kind=video`, which is `/av` in a longer form; and since
+  // any find key routes a shelf to its request-time render (next.config.ts),
+  // that longer form also skipped the prerendered page. The "All" chip has
+  // always written it this way; now the rest of the page agrees.
+  const linkState: FindState =
+    chosen.length === AV_KINDS.length && AV_KINDS.every((k) => chosen.includes(k))
+      ? { ...state, selection: { ...state.selection, kind: undefined } }
+      : state;
   // Type is this page's segment control, so the sieve must neither draw it nor
   // count it — otherwise the panel reads "1 selected" for a chip the reader
   // never set and cannot reach.
@@ -155,7 +166,7 @@ export function AvShelf({
       <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-3 bg-surface px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
         <FindBar
           basePath={basePath}
-          state={state}
+          state={linkState}
           scope="Audio and video"
           placeholder="Search by name, topic, year…"
           dense
@@ -163,7 +174,7 @@ export function AvShelf({
             <FindFilters
               topics={topics}
               facets={facets}
-              state={state}
+              state={linkState}
               basePath={basePath}
               itemCount={find.count}
               noun="recording"
@@ -179,7 +190,7 @@ export function AvShelf({
             layout to choose — a search draws each match grouped under its
             folder, which has one shape. */}
         <div className="mt-2.5 flex items-center gap-2">
-          <AvKindChips facets={facets} chosen={chosen} state={state} basePath={basePath} />
+          <AvKindChips facets={facets} chosen={chosen} state={linkState} basePath={basePath} />
           {!asked && collections.length > 0 && (
             <div className="ml-auto">
               <ProvidedViewToggle />
@@ -195,7 +206,7 @@ export function AvShelf({
         <ActiveFindFilters
           topics={topics}
           facets={facets}
-          state={state}
+          state={linkState}
           basePath={basePath}
           hideAxes={hideAxes}
         />
@@ -208,7 +219,7 @@ export function AvShelf({
           <ActiveFindFilters
             topics={topics}
             facets={facets}
-            state={state}
+            state={linkState}
             basePath={basePath}
             hideAxes={hideAxes}
             inline
@@ -219,7 +230,7 @@ export function AvShelf({
         <RailFacets
           facets={facets}
           topics={topics}
-          state={state}
+          state={linkState}
           basePath={basePath}
           hideAxes={hideAxes}
         />
@@ -233,7 +244,7 @@ export function AvShelf({
           </span>
           {" · "}
           <Link
-            href={findHref(basePath, { ...state, raw: true })}
+            href={findHref(basePath, { ...linkState, raw: true })}
             className="underline underline-offset-2"
           >
             search as typed
@@ -246,7 +257,7 @@ export function AvShelf({
           <FindTable
             first={find.results}
             scope={{ workspace: "originals" }}
-            state={state}
+            state={linkState}
             total={find.count}
             shelves={shelves}
           />
@@ -272,7 +283,7 @@ export function AvShelf({
           `albums`, where the cards are page-bound. A search pages itself, with
           the table's own "Show more". */}
       {!asked && !find.albums && (
-        <Pager find={find} state={state} basePath={basePath} offset={offset} />
+        <Pager find={find} state={linkState} basePath={basePath} offset={offset} />
       )}
     </CollectionViewProvider>
   );
