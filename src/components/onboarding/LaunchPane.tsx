@@ -120,16 +120,17 @@ export function LaunchPane({
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- a fixed local
               asset at one size; next/image would add a loader and a wrapper to
-              a 16KB file that is already the size it is drawn at. */}
+              a 32KB file that is already the size it is drawn at. */}
           <img
             src="/brand/anagraj.webp"
             alt=""
             aria-hidden="true"
             width={440}
-            height={440}
-            /* Framed off-centre on purpose: the source is a square portrait and
-               a centred crop of a square cuts the face in half at 3:4. */
-            className="h-[5.175rem] w-[4.1625rem] shrink-0 rounded-tile object-cover object-[50%_22%] lg:h-[5.75rem] lg:w-[4.625rem]"
+            height={506}
+            /* The watercolour portrait (`nagraj-portrait.jpeg`, the same one the
+               series covers wear), at 440 wide. It is already close to the
+               tile's own 4:5, so a centred crop only trims its edges. */
+            className="h-[5.175rem] w-[4.1625rem] shrink-0 rounded-tile object-cover object-[50%_30%] lg:h-[5.75rem] lg:w-[4.625rem]"
           />
           <div className="flex min-w-0 flex-1 flex-col gap-[0.28rem]">
             {/* 600 is a real Mukta face here — layout.tsx loads 400/500/600/700
