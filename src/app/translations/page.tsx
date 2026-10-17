@@ -14,12 +14,9 @@ export const metadata: Metadata = {
   description: "A. Nagraj ji's works rendered into other languages.",
 };
 
-export default async function TranslationsHome({
-  searchParams,
-}: {
-  searchParams: Promise<{ language?: string }>;
-}) {
-  const { language } = await searchParams;
+export default async function TranslationsHome() {
+  // No `searchParams` — the language chip is applied in the browser, so this
+  // page can be prerendered. See `ShelfGrid`.
 
   // The shelf's own dimensions, inherited from the "Read" tab this page
   // absorbed. Counted rather than written down: it read "4 books · 740 pages"
@@ -110,7 +107,7 @@ export default async function TranslationsHome({
           here, in a rail whose cards this page has no way to explain. Simply
           absent for a reader who has not opened a translation yet, which is
           most readers today: there is one published. */}
-      <ContinueReading workspace="translations" />
+      <ContinueReading workspace="translations" books={all.length > 0 ? all : undefined} />
 
       {/*
         Language, not genre: this shelf is one body of writing rendered many
@@ -120,7 +117,6 @@ export default async function TranslationsHome({
         workspace="translations"
         axis="language"
         basePath="/translations"
-        selected={language}
       />
     </PageContainer>
   );

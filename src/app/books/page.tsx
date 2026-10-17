@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
@@ -16,43 +15,24 @@ export const metadata: Metadata = {
   description: "Browse published books.",
 };
 
-interface Search {
-  ws?: string;
-  /** Originals axis — a book-genres/ code */
-  genre?: string;
-  /** Translations axis — an ISO 639-1 code */
-  language?: string;
-}
-
 /**
- * The books shelf. Reached from Originals' "Read" and Translations' "Read".
+ * The Originals books shelf, filtered by genre.
  *
- * Which axis the chips run on comes from the workspace, not from a shared
- * control: Originals filter by genre, Translations by language. Resources is
- * not a books shelf at all — it is a file library, so it is sent to its own
- * folder browser rather than shown an empty grid.
+ * It used to serve Translations and Resources too, through `?ws=`. Those are
+ * redirects in next.config.ts now — Translations has its own home with the
+ * same language chips, and Resources is a file library with its own folder
+ * browser — so this page reads no query string at all. That is what lets it be
+ * prerendered: the genre chip is applied in the browser (`ShelfGrid`).
  */
-export default async function BooksPage({
-  searchParams,
-}: {
-  searchParams: Promise<Search>;
-}) {
-  const { ws, genre, language } = await searchParams;
-
-  if (ws === "resources") redirect("/resources");
-
-  const isTranslations = ws === "translations";
-
+export default async function BooksPage() {
   // The shelf's own summary line (design 1B: "6 books · 760 pages · A. Nagraj").
   // Unfiltered, so it describes the library rather than the current chips.
-  const all = await getBooks({
-    workspace: isTranslations ? "translations" : "originals",
-  }).catch(() => [] as BookSummary[]);
+  const all = await getBooks({ workspace: "originals" }).catch(() => [] as BookSummary[]);
   const pages = all.reduce((n, b) => n + (b.page_count ?? 0), 0);
 
   return (
     <PageContainer size="shelf">
-      <WorkspaceScope ws={isTranslations ? "translations" : "originals"} />
+      <WorkspaceScope ws="originals" />
       {/* "Read", not "Originals" (design 1B): this is the Read tab, the
           workspace is already named in the app bar right above it, and the
           spec puts the shelf's identity in the summary line underneath. */}
@@ -68,7 +48,7 @@ export default async function BooksPage({
           not licence to rename another's. */}
       <PageTitle
         shelf
-        title={isTranslations ? "Translations" : "Books"}
+        title="Books"
         meta={
           all.length > 0 && (
             <>
@@ -88,15 +68,9 @@ export default async function BooksPage({
           Originals only — the store keeps one position per book across every
           workspace, so on the Translations shelf these rows would mostly be
           Hindi originals, which is not what that shelf is for. */}
-      {!isTranslations && <ContinueReading limit={3} />}
+      <ContinueReading limit={3} books={all.length > 0 ? all : undefined} />
 
-      <BookShelf
-        workspace={isTranslations ? "translations" : "originals"}
-        axis={isTranslations ? "language" : "genre"}
-        basePath="/books"
-        carry={isTranslations ? { ws: "translations" } : {}}
-        selected={isTranslations ? language : genre}
-      />
+      <BookShelf workspace="originals" axis="genre" basePath="/books" />
     </PageContainer>
   );
 }

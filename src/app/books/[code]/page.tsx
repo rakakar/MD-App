@@ -91,16 +91,18 @@ function backLink(ws: ContentWorkspaceId): { href: string; label: string } {
 
 export default async function BookDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ tab?: string }>;
 }) {
   const { code } = await params;
-  // Anything that is not the highlights tab is the chapter list, including a
-  // stale or hand-typed value: the chapters are what this page is for, and a
-  // bad query string should not be able to show a reader an empty screen.
-  const tab = (await searchParams).tab === "highlights" ? "highlights" : "chapters";
+  // No `searchParams` here, on purpose: `?tab=highlights` is read by BookTabs
+  // on the client. Awaiting it here made every book page dynamic — see the
+  // note on BookTabs.
+  //
+  // The genres list is asked for alongside the book rather than after it: it
+  // does not depend on the book, and in sequence the two cost two round trips
+  // to the BE on every render of this page.
+  const genres = getBookGenres().catch(() => null);
   let book;
   try {
     book = await getBook(decodeURIComponent(code));
@@ -128,12 +130,10 @@ export default async function BookDetailPage({
   // its English name rather than nothing; a failed fetch drops the chip rather
   // than printing the slug.
   const genreChip = book.genre
-    ? await getBookGenres()
-        .then((gs) => {
-          const g = gs.find((row) => row.code === book.genre);
-          return g ? genreLabel(g.code, g.name) : null;
-        })
-        .catch(() => null)
+    ? await genres.then((gs) => {
+        const g = gs?.find((row) => row.code === book.genre);
+        return g ? genreLabel(g.code, g.name) : null;
+      })
     : null;
   const frontMatter = book.chapters.filter((c) => c.is_front_matter);
   const mainChapters = book.chapters.filter((c) => !c.is_front_matter);
@@ -352,7 +352,6 @@ export default async function BookDetailPage({
         chapterCount={mainChapters.length}
         chaptersHref={`/books/${encodeURIComponent(book.code)}`}
         highlightsHref={`/books/${encodeURIComponent(book.code)}?tab=highlights`}
-        tab={tab}
         translations={book.translations}
       >
         <ChapterTable

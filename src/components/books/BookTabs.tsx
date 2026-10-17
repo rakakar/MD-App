@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { BookAside } from "@/components/books/BookAside";
 import { HighlightsPanel } from "@/components/books/HighlightsPanel";
@@ -20,8 +21,40 @@ import type { ChapterTocEntry, TranslationRef } from "@/lib/types";
  * The chapters list stays a server component and arrives as `children`. It is a
  * static list of links off data this page already has; there is nothing about
  * it that wants to be client-side, and passing it through keeps it that way.
+ *
+ * **The open tab is read here, from the URL, not by the page.** The page used
+ * to await `searchParams` for it, and reading the query string on the server
+ * makes a route dynamic: every visit to every book was rendered fresh on the
+ * server (`no-store`, a cache MISS, 0.4–1s) although the page is the same for
+ * everyone. Read on the client, the page is prerendered and served from the
+ * CDN, and only this component waits for the URL. The fallback is the
+ * chapters tab, so the prerendered HTML still carries the full chapter list;
+ * a `?tab=highlights` link switches as soon as the page hydrates.
  */
-export function BookTabs({
+export function BookTabs(props: BookTabsProps) {
+  return (
+    <Suspense fallback={<BookTabsView {...props} tab="chapters" />}>
+      <BookTabsFromUrl {...props} />
+    </Suspense>
+  );
+}
+
+function BookTabsFromUrl(props: BookTabsProps) {
+  const tab = useSearchParams().get("tab") === "highlights" ? "highlights" : "chapters";
+  return <BookTabsView {...props} tab={tab} />;
+}
+
+interface BookTabsProps {
+  bookCode: string;
+  translations: TranslationRef[];
+  chapters: ChapterTocEntry[];
+  chapterCount: number;
+  chaptersHref: string;
+  highlightsHref: string;
+  children: React.ReactNode;
+}
+
+function BookTabsView({
   bookCode,
   chapters,
   chapterCount,
@@ -30,16 +63,7 @@ export function BookTabs({
   tab,
   translations,
   children,
-}: {
-  bookCode: string;
-  translations: TranslationRef[];
-  chapters: ChapterTocEntry[];
-  chapterCount: number;
-  chaptersHref: string;
-  highlightsHref: string;
-  tab: "chapters" | "highlights";
-  children: React.ReactNode;
-}) {
+}: BookTabsProps & { tab: "chapters" | "highlights" }) {
   const { user, loading } = useAuth();
   const [rows, setRows] = useState<Highlight[] | null>(null);
 

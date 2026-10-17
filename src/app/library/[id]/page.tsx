@@ -71,14 +71,12 @@ export default async function LibraryNodePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ id }, rawParams, shelves] = await Promise.all([
-    params,
-    searchParams,
-    shelfMap(),
-  ]);
+  const [{ id }, rawParams] = await Promise.all([params, searchParams]);
   const state = readFind(rawParams);
 
-  const node = await load(id);
+  // The folder and the shelf map together: neither needs the other, and one
+  // after the other they were two BE round trips before anything rendered.
+  const [node, shelves] = await Promise.all([load(id), shelfMap()]);
   if (!node) notFound();
 
   // A workspace root has a shelf of its own and that is its address; two URLs

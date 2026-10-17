@@ -70,6 +70,23 @@ const nextConfig: NextConfig = {
       // is the same word in both. Not permanent, so the address can be
       // reclaimed without fighting browser caches.
       { source: "/search", destination: "/assistant", permanent: false },
+      // The books shelf once took the workspace as a query (`?ws=`). It was
+      // read by the page itself, which made `/books` render on the server for
+      // every visit; answered here instead, the page can be prerendered. The
+      // query string carries over, so `?ws=translations&language=kn` still
+      // lands on the Kannada chip. Not permanent, like the redirect above.
+      {
+        source: "/books",
+        has: [{ type: "query", key: "ws", value: "translations" }],
+        destination: "/translations",
+        permanent: false,
+      },
+      {
+        source: "/books",
+        has: [{ type: "query", key: "ws", value: "resources" }],
+        destination: "/resources",
+        permanent: false,
+      },
     ];
   },
 };

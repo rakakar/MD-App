@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { CoverTile } from "@/components/shelf/CoverTile";
-import { EmptyState, FilterChips } from "@/components/ui";
 import { getBookGenres, getBooks } from "@/lib/api";
 import { genreLabel } from "@/lib/labels";
-import { contentLang } from "@/lib/script";
 import type { BookGenre, BookSummary } from "@/lib/types";
+import { ShelfGrid, type ShelfAxis, type ShelfChip } from "./ShelfGrid";
+
+export { ShelfCard } from "./ShelfGrid";
+export type { ShelfAxis } from "./ShelfGrid";
 
 /**
  * The books shelf for Originals and Translations.
@@ -15,158 +15,39 @@ import type { BookGenre, BookSummary } from "@/lib/types";
  * **language**. They share the chip presentation and nothing else; a genre
  * chip never appears on Translations, and Resources — a file library — has no
  * business on this page at all.
+ *
+ * This half fetches — the chips and the whole shelf, never a filtered one —
+ * and `ShelfGrid` applies the chip from the URL in the browser. That split is
+ * what lets the pages using it be prerendered; see `ShelfGrid`.
  */
-export type ShelfAxis = "genre" | "language";
-
 interface ShelfProps {
   /** the workspace this shelf browses; its code is the ?workspace= value (§10) */
   workspace: "originals" | "translations";
   axis: ShelfAxis;
   /** route the chips link back to, e.g. "/books" or "/translations" */
   basePath: string;
-  /** query params to carry through every chip link (e.g. ws=translations) */
+  /** query params to carry through every chip link */
   carry?: Record<string, string>;
-  /** the selected chip value, from the URL */
-  selected?: string;
 }
 
-function href(basePath: string, carry: Record<string, string>, extra?: [string, string]) {
-  const p = new URLSearchParams(carry);
-  if (extra) p.set(extra[0], extra[1]);
-  const s = p.toString();
-  return s ? `${basePath}?${s}` : basePath;
-}
-
-export async function BookShelf({
-  workspace,
-  axis,
-  basePath,
-  carry = {},
-  selected,
-}: ShelfProps) {
-  const [options, books] = await (axis === "genre"
-    ? genreShelf(selected)
-    : languageShelf(selected));
-
+export async function BookShelf({ workspace, axis, basePath, carry = {} }: ShelfProps) {
+  const [options, books] = await (axis === "genre" ? genreShelf() : languageShelf());
   return (
-    <>
-      <FilterChips
-        label={axis === "genre" ? "Filter by genre" : "Filter by language"}
-        allHref={href(basePath, carry)}
-        active={selected}
-        options={options.map((o) => ({
-          ...o,
-          href: href(basePath, carry, [axis, o.value]),
-        }))}
-      />
-
-      {books.length > 0 ? (
-        // 2-up covers (design 1B), not full-width rows. On a shelf, the cover
-        // is how a book is recognised and the fastest thing to scan; the rows
-        // this replaced spent most of their width on an author repeated
-        // identically down the page.
-        <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {books.map((b) => (
-            <li key={b.code}>
-              <ShelfCard book={b} />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="mt-5">
-          <EmptyState
-            title={workspace === "translations" ? "No translations yet" : "Nothing here yet"}
-            hint={
-              selected
-                ? "Nothing published under this filter yet."
-                : "Books appear here as they are published."
-            }
-          />
-        </div>
-      )}
-    </>
+    <ShelfGrid
+      workspace={workspace}
+      axis={axis}
+      basePath={basePath}
+      carry={carry}
+      options={options}
+      books={books}
+    />
   );
 }
 
-/**
- * One cover card on the shelf (design 1B).
- *
- * A translation keeps its translator on the card. `author` stays A. Nagraj on
- * a translation — the words are his, the rendering is not — so a card showing
- * only the author would credit him with a student's English.
- *
- * Exported because a book filed on another shelf is the same object: a
- * workspace is a shelf, not a treatment (PRD v2 §5.0.1), so a book under
- * Resources is still a book and must not look like a second kind of card.
- */
-export function ShelfCard({ book }: { book: BookSummary }) {
-  return (
-    // No card around the cover, as the finished comps draw it. A cover is
-    // already a rectangle with a border and a printed title on it; framing it
-    // in a second bordered rectangle boxed a box, and cost the cover itself the
-    // width — which on a two-up phone grid is the only thing being scanned.
-    <Link
-      href={`/books/${encodeURIComponent(book.code)}`}
-      // gap-1 with the title carrying its own mt-1.5: the cover still gets its
-      // 10px of air, and the title and its page count close from 8px to 4px.
-      // They are one caption — a title and the size of the thing it names —
-      // and at 8px apart under a 2-line Devanagari title they read as two.
-      className="group flex h-full flex-col gap-1 rounded-card"
-    >
-      <CoverTile book={book} size="grid" />
-      <span
-        lang="hi"
-        className="hi hi-tight mt-1.5 line-clamp-2 text-title font-semibold group-hover:underline"
-      >
-        {book.title_hi}
-      </span>
-      {/* Said on the shelf, not only on the book's own page: a reader who taps
-          a cover expecting the reader and gets a scanned PDF has been misled
-          by the card, and the fact is one word long. */}
-      {book.is_pdf_only && (
-        <span className="-mt-0.5 block text-xs font-bold uppercase tracking-wide text-ink-soft">
-          PDF
-        </span>
-      )}
-      {/* The language was hardcoded `lang="hi"` with the Devanagari class on
-          it, which set the word "English" in Tiro Devanagari Hindi — a book
-          face with no business rendering Latin — and carried that face's 1.85
-          leading with it. On a 13px line whose own leading is 18px, one inline
-          span at 24px pushes the whole line box out by six, which is where the
-          gap under this row came from: not the flex gap, but a Devanagari
-          measure applied to an English word.
-
-          Script-detected now, like every other content string in the app. The
-          Kannada labels resolve the same way — `scriptOf` tests for Devanagari
-          specifically, and Tiro has no Kannada glyphs to offer them anyway.
-          `hi-tight` rides along for the day a label really is Devanagari, so
-          that one cannot reinflate the row either. */}
-      <span className="mt-auto block text-xs font-medium text-ink-soft">
-        {book.translation_of && book.language_label ? (
-          <span
-            {...contentLang(book.language_label)}
-            className={`${contentLang(book.language_label).className} hi-tight`}
-          >
-            {book.language_label} ·{" "}
-          </span>
-        ) : null}
-        {book.page_count ? `${book.page_count} pages` : book.author}
-      </span>
-      {book.translation_of && book.translator && (
-        <span className="-mt-0.5 block truncate text-xs text-ink-soft">
-          Translator: {book.translator}
-        </span>
-      )}
-    </Link>
-  );
-}
-
-type Chip = { value: string; label: string };
-
-async function genreShelf(selected?: string): Promise<[Chip[], BookSummary[]]> {
+async function genreShelf(): Promise<[ShelfChip[], BookSummary[]]> {
   const [genres, books] = await Promise.all([
     getBookGenres().catch(() => [] as BookGenre[]),
-    getBooks({ workspace: "originals", genre: selected }).catch(() => [] as BookSummary[]),
+    getBooks({ workspace: "originals" }).catch(() => [] as BookSummary[]),
   ]);
   return [
     genres
@@ -183,18 +64,11 @@ async function genreShelf(selected?: string): Promise<[Chip[], BookSummary[]]> {
   ];
 }
 
-async function languageShelf(selected?: string): Promise<[Chip[], BookSummary[]]> {
+async function languageShelf(): Promise<[ShelfChip[], BookSummary[]]> {
   // Languages are not a table of their own — the chips are whichever languages
   // the published translations are actually in, so a first Tamil translation
   // brings its own chip with it.
-  const [all, filtered] = await Promise.all([
-    getBooks({ workspace: "translations" }).catch(() => [] as BookSummary[]),
-    selected
-      ? getBooks({ workspace: "translations", language: selected }).catch(
-          () => [] as BookSummary[]
-        )
-      : null,
-  ]);
+  const all = await getBooks({ workspace: "translations" }).catch(() => [] as BookSummary[]);
 
   const byCode = new Map<string, string>();
   for (const b of all) {
@@ -205,6 +79,6 @@ async function languageShelf(selected?: string): Promise<[Chip[], BookSummary[]]
     [...byCode].map(([value, label]) => ({ value, label })).sort((a, b) =>
       a.label.localeCompare(b.label)
     ),
-    filtered ?? all,
+    all,
   ];
 }
