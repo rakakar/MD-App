@@ -12,6 +12,21 @@ const OFFLINE_URL = "/offline";
    caches, and 70 MB a reader chose to download must survive a deploy. */
 const AUDIO_CACHE = "md-audio-v1";
 
+/* How long each cache may grow, and how long a page may keep a reader waiting.
+ *
+ * Without limits both caches only ever grew. Every deploy ships a new set of
+ * hashed chunks (~1 MB), this worker cached each set as it was asked for, and
+ * nothing removed the last one — VERSION is bumped by hand, so months of
+ * builds piled up under one name. Every page visited was kept the same way,
+ * up to ~600 KB of HTML for a long chapter. On iOS, a site that holds that
+ * much is the one the system clears under storage pressure, and it clears all
+ * of it: the downloaded books and saved audio go with the build debris. */
+const STATIC_MAX_AGE = 30 * 24 * 3600 * 1000; // unused this long → removed
+const STATIC_RESTAMP = 7 * 24 * 3600 * 1000; // in use → re-stamped about weekly
+const STAMP = "x-md-cached-at";
+const PAGE_LIMIT = 120; // pages kept for offline, least recently visited go first
+const NAV_TIMEOUT = 4000; // ms before a cached page is shown instead of waiting
+
 self.addEventListener("install", (event) => {
   // Deliberately no skipWaiting() here. Activating under a live page swaps the
   // asset caches beneath a reader that is mid-chapter, and its already-loaded
@@ -117,7 +132,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // immutable build assets + fonts: cache-first.
+  // immutable build assets + fonts: cache-first, stamped so that a chunk no
+  // build has asked for in a month can be told apart from one in use.
   //
   // `/brand/` is in here for the app mark. It used to be an inline SVG, so it
   // was offline by construction; the designer's real logo is a file, and
@@ -131,32 +147,97 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       caches.open(STATIC_CACHE).then(async (cache) => {
         const hit = await cache.match(req);
-        if (hit) return hit;
+        if (hit) {
+          // Still in use: move its stamp forward, at most once a week, so the
+          // sweep below never takes a chunk the current build depends on.
+          if (Date.now() - stampOf(hit) > STATIC_RESTAMP) {
+            event.waitUntil(cache.put(req, stamped(hit.clone())).catch(() => undefined));
+          }
+          return hit;
+        }
         const res = await fetch(req);
-        if (res.ok) cache.put(req, res.clone());
+        if (res.ok) event.waitUntil(cache.put(req, stamped(res.clone())).catch(() => undefined));
         return res;
       })
     );
     return;
   }
 
-  // navigations: network-first, fall back to cached page, then offline shell
+  // navigations: network-first, fall back to cached page, then offline shell.
+  //
+  // With a deadline when there is something to fall back to. A connection
+  // that is up but barely moving — a train, a weak signal indoors — never
+  // *fails*; it just takes thirty seconds, and network-first meant a chapter
+  // already on the device waited the whole thirty. After NAV_TIMEOUT the saved
+  // copy is shown and the network answer, when it comes, refreshes the cache
+  // for next time. A page never visited has nothing to show early, so it waits
+  // as before.
   if (req.mode === "navigate") {
     event.respondWith(
       (async () => {
         const cache = await caches.open(PAGE_CACHE);
-        try {
-          const res = await fetch(req);
-          if (res.ok) cache.put(req, res.clone());
+        const network = fetch(req).then((res) => {
+          if (res.ok) {
+            event.waitUntil(
+              cache
+                .put(req, res.clone())
+                .then(() => tidy(cache))
+                .catch(() => undefined)
+            );
+          }
           return res;
+        });
+        event.waitUntil(network.catch(() => undefined));
+        const saved = cache.match(req, { ignoreSearch: true });
+        const late = new Promise((resolve) => setTimeout(resolve, NAV_TIMEOUT, "late"));
+        try {
+          const first = await Promise.race([network, late]);
+          if (first !== "late") return first;
+          const hit = await saved;
+          return hit || (await network);
         } catch {
-          const hit = await cache.match(req, { ignoreSearch: true });
+          const hit = await saved;
           return hit || (await cache.match(OFFLINE_URL));
         }
       })()
     );
   }
 });
+
+/** A copy of a response carrying the time it was cached. */
+function stamped(res) {
+  const headers = new Headers(res.headers);
+  headers.set(STAMP, String(Date.now()));
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+/** When an entry was cached; 0 for one cached before stamps existed. */
+function stampOf(res) {
+  return Number(res.headers.get(STAMP)) || 0;
+}
+
+/* Keeping both caches in bounds. Run only after a page has just arrived from
+ * the network — online, by definition — so anything swept that turns out to
+ * be wanted is fetched again straight away rather than missed offline.
+ * Throttled to once an hour per worker; it walks every entry. */
+let tidiedAt = 0;
+async function tidy(pages) {
+  if (Date.now() - tidiedAt < 3600 * 1000) return;
+  tidiedAt = Date.now();
+
+  // Pages: a put moves an entry to the end of the list, so the front is
+  // whatever was visited longest ago. The offline shell is never counted out.
+  const keys = (await pages.keys()).filter((k) => new URL(k.url).pathname !== OFFLINE_URL);
+  for (const k of keys.slice(0, Math.max(0, keys.length - PAGE_LIMIT))) await pages.delete(k);
+
+  // Build assets: whatever no page has asked for in STATIC_MAX_AGE.
+  const statics = await caches.open(STATIC_CACHE);
+  const cutoff = Date.now() - STATIC_MAX_AGE;
+  for (const k of await statics.keys()) {
+    const hit = await statics.match(k);
+    if (hit && stampOf(hit) < cutoff) await statics.delete(k);
+  }
+}
 
 /* ---- Push lives in public/firebase-messaging-sw.js ----
  *
