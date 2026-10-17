@@ -47,7 +47,16 @@ export function ContinueReading({
   layout = "rail",
   workspace = "originals",
   className = "mt-5 first:mt-0",
+  books,
 }: {
+  /**
+   * The workspace's shelf, when the page already fetched it on the server
+   * (Home does, for its Books rail). Passed in, the cards draw from it at
+   * hydration; left out, they wait for a `books/` request of their own — one
+   * BE round trip (~0.65s) before anything shows. Pass only the whole shelf
+   * for `workspace`: a filtered list would drop resume cards.
+   */
+  books?: BookSummary[];
   /**
    * The section's own spacing. Home replaces it: there the rail is one cell of
    * a grid whose gap already sets the rhythm, and a margin on top doubled it.
@@ -112,9 +121,9 @@ export function ContinueReading({
     //
     // This same call also covers titles, covers and page counts for every
     // surviving row.
-    const shelf = await getBooks(
-      workspace === "all" ? undefined : { workspace }
-    ).catch(() => []);
+    const shelf =
+      books ??
+      (await getBooks(workspace === "all" ? undefined : { workspace }).catch(() => []));
     const byCode = new Map(shelf.map((b) => [b.code, b]));
     const rows = notLibraryDocs.filter((p) => byCode.has(p.book_code)).slice(0, limit);
     if (rows.length === 0) {
@@ -169,12 +178,20 @@ export function ContinueReading({
       })
     );
     setCards(named.filter((c): c is ResumeCard => c !== null));
-  }, [limit, workspace]);
+  }, [limit, workspace, books]);
+
+  // Two effects, not one. The cards come from this device's own progress, so
+  // they draw at once; only the sync waits for the session. Gating the first
+  // draw on auth as well put a `/me/` round trip in front of it — with the
+  // shelf and book requests queued behind that, the rail arrived about two
+  // seconds after the page and pushed the Books rail down when it did.
+  useEffect(() => {
+    void render();
+  }, [render]);
 
   useEffect(() => {
-    if (loading) return;
-    void render();
-    if (user) void syncPersonal().then(render);
+    if (loading || !user) return;
+    void syncPersonal().then(render);
   }, [user, loading, render]);
 
   if (cards.length === 0) return null;

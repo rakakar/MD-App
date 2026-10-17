@@ -110,7 +110,12 @@ export default async function OriginalsHome() {
         {/* Rails at every width, now that it has the page's full width on
             desktop. `className` replaces the section's own top margin, which
             doubled the grid's gap. */}
-        <ContinueReading className="lg:col-span-3" />
+        <ContinueReading
+          className="lg:col-span-3"
+          // The rail reuses the shelf fetched above rather than asking again;
+          // an empty list means that fetch failed, so let it try its own.
+          books={books.length > 0 ? books : undefined}
+        />
 
         <section className="lg:col-span-3">
           <SectionHeading

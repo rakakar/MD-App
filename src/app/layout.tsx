@@ -19,11 +19,20 @@ const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
 });
 
+// Not preloaded. Every preloaded face is fetched at high priority on every
+// route, ahead of the page's own scripts, and this one is display titles only
+// — the two files (upright and italic) were ~120 KB of the ~546 KB of fonts a
+// first visit fetched before anything else, on routes like the reader that
+// never draw it. It still loads wherever a title asks for it, and the
+// metric-matched fallback next/font generates keeps the swap from moving
+// anything. Mukta and Tiro stay preloaded: they set body text, where a late
+// face reflows whole paragraphs.
 const newsreader = Newsreader({
   variable: "--font-newsreader",
   subsets: ["latin"],
   style: ["normal", "italic"],
   display: "swap",
+  preload: false,
 });
 
 // Tiro ships a single 400 weight; Devanagari headings that ask for 600/700
