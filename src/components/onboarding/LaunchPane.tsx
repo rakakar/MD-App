@@ -127,7 +127,7 @@ export function LaunchPane({
             aria-hidden="true"
             width={440}
             height={506}
-            /* The watercolour portrait (`nagraj-portrait.jpeg`, the same one the
+            /* The watercolour portrait (`nagraj-portrait.webp`, the same one the
                series covers wear), at 440 wide. It is already close to the
                tile's own 4:5, so a centred crop only trims its edges. */
             className="h-[5.175rem] w-[4.1625rem] shrink-0 rounded-tile object-cover object-[50%_30%] lg:h-[5.75rem] lg:w-[4.625rem]"

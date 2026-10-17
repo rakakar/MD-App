@@ -65,10 +65,22 @@ export default async function ChapterPage({
   const chapterNumber = Number(rawChapter);
   if (!Number.isInteger(chapterNumber)) notFound();
 
+  // Both requests at once. They do not depend on each other — the chapter's
+  // address is already in the URL — and asked one after the other they cost
+  // two round trips to the BE (~0.65s each) on every ISR render, which is
+  // the first reader of a chapter and every regeneration after it. The
+  // chapter's own failure is held until the book is known to exist, so a
+  // missing book still 404s for the right reason.
+  const [bookResult, chapterResult] = await Promise.allSettled([
+    getBook(code),
+    getChapter(code, chapterNumber),
+  ]);
+
   let book: BookDetail;
-  try {
-    book = await getBook(code);
-  } catch (e) {
+  if (bookResult.status === "fulfilled") {
+    book = bookResult.value;
+  } else {
+    const e = bookResult.reason;
     if (e instanceof ApiError && e.status === 404) notFound();
     throw e;
   }
@@ -86,9 +98,10 @@ export default async function ChapterPage({
   // fail-soft: if the chapter fetch fails (BE hiccup), the client Reader
   // falls back to the IndexedDB copy — offline reading path (PRD §5)
   let chapter: ChapterPayload | null = null;
-  try {
-    chapter = await getChapter(code, chapterNumber);
-  } catch (e) {
+  if (chapterResult.status === "fulfilled") {
+    chapter = withoutPlainRich(chapterResult.value);
+  } else {
+    const e = chapterResult.reason;
     if (e instanceof ApiError && e.status === 404) notFound();
   }
 
@@ -131,4 +144,28 @@ export default async function ChapterPage({
       />
     </>
   );
+}
+
+/**
+ * The chapter as the page sends it to the reader: `text_rich` only where it
+ * carries formatting.
+ *
+ * The BE sends both fields on every paragraph, and on almost every paragraph
+ * they are the same words — `text_rich` differs only where the printed book
+ * had bold or italic. The reader ignores a `text_rich` with no `<b>`/`<i>`
+ * (see `formatRuns`) and treats a missing one the same way, so the identical
+ * copies were dead weight, and heavy: everything passed to the reader is
+ * serialized into the page a second time, after the HTML, and on MVD ch. 4
+ * the duplicate text was ~120 KB of the ~600 KB page.
+ */
+function withoutPlainRich(chapter: ChapterPayload): ChapterPayload {
+  return {
+    ...chapter,
+    paragraphs: chapter.paragraphs.map((p) => {
+      if (!p.text_rich || p.text_rich.includes("<b>") || p.text_rich.includes("<i>")) return p;
+      const rest = { ...p };
+      delete rest.text_rich;
+      return rest;
+    }),
+  };
 }

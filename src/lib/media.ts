@@ -16,11 +16,17 @@
  * `<img>` tags that use it fall back to their kind glyph if the file is not
  * there, which is what makes it safe to reference before it is added.
  */
-export const AUDIO_POSTER = "/audio-cover.jpg";
+export const AUDIO_POSTER = "/audio-cover.webp";
 
 /**
  * The illustrated portrait of Shri A. Nagraj (designer's phone comps, 8 Oct
  * 2026): what a series of recordings with no cover of its own wears in its
  * hero, on Originals.
+ *
+ * Both files are sized for where they are drawn: the poster at 480 wide (a row
+ * thumbnail, 44px tall), the portrait at 640 (a hero tile 160px wide at 3x).
+ * The originals were 350 KB and 376 KB at nearly twice that, and every visit
+ * to a shelf paid for pixels nobody saw. Re-export from the designer's master
+ * at these widths rather than dropping a full-size file back in.
  */
-export const SERIES_PORTRAIT = "/nagraj-portrait.jpeg";
+export const SERIES_PORTRAIT = "/nagraj-portrait.webp";
