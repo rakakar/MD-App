@@ -1,5 +1,5 @@
 import { getBookGenres, getBooks } from "@/lib/api";
-import { genreLabel } from "@/lib/labels";
+import { genreLabel, genreRank } from "@/lib/labels";
 import type { BookGenre, BookSummary } from "@/lib/types";
 import { ShelfGrid, type ShelfAxis, type ShelfChip } from "./ShelfGrid";
 
@@ -55,7 +55,10 @@ async function genreShelf(): Promise<[ShelfChip[], BookSummary[]]> {
       // and has to come back. `book_count` already counts published books
       // only, and counts a translation through its original.
       .filter((g) => g.book_count > 0)
-      .sort((a, b) => a.ordering - b.ordering)
+      // The shelf's reading order — Parichay, Darshan, Vaad, Shastra — so the
+      // chips read in the order the covers below them do. The API's own
+      // `ordering` puts Darshan first; it only breaks ties among the rest.
+      .sort((a, b) => genreRank(a.code) - genreRank(b.code) || a.ordering - b.ordering)
       // The API's `name` is English now (§11.1); the Hindi lives in the FE.
       // Every row still renders — a genre added after we shipped keeps its
       // English name rather than dropping off the shelf.
