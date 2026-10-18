@@ -32,7 +32,9 @@ export function PlayAllButton() {
       type="button"
       onClick={() => window.dispatchEvent(new Event(PLAY_ALL))}
       className="inline-flex min-h-11 items-center gap-2 rounded-control bg-white px-4 text-sm font-semibold transition-opacity hover:opacity-90"
-      style={{ color: "var(--ws-ink)" }}
+      // the raw hue, not --ws-ink: the chip is white in every theme, and the
+      // dark lift (meant for a near-black ground) made this 2.8:1 on it
+      style={{ color: "var(--ws-color)" }}
     >
       <PlayIcon className="h-3.5 w-3.5" />
       Play all

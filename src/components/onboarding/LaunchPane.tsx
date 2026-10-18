@@ -184,7 +184,7 @@ export function LaunchPane({
                button in the same box, and at zero opacity it was still the
                element under the cursor — the desktop CTA did nothing at all
                until this line existed. */
-            className={`pointer-events-none absolute inset-0 hidden items-center gap-2.5 text-sm text-muted transition-opacity duration-500 lg:flex ${
+            className={`pointer-events-none absolute inset-0 hidden items-center gap-2.5 text-sm text-ink-soft transition-opacity duration-500 lg:flex ${
               started ? "opacity-100 delay-200" : "opacity-0"
             }`}
           >

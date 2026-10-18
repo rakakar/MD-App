@@ -86,7 +86,7 @@ export function EventPoster({
         onClick={save}
         disabled={busy}
         aria-label="Download poster"
-        className="absolute bottom-3 end-3 flex h-12 w-12 items-center justify-center rounded-full bg-ink/75 text-on-accent shadow-raised backdrop-blur transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="absolute bottom-3 end-3 flex h-12 w-12 items-center justify-center rounded-full bg-overlay/75 text-on-accent shadow-raised backdrop-blur transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         <DownloadIcon className="h-5 w-5" />
       </button>

@@ -37,6 +37,10 @@
   --color-accent: #c8621a;
   --color-accent-deep: #a64e12;
   --color-accent-tint: #fdf3ea;
+  /* The accent as *text*. `accent-deep` is also a fill under white type, so
+     it cannot lift for dark without breaking those buttons; this one can.
+     Same value as `accent-deep` on paper and sepia. */
+  --color-accent-ink: #a64e12;
 
   /* Warm ink & paper neutrals (spec 6A). "Muted" #9C9187 is 2.98:1 on paper
      — decoration only, never text; secondary text uses Body.
@@ -467,6 +471,15 @@
 
   --color-inset: #262220;
 
+  /* The accent's text and tint had no dark values at all. The tint stayed the
+     light theme's pale peach — a lit chip on a near-black page, carrying the
+     lifted workspace ink at 2.5:1 — and the text stayed the raw deep hue at
+     2.9:1 on the sutra card. The ink is the same 55% lift the workspace inks
+     take (6.0:1 on the sutra card, 4.8:1 on its Hide chip); the tint is a warm
+     step above the card that the lifted inks clear at 5.5–5.9:1. */
+  --color-accent-ink: #c4916b;
+  --color-accent-tint: #2e2119;
+
   /* Inverted rather than dimmed: on a near-black card the pale tiles would be
      four lamps, and the deep hues the glyphs are drawn in would vanish into
      them. So the tile takes the hue and the glyph takes the light — 5.96 /
@@ -525,6 +538,8 @@
   --color-danger: #b3261e;
 
   --color-inset: #f7f3ec;
+  --color-accent-ink: #a64e12;
+  --color-accent-tint: #fdf3ea;
 
   --color-kind-doc: #e6e1f5;
   --color-kind-doc-ink: #5b4f9c;

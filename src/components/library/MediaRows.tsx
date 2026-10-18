@@ -93,7 +93,7 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
             style={
               item.active
                 ? { background: "var(--ws-color)", color: "white" }
-                : { background: "rgb(255 255 255 / 0.92)", color: "var(--ws-ink)" }
+                : { background: "rgb(255 255 255 / 0.92)", color: "var(--ws-color)" }
             }
           >
             <PlayIcon className="ms-0.5 h-3.5 w-3.5" />
@@ -182,7 +182,7 @@ function GridCard({ item }: { item: MediaItem }) {
       <span className="relative block aspect-video overflow-hidden rounded-card bg-black">
         {item.art}
         <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90" style={{ color: "var(--ws-ink)" }}>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90" style={{ color: "var(--ws-color)" }}>
             <PlayIcon className="ms-0.5 h-4.5 w-4.5" />
           </span>
         </span>

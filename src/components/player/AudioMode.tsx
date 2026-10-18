@@ -701,7 +701,7 @@ function DesktopAudioMode({
 
         <div className="min-h-0 overflow-y-auto overscroll-contain px-12">
           <div className="max-w-3xl py-10">
-            <p className="mb-6 text-xs text-audio-ink/45">Click any paragraph to listen from there</p>
+            <p className="mb-6 text-xs text-audio-ink/55">Click any paragraph to listen from there</p>
             {lines.map((p, i) => {
               const on = p.sequence === activeSeq;
               const page = pages[i];
@@ -709,7 +709,7 @@ function DesktopAudioMode({
               return (
                 <div key={p.canonical_ref}>
                   {newPage && page && (
-                    <p className="hi-tight mb-2 mt-6 text-xs text-audio-ink/40 first:mt-0">
+                    <p className="hi-tight mb-2 mt-6 text-xs text-audio-ink/55 first:mt-0">
                       {pageLabel(page)}
                     </p>
                   )}
@@ -722,7 +722,7 @@ function DesktopAudioMode({
                     className={`hi mb-2 block w-full rounded-r-card border-l-2 px-4 py-3 text-start text-lg leading-[1.85] transition-colors ${
                       on
                         ? "border-audio-accent text-audio-ink"
-                        : "border-transparent text-audio-ink/50 hover:text-audio-ink/80"
+                        : "border-transparent text-audio-ink/55 hover:text-audio-ink/80"
                     }`}
                     style={on ? { background: "color-mix(in srgb, var(--color-audio-accent) 14%, transparent)" } : undefined}
                   >

@@ -693,7 +693,7 @@ function Header({
                   ? {
                       borderColor: "color-mix(in srgb, var(--color-accent-deep) 45%, var(--color-rule))",
                       background: "color-mix(in srgb, var(--color-accent) 10%, var(--color-card))",
-                      color: "var(--color-accent-deep)",
+                      color: "var(--color-accent-ink)",
                     }
                   : { borderColor: "var(--color-rule)" }
               }

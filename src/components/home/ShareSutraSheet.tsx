@@ -243,7 +243,7 @@ export function ShareSutraSheet({
             />
           ) : (
             <div
-              className="flex h-full w-full items-center justify-center text-sm text-muted"
+              className="flex h-full w-full items-center justify-center text-sm text-ink-soft"
               role="status"
             >
               {failed ? "Could not draw the card" : "Preparing…"}

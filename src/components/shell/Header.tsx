@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
@@ -108,16 +108,20 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           aria-checked={active}
           aria-label={`${ws.name} — ${ws.tagline}`}
           onClick={() => choose(id)}
+          // A scope of its own, so the check below can take this row's
+          // `--ws-ink` — lifted in dark, where the raw hue is 2.9:1.
+          data-ws={id}
           className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3 transition-colors active:bg-ink/[0.03]"
-          style={
-            active
+          style={{
+            ...({ "--ws-color": ws.color } as CSSProperties),
+            ...(active
               ? {
                   borderColor: ws.color,
                   boxShadow: `inset 0 0 0 1px ${ws.color}`,
                   background: `color-mix(in srgb, ${ws.color} 7%, var(--color-card))`,
                 }
-              : { borderColor: "var(--color-rule)" }
-          }
+              : { borderColor: "var(--color-rule)" }),
+          }}
         >
           <span
             aria-hidden
@@ -137,7 +141,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           </span>
 
           {active && (
-            <span className="shrink-0" style={{ color: ws.color }} aria-hidden>
+            <span className="shrink-0" style={{ color: "var(--ws-ink)" }} aria-hidden>
               <CheckIcon className="h-4.5 w-4.5" />
             </span>
           )}
@@ -158,14 +162,14 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           aria-selected={active}
           aria-label={`${ws.name} — ${ws.tagline}`}
           onClick={() => choose(id)}
+          data-ws={id}
           className={`flex items-center gap-2.5 rounded-control px-2.5 py-2.5 text-xs transition-colors ${
             active ? "font-semibold" : "font-medium text-ink-soft hover:bg-canvas/60"
           }`}
-          style={
-            active
-              ? { background: `color-mix(in srgb, ${ws.color} 8%, var(--color-card))` }
-              : undefined
-          }
+          style={{
+            ...({ "--ws-color": ws.color } as CSSProperties),
+            ...(active && { background: `color-mix(in srgb, ${ws.color} 8%, var(--color-card))` }),
+          }}
         >
           <span
             className="h-2 w-2 shrink-0 rounded-full"
@@ -174,7 +178,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
           />
           <span className="flex-1 truncate">{ws.name}</span>
           {active && (
-            <span style={{ color: ws.color }} aria-hidden>
+            <span style={{ color: "var(--ws-ink)" }} aria-hidden>
               <CheckIcon className="h-3.5 w-3.5" />
             </span>
           )}

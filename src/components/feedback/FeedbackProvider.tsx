@@ -303,7 +303,7 @@ function FeedbackSheet({
               />
             )}
 
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-2 text-sm text-danger">{error}</p>}
 
             <div className="mt-3 flex items-center justify-between gap-3">
               <div>
@@ -487,7 +487,7 @@ function FeedbackDialog({
               />
             )}
 
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-2 text-sm text-danger">{error}</p>}
 
             {fileInput}
             <button

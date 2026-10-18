@@ -253,7 +253,7 @@ export function ResearchAnswer({
     <div className="flex flex-col gap-5">
       {(answer.mode === "deep" || deep) && (
         <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-semibold" style={{ color: "var(--color-accent-deep)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--color-accent-ink)" }}>
             Deep research
           </p>
           {/* How long the progress card's clock ran. What was read is the
@@ -307,7 +307,7 @@ export function ResearchAnswer({
             className="flex h-8 w-8 items-center justify-center rounded-lg"
             style={{
               background: "color-mix(in srgb, var(--color-accent) 14%, var(--color-card))",
-              color: "var(--color-accent-deep)",
+              color: "var(--color-accent-ink)",
             }}
           >
             ✦
@@ -415,7 +415,7 @@ export function ResearchAnswer({
             style={{
               borderColor: "color-mix(in srgb, var(--color-accent) 40%, transparent)",
               background: "color-mix(in srgb, var(--color-accent) 10%, var(--color-card))",
-              color: "var(--color-accent-deep)",
+              color: "var(--color-accent-ink)",
             }}
           >
             <span aria-hidden>✦</span> {answer.status === "not_found" ? "Try Deep research" : "Deep research"}
@@ -572,7 +572,7 @@ function CiteBadge({ n, onClick }: { n: number; onClick?: () => void }) {
   const style = {
     borderColor: "color-mix(in srgb, var(--color-accent) 35%, transparent)",
     background: "color-mix(in srgb, var(--color-accent) 12%, var(--color-card))",
-    color: "var(--color-accent-deep)",
+    color: "var(--color-accent-ink)",
   };
   if (!onClick)
     return (

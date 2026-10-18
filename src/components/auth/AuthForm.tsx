@@ -255,7 +255,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               type="submit"
               disabled={!ready || busy}
               className={`mt-2 min-h-14 w-full rounded-tile text-base font-bold transition-colors ${
-                ready ? "text-on-accent hover:opacity-90 disabled:opacity-80" : "bg-canvas text-muted"
+                ready ? "text-on-accent hover:opacity-90 disabled:opacity-80" : "bg-canvas text-ink-soft"
               }`}
               style={ready ? { background: "var(--ws-color)" } : undefined}
             >

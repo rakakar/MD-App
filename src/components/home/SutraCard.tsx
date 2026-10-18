@@ -183,12 +183,12 @@ export function SutraCard({
       }}
     >
       <div className="flex items-center gap-1">
-        <span aria-hidden className="me-0.5" style={{ color: "var(--color-accent-deep)" }}>
+        <span aria-hidden className="me-0.5" style={{ color: "var(--color-accent-ink)" }}>
           <SunIcon />
         </span>
         <figcaption
           className="min-w-0 truncate text-xs font-bold uppercase tracking-[0.09em]"
-          style={{ color: "var(--color-accent-deep)" }}
+          style={{ color: "var(--color-accent-ink)" }}
         >
           {browsing ? SUTRA : `${SUTRA} of the day`}
         </figcaption>
@@ -229,7 +229,7 @@ export function SutraCard({
               // pill is the width of the wider word in both states and the
               // label row does not shift when it is pressed.
               className="grid rounded-control border border-(--sutra-border) bg-(--sutra-chip) px-2 py-1 text-center text-xs font-semibold transition group-hover:brightness-105"
-              style={{ color: "var(--color-accent-deep)" }}
+              style={{ color: "var(--color-accent-ink)" }}
             >
               <span className="sutra-label-hide [grid-area:1/1]">Hide</span>
               <span className="sutra-label-show [grid-area:1/1]">Show</span>

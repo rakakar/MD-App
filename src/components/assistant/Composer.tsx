@@ -131,7 +131,7 @@ export function Composer({
                       : undefined
                   }
                 >
-                  <span style={{ color: i === hi ? "var(--color-accent-deep)" : "var(--color-ink-soft)" }}>
+                  <span style={{ color: i === hi ? "var(--color-accent-ink)" : "var(--color-ink-soft)" }}>
                     <ArrowGlyph className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1 truncate">
@@ -188,7 +188,7 @@ export function Composer({
                   style={{
                     borderColor: "color-mix(in srgb, var(--color-accent) 30%, transparent)",
                     background: "color-mix(in srgb, var(--color-accent) 14%, var(--color-card))",
-                    color: "var(--color-accent-deep)",
+                    color: "var(--color-accent-ink)",
                   }}
                 >
                   {shownPill}

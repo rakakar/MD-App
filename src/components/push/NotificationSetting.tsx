@@ -84,7 +84,7 @@ export function NotificationSetting() {
             notification settings.
           </p>
         ))}
-      {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-xs text-danger">{error}</p>}
       </div>
     </>
   );

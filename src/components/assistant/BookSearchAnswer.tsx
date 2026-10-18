@@ -426,7 +426,7 @@ function PassageCard({ result, terms }: { result: SearchResult; terms: string[] 
     <li className="rounded-card border border-rule bg-card p-5 shadow-card">
       <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
         {result.book_title && (
-          <span lang="hi" className="hi-note font-semibold" style={{ color: "var(--color-accent-deep)" }}>
+          <span lang="hi" className="hi-note font-semibold" style={{ color: "var(--color-accent-ink)" }}>
             {result.book_title}
           </span>
         )}
@@ -441,7 +441,7 @@ function PassageCard({ result, terms }: { result: SearchResult; terms: string[] 
             href={refToHref(ref)}
             onClick={() => track("search_result_click", { type: result.type })}
             className="inline-flex min-h-11 flex-1 items-center gap-1 text-sm font-semibold"
-            style={{ color: "var(--color-accent-deep)" }}
+            style={{ color: "var(--color-accent-ink)" }}
           >
             Open in reader
             <ChevronRight className="h-4 w-4" />
@@ -470,7 +470,7 @@ function PassageCard({ result, terms }: { result: SearchResult; terms: string[] 
               setSaved(!saved);
             }}
             className="flex h-11 w-11 items-center justify-center rounded-control border border-rule"
-            style={saved ? { color: "var(--color-accent-deep)" } : undefined}
+            style={saved ? { color: "var(--color-accent-ink)" } : undefined}
           >
             <BookmarkIcon filled={saved} className={`h-5 w-5 ${saved ? "" : "text-ink-soft"}`} />
           </button>

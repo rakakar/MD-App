@@ -366,6 +366,20 @@ as a hole punched through to the page.
 A theme is these eight values and nothing else. `[data-theme="sepia"]` and
 `[data-theme="dark"]` each restate exactly this list.
 
+### The app accent — fill, text and tint are three tokens
+
+`accent` / `accent-deep` are **fills** (white type on them passes in every theme).
+`accent-ink` is the accent as **text** — `accent-deep` on paper and sepia, the 55% lift
+toward ink in dark (`#c4916b`, 4.8–6.8:1 on every ground it sits on). `accent-tint` is the
+pale wash behind a chip in light and a warm dark step (`#2e2119`) in dark. Until 18 Oct
+2026 neither had a dark value: the sutra card's label sat at 2.9:1 and every folder's
+count chip was a lit peach pill on a black page. Never put `accent-deep` on text.
+
+The same rule for the workspace hue: on a ground that is white in every theme (a white
+chip over a hero or a thumbnail) the ink is `--ws-color`, not `--ws-ink` — the dark lift
+is for a near-black ground, and on white it falls to 2.8:1. And `ink` is not a fill for
+a button over a photo: it turns near-white in dark. Use `overlay`.
+
 ### Kind accents — five families for seven kinds
 
 | Family | Kinds | Tile / glyph (light) |
