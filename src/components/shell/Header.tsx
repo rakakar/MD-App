@@ -331,6 +331,33 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
   );
 }
 
+/** Who the menu belongs to — name, address and initial, as both menus show them. */
+function identityOf(user: Record<string, unknown>) {
+  const email = (user.email as string | undefined) ?? "";
+  const name =
+    (user.name as string | undefined)?.trim() ||
+    (user.first_name as string | undefined)?.trim() ||
+    email.split("@")[0];
+  return { name, email, initial: (name || email || "?").charAt(0).toUpperCase() };
+}
+
+/** The initial in a circle washed with the workspace hue. */
+function AccountAvatar({ initial, className = "h-9 w-9 text-sm" }: { initial: string; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`relative flex shrink-0 items-center justify-center rounded-full border font-semibold ${className}`}
+      style={{
+        background: "color-mix(in srgb, var(--ws-color) 10%, var(--color-card))",
+        borderColor: "color-mix(in srgb, var(--ws-color) 25%, transparent)",
+        color: "var(--ws-ink)",
+      }}
+    >
+      {initial}
+    </span>
+  );
+}
+
 function AvatarMenu() {
   const { user, loading } = useAuth();
   const { open: openFeedback } = useFeedback();
@@ -368,7 +395,9 @@ function AvatarMenu() {
      five labels on one line. `text-ink-soft` on the glyph and full ink on the
      label: the icon is there to be found at a glance, not to be read. */
   const row =
-    "flex min-h-14 w-full items-center gap-3 rounded-card px-3 text-start text-title font-medium transition-colors active:bg-ink/[.04]";
+    "flex min-h-12 w-full items-center gap-3 rounded-card px-3 text-start text-title font-medium transition-colors active:bg-ink/[.04]";
+  const rule = <div aria-hidden className="mx-3 my-1 h-px bg-rule" />;
+  const me = identityOf(user);
   const glyph = "flex h-5 w-5 shrink-0 items-center justify-center text-ink-soft";
 
   return (
@@ -409,11 +438,25 @@ function AvatarMenu() {
         open={open}
         onClose={() => setOpen(false)}
         title="Account"
-        /* Under the title, not as the first row of the list: standing where a
-           row stands, in a column of things that open, an email address reads
-           as something to tap. */
-        subtitle={user.email as string}
+        /* The desktop menu's header (designer, 19 Oct 2026): the reader's
+           initial, name and address, so the sheet says whose it is. In the
+           heading, not as the first row of the list: standing where a row
+           stands, in a column of things that open, an address reads as
+           something to tap. */
+        heading={
+          <span className="flex items-center gap-3">
+            <AccountAvatar initial={me.initial} className="h-11 w-11 text-base" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate">{me.name}</span>
+              <span className="block truncate text-sm font-normal tracking-normal text-ink-soft">
+                {me.email}
+              </span>
+            </span>
+          </span>
+        }
       >
+        {/* Inset so the glyphs stand on the avatar's edge above them. */}
+        <div className="px-2 pb-2">
         {/* No "My Journey" row. It is a *workspace* — one tap away in the
             switcher that sits in this same bar, with its own tab bar and its
             own colour — and a second door to it from the account menu said
@@ -437,7 +480,7 @@ function AvatarMenu() {
           Notifications
           <UnreadBadge count={unread} className="ms-auto" />
         </Link>
-        <div aria-hidden className="mx-3 my-1 h-px bg-rule" />
+        {rule}
         <Link
           href="/settings"
           onClick={() => {
@@ -475,6 +518,9 @@ function AvatarMenu() {
           </span>
           Display
         </button>
+        {/* Ruled into the same three groups as the desktop menu: what is new,
+            how the app is set, and talking to the people who make it. */}
+        {rule}
         {/* Feedback lives here rather than behind a floating button: this menu
             is on every screen, and a bubble over the text is the one piece of
             chrome a reading app cannot afford. */}
@@ -525,6 +571,7 @@ function AvatarMenu() {
             here that cannot be undone by tapping again. It lives on the
             Settings screen instead, in the Account card beside the address it
             would be signing out of — a deliberate walk rather than a slip. */}
+        </div>
       </Sheet>
 
       {/* Sibling of the account sheet, not a child of it: the account sheet
@@ -606,26 +653,8 @@ export function SidebarAccount() {
     );
   }
 
-  const email = (user.email as string | undefined) ?? "";
-  const name =
-    (user.name as string | undefined)?.trim() ||
-    (user.first_name as string | undefined)?.trim() ||
-    email.split("@")[0];
-  const initial = (name || email || "?").charAt(0).toUpperCase();
-
-  const avatar = (
-    <span
-      aria-hidden
-      className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold"
-      style={{
-        background: "color-mix(in srgb, var(--ws-color) 10%, var(--color-card))",
-        borderColor: "color-mix(in srgb, var(--ws-color) 25%, transparent)",
-        color: "var(--ws-ink)",
-      }}
-    >
-      {initial}
-    </span>
-  );
+  const { name, email, initial } = identityOf(user);
+  const avatar = <AccountAvatar initial={initial} />;
   // The row's avatar wears the dot; the copy inside the open menu does not —
   // there the Notifications row says it with a number.
   const rowAvatar = (
