@@ -9,13 +9,13 @@ import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import {
   LEVELS,
-  PATH_CAVEAT,
   STAGES,
   stageById,
   type Stage,
   type StageTab,
 } from "@/lib/journey";
-import { journeyDocumentHref } from "@/lib/routes";
+import { KindTile } from "@/components/ui";
+import { journeyFolderHref } from "@/lib/routes";
 import { getPrefs } from "@/lib/storage";
 
 /**
@@ -31,8 +31,8 @@ import { getPrefs } from "@/lib/storage";
  * list.
  *
  * **Durations are reassurance, not deadlines.** Every one is phrased "unfolds
- * over", and the source's own caveat — that this is one student's estimate of
- * their own journey — is quoted at the foot. Nothing here is locked and
+ * over", and the foot says the path is one student's estimate of their own
+ * journey. Nothing here is locked and
  * nothing is ticked off: the one mark is "You are here", against the stage
  * the reader themselves declared.
  */
@@ -51,6 +51,9 @@ export default function FullPathPage() {
 }
 
 const TABS: StageTab[] = ["about", "reading", "audio", "video"];
+
+/** "Start here - Study Roadmap", the library folder holding the three guides. */
+const STUDY_GUIDE_FOLDER = 144;
 
 function FullPath() {
   const params = useSearchParams();
@@ -173,21 +176,29 @@ function FullPath() {
             </section>
           ))}
 
-          {/* The source speaking for itself. Without this the durations read
-              as the app's claim about somebody's life. */}
-          <p lang="hi" className="hi hi-note mt-10 text-sm leading-relaxed text-ink-soft">
-            {PATH_CAVEAT}
-          </p>
-          <p className="mt-1 text-xs text-ink-soft">
+          {/* The source's own framing, in English only — the Hindi quotation
+              it glossed is gone (designer's call, 19 Oct 2026). Without this
+              the durations read as the app's claim about somebody's life. */}
+          <p className="mt-10 text-base italic leading-relaxed text-ink-soft">
             The path as one student estimates it — not doctrine.
           </p>
+
+          {/* The guides this screen is drawn from — the three PDFs of the
+              library's study-roadmap folder, opened inside My Journey. A box
+              rather than a text link: it is a destination with things in it,
+              drawn like the stage resources above. */}
           <Link
-            href={journeyDocumentHref(144, 532)}
-            className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold"
-            style={{ color: "var(--ws-ink)" }}
+            href={journeyFolderHref(STUDY_GUIDE_FOLDER)}
+            className="mt-4 flex items-center gap-4 rounded-card border border-rule bg-card p-4 transition-shadow hover:shadow-md"
           >
-            Read the full study guide (PDF)
-            <ChevronRight className="h-4 w-4" />
+            <KindTile kind="pdf" size="lg" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-title font-semibold">Read the full study guide</span>
+              <span className="mt-1 block text-sm text-ink-soft">
+                3 PDFs · English roadmap, short and detailed Hindi guides
+              </span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
           </Link>
         </div>
       </div>

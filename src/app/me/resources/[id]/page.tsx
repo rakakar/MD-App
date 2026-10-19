@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { FileList } from "@/components/library/FileList";
 import { PdfCard } from "@/components/library/PdfCard";
 import { BackIcon, ChevronRight } from "@/components/shell/icons";
+import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { KindTile, PageContainer } from "@/components/ui";
 import { ApiError, getNode } from "@/lib/api";
 import { journeyDocumentHref, journeyFolderHref } from "@/lib/routes";
@@ -77,6 +78,8 @@ export default async function JourneyFolderPage({
 
   return (
     <PageContainer>
+      {/* Reached from the full path, so the Dashboard tab stays lit. */}
+      <NavScope href="/me" />
       <Link
         href="/me/path"
         className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-rule bg-card pe-3.5 ps-2.5 text-sm font-semibold text-ink transition-colors active:bg-ink/[.04]"

@@ -19,8 +19,8 @@
  *    the count answers *where in the shape am I*, and still refuses to answer
  *    *how much have you done*.)
  * 2. **Signals, not verdicts.** The path is opt-in, the durations say "unfolds
- *    over" rather than naming a deadline, and the source's own caveat — that
- *    this is one student's estimate — is quoted where the path is shown.
+ *    over" rather than naming a deadline, and the full path says at its foot
+ *    that this is one student's estimate.
  */
 
 import { journeyFolderHref } from "./routes";
@@ -313,10 +313,6 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
 export function stageResources(stage: Stage): StageResource[] {
   return STAGE_RESOURCES[stage.id];
 }
-
-/** The source's own caveat, quoted wherever the path is drawn. */
-export const PATH_CAVEAT =
-  "“यह मेरे अब तक के व्यतिलगत अध्ययन यात्रा एवं सर्वेक्षण पर आधारित अनुमान मात्र है।”";
 
 /**
  * The onboarding question's five answers.
