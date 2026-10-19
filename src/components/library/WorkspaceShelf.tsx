@@ -12,7 +12,7 @@ import { RailSlot } from "@/components/shell/Rail";
 import { EmptyState } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { findLibrary, nodeChildren } from "@/lib/api";
-import { isAsked, scopeSize, type FindState, type FindAxis } from "@/lib/find";
+import { isAsked, lockAxis, scopeSize, type FindState, type FindAxis } from "@/lib/find";
 import type {
   FileKind,
   LibraryFacets,
@@ -145,7 +145,17 @@ export async function WorkspaceShelf({
 
   // Losing the find must not lose the shelf: a failed request drops back to
   // the browse, which needs nothing from it.
-  const find: LibraryFindResponse | null = await findLibrary({ ...scope, state }).catch(
+  //
+  // Once something is asked, the request is held to the kinds this shelf shows.
+  // The Library's search used to reach every word in the workspace, recordings
+  // included, so a search on Library answered with a column of audio that has
+  // a tab of its own (designer, 19 Oct 2026). Only the request is narrowed —
+  // `state` itself, and so the URL and the chips, stays the reader's.
+  const asked =
+    hideKinds.length > 0 && isAsked(state)
+      ? lockAxis(state, "kind", KIND_ORDER.filter((kind) => !hideKinds.includes(kind)))
+      : state;
+  const find: LibraryFindResponse | null = await findLibrary({ ...scope, state: asked }).catch(
     () => null
   );
   const finding = isAsked(state) && find !== null;
@@ -181,8 +191,8 @@ export async function WorkspaceShelf({
   // of their own is the page contradicting itself in the same eyeful — and the
   // chip would drop the reader into a filtered Library showing exactly what the
   // Library is no longer for. Only these *values* go; the axis itself stays, so
-  // PDFs and photographs are still siftable, and the search box is untouched
-  // and still reaches every word in the workspace.
+  // PDFs and photographs are still siftable. The search is held to the same
+  // kinds — see `asked` above.
   const facets: LibraryFacets =
     hideKinds.length > 0 && find
       ? { ...find.facets, kind: countable }
@@ -298,6 +308,7 @@ export async function WorkspaceShelf({
         <FindResults
           find={find}
           state={state}
+          asked={asked}
           basePath={basePath}
           scope={scope}
           shelves={shelves}

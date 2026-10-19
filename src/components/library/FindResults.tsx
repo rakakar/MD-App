@@ -27,6 +27,7 @@ export function FindResults({
   scope,
   shelves,
   activeFilters,
+  asked,
 }: {
   /**
    * Desktop: the filters that are on, as removable chips beside the count —
@@ -40,6 +41,12 @@ export function FindResults({
   /** what was searched — passed on so "Show more" asks the same question */
   scope: { workspace?: string; under?: number };
   shelves: ShelfMap;
+  /**
+   * What the page actually asked, when it narrowed the reader's `state` (the
+   * Library holds its search to the kinds it shows). "Show more" asks this,
+   * or its later pages would bring back what the first one left out.
+   */
+  asked?: FindState;
 }) {
   const { results, count } = find;
   // With chips on the line, their own Clear is the way out; the line's would
@@ -88,7 +95,7 @@ export function FindResults({
       )}
 
       {results.length > 0 ? (
-        <FindTable first={results} scope={scope} state={state} total={count} shelves={shelves} />
+        <FindTable first={results} scope={scope} state={asked ?? state} total={count} shelves={shelves} />
       ) : (
         <NothingHere state={state} basePath={basePath} />
       )}
