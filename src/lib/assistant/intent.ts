@@ -12,8 +12,14 @@
 // chip. The empty state says as much.
 
 import { searchKeyFor } from "@/lib/glossary";
-import type { ParibhashaWord } from "@/lib/types";
-import { isCommand, matchDestinations, tokens } from "./destinations";
+import type { BookSummary, ParibhashaWord } from "@/lib/types";
+import {
+  bookDestinations,
+  isCommand,
+  matchDestinations,
+  resumeDestination,
+  tokens,
+} from "./destinations";
 
 export type Intent = "paribhasha" | "books" | "research" | "navigate";
 
@@ -108,15 +114,67 @@ const LOGISTICS_WORDS = new Set([
   "contact", "contacts", "sampark", "संपर्क", "prabodhak", "प्रबोधक",
 ]);
 
-export function detectIntent(
+/**
+ * The ways a reader asks what a word means, around the word itself: "meaning
+ * of anubhav", "anubhav ka arth", "अनुभव की परिभाषा", "define sahastitva",
+ * "vyavastha kise kehte hain". Without these the sentence was the query, and
+ * a five-word sentence never reached the dictionary.
+ */
+const MEANING_BEFORE =
+  /^(what\s+(is\s+)?(does|do)\s+|what\s+is\s+the\s+(meaning|definition)\s+of\s+|(the\s+)?(meaning|definition|paribhasha|arth)\s+of\s+|define\s+|परिभाषा\s+)/i;
+const MEANING_AFTER =
+  /(\s+(mean|means|meaning|definition|ka\s+arth|ka\s+matlab|ki\s+paribhasha|ke\s+arth|का\s+अर्थ|का\s+मतलब|की\s+परिभाषा|kise\s+(kehte|kahte)\s+(hain|hai|he)|किसे\s+कहते\s+(हैं|है)))\s*[?？]?\s*$/i;
+
+/**
+ * The word a meaning question is about, when the dictionary has it — the
+ * Paribhasha answer looks this up, not the whole sentence. Null when the
+ * sentence is not a meaning question, or the word is not a headword ("meaning
+ * of life" is a question for Research, not a missing entry).
+ */
+export function glossaryTerm(
   query: string,
   dictionary: ParibhashaWord[] | null
+): ParibhashaWord | null {
+  const q = query.trim();
+  const term = q.replace(MEANING_BEFORE, "").replace(MEANING_AFTER, "").replace(/[?？]\s*$/, "").trim();
+  if (!term || term === q || tokens(term).length > 3) return null;
+  return exactGlossaryWord(dictionary, term);
+}
+
+/** The verbs that can only mean "take me there" — not "show me", which also searches. */
+const OPEN_VERBS = /^(open|go\s+to|goto|kholo|khol|kholiye|खोलो|खोलें|खोलिए|जाओ)(?=\s|$)/i;
+
+export function detectIntent(
+  query: string,
+  dictionary: ParibhashaWord[] | null,
+  books: BookSummary[] | null = null
 ): Intent {
   const q = query.trim();
   if (quotedPhrase(q)) return "books";
+  if (glossaryTerm(q, dictionary)) return "paribhasha";
 
   const words = tokens(q);
   const nav = matchDestinations(q);
+  // A command may name a book or the last chapter — places the static map
+  // does not hold. "open manav vyavhar darshan" and "resume" are both asking
+  // to go somewhere, and went to Book search because nothing matched.
+  if (isCommand(q)) {
+    const resume = resumeDestination();
+    const runtime = [...(resume ? [resume] : []), ...bookDestinations(books ?? [])];
+    // A book has to be *named*, not brushed against: two words of its title,
+    // its code, or — after a firm "open" / "go to" — nothing typed but words
+    // of titles. "show me anubhav" shares one word with a title and is still
+    // a search; "open manav vyavhar darshan", "open dp" and "open vikalp"
+    // name a book.
+    const runtimeMatch = matchDestinations(q, runtime);
+    const firm = OPEN_VERBS.test(q) && runtimeMatch.leftover.length === 0;
+    const named = runtimeMatch.matches.some(({ destination: d, score }) => {
+      if (!d.id.startsWith("book:")) return true;
+      if (firm || words.includes(d.id.slice(5).toLowerCase())) return true;
+      return score >= 3 * Math.min(2, d.skeletons?.length ?? 1);
+    });
+    if (named) return "navigate";
+  }
   const best = nav.matches[0];
   const namesAPlace = (best?.score ?? 0) >= 3;
   const personal = words.some((w) =>

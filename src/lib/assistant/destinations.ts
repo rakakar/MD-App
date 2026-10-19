@@ -43,6 +43,11 @@ export interface Destination {
   keywords: string[];
   /** the typed command that opens it — "open my journey" */
   command?: string;
+  /**
+   * The title's words as consonant skeletons (`skeleton`), so a Devanagari
+   * title answers to however it is typed in Roman letters. Books only.
+   */
+  skeletons?: string[];
 }
 
 const PLACES: Destination[] = [
@@ -280,9 +285,67 @@ export interface NavigationAnswer {
   leftover: string[];
 }
 
+// ---- Roman and Devanagari, compared by their consonants ----
+//
+// Book titles exist only in Devanagari, and readers type them in Roman letters
+// every way there is: "vyavhar", "vyavahar", "byavahaar". What survives all of
+// those is the consonants, so both sides are reduced to them — vowels and
+// matras dropped, aspiration folded into the plain stop (भ and ब are both "b",
+// "bh" and "b" likewise), श/ष/स all "s". Titles are long and specific, so a
+// skeleton that would be too coarse for single words is plenty for them.
+
+const DEVANAGARI_CONSONANT: Record<string, string> = {
+  क: "k", ख: "k", ग: "g", घ: "g", ङ: "n",
+  च: "c", छ: "c", ज: "j", झ: "j", ञ: "n",
+  ट: "t", ठ: "t", ड: "d", ढ: "d", ण: "n",
+  त: "t", थ: "t", द: "d", ध: "d", न: "n",
+  प: "p", फ: "p", ब: "b", भ: "b", म: "m",
+  य: "y", र: "r", ल: "l", व: "v", ळ: "l",
+  श: "s", ष: "s", स: "s", ह: "h",
+  // the anusvara and chandrabindu are written "n" — "sanskar", "haan"
+  "ं": "n", "ँ": "n",
+  // ऋ / ृ is typed "ri" or "r": "kriya", "prakriti"
+  ऋ: "r", "ृ": "r",
+};
+
+/** "व्यवहार" → "vyvhr"; "ज्ञान" → "gyn", as it is usually typed ("gyan"). */
+export function devanagariSkeleton(word: string): string {
+  let out = "";
+  const w = word.normalize("NFC").replace(/ज्ञ/g, "\u0000");
+  for (const ch of w) out += ch === "\u0000" ? "gy" : (DEVANAGARI_CONSONANT[ch] ?? "");
+  return out.replace(/(.)\1+/g, "$1");
+}
+
+/** "vyavahaar" → "vyvhr"; "darshan" → "drsn"; "bhrama" → "brm". */
+export function romanSkeleton(word: string): string {
+  return word
+    .toLowerCase()
+    .replace(/[^a-z]/g, "")
+    .replace(/w/g, "v")
+    .replace(/f/g, "p")
+    .replace(/q/g, "k")
+    .replace(/z/g, "j")
+    .replace(/x/g, "ks")
+    // the h of an aspirate or of sh/ch belongs to the letter before it
+    .replace(/([kgcjtdpbs])h/g, "$1")
+    .replace(/[aeiou]/g, "")
+    .replace(/(.)\1+/g, "$1");
+}
+
+/** Below this a skeleton says too little — "ek" is just "k". */
+const MIN_SKELETON = 2;
+
 function scoreFor(d: Destination, words: string[]): number {
   let score = 0;
   for (const w of words) {
+    // A Roman word against a Devanagari title, by consonants.
+    if (d.skeletons && /^[a-z]+$/.test(w)) {
+      const sk = romanSkeleton(w);
+      if (sk.length >= MIN_SKELETON && d.skeletons.includes(sk)) {
+        score += 3;
+        continue;
+      }
+    }
     // An exact keyword anywhere in the list first: checked in one pass, a
     // prefix hit on an earlier keyword ("contacts" for "contact") scored 2 and
     // stopped there, so the exact one never got its 3.
@@ -317,7 +380,12 @@ export function matchDestinations(
   matches.sort((a, b) => b.score - a.score);
 
   const leftover = words.filter(
-    (w) => !all.some((d) => d.keywords.some((k) => k === w || (w.length >= 4 && k.startsWith(w))))
+    (w) =>
+      !all.some(
+        (d) =>
+          d.keywords.some((k) => k === w || (w.length >= 4 && k.startsWith(w))) ||
+          (d.skeletons && /^[a-z]+$/.test(w) && d.skeletons.includes(romanSkeleton(w)))
+      )
   );
   return { matches, leftover };
 }
@@ -348,6 +416,9 @@ export function bookDestinations(books: BookSummary[]): Destination[] {
     icon: "book" as const,
     detail: b.subtitle_hi || undefined,
     keywords: [b.code.toLowerCase(), ...tokens(b.title_hi)],
+    skeletons: tokens(b.title_hi)
+      .map(devanagariSkeleton)
+      .filter((sk) => sk.length >= MIN_SKELETON),
   }));
 }
 

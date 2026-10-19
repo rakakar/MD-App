@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight } from "@/components/shell/icons";
 import { WordEntry } from "@/components/paribhasha/WordEntry";
 import { getParibhasha } from "@/lib/api";
+import { glossaryTerm } from "@/lib/assistant/intent";
 import { relatedWords } from "@/lib/assistant/related";
 import { searchGlossary } from "@/lib/glossary";
 import type { ParibhashaWord } from "@/lib/types";
@@ -42,9 +43,12 @@ export function ParibhashaAnswer({
   onAsk: Ask;
   onSettle: (summary: string, count: number) => void;
 }) {
+  // "anubhav ka arth" looks up anubhav: the sentence around a headword is the
+  // asking, not the word.
+  const word = glossaryTerm(query, dictionary)?.hindi ?? query;
   const local = useMemo(
-    () => (dictionary ? searchGlossary(dictionary, query, 1 + MORE_ROWS) : null),
-    [dictionary, query]
+    () => (dictionary ? searchGlossary(dictionary, word, 1 + MORE_ROWS) : null),
+    [dictionary, word]
   );
   const [remote, setRemote] = useState<ParibhashaWord[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -52,13 +56,13 @@ export function ParibhashaAnswer({
   useEffect(() => {
     if (dictionary) return;
     let alive = true;
-    getParibhasha({ q: query })
+    getParibhasha({ q: word })
       .then((page) => alive && setRemote(page.results.slice(0, 1 + MORE_ROWS)))
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
     };
-  }, [dictionary, query]);
+  }, [dictionary, word]);
 
   const words = local ?? remote;
 

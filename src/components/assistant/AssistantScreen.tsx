@@ -19,6 +19,7 @@ import {
 import {
   bookDestinations,
   commandSuggestions,
+  isCommand,
   matchDestinations,
   resumeDestination,
   type Destination,
@@ -187,7 +188,7 @@ export function AssistantScreen() {
       // choice made there must not silently turn "explain simply" into a
       // dictionary look-up three turns later.
       const chosen = conv ? null : mode;
-      const intent = forced ?? chosen ?? detectIntent(q, dictionary);
+      const intent = forced ?? chosen ?? detectIntent(q, dictionary, books);
       // Navigate, chosen, "opens it instead of answering": straight to the
       // best place, no conversation. Only when nothing matches does it become
       // a turn, so the reader is told why nothing happened.
@@ -256,8 +257,12 @@ export function AssistantScreen() {
     const forced = (INTENTS as string[]).includes(modeParam ?? "") ? (modeParam as Intent) : undefined;
     // wait for the dictionary before guessing, unless the link said what it is
     if (!forced && dictionary === null) return;
+    // and for the shelf when it reads as a command — "open manav vyavhar
+    // darshan" can only be told from a search once the titles are here. The
+    // shelf resolves to [] on failure, so this cannot wait forever.
+    if (!forced && books === null && isCommand(qParam)) return;
     arrived.current = true;
-    const intent = forced ?? detectIntent(qParam, dictionary);
+    const intent = forced ?? detectIntent(qParam, dictionary, books);
     if (intent === "research") {
       setMode("research");
       setText(qParam);
@@ -265,7 +270,7 @@ export function AssistantScreen() {
     } else {
       ask(qParam, intent);
     }
-  }, [qParam, modeParam, cParam, dictionary, ask]);
+  }, [qParam, modeParam, cParam, dictionary, books, ask]);
 
   /** "Deep research": the same question again, as a new turn, at the deep level. */
   const deepen = useCallback((of: Turn) => {
