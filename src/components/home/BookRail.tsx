@@ -52,7 +52,15 @@ export function BookRail({
           className={`w-[7.75rem] shrink-0 snap-start ${
             rail
               ? ""
-              : `lg:w-full ${i >= 7 ? "lg:hidden" : i >= 5 ? "lg:hidden xl:block" : ""}`
+              : // one cell short of the row when the last cell is the
+                // way to the rest: four and the tile at lg, six and it at xl
+                `lg:w-full ${
+                  i >= (allHref ? 6 : 7)
+                    ? "lg:hidden"
+                    : i >= (allHref ? 4 : 5)
+                      ? "lg:hidden xl:block"
+                      : ""
+                }`
           }`}
         >
           <Link href={`/books/${encodeURIComponent(b.code)}`} className="group block">
@@ -78,10 +86,11 @@ export function BookRail({
       {/* The way on, at the end of the swipe (designer, 14 Oct 2026): the
           heading's "All books →" is small and up in the corner, away from
           where the eyes are while swiping. A cover-sized tile is found by
-          anyone who reaches the end. Only where the rail scrolls — from lg the
-          covers are a grid and the heading's link sits right above them. */}
+          anyone who reaches the end. On desktop too, as the row's last cell
+          (designer, 19 Oct 2026) — the corner link is just as far from the
+          covers there, and a row that simply stops reads as the whole shelf. */}
       {allHref && (
-        <li className={`w-[7.75rem] shrink-0 snap-start ${rail ? "" : "lg:hidden"}`}>
+        <li className={`w-[7.75rem] shrink-0 snap-start ${rail ? "" : "lg:w-full"}`}>
           <Link
             href={allHref}
             className="flex aspect-[102/139] w-full flex-col items-center justify-center gap-2 rounded-cover border-2 border-dashed p-3 text-center transition-colors active:bg-accent-tint"
