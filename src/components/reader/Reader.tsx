@@ -241,7 +241,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [lineHeight, setLineHeight] = useState(DEFAULT_PREFS.lineHeight);
   const [margin, setMargin] = useState(DEFAULT_PREFS.margin);
   const [tapZones, setTapZones] = useState(true);
-  const [glossaryUnderline, setGlossaryUnderline] = useState(false);
+  const [glossaryUnderline, setGlossaryUnderline] = useState(DEFAULT_PREFS.glossaryUnderline);
   /** the word whose definition is open, if any */
   const [defineWord, setDefineWord] = useState<string | null>(null);
   /** desktop: where that word is on the page, so its card can open beside it */
@@ -1715,6 +1715,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 
       <ReaderDesktopBar
         hidden={!chrome.visible}
+        assistantHref="/assistant"
         backHref={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
         backLabel={home?.backLabel ?? "Back to book"}
         book={book.title_hi}

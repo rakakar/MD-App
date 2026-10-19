@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { AccentScope, useWorkspace } from "@/components/shell/WorkspaceProvider";
+import { AccentScope } from "@/components/shell/WorkspaceProvider";
+import { WORKSPACES } from "@/lib/workspaceConfig";
 import { FirstRun } from "./FirstRun";
 import { LaunchPane } from "./LaunchPane";
 
@@ -36,7 +37,6 @@ import { LaunchPane } from "./LaunchPane";
  * block in `globals.css`.
  */
 export function FirstRunFlow({ onDone }: { onDone: () => void }) {
-  const { workspace } = useWorkspace();
   const [started, setStarted] = useState(false);
 
   // The page behind must not scroll under a full-screen layer — on iOS a drag
@@ -64,8 +64,12 @@ export function FirstRunFlow({ onDone }: { onDone: () => void }) {
       className="launch fixed inset-0 z-60 overflow-hidden bg-surface"
     >
       {/* A portal renders outside the provider's `[data-ws]`, so without this
-          every `var(--ws-color)` below falls back to the app default. */}
-      <AccentScope color={workspace.color} className="h-full">
+          every `var(--ws-color)` below falls back to the app default.
+          Originals' terracotta whichever workspace was last open (designer,
+          19 Oct 2026): the launch screen and the deck are the app's front
+          door, not a page of one shelf, so their buttons wear the house colour
+          rather than changing with wherever the reader happened to be. */}
+      <AccentScope color={WORKSPACES.originals.color} className="h-full">
         {/* The artwork. Two crops of the same picture, chosen by media query
             rather than by class, so only one of them is ever fetched. The
             settle and the drift are on separate elements because both animate

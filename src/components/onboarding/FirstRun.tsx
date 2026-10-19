@@ -296,7 +296,7 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
             >
               <span
                 className={`block h-1.5 rounded-full transition-all duration-200 motion-reduce:transition-none ${
-                  n === i ? "w-6" : "w-1.5 bg-inset"
+                  n === i ? "w-6" : "w-1.5 bg-muted"
                 }`}
                 style={n === i ? { background: "var(--ws-color)" } : undefined}
               />

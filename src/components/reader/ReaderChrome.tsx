@@ -531,7 +531,11 @@ function SelectionAction({
  * lives at the bottom; a desktop has a pointer and a window's width, so it all
  * goes in one row:
  *
- *     back · [contents | highlights 3]  ·  book / अध्याय 1 · पृष्ठ 1 / 110 ▾  ·  palette · Listen
+ *     back · [contents | highlights 3]  ·  book / अध्याय 1 · पृष्ठ 1 / 110 ▾  ·  palette · Listen · Assistant
+ *
+ * The Assistant square is the phone top bar's, filled the same way and for the
+ * same reason (see `ReaderTopBar`). The first desktop bar left it out, which
+ * took the reader's one door to the Assistant away from every wide screen.
  *
  * It comes and goes as the phone's bars do — away as the page scrolls on, back
  * on a click anywhere in it — rather than staying up behind a focus mode (the
@@ -557,6 +561,7 @@ export function ReaderDesktopBar({
   canListen,
   listening,
   languages,
+  assistantHref,
 }: {
   hidden: boolean;
   backHref: string;
@@ -583,6 +588,7 @@ export function ReaderDesktopBar({
   canListen: boolean;
   listening: boolean;
   languages?: LanguageToggle;
+  assistantHref: string;
 }) {
   const seg = (on: boolean) =>
     `flex h-9 min-w-9 items-center justify-center gap-1 rounded-md px-2 text-xs font-bold transition-colors ${
@@ -697,6 +703,15 @@ export function ReaderDesktopBar({
               Listen
             </button>
           )}
+          <Link
+            href={assistantHref}
+            aria-label="Assistant — search Paribhasha and the books"
+            title="Assistant"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-white transition-opacity hover:opacity-90"
+            style={{ background: "var(--ws-color)" }}
+          >
+            <Icon name="assistant" className="h-5 w-5" />
+          </Link>
         </div>
       </div>
 

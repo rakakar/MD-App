@@ -151,16 +151,23 @@ export interface Prefs {
    */
   readingSide: ReadingSide;
   /**
-   * Underline the words Paribhasha can define. Off by default and sticky once
-   * turned on, like every other reading preference here.
+   * Underline the words Paribhasha can define. **On by default** (designer,
+   * 19 Oct 2026), and sticky once the reader changes it.
    *
-   * Off is the default because it was measured: the glossary was compiled
-   * against these very books, so ~42% of the words in a chapter are
-   * headwords. Even filtered down to ~20% it is a marked-up page, which some
-   * readers want and most do not. Tapping a word for its meaning works either
-   * way — this setting only controls whether the page shows you in advance.
+   * It was off by default, on the measurement that ~42% of a chapter's words
+   * are headwords and a marked-up page is one most readers would not choose.
+   * The call now is that the overlay is the feature: a reader who never sees
+   * an underline never learns that tapping a word defines it. Tapping works
+   * either way — this only controls whether the page shows you in advance.
    */
   glossaryUnderline: boolean;
+  /**
+   * Whether `glossaryUnderline` is the reader's own choice. Needed because the
+   * whole prefs object is written on every change, so every reader from before
+   * the default flipped has `false` stored without ever having chosen it.
+   * Until this is set, `getPrefs` reports the default instead.
+   */
+  glossaryUnderlineChosen: boolean;
   lastWorkspace: WorkspaceId;
   consent: "granted" | "denied" | null;
   playbackRate: number;
@@ -280,7 +287,8 @@ export const DEFAULT_PREFS: Prefs = {
   // page first and the English second is the print book's constraint, not
   // theirs. The Hindi is one tap away and the toggle says so.
   readingSide: "translated",
-  glossaryUnderline: false,
+  glossaryUnderline: true,
+  glossaryUnderlineChosen: false,
   lastWorkspace: "originals",
   consent: null,
   playbackRate: 1,
@@ -309,11 +317,14 @@ export function nearestStep(steps: number[], value: number): number {
 }
 
 export function getPrefs(): Prefs {
-  return { ...DEFAULT_PREFS, ...read<Partial<Prefs>>(PREFS_KEY, {}) };
+  const prefs = { ...DEFAULT_PREFS, ...read<Partial<Prefs>>(PREFS_KEY, {}) };
+  if (!prefs.glossaryUnderlineChosen) prefs.glossaryUnderline = DEFAULT_PREFS.glossaryUnderline;
+  return prefs;
 }
 
 export function setPrefs(patch: Partial<Prefs>): Prefs {
   const next = { ...getPrefs(), ...patch };
+  if ("glossaryUnderline" in patch) next.glossaryUnderlineChosen = true;
   write(PREFS_KEY, next);
   return next;
 }
