@@ -231,6 +231,47 @@ export function CountTabs<T extends string>({
 }
 
 /**
+ * One of a few settings, chosen in place — Settings' text size and reading
+ * style. Radios rather than tabs: nothing below swaps out, a value changes.
+ *
+ * The raised look, because these sit on a card and the selected segment reads
+ * as lifted off that card's sunk track — the same accent hairline the reader's
+ * own settings segments wear.
+ */
+export function RadioSegmented<T extends string | number>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className={SEGMENT_TRACK}>
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <button
+            key={String(o.value)}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(o.value)}
+            className={`${SEGMENT} flex-1 ${active ? SEGMENT_ON_RAISED : "text-ink hover:bg-ink/5"}`}
+            style={active ? { color: "var(--ws-ink)" } : undefined}
+          >
+            <span className="truncate">{o.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * One filter, on or off.
  *
  * Two selected looks, because the comps use two and they mean different

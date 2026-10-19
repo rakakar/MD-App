@@ -215,6 +215,26 @@ does not animate). Field focus and the band's name are `.auth-field` / `.auth-na
 | Button and fields at a ~16px radius | `--radius-tile` (14px) | The nearest step on the ladder. CTAs elsewhere are `--radius-control` (8px); this one follows the comp and the fields beside it. |
 | Nothing drawn above `lg:` | The same column, capped at `max-w-md`, framed with the hero radius | Comps are phone-only; this keeps the desktop honest without inventing a layout. |
 
+## Settings, 19 Oct 2026
+
+Fourteen comps, six desktop and eight phone. Built in `app/settings/page.tsx` from
+`components/settings/` (account, appearance, reading, downloads, and the shared card, row
+and toast), plus `ui/Switch` and `ui/RadioSegmented`. The account rows open in place at a
+desk and as sheets on a phone. `--color-success` / `--color-success-tint` are new, for the
+Synced pill and a met password rule.
+
+| Comp | Shipped | Reason |
+|---|---|---|
+| Notifications as three toggles: New chapters, Shivirs, Announcements | One switch, with the words the section already had, restyled as the comp's card and switch | The designer's call, 19 Oct 2026: the copy stays and only the look changes. Push is one subscription today, so three switches would be three labels on one wire. The iPhone install note keeps its words, split into the comp's numbered steps. |
+| Side section list at every desktop width | From 1280px (`xl`); between 1024 and 1280 the cards are the desk's without the list | Beside the app's own sidebar at 1024px the list left the cards about 430px, and the inline name field came out narrower than the name. |
+| Selected text-size and reading-style segments with a grey hairline | The accent hairline (`SEGMENT_ON_RAISED`) | It is the system's one raised segment, the designer's call of 13 Oct 2026 for readers past 45. Two looks for one control is the drift this file exists to stop. |
+| "30 MB used" over a bar about a sixth full | The real total, against what the browser lets the site keep (`navigator.storage.estimate`), drawn at least as a sliver; "Nothing saved" at zero | No other capacity exists to measure against. A true 0.3% bar looks empty, and an empty bar says nothing is saved. Book sizes are measured from the cached chapters; the download record carries none. |
+| "New password · at least 8 characters" on desktop; "Includes a number" only in the phone sheet | Both rules on both, and the desk shows the checklist once something is typed | One account cannot have two password policies. The number rule is the comp's own and the client's only: the server asks for the length. |
+| "Forgot current password?" link | Drawn only when `NEXT_PUBLIC_SUPPORT_EMAIL` is set, as a `mailto:` like sign-in's "Write to us" | Nothing can send a reset mail yet. A link that goes nowhere is worse than none. **Open:** which inbox. |
+| "Synced" as a fixed pill | Syncing… → Synced only after a sync on this visit has succeeded, Not synced offline; desk only, as drawn | A green tick over data that has not reached the account would be the one untrue thing on the screen. |
+| "MD Study · version 1.4.2" | The deployed commit, short (`dev` locally) | There is no release number. **Open:** whether one is wanted. |
+| Display name counter "6/40" | 40 is enforced as the field's `maxLength` | The old field allowed 80; a longer name already saved still shows, and the counter reads over. |
+
 ## The Assistant, 18 Sep 2026
 
 Ten screens (`design_docs/screens/assistant/`), replacing the v1 centre-slot Search. One

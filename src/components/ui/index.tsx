@@ -24,6 +24,7 @@ export * from "./Segmented";
 export * from "./Skeleton";
 export * from "./ShareButton";
 export * from "./Sheet";
+export * from "./Switch";
 
 import { Chip, ChipRow } from "./Segmented";
 

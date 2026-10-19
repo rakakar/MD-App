@@ -74,7 +74,8 @@ export const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024;
 
 const QUEUE_KEY = "md.feedback_queue";
 
-const APP_VERSION =
+/** The deployed commit, short — there is no release number to show instead. */
+export const APP_VERSION =
   process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev";
 
 /** The state of the app right now. Every field is machine-read; none of it is

@@ -254,7 +254,7 @@ export function DisplayControls({ variant = "sheet" }: { variant?: "sheet" | "di
  * At a desk there is room to show what the theme *does* to a screen. Auto is
  * the page split corner to corner, light and dark.
  */
-function ThemePages() {
+export function ThemePages({ tile = "h-18" }: { tile?: string } = {}) {
   const { theme, setTheme } = useDisplay();
   return (
     <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-4">
@@ -273,7 +273,7 @@ function ThemePages() {
           >
             <span
               aria-hidden
-              className={`relative block h-18 w-full overflow-hidden rounded-control border transition-shadow ${
+              className={`relative block ${tile} w-full overflow-hidden rounded-control border transition-shadow ${
                 active ? "border-transparent ring-2 ring-(--ws-color) ring-offset-3 ring-offset-card" : "border-rule group-hover:border-ink-soft"
               }`}
               style={{ background: t.bg }}

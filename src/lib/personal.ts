@@ -318,9 +318,11 @@ export function localHighlights(bookCode: string): Highlight[] {
 // has not seen, honour tombstones. Safe to run twice or to be cut off halfway,
 // which matters because it runs on every reconnect.
 
-let inflight: Promise<void> | null = null;
+let inflight: Promise<boolean> | null = null;
 
-export function syncPersonal(): Promise<void> {
+/** Resolves `true` when both directions went through — Settings' Synced pill
+ *  says so only then — and `false` when the sweep was cut off. */
+export function syncPersonal(): Promise<boolean> {
   if (inflight) return inflight;
   inflight = run().finally(() => {
     inflight = null;
@@ -328,13 +330,15 @@ export function syncPersonal(): Promise<void> {
   return inflight;
 }
 
-async function run(): Promise<void> {
+async function run(): Promise<boolean> {
   try {
     await push();
     await pull();
+    return true;
   } catch {
     // offline, or the session lapsed — local stays authoritative and the next
     // reconnect tries again. Never surfaced: the reader's data is not at risk.
+    return false;
   }
 }
 

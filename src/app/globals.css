@@ -83,6 +83,11 @@
      sepia, 7.1:1 dark, all well past the 3:1 an icon needs. */
   --color-danger: #b3261e;
 
+  /* The one "all is well" colour — Settings' Synced pill and a met password
+     rule. Text on its own tint: 5.5:1 light, 5.4:1 sepia, 7.3:1 dark. */
+  --color-success: #3d6b4a;
+  --color-success-tint: #edf4ee;
+
   /* A sunk panel *inside* a card — the note block under a highlight, the track
      a segmented control's pill slides along, the counter strip on a filter
      sheet. `canvas` cannot do this job: canvas is the ground a card sits on,
@@ -436,6 +441,8 @@
   --color-muted: #a1937c;
   --color-rule: #ddcdb0;
   --color-danger: #a83027;
+  --color-success: #3a6645;
+  --color-success-tint: #e6eedd;
 
   --color-inset: #f2eadb;
 
@@ -468,6 +475,8 @@
   /* Lifted well off the light value — a 5:1 red on white is a 1.6:1 red on a
      near-black card, and the bin has to be findable in both. */
   --color-danger: #f08a80;
+  --color-success: #8cc29a;
+  --color-success-tint: #1f2a22;
 
   --color-inset: #262220;
 
@@ -536,6 +545,8 @@
   --color-muted: #9c9187;
   --color-rule: #e4dbd1;
   --color-danger: #b3261e;
+  --color-success: #3d6b4a;
+  --color-success-tint: #edf4ee;
 
   --color-inset: #f7f3ec;
   --color-accent-ink: #a64e12;

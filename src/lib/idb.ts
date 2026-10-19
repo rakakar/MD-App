@@ -102,6 +102,27 @@ export async function putCachedChapter(
   }
 }
 
+/**
+ * What each downloaded book's cached chapters weigh, by book code.
+ *
+ * Measured from the rows themselves — the text as it is stored — because the
+ * download record carries no size, and Settings has to say what removing a
+ * book gives back. One pass over the store, for every book at once.
+ */
+export async function chapterBytesByBook(): Promise<Record<string, number>> {
+  if (typeof indexedDB === "undefined") return {};
+  try {
+    const rows = await tx<CachedChapter[]>(CHAPTERS, "readonly", (s) => s.getAll());
+    const out: Record<string, number> = {};
+    for (const r of rows) {
+      out[r.code] = (out[r.code] ?? 0) + new Blob([JSON.stringify(r.payload)]).size;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 // ---- Paribhasha (§14) ----
 //
 // Three kinds of row in one store, in the order a reader acquires them:

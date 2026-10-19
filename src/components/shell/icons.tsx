@@ -274,6 +274,17 @@ export function PaletteIcon({ className }: { className?: string }) {
 }
 
 /** The bin on a saved row — the one destructive control in the app. */
+/** A door with an arrow going in — Sign out, as Settings' comps draw it. */
+export function SignOutIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
+      <path d="M4 12h11" />
+      <path d="m11 8 4 4-4 4" />
+    </Svg>
+  );
+}
+
 export function TrashIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>
