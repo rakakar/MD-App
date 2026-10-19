@@ -862,6 +862,27 @@ export function clearPdfPlace(key: string): void {
   write(PDF_PAGE_KEY, store);
 }
 
+// ---- Downloads ----
+//
+// Which library files this device has been asked to save, so a row can show
+// a check where its download button was (the full path's Reading and Audio
+// tabs). It records the tap, not the file on disk — a browser says nothing
+// about what happened to a download — so it is a courtesy, never a promise,
+// and stays on the device.
+
+const DOWNLOADED_KEY = "md.downloaded.v1";
+
+export function getDownloaded(): Set<number> {
+  return new Set(read<number[]>(DOWNLOADED_KEY, []));
+}
+
+export function markDownloaded(ids: number[]): void {
+  if (!isBrowser) return;
+  const have = getDownloaded();
+  for (const id of ids) have.add(id);
+  write(DOWNLOADED_KEY, [...have]);
+}
+
 // ---------------------------------------------------------------------------
 // How a document is being *looked at* — separate from where the reader is in it
 // ---------------------------------------------------------------------------

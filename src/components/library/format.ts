@@ -246,3 +246,17 @@ export function languageInEnglish(card: Pick<NodeCard, "language" | "language_la
   }
   return card.language_label ?? "";
 }
+
+/**
+ * A length said the way a person says it — "4 h 22 min", "48 min" — for the
+ * places that total a collection or count down what is left, where the
+ * clock-face `formatDuration` gives would read as a timestamp.
+ */
+export function formatSpan(seconds: number | null | undefined): string {
+  if (!seconds || seconds <= 0) return "";
+  const total = Math.max(1, Math.round(seconds / 60));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}

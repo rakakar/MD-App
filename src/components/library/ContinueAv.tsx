@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AV_KINDS, AV_PAGE } from "@/components/library/AvShelf";
-import { formatDuration } from "@/components/library/format";
+import { formatDuration, formatSpan } from "@/components/library/format";
 import { VideoStage } from "@/components/library/VideoStage";
 import { videoSource } from "@/components/library/VideoView";
 import { usePlayer } from "@/components/player/PlayerProvider";
@@ -42,6 +42,8 @@ interface ResumeRow {
   nodeId: number | null;
   /** present only for a file this page already fetched — then it plays in place */
   file: LibraryFile | null;
+  /** played to the end — kept only by the `list` variant, which says so */
+  finished: boolean;
 }
 
 /**
@@ -80,6 +82,8 @@ export function ContinueAv({
   sources,
   limit = 4,
   heading = "Resume",
+  variant = "rail",
+  note,
 }: {
   /**
    * The page's collections — every A/V file on screen, still under the folder
@@ -95,6 +99,16 @@ export function ContinueAv({
    * पठन rail beside it and the two read as one pair of histories.
    */
   heading?: string;
+  /**
+   * `rail` is the shelves' snapping row of cards. `list` is My Journey's
+   * "Listening & watching" (dashboard revision 19 Oct 2026): one row per
+   * recording with its kind named, the time left at the end, and — unlike the
+   * rail — a recording played to the end kept and marked "Finished", because
+   * on the dashboard this is the reader's history rather than a way back in.
+   */
+  variant?: "rail" | "list";
+  /** a short line beside the heading — "Audio and video" */
+  note?: string;
 }) {
   const { user, loading } = useAuth();
   const player = usePlayer();
@@ -189,7 +203,9 @@ export function ContinueAv({
         const durationSeconds = file?.duration_seconds ?? meta?.duration_seconds ?? null;
         const durationMs = durationSeconds ? durationSeconds * 1000 : null;
         if (head.position_ms < MIN_RESUME_MS) continue;
-        if (durationMs !== null && head.position_ms >= durationMs - DONE_TAIL_MS) continue;
+        const finished =
+          durationMs !== null && head.position_ms >= durationMs - DONE_TAIL_MS;
+        if (finished && variant !== "list") continue;
 
         built.push({
           itemId,
@@ -201,12 +217,13 @@ export function ContinueAv({
           updatedAt: head.updated_at,
           nodeId: file?.node ?? meta?.node ?? null,
           file,
+          finished,
         });
       }
 
       setRows(built.slice(0, limit));
     },
-    [onPage, limit]
+    [onPage, limit, variant]
   );
 
   useEffect(() => {
@@ -252,7 +269,9 @@ export function ContinueAv({
         coverImage: row.file.thumbnail_url ?? null,
         resumeKey: `library-file:${row.itemId}`,
       },
-      { startMs: row.positionMs }
+      // From the top for one played to the end — resuming at the last
+      // second would be a tap that seems to do nothing.
+      { startMs: row.finished ? 0 : row.positionMs }
     );
   };
 
@@ -264,6 +283,40 @@ export function ContinueAv({
   const watch = (row: ResumeRow) => {
     if (row.file) setWatching(row.file);
   };
+
+  const stage = watching && (
+    <VideoStage
+      file={watching}
+      onClose={() => {
+        setWatching(null);
+        setAfterWatching((n) => n + 1);
+      }}
+    />
+  );
+
+  if (variant === "list") {
+    return (
+      <section aria-label={heading} className="mt-8">
+        <h2 className="mb-3 flex items-baseline gap-3">
+          <span className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+            {heading}
+          </span>
+          {note && <span className="text-sm text-ink-soft">{note}</span>}
+        </h2>
+        {/* One ruled card on a phone, where separate cards would be three
+            frames saying what one list says; separate cards from sm, where
+            each row is wide enough to stand on its own. */}
+        <ul className="divide-y divide-rule overflow-hidden rounded-card border border-rule bg-card sm:space-y-3 sm:divide-y-0 sm:overflow-visible sm:rounded-none sm:border-0 sm:bg-transparent">
+          {rows.map((row) => (
+            <li key={row.itemId}>
+              <AvRow row={row} onPlay={row.file ? (row.kind === "audio" ? play : watch) : null} />
+            </li>
+          ))}
+        </ul>
+        {stage}
+      </section>
+    );
+  }
 
   return (
     <section aria-label={label} className="mt-5">
@@ -284,16 +337,124 @@ export function ContinueAv({
           </li>
         ))}
       </ul>
-      {watching && (
-        <VideoStage
-          file={watching}
-          onClose={() => {
-            setWatching(null);
-            setAfterWatching((n) => n + 1);
-          }}
-        />
-      )}
+      {stage}
     </section>
+  );
+}
+
+/**
+ * One recording in My Journey's "Listening & watching" list — a tinted play
+ * tile (square for audio, wide for video, the pair the Library shelf uses), the
+ * title with its kind named beside it, the folder under it, and how far in.
+ */
+function AvRow({
+  row,
+  onPlay,
+}: {
+  row: ResumeRow;
+  onPlay: ((row: ResumeRow) => void) | null;
+}) {
+  const percent = row.finished
+    ? 100
+    : row.durationMs && row.durationMs > 0
+      ? Math.min(100, (row.positionMs / row.durationMs) * 100)
+      : null;
+  const leftSeconds =
+    row.durationMs && row.durationMs > row.positionMs
+      ? (row.durationMs - row.positionMs) / 1000
+      : 0;
+  const status = row.finished
+    ? "Finished"
+    : leftSeconds > 0
+      ? `${formatSpan(leftSeconds)} left`
+      : "";
+  const audio = row.kind === "audio";
+  const title = contentLang(row.title);
+
+  const body = (
+    <>
+      <span
+        aria-hidden
+        className={`flex h-14 shrink-0 items-center justify-center rounded-tile ${
+          audio ? "w-14 bg-kind-audio text-kind-audio-ink" : "w-24 bg-kind-video text-kind-video-ink"
+        }`}
+      >
+        <PlayIcon className="h-3.5 w-3.5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-baseline gap-2.5">
+          <span
+            lang={title.lang}
+            className={`${title.className} hi-tight min-w-0 truncate text-title font-semibold`}
+          >
+            {row.title}
+          </span>
+          <span
+            className={`shrink-0 text-xs font-bold uppercase tracking-[0.06em] ${
+              audio ? "text-kind-audio-ink" : "text-kind-video-ink"
+            }`}
+          >
+            {audio ? "Audio" : "Video"}
+          </span>
+        </span>
+        {row.subtitle && (
+          <span
+            {...contentLang(row.subtitle)}
+            className={`${contentLang(row.subtitle).className} hi-tight mt-1.5 block truncate text-sm text-ink-soft`}
+          >
+            {row.subtitle}
+          </span>
+        )}
+        {percent !== null && (
+          <span className="mt-3 flex items-center gap-3">
+            <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-canvas sm:max-w-xl">
+              <span
+                role="progressbar"
+                aria-valuenow={Math.round(percent)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${Math.round(percent)}% ${audio ? "played" : "watched"}`}
+                className="block h-full rounded-full"
+                style={{
+                  width: `${Math.max(percent, 3)}%`,
+                  background: row.finished
+                    ? "color-mix(in srgb, var(--color-ink-soft) 35%, var(--color-card))"
+                    : "var(--progress-fill)",
+                }}
+              />
+            </span>
+            {status && (
+              <span className="shrink-0 text-sm text-ink-soft sm:hidden">{status}</span>
+            )}
+          </span>
+        )}
+      </span>
+      {status && (
+        <span className="hidden shrink-0 text-sm text-ink-soft sm:block">{status}</span>
+      )}
+    </>
+  );
+
+  const shell =
+    "flex w-full items-center gap-4 px-4 py-4 text-start transition-colors hover:bg-ink/[0.02] sm:rounded-card sm:border sm:border-rule sm:bg-card sm:px-5 sm:transition-shadow sm:hover:bg-card sm:hover:shadow-md";
+
+  if (onPlay) {
+    return (
+      <button
+        type="button"
+        onClick={() => onPlay(row)}
+        className={shell}
+        aria-label={`${row.finished ? "Play again" : "Resume"} ${row.title}`}
+      >
+        {body}
+      </button>
+    );
+  }
+  if (row.nodeId === null) return <div className={shell}>{body}</div>;
+  return (
+    <Link href={`/library/${row.nodeId}`} className={shell}>
+      {body}
+    </Link>
   );
 }
 

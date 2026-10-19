@@ -75,9 +75,10 @@ export function ContinueReading({
    * A rail on every screen (`rail`, the shelf — 1B desktop keeps the row of
    * 340px cards), or a rail on a phone that stacks from lg (`stack`, Home —
    * where the cards sit inside one column of the desktop grid and a sideways
-   * scroller inside it would be a scrollbar nobody finds).
+   * scroller inside it would be a scrollbar nobody finds), or a rail on a
+   * phone that sits two-up from lg (`pair`, My Journey's dashboard).
    */
-  layout?: "rail" | "stack";
+  layout?: "rail" | "stack" | "pair";
   /**
    * Which shelf's books this rail resumes into — see `ContinueDocument`, the
    * same idea for library documents. Originals by default, since that is
@@ -226,7 +227,11 @@ export function ContinueReading({
           so one heading margin is the only thing setting the rhythm. */}
       <ul
         className={`-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 ${
-          layout === "stack" ? "lg:flex-col lg:overflow-visible" : ""
+          layout === "stack"
+            ? "lg:flex-col lg:overflow-visible"
+            : layout === "pair"
+              ? "lg:grid lg:grid-cols-2 lg:overflow-visible"
+              : ""
         }`}
       >
         {cards.map((c) => {
@@ -237,7 +242,7 @@ export function ContinueReading({
           <li
             key={c.key}
             className={`w-[17.5rem] shrink-0 snap-start sm:w-[340px] ${
-              layout === "stack" ? "lg:w-full lg:shrink" : ""
+              layout === "stack" || layout === "pair" ? "lg:w-full lg:shrink" : ""
             }`}
           >
             <Link

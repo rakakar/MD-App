@@ -5,8 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ContinueAv } from "@/components/library/ContinueAv";
 import { ContinueReading } from "@/components/home/ContinueReading";
-import { Onboarding } from "@/components/journey/Onboarding";
-import { FullPathCard, StageCard } from "@/components/journey/StageCard";
+import { NextOnPath, NextStepCard, PathCard } from "@/components/journey/Dashboard";
+import { PathOverview } from "@/components/journey/PathOverview";
+import { StagePicker } from "@/components/journey/StagePicker";
 import { ArrowRightIcon } from "@/components/shell/icons";
 import { EmptyState, PageContainer, ctaPrimary } from "@/components/ui";
 import { getBooks } from "@/lib/api";
@@ -20,64 +21,44 @@ import type { BookSummary } from "@/lib/types";
  *
  * Every other shelf is the corpus — open to anyone, and deliberately readable
  * without an account. This one is not a shelf: it is the reader themselves,
- * where they say they are on the path and everything they have marked. There
- * is nothing here to show a stranger, and a dashboard that renders empty
- * furniture for one is worse than a door.
+ * where they say they are on the path and everything they have marked.
  *
- * The rest of the app is untouched by this: a guest still reads every book,
- * every recording and every folder, and still keeps their place — see the
- * "Reading as guest" line on Settings. It is only the account's own workspace
- * that asks who is asking.
+ * **The gate shows the path, not a picture** (desktop revision 19 Oct 2026).
+ * It was an illustration over a button, which told a stranger this workspace
+ * exists and nothing about what is in it. Now the four levels sit under the
+ * one action — the honest preview of what signing in is for — and the full
+ * path stays open from here without an account, as everything else does.
  */
 function SignInGate() {
   return (
-    /* Centred column, as drawn: illustration, name, what it is, the one
-       action, then the reassurance under a rule. `max-w-xl` rather than the
-       page's full measure — the artwork is the widest thing here and a hero
-       stretched across a desktop reads as a banner. */
-    <div className="mx-auto flex max-w-xl flex-col items-center px-2 py-4 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/illustrations/journey-empty.png"
-        alt=""
-        /* Decorative, so it is `alt=""` and hidden from a screen reader: the
-           heading under it already says what this screen is, and describing a
-           still life of books and a sunrise would only be read aloud in the
-           way of the sentence that matters. */
-        aria-hidden
-        width={1000}
-        height={879}
-        className="h-auto w-full max-w-[22rem] select-none"
-      />
-
-      <h1 className="mt-2 font-display text-3xl font-medium tracking-[-0.015em]">
+    <>
+      <h1 className="font-display text-[2.25rem] font-medium leading-tight tracking-[-0.015em] sm:text-5xl">
         Start your journey
       </h1>
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-ink-soft">
+      <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg">
         Where you are on the path, what you are reading and listening to, and
         everything you have marked — kept together and synced to your account.
       </p>
 
-      {/* The button on its own, with no card around it. The card carried a
-          heading and a paragraph that said again what the line above already
-          says, and boxing a single action made the one thing to do on this
-          screen look like one of several. */}
-      <Link
-        href="/login?next=/me"
-        className={`${ctaPrimary} mt-7 w-full sm:w-auto sm:px-7`}
-        style={{ background: "var(--ws-color)" }}
-      >
-        Sign In to begin
-        <ArrowRightIcon className="h-4 w-4" />
-      </Link>
+      {/* The reassurance beside the action it qualifies rather than under a
+          rule — the two belong together. It wraps under the button on a
+          phone. */}
+      <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+        <Link
+          href="/login?next=/me"
+          className={`${ctaPrimary} min-h-12 w-full sm:w-auto sm:px-6 sm:text-base`}
+          style={{ background: "var(--ws-color)" }}
+        >
+          Sign In to begin
+          <ArrowRightIcon className="h-4 w-4" />
+        </Link>
+        <p className="text-sm text-ink-soft">
+          Every book, recording and folder stays open without an account.
+        </p>
+      </div>
 
-      {/* Straight under the button, with nothing between them: the rule was
-          separating the reassurance from the action it qualifies, when the two
-          belong together. */}
-      <p className="mt-4 text-xs text-ink-soft">
-        Every book, recording and folder stays open without an account.
-      </p>
-    </div>
+      <PathOverview />
+    </>
   );
 }
 
@@ -85,10 +66,11 @@ function SignInGate() {
  * **My Journey — the dashboard** (19A screens 1 and 2).
  *
  * Two screens behind one address, and which one shows turns on a single
- * question: has the reader said where they are? Until they have, this *is* the
- * onboarding — no dashboard behind it, nothing to dismiss — because a journey
+ * question: has the reader said where they are? Until they have, it is the
+ * stage picker over the four levels, with nothing to dismiss — a journey
  * screen with no stage in it would be a page of empty furniture. After, it is
- * the stage they named, one next step, and the two histories.
+ * the path card, one next step, the two histories and the stage that comes
+ * next (desktop revision 19 Oct 2026).
  *
  * The stage is read on the client rather than the server because it lives in
  * local prefs (see `Prefs.journeyStage`): it must work for a reader who has
@@ -128,7 +110,7 @@ export default function MyJourneyPage() {
 
   if (!user) {
     return (
-      <PageContainer>
+      <PageContainer size="shelf">
         <SignInGate />
       </PageContainer>
     );
@@ -136,67 +118,94 @@ export default function MyJourneyPage() {
 
   const stage = stageById(stageId);
 
-  // Not yet asked, or asked again from the card. The layover covers the app
-  // until answered — on a first run there is no dashboard to show behind it,
-  // so nothing is rendered under it either way, and the same component serves
-  // both because it is the same question.
-  if (!stage || changing) {
+  const declare = (next: number) => {
+    setPrefs({ journeyStage: next });
+    setStageId(next);
+    setChanging(false);
+  };
+
+  // Not yet asked: the picker over the four levels, with no way to dismiss
+  // it — without an answer there is no dashboard to go back to.
+  if (!stage) {
     return (
-      <Onboarding
-        onDone={(next) => {
-          setPrefs({ journeyStage: next });
-          setStageId(next);
-          setChanging(false);
-        }}
-      />
+      <PageContainer size="shelf">
+        <h1 className="font-display text-3xl font-medium tracking-[-0.015em] sm:text-4xl">
+          My Journey
+        </h1>
+        <PathOverview />
+        <StagePicker onDone={declare} />
+      </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
-      <h1 className="font-display text-2xl font-medium">My Journey</h1>
-
-      <div className="mt-4 flex flex-col gap-3">
-        <StageCard
-          stage={stage}
-          books={books}
-          progress={progress}
-          onChangeStage={() => setChanging(true)}
-        />
-        <FullPathCard />
+    <PageContainer size="shelf">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="font-display text-3xl font-medium tracking-[-0.015em] sm:text-4xl">
+          My Journey
+        </h1>
+        {/* In the head on a desktop; a phone has it at the foot of the path
+            card, where the thumb is. */}
+        <button
+          type="button"
+          onClick={() => setChanging(true)}
+          className="hidden min-h-11 items-center rounded-control border border-rule bg-card px-4 text-sm font-semibold transition-colors hover:bg-ink/[0.03] sm:inline-flex"
+        >
+          Change my stage
+        </button>
       </div>
 
-      {/* Both histories, whichever shelf they came from — this workspace is
-          about the reader rather than about a shelf, which is why the reading
-          rail is asked for "all" here and for one workspace everywhere else.
-          Each draws nothing at all when there is nothing part-finished, so a
-          reader who has only ever opened one book sees one rail. */}
-      <ContinueReading
-        workspace="all"
-        heading="Reading"
-        tier="eyebrow"
-        limit={2}
-      />
-      {/* Originals only, as the comps specify — "मूल ऑडियो/वीडियो से". The
-          rail scopes its own lookup to that shelf, so a recording from
-          Resources is not named here even though the reading rail beside it
-          spans everything. See the note on the dashboard's histories. */}
-      <ContinueAv sources={[]} limit={2} heading="Listening" />
+      <div className="mt-5 sm:mt-6">
+        <PathCard stage={stage} onChangeStage={() => setChanging(true)} />
+      </div>
 
-      {progress.length === 0 && (
-        <div className="mt-5">
-          <EmptyState
-            title="Nothing in progress yet"
-            hint="Open any book and your place is saved automatically — it will show up here."
+      {/* Two columns from lg: the reader's own (next step, then the two
+          histories) beside what comes after. On a phone the aside simply
+          follows, last. */}
+      <div className="mt-8 grid gap-8 lg:mt-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+        <div className="min-w-0">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+            Your next step
+          </h2>
+          <NextStepCard stage={stage} books={books} progress={progress} />
+
+          {/* Both histories, whichever shelf they came from — this workspace is
+              about the reader rather than about a shelf. Each draws nothing at
+              all when there is nothing to show. */}
+          <ContinueReading
+            workspace="all"
+            heading="Reading"
+            tier="eyebrow"
+            limit={2}
+            layout="pair"
+            className="mt-8"
           />
-        </div>
-      )}
+          <ContinueAv
+            sources={[]}
+            limit={3}
+            heading="Listening & watching"
+            note="Audio and video"
+            variant="list"
+          />
 
-      {/* No Bookmarks/Notes shortcuts. They are two of the four tabs in the
-          bar at the foot of this very screen, and a card repeating a tab is a
-          second door to a room the reader is already standing outside. The
-          dashboard is the stage and the two histories; what is saved has its
-          own tabs. */}
+          {progress.length === 0 && (
+            <div className="mt-8">
+              <EmptyState
+                title="Nothing in progress yet"
+                hint="Open any book and your place is saved automatically — it will show up here."
+              />
+            </div>
+          )}
+        </div>
+
+        <aside className="min-w-0">
+          <NextOnPath stage={stage} />
+        </aside>
+      </div>
+
+      {changing && (
+        <StagePicker onDone={declare} onCancel={() => setChanging(false)} />
+      )}
     </PageContainer>
   );
 }

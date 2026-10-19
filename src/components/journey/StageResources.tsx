@@ -21,21 +21,48 @@ import { contentLang } from "@/lib/script";
 export function StageResources({
   resources,
   label = "Resources",
+  layout = "list",
+  count = false,
 }: {
   resources: StageResource[];
-  label?: string;
+  /** the heading; null for none, where the caller has its own */
+  label?: string | null;
+  /**
+   * `list` stacks the rows; `grid` lays them out three across on a desktop,
+   * which is how the dashboard's "For this stage" draws them.
+   */
+  layout?: "list" | "grid";
+  /** "3 resources" beside the heading */
+  count?: boolean;
 }) {
   if (resources.length === 0) return null;
   return (
     <div>
-      <p className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">{label}</p>
-      <ul className="mt-1.5 flex flex-col gap-1.5">
+      {label !== null && (
+        <p className="flex items-baseline gap-2.5">
+          <span className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
+            {label}
+          </span>
+          {count && (
+            <span className="text-sm text-ink-soft">
+              {resources.length} {resources.length === 1 ? "resource" : "resources"}
+            </span>
+          )}
+        </p>
+      )}
+      <ul
+        className={
+          layout === "grid"
+            ? "mt-2.5 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3"
+            : "mt-1.5 flex flex-col gap-1.5"
+        }
+      >
         {resources.map((r) => {
           const external = isExternalHref(r.href);
           const lang = contentLang(r.title);
           const body = (
             <>
-              <KindTile kind={r.kind === "link" ? "link" : r.kind} size="sm" />
+              <KindTile kind={r.kind === "link" ? "link" : r.kind} size={layout === "grid" ? "md" : "sm"} />
               <span className="min-w-0 flex-1">
                 <span
                   lang={lang.lang}
@@ -54,8 +81,9 @@ export function StageResources({
               )}
             </>
           );
-          const row =
-            "flex min-h-11 items-center gap-3 rounded-card border border-rule bg-card p-2.5 transition-shadow hover:shadow-md";
+          const row = `flex h-full min-h-11 items-center gap-3 rounded-card border border-rule bg-card transition-shadow hover:shadow-md ${
+            layout === "grid" ? "p-3.5" : "p-2.5"
+          }`;
           return (
             <li key={`${r.href}|${r.title}|${r.note ?? ""}`}>
               {external ? (

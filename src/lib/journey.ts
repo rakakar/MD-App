@@ -134,7 +134,7 @@ export const STAGES: Stage[] = [
     id: 4,
     level: 2,
     hi: "अध्ययन शिविर",
-    en: "first reading of the books",
+    en: "First reading of the books",
     note: "Systematic study of the core literature — darshan, vaad, shastra, Paribhasha Samhita, Manaviya Samvidhan.",
     duration: "part-time 2–3 years · full-time 6 months–3 years",
     genres: ["darshan", "vaad", "shastra"],
@@ -143,6 +143,7 @@ export const STAGES: Stage[] = [
     id: 5,
     level: 2,
     hi: "श्रवण — अध्ययन-अभ्यास गोष्ठी",
+    en: "Shravan",
     note: "Re-reading in small groups, testing one's own conclusions. Language synthesises into aphorism.",
     duration: "2–8 rounds over 4–8 years",
     // The same core literature, read again — so the same genres.
@@ -152,6 +153,7 @@ export const STAGES: Stage[] = [
     id: 6,
     level: 3,
     hi: "मनन — मनन-अभ्यास गोष्ठी",
+    en: "Manan",
     note: "Understanding turns into inner and outer change. Needs the entire library — published and unpublished, all audio and video, sankalan and shodh patra.",
     duration: "many years · depends on sanskar and intensity of desire",
     // "The app stops suggesting and simply stays stocked."
@@ -161,6 +163,7 @@ export const STAGES: Stage[] = [
     id: 7,
     level: 4,
     hi: "अवधारणा",
+    en: "Avdharana",
     note: "Stability in nyaya-dharma-satya. Dependence on written words begins to fall away.",
     duration: "no fixed duration",
     genres: null,
@@ -169,6 +172,7 @@ export const STAGES: Stage[] = [
     id: 8,
     level: 4,
     hi: "बोध / पूर्ण बोध",
+    en: "Bodh / Purna Bodh",
     note: "Firmness in what has been realised. “पुस्तक छूट जाती है” — the book is left behind.",
     duration: "no fixed duration",
     genres: null,
@@ -177,6 +181,7 @@ export const STAGES: Stage[] = [
     id: 9,
     level: 4,
     hi: "अनुभव",
+    en: "Anubhav",
     note: "Knowledge and conduct complete. May occur alongside purna bodh.",
     duration: "no fixed duration",
     genres: null,
@@ -231,7 +236,9 @@ const YT = "https://www.youtube.com";
 const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
   1: [
     { title: "परिचयात्मक संकलन", href: journeyFolderHref(77), kind: "folder", note: "Introductory reading · PDF" },
-    { title: "जीवन विद्या: एक परिचय", href: journeyFolderHref(26), kind: "audio", note: "Nagraj ji's introductory talks · 1997" },
+    // 229, not 26: the 1997 talks were re-filed under Originals › ऑडियो and
+    // the old folder id answers 404 now.
+    { title: "जीवन विद्या: एक परिचय", href: journeyFolderHref(229), kind: "audio", note: "Nagraj ji's introductory talks · 1997" },
     { title: "जीवन विद्या: एक परिचय", href: journeyFolderHref(54), kind: "video", note: "Introductory videos" },
     {
       title: "परिचय शिविर वीडियो",
@@ -240,7 +247,13 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
       note: "Jeevan Vidya official channel",
     },
   ],
-  2: [],
+  // The guide's अध्ययन बिंदु booklet and camp recordings are not in the
+  // library yet (the only Adhyayan Bindu file is the Kannada translation), so
+  // the stage offers what does exist: where the next camp is. Connect's events
+  // are the shivir calendar.
+  2: [
+    { title: "आगामी शिविर", href: "/connect", kind: "link", note: "Upcoming camps" },
+  ],
   3: [
     { title: "अवलोकन पठन सामग्री", href: journeyFolderHref(77), kind: "folder", note: "The reading for this stage · PDF" },
     { title: "सहअस्तित्ववादी विज्ञान (1999)", href: journeyFolderHref(59), kind: "video", note: "Nagraj ji's 1999 video series" },
@@ -393,4 +406,40 @@ export function stageBooks(stage: Stage, books: BookSummary[]): BookSummary[] {
     if (ga !== gb) return ga - gb;
     return books.indexOf(a) - books.indexOf(b);
   });
+}
+
+/**
+ * The stage panel's tabs (full path, desktop revision 19 Oct 2026). "About"
+ * is every stage's; the other three exist only where the stage names a library
+ * folder of that kind, so a stage met in a camp is not shown three empty tabs.
+ */
+export type StageTab = "about" | "reading" | "audio" | "video";
+
+export const STAGE_TAB_LABEL: Record<StageTab, string> = {
+  about: "About",
+  reading: "Reading",
+  audio: "Audio",
+  video: "Video",
+};
+
+/** The library folder behind a resource, when it is one of ours. */
+export function resourceFolderId(r: StageResource): number | null {
+  const m = /^\/me\/resources\/(\d+)$/.exec(r.href);
+  return m ? Number(m[1]) : null;
+}
+
+/** Which tab a resource's files are listed under; null for a page elsewhere. */
+export function resourceTab(r: StageResource): Exclude<StageTab, "about"> | null {
+  if (resourceFolderId(r) === null) return null;
+  if (r.kind === "audio") return "audio";
+  if (r.kind === "video") return "video";
+  return "reading";
+}
+
+/** The tabs a stage's panel draws, in order. */
+export function stageTabs(stage: Stage): StageTab[] {
+  const have = new Set(stageResources(stage).map(resourceTab));
+  return (["about", "reading", "audio", "video"] as const).filter(
+    (t) => t === "about" || have.has(t)
+  );
 }
