@@ -53,7 +53,10 @@ export function StageResources({
       <ul
         className={
           layout === "grid"
-            ? "mt-2.5 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3"
+            ? // `grid-cols-1`, not the implicit column: that one is sized
+              // `auto`, so a long one-line note (truncated, so it never
+              // wraps) widened the column past the card on a phone.
+              "mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3"
             : "mt-1.5 flex flex-col gap-1.5"
         }
       >
@@ -85,7 +88,7 @@ export function StageResources({
             layout === "grid" ? "p-3.5" : "p-2.5"
           }`;
           return (
-            <li key={`${r.href}|${r.title}|${r.note ?? ""}`}>
+            <li key={`${r.href}|${r.title}|${r.note ?? ""}`} className="min-w-0">
               {external ? (
                 <a
                   href={r.href}
