@@ -6,6 +6,11 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { Chip, ChipRow, CountTabs } from "@/components/ui";
 import { getBooks } from "@/lib/api";
+import {
+  CONVERSATIONS_CHANGED,
+  listSavedToJourney,
+  type Conversation,
+} from "@/lib/assistant/conversations";
 import { PERSONAL_SYNCED, localBookmarks, localNotes, syncPersonal } from "@/lib/personal";
 import type { LocalBookmark, LocalNote } from "@/lib/storage";
 import type { BookSummary } from "@/lib/types";
@@ -31,11 +36,17 @@ import type { BookSummary } from "@/lib/types";
  * the two Highlights-and-Notes bars in the app work the same way.
  */
 
-export type PersonalTab = "highlights" | "notes";
+export type PersonalTab = "highlights" | "notes" | "research";
 
 export interface PersonalRows {
   bookmarks: LocalBookmark[];
   notes: LocalNote[];
+  /**
+   * Assistant conversations saved with "Save to Journey" — the third thing a
+   * reader keeps, and the one that was saved with nowhere to find it again.
+   * Kept on this device only (`lib/assistant/conversations`), signed in or not.
+   */
+  research: Conversation[];
 }
 
 /** `book_code` → the book's own title, for the filter's chips. */
@@ -66,7 +77,12 @@ export function usePersonalRows(): {
   const [titles, setTitles] = useState<BookTitles>(new Map());
 
   const reload = useCallback(
-    () => setRows({ bookmarks: localBookmarks(), notes: localNotes() }),
+    () =>
+      setRows({
+        bookmarks: localBookmarks(),
+        notes: localNotes(),
+        research: listSavedToJourney(),
+      }),
     []
   );
 
@@ -81,7 +97,17 @@ export function usePersonalRows(): {
   // new rows sit there unseen until a reload.
   useEffect(() => {
     window.addEventListener(PERSONAL_SYNCED, reload);
-    return () => window.removeEventListener(PERSONAL_SYNCED, reload);
+    // Saving in the Assistant, perhaps in another tab, changes the count.
+    window.addEventListener(CONVERSATIONS_CHANGED, reload);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "md.assistant.v1") reload();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(PERSONAL_SYNCED, reload);
+      window.removeEventListener(CONVERSATIONS_CHANGED, reload);
+      window.removeEventListener("storage", onStorage);
+    };
   }, [reload]);
 
   /**
@@ -155,19 +181,22 @@ export function PersonalHeader({
 }) {
   const { user, loading } = useAuth();
   const anything = rows !== null && rows.bookmarks.length + rows.notes.length > 0;
+  const here = active === "notes" ? "/me/notes" : active === "research" ? "/me/research" : "/me/bookmarks";
 
   return (
     <>
       {/* Notes is not a tab of its own in the bar any more, so it has nothing
           the nav can match on the URL. It says which tab it belongs under. */}
-      {active === "notes" && <NavScope href="/me/bookmarks" />}
+      {active !== "highlights" && <NavScope href="/me/bookmarks" />}
 
       <h1 className="font-display text-2xl font-medium">Highlights &amp; Notes</h1>
-      {!loading && !user && anything && (
+      {/* Not on Research: those are on this device whether or not anyone is
+          signed in, and the tab says so itself. */}
+      {!loading && !user && anything && active !== "research" && (
         <p className="mt-1 text-xs text-ink-soft">
           Saved on this device ·{" "}
           <Link
-            href={`/login?next=${active === "notes" ? "/me/notes" : "/me/bookmarks"}`}
+            href={`/login?next=${here}`}
             className="underline"
           >
             Sign in to sync
@@ -212,10 +241,18 @@ export function PersonalHeader({
               count: rows?.notes.length,
               href: "/me/notes",
             },
+            {
+              value: "research",
+              label: "Research",
+              count: rows?.research.length,
+              href: "/me/research",
+            },
           ]}
         />
         <BookFilter
-          rows={active === "notes" ? rows?.notes : rows?.bookmarks}
+          rows={
+            active === "research" ? [] : active === "notes" ? rows?.notes : rows?.bookmarks
+          }
           titles={titles}
           book={book}
           onBook={onBook}

@@ -7,9 +7,10 @@
 // got: reopening a conversation must never spend a second question from the
 // reader's daily allowance to show them something they already have.
 //
-// "Save to Journey" is a flag on the conversation for the same reason — My
-// Journey has no model for it yet. It is honest on this device and is the
-// first thing to move to the server when one exists.
+// "Save to Journey" is a flag on the conversation for the same reason — the
+// BE has no model for it yet. My Journey lists the saved ones under Highlights
+// & Notes › Research. It is honest on this device and is the first thing to
+// move to the server when one exists.
 
 import type { ChatAnswer } from "@/lib/types";
 import type { Intent } from "./intent";
@@ -64,9 +65,20 @@ function read(): Conversation[] {
   }
 }
 
+/**
+ * The newest `MAX_CONVERSATIONS`, plus every one saved to Journey whatever
+ * its age. A saved answer is one the reader asked to keep; trimming it because
+ * they went on to ask a hundred other things would empty My Journey's
+ * Research tab behind their back.
+ */
+function capped(list: Conversation[]): Conversation[] {
+  let unsaved = 0;
+  return list.filter((c) => c.savedToJourney || unsaved++ < MAX_CONVERSATIONS);
+}
+
 function write(list: Conversation[]): void {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(list.slice(0, MAX_CONVERSATIONS)));
+    window.localStorage.setItem(KEY, JSON.stringify(capped(list)));
     window.dispatchEvent(new Event(CONVERSATIONS_CHANGED));
   } catch {
     // Private mode or a full disk: the conversation still works on screen,
@@ -81,6 +93,20 @@ export function newId(): string {
 /** Newest first. */
 export function listConversations(): Conversation[] {
   return read().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/** The ones saved to Journey, newest first — My Journey's Research tab. */
+export function listSavedToJourney(): Conversation[] {
+  return listConversations().filter((c) => c.savedToJourney);
+}
+
+/**
+ * Saves or un-saves one in place. Its `updatedAt` is left alone: un-saving
+ * from My Journey is not a new turn in the conversation, and moving it to the
+ * top of the Assistant's history would say it was.
+ */
+export function setSavedToJourney(id: string, saved: boolean): void {
+  write(read().map((c) => (c.id === id ? { ...c, savedToJourney: saved } : c)));
 }
 
 export function getConversation(id: string): Conversation | null {
