@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useRoutePath } from "./useRoutePath";
 import { useEffect, type ReactNode } from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
@@ -43,7 +44,7 @@ function CommandK() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname() ?? "/";
+  const pathname = useRoutePath();
   // auth screens are neutral chrome (PRD §4)
   const neutral = pathname === "/login" || pathname === "/signup";
   // a reader owns the viewport: it has its own back, contents and settings,

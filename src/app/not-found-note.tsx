@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useRoutePath } from "@/components/shell/useRoutePath";
 
 /**
  * The extra line a v2 resources link deserves.
@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
  * library is still there under a different address.
  */
 export function MovedNote() {
-  const path = usePathname() ?? "";
+  const path = useRoutePath();
   const wasCollection =
     path.startsWith("/resources/collections/") || path.startsWith("/resources/doors/");
   const wasFolder = path.startsWith("/resources/files");

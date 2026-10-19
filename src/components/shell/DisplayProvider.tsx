@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useRoutePath } from "./useRoutePath";
 import {
   createContext,
   useCallback,
@@ -94,7 +94,7 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
   const [resolved, setResolved] = useState<ResolvedTheme>("light");
   // The status bar follows the book while one is open, so this has to move
   // with the route as well as with the settings.
-  const reading = ownsViewport(usePathname() ?? "/");
+  const reading = ownsViewport(useRoutePath());
   // The app bar's own colour, while one is on screen. It carries the
   // workspace's 8% trace, which THEME_BG cannot know about.
   const [chrome, reportChrome] = useState<string | null>(null);

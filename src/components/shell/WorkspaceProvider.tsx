@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useRoutePath } from "./useRoutePath";
 import {
   createContext,
   useCallback,
@@ -46,7 +46,7 @@ const WorkspaceContext = createContext<WorkspaceState>({
 export const useWorkspace = () => useContext(WorkspaceContext);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const pathname = useRoutePath();
   // chosen = last explicit dropdown selection (restored per device);
   // derived = content-section override while on a content route.
   const [chosen, setChosen] = useState<WorkspaceId>("originals");
@@ -208,7 +208,7 @@ export function NavScope({ href }: { href: string }) {
    * remounts when its own address changes (`/library/58` → `/library/60`), so
    * the path it was born on is the only one it can speak for.
    */
-  const current = usePathname() ?? "/";
+  const current = useRoutePath();
   const [path] = useState(current);
   useEffect(() => {
     claimTab({ path, href });

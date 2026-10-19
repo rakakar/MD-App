@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRoutePath } from "@/components/shell/useRoutePath";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CloseIcon, PlusIcon } from "@/components/shell/icons";
@@ -45,7 +45,7 @@ export function ConversationsPanel({
   onCollapse: () => void;
 }) {
   const { user, loading } = useAuth();
-  const pathname = usePathname();
+  const pathname = useRoutePath();
   const [all, setAll] = useState<Conversation[] | null>(null);
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<Intent | null>(null);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRoutePath } from "@/components/shell/useRoutePath";
 import { useMemo, useState, type CSSProperties } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ChevronRight } from "@/components/shell/icons";
@@ -52,7 +52,7 @@ const SHOWN = 3;
 
 function HighlightsCard({ rows }: { rows: Highlight[] | null }) {
   const { user } = useAuth();
-  const pathname = usePathname();
+  const pathname = useRoutePath();
   const [filter, setFilter] = useState<Filter>("all");
 
   const newest = useMemo(

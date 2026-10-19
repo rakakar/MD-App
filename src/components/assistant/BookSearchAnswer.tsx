@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRoutePath } from "@/components/shell/useRoutePath";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { BookmarkIcon, ChevronRight } from "@/components/shell/icons";
@@ -248,7 +249,7 @@ export function BookSearchAnswer({
 }
 
 function SignInCard({ total, books }: { total: number; books: number }) {
-  const pathname = usePathname();
+  const pathname = useRoutePath();
   const params = useSearchParams();
   const here = `${pathname}${params.size ? `?${params}` : ""}`;
   const rest = total - Math.min(total, PREVIEW);

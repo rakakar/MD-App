@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useRoutePath } from "./useRoutePath";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -345,7 +346,7 @@ function AvatarMenu() {
   // Back here after signing in. The path only — reading the query would need
   // `useSearchParams`, which opts every route under the shell into client
   // rendering to serve one link.
-  const pathname = usePathname();
+  const pathname = useRoutePath();
 
   if (loading) {
     return <div className="h-12 w-12 rounded-control bg-ink/5" aria-hidden />;

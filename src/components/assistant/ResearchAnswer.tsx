@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRoutePath } from "@/components/shell/useRoutePath";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CheckIcon, ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
@@ -635,7 +636,7 @@ function FailureCard({
   onAsk: Ask;
   query: string;
 }) {
-  const pathname = usePathname();
+  const pathname = useRoutePath();
   const params = useSearchParams();
   const here = `${pathname}${params.size ? `?${params}` : ""}`;
 

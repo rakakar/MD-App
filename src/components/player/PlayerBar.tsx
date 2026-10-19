@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useRoutePath } from "@/components/shell/useRoutePath";
 import { useEffect, useRef, useState } from "react";
 import {
   CloseIcon,
@@ -79,7 +80,7 @@ function PlayerBarInner({
   const barRef = useRef<HTMLDivElement>(null);
   // Only where it sits differs now: inside a book it clears the reader's own
   // bottom bar, everywhere else the tab bar.
-  const reader = ownsViewport(usePathname());
+  const reader = ownsViewport(useRoutePath());
   const desktop = useIsDesktop();
 
   useEffect(() => {

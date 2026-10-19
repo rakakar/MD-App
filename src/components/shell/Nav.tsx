@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRoutePath } from "./useRoutePath";
 import { useEffect, useRef } from "react";
 import { SidebarAccount, WorkspaceSwitcher } from "./Header";
 import { RailHost } from "./Rail";
@@ -36,7 +36,7 @@ function isActive(item: NavItem, pathname: string, claimed: string | null): bool
  */
 export function BottomNav() {
   const { workspace, tab, derive } = useWorkspace();
-  const pathname = usePathname() ?? "/";
+  const pathname = useRoutePath();
   const claimed = tab && tab.path === pathname ? tab.href : null;
   const navRef = useRef<HTMLElement>(null);
 
@@ -115,7 +115,7 @@ export function BottomNav() {
 /** Desktop ≥1024px: persistent sidebar — selector top, nav, avatar bottom. */
 export function Sidebar() {
   const { workspace, tab, derive } = useWorkspace();
-  const pathname = usePathname() ?? "/";
+  const pathname = useRoutePath();
   const claimed = tab && tab.path === pathname ? tab.href : null;
 
   return (
