@@ -64,6 +64,50 @@ export function exactGlossaryWord(
   );
 }
 
+/**
+ * Asking to *find* something rather than to know about it — "find me shivir
+ * in surat", "where is the next shivir", "सूरत में शिविर ढूंढो".
+ */
+const FIND_VERBS =
+  /^(find|search|look(ing)? for|locate|where|any|list|upcoming|next|dhundho|dhoondho|ढूंढो|ढूँढो|ढूंढें)(?=\s|$)/i;
+const FIND_TAIL = /(dhundho|dhoondho|ढूंढो|ढूँढो|ढूंढें|chahiye|चाहिए|kahan|kahaan|कहाँ|कहां)\s*[?？]?\s*$/i;
+
+/**
+ * Asking what a word *means*. "shivir kya hai" is a question about the idea;
+ * "shivir kab hai" is a question about the calendar, and the calendar is a
+ * place in the app.
+ */
+const MEANING_WORDS = new Set([
+  "what", "why", "meaning", "mean", "means", "define", "explain", "difference",
+  "क्या", "क्यों", "अर्थ", "मतलब", "समझाइए", "समझाओ", "अंतर", "फर्क",
+  "kya", "kyon", "kyun", "arth", "matlab", "samjhao", "antar", "farak",
+]);
+
+/**
+ * Places whose *contents* are what people search for: "find anubhav in the
+ * books" wants passages, not the shelf. A find-shaped sentence that names one
+ * of these and something else besides is still a search.
+ */
+const CONTAINERS = new Set(["books", "library", "paribhasha", "translations", "materials", "media"]);
+
+/**
+ * Places that are logistics — when, where, who to call. Nearly any question
+ * about them is a question about the calendar or the address book, not about
+ * the ideas, so they go to Navigate unless the sentence asks what a word means.
+ */
+const LOGISTICS = new Set(["events", "centres", "contacts"]);
+
+/**
+ * The words that make a sentence about logistics on their own. Not every
+ * keyword of those places: "parichay" reaches Events, but it is also half the
+ * title of जीवन विद्या एक परिचय, and "jeevan vidya parichay" is a book.
+ */
+const LOGISTICS_WORDS = new Set([
+  "shivir", "shivirs", "शिविर", "event", "events", "camp", "camps", "calendar",
+  "centre", "centres", "center", "centers", "kendra", "केंद्र",
+  "contact", "contacts", "sampark", "संपर्क", "prabodhak", "प्रबोधक",
+]);
+
 export function detectIntent(
   query: string,
   dictionary: ParibhashaWord[] | null
@@ -73,12 +117,29 @@ export function detectIntent(
 
   const words = tokens(q);
   const nav = matchDestinations(q);
-  const namesAPlace = (nav.matches[0]?.score ?? 0) >= 3;
+  const best = nav.matches[0];
+  const namesAPlace = (best?.score ?? 0) >= 3;
   const personal = words.some((w) =>
     ["my", "mere", "mera", "meri", "मेरे", "मेरा", "मेरी"].includes(w)
   );
   if (isCommand(q) && nav.matches.length > 0) return "navigate";
   if (namesAPlace && (personal || words.length <= 2)) return "navigate";
+
+  // A sentence built around a place, rather than one that mentions it on the
+  // way to a question. Auto-routing used to stop at two words, so "find me
+  // shivir in surat" went to Book search and came back with passages that
+  // happened to contain सूरत.
+  if (namesAPlace) {
+    const id = best.destination.id;
+    const asksMeaning = words.some((w) => MEANING_WORDS.has(w));
+    const searchesInside = CONTAINERS.has(id) && nav.leftover.length > 0;
+    const logistics = LOGISTICS.has(id) && words.some((w) => LOGISTICS_WORDS.has(w));
+    if (!asksMeaning && logistics) return "navigate";
+    if (!searchesInside && (FIND_VERBS.test(q) || FIND_TAIL.test(q))) return "navigate";
+    if (!searchesInside && !asksMeaning && nav.leftover.length <= 1 && !/[?？]\s*$/.test(q)) {
+      return "navigate";
+    }
+  }
 
   if (looksLikeQuestion(q, words)) return "research";
 

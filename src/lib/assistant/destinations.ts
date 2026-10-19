@@ -240,6 +240,11 @@ const FILLER = new Set([
   "kholo", "kholiye", "khol", "dikhao", "dikhaiye", "mere", "mera", "meri",
   "खोलो", "खोलें", "खोलिए", "दिखाओ", "दिखाइए", "मेरे", "मेरा", "मेरी", "कहाँ", "कहां",
   "hai", "hain", "है", "हैं", "par", "पर", "jao", "जाओ",
+  // the joints of a sentence — "shivir *in* surat", "सूरत *में* शिविर" — which
+  // are neither a place nor the subject being looked for
+  "in", "at", "for", "of", "on", "any", "some", "next", "upcoming", "search", "list",
+  "में", "mein", "me", "ka", "ki", "ke", "का", "की", "के", "wala", "wale", "वाला", "वाले",
+  "koi", "कोई", "agla", "agle", "अगला", "अगले", "dhundho", "ढूंढो", "ढूँढो", "chahiye", "चाहिए",
 ]);
 
 /** A sentence that opens with one of these is asking to go, not to know. */
@@ -278,17 +283,20 @@ export interface NavigationAnswer {
 function scoreFor(d: Destination, words: string[]): number {
   let score = 0;
   for (const w of words) {
-    for (const k of d.keywords) {
-      if (k === w) {
-        score += 3;
-        break;
-      }
-      // prefix either way round, so "note" finds notes and "highlighted"
-      // finds highlight — but only for words long enough to mean something
-      if (w.length >= 4 && k.length >= 4 && (k.startsWith(w) || w.startsWith(k))) {
-        score += 2;
-        break;
-      }
+    // An exact keyword anywhere in the list first: checked in one pass, a
+    // prefix hit on an earlier keyword ("contacts" for "contact") scored 2 and
+    // stopped there, so the exact one never got its 3.
+    if (d.keywords.includes(w)) {
+      score += 3;
+      continue;
+    }
+    // prefix either way round, so "note" finds notes and "highlighted"
+    // finds highlight — but only for words long enough to mean something
+    if (
+      w.length >= 4 &&
+      d.keywords.some((k) => k.length >= 4 && (k.startsWith(w) || w.startsWith(k)))
+    ) {
+      score += 2;
     }
   }
   if (tokens(d.title).join(" ") === words.join(" ")) score += 2;

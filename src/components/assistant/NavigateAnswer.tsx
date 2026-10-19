@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight } from "@/components/shell/icons";
-import { searchLibrary } from "@/lib/api";
+import { getEvents, searchLibrary } from "@/lib/api";
 import {
   bookDestinations,
   matchDestinations,
   resumeDestination,
   type Destination,
 } from "@/lib/assistant/destinations";
+import { cardDateRange, type EventListResponse } from "@/lib/events";
 import { nodeHref } from "@/lib/library";
 import { contentLang } from "@/lib/script";
 import type { BookSummary, LibrarySearchRow } from "@/lib/types";
@@ -62,6 +63,27 @@ export function NavigateAnswer({
 
   const [best, ...others] = answer.matches.map((m) => m.destination);
 
+  // "find me shivir in surat": the place is Events and the leftover word is
+  // where. The events endpoint already searches by city, so the answer can be
+  // the shivirs themselves rather than a door to a list the reader then has to
+  // search again. Null until asked, and for every other place.
+  const eventsSubject = best?.id === "events" && subject.length >= 3 ? subject : "";
+  const [events, setEvents] = useState<EventListResponse | null>(null);
+  useEffect(() => {
+    if (!eventsSubject) {
+      setEvents(null);
+      return;
+    }
+    const ctrl = new AbortController();
+    getEvents({ bucket: "upcoming", q: eventsSubject, signal: ctrl.signal })
+      .then(setEvents)
+      .catch(() => setEvents(null));
+    return () => ctrl.abort();
+  }, [eventsSubject]);
+  // The Events page, already searched for the same words.
+  const bestHref =
+    best && eventsSubject ? `${best.href}?q=${encodeURIComponent(eventsSubject)}` : best?.href;
+
   useEffect(() => {
     onSettle(best ? `Go to ${best.section} · ${best.title}` : "No place matched", answer.matches.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,7 +115,46 @@ export function NavigateAnswer({
   return (
     <div className="flex flex-col gap-4">
       <AnswerEyebrow label="Go to" />
-      {best && <BestCard d={best} />}
+      {best && <BestCard d={best} href={bestHref} />}
+
+      {events && (
+        events.results.length > 0 ? (
+          <ul className="flex flex-col gap-2">
+            {events.results.slice(0, 3).map((e) => (
+              <li key={e.slug}>
+                <Row
+                  href={`/connect/events/${encodeURIComponent(e.slug)}`}
+                  icon={<DestinationGlyph icon="events" className="h-5 w-5" />}
+                  title={e.title}
+                  detail={[cardDateRange(e), e.location || e.city].filter(Boolean).join(" · ")}
+                />
+              </li>
+            ))}
+            {events.results.length > 3 && (
+              <li>
+                <Link href={bestHref!} className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold" style={{ color: "var(--ws-ink)" }}>
+                  All {events.results.length} upcoming
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </li>
+            )}
+          </ul>
+        ) : (
+          <p className="text-sm text-ink-soft">
+            No upcoming shivirs match “{eventsSubject}”.
+            {events.counts.past > 0 && (
+              <>
+                {" "}
+                {events.counts.past} past {events.counts.past === 1 ? "one is" : "ones are"} under Past on{" "}
+                <Link href={bestHref!} className="font-semibold underline" style={{ color: "var(--ws-ink)" }}>
+                  Events
+                </Link>
+                .
+              </>
+            )}
+          </p>
+        )
+      )}
 
       {also.length > 0 && (
         <>
@@ -128,12 +189,12 @@ function folderDetail(row: LibrarySearchRow & { type: "folder" }): string | unde
   return n > 0 ? `${n} ${n === 1 ? "item" : "items"}` : undefined;
 }
 
-function BestCard({ d }: { d: Destination }) {
+function BestCard({ d, href = d.href }: { d: Destination; href?: string }) {
   const title = `${d.section} · ${d.title}`;
   const l = contentLang(title);
   return (
     <Link
-      href={d.href}
+      href={href}
       className="flex items-center gap-4 rounded-card border border-rule bg-card p-4 shadow-card"
     >
       <span

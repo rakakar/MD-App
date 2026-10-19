@@ -104,6 +104,19 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
 
+  // `?q=` arrives searched — the Assistant's "find me shivir in surat" opens
+  // here with Surat already asked. Read after mount, not as a prop: the page is
+  // prerendered, and reading the query on the server would make every visit
+  // to the workspace dynamic for the sake of the few that carry one. Sits
+  // after the fetch effect so the prerendered first answer is still skipped,
+  // and the change of `asked` is what asks the narrowed question.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q")?.trim();
+    if (!q) return;
+    setQuery(q);
+    setAsked(q);
+  }, []);
+
   const filterCount = activeFilterCount(filters);
   const clearAll = () => {
     setFilters(EMPTY_EVENT_FILTERS);
