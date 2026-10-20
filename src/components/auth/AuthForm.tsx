@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useKeyboardInset } from "@/components/assistant/useKeyboardInset";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { FIELD, LABEL } from "@/components/auth/fields";
+import { PhoneAuth } from "@/components/auth/PhoneAuth";
 import { ArrowLeftIcon, BrandMark, InfoIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { track } from "@/lib/analytics";
@@ -21,13 +23,6 @@ const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
  * link does not — a link that goes nowhere is worse than none.
  */
 const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
-
-/** The field, resting and focused. 16px type so iOS does not zoom on focus. */
-const FIELD =
-  "mt-2 h-14 w-full rounded-tile border border-rule bg-card px-5 text-base text-ink " +
-  "placeholder:text-ink-soft auth-field";
-
-const LABEL = "block text-xs font-semibold uppercase tracking-[0.08em] text-ink-soft";
 
 /**
  * Sign in and Create account — the designer's comps of 22 Sep 2026.
@@ -52,6 +47,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [reveal, setReveal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Mobile number + WhatsApp code instead of email. `?via=whatsapp` keeps the
+  // choice across the Sign in ↔ Create account link.
+  const [byPhone, setByPhone] = useState(search.get("via") === "whatsapp");
   const keyboard = useKeyboardInset() > 0;
 
   // Back to what the reader was doing when they were asked to sign in, and
@@ -198,95 +196,118 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               : "Free account to sync bookmarks, notes and progress."}
           </p>
 
-          <form onSubmit={submit} className="mt-6 flex flex-col gap-5" noValidate>
-            <label className={LABEL}>
-              Email
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                autoCapitalize="none"
-                enterKeyHint="next"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`${FIELD} normal-case tracking-normal font-normal`}
-              />
-            </label>
+          {byPhone ? (
+            <PhoneAuth mode={mode} next={next} onUseEmail={() => setByPhone(false)} />
+          ) : (
+            <>
+              <form onSubmit={submit} className="mt-6 flex flex-col gap-5" noValidate>
+                <label className={LABEL}>
+                  Email
+                  <input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    enterKeyHint="next"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={`${FIELD} normal-case tracking-normal font-normal`}
+                  />
+                </label>
 
-            <div>
-              <label htmlFor="auth-password" className={LABEL}>
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="auth-password"
-                  type={reveal ? "text" : "password"}
-                  autoComplete={login_ ? "current-password" : "new-password"}
-                  enterKeyHint="go"
-                  placeholder="•••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${FIELD} pe-20`}
-                />
+                <div>
+                  <label htmlFor="auth-password" className={LABEL}>
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="auth-password"
+                      type={reveal ? "text" : "password"}
+                      autoComplete={login_ ? "current-password" : "new-password"}
+                      enterKeyHint="go"
+                      placeholder="•••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={`${FIELD} pe-20`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setReveal((r) => !r)}
+                      aria-pressed={reveal}
+                      aria-label={reveal ? "Hide password" : "Show password"}
+                      className="absolute end-1.5 top-[calc(50%+0.25rem)] inline-flex min-h-11 -translate-y-1/2 items-center px-3.5 text-sm font-bold"
+                      style={{ color: "var(--ws-ink)" }}
+                    >
+                      {reveal ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <p role="alert" className="rounded-tile border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger">
+                    {error}
+                  </p>
+                )}
+
+                {/* Idle until both fields hold something, as drawn: a live
+                    button over two empty fields invites a press that can only
+                    fail. Busy keeps the filled look — the press was valid. */}
+                <button
+                  type="submit"
+                  disabled={!ready || busy}
+                  className={`mt-2 min-h-14 w-full rounded-tile text-base font-bold transition-colors ${
+                    ready ? "text-on-accent hover:opacity-90 disabled:opacity-80" : "bg-canvas text-ink-soft"
+                  }`}
+                  style={ready ? { background: "var(--ws-color)" } : undefined}
+                >
+                  {busy ? "Please wait…" : login_ ? "Sign in" : "Create account"}
+                </button>
+              </form>
+
+              {/* The way round email, for readers who have none or cannot
+                  remember it — quiet on purpose: email is the front door. */}
+              <p className="mt-4 text-center text-sm text-ink-soft">
+                No email?{" "}
                 <button
                   type="button"
-                  onClick={() => setReveal((r) => !r)}
-                  aria-pressed={reveal}
-                  aria-label={reveal ? "Hide password" : "Show password"}
-                  className="absolute end-1.5 top-[calc(50%+0.25rem)] inline-flex min-h-11 -translate-y-1/2 items-center px-3.5 text-sm font-bold"
+                  onClick={() => {
+                    setError(null);
+                    setByPhone(true);
+                  }}
+                  className="inline-flex min-h-11 items-center ps-1 font-bold"
                   style={{ color: "var(--ws-ink)" }}
                 >
-                  {reveal ? "Hide" : "Show"}
+                  {login_ ? "Sign in with mobile number" : "Sign up with mobile number"}
                 </button>
-              </div>
-            </div>
-
-            {error && (
-              <p role="alert" className="rounded-tile border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger">
-                {error}
               </p>
-            )}
 
-            {/* Idle until both fields hold something, as drawn: a live
-                button over two empty fields invites a press that can only
-                fail. Busy keeps the filled look — the press was valid. */}
-            <button
-              type="submit"
-              disabled={!ready || busy}
-              className={`mt-2 min-h-14 w-full rounded-tile text-base font-bold transition-colors ${
-                ready ? "text-on-accent hover:opacity-90 disabled:opacity-80" : "bg-canvas text-ink-soft"
-              }`}
-              style={ready ? { background: "var(--ws-color)" } : undefined}
-            >
-              {busy ? "Please wait…" : login_ ? "Sign in" : "Create account"}
-            </button>
-          </form>
-
-          {/* Google sign-in is built but dark for the alpha — there is no Google
-              API project behind it yet, so the button would only ever produce an
-              error. Set NEXT_PUBLIC_GOOGLE_AUTH=true once it is configured. */}
-          {GOOGLE_ENABLED && (
-            <>
-              <div className="my-5 flex items-center gap-3 text-xs text-ink-soft">
-                <span className="h-px flex-1 bg-rule" /> or <span className="h-px flex-1 bg-rule" />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  window.location.href = googleLoginUrl(next);
-                }}
-                className="min-h-14 w-full rounded-tile border border-rule bg-card text-base font-semibold text-ink"
-              >
-                Continue with Google
-              </button>
+              {/* Google sign-in is built but dark for the alpha — there is no Google
+                  API project behind it yet, so the button would only ever produce an
+                  error. Set NEXT_PUBLIC_GOOGLE_AUTH=true once it is configured. */}
+              {GOOGLE_ENABLED && (
+                <>
+                  <div className="my-5 flex items-center gap-3 text-xs text-ink-soft">
+                    <span className="h-px flex-1 bg-rule" /> or <span className="h-px flex-1 bg-rule" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = googleLoginUrl(next);
+                    }}
+                    className="min-h-14 w-full rounded-tile border border-rule bg-card text-base font-semibold text-ink"
+                  >
+                    Continue with Google
+                  </button>
+                </>
+              )}
             </>
           )}
 
           <p className="mt-5 text-center text-sm text-ink-soft">
             {login_ ? "New here?" : "Already have an account?"}{" "}
             <Link
-              href={`${login_ ? "/signup" : "/login"}?next=${encodeURIComponent(next)}`}
+              href={`${login_ ? "/signup" : "/login"}?next=${encodeURIComponent(next)}${byPhone ? "&via=whatsapp" : ""}`}
               className="inline-flex min-h-11 items-center ps-1 font-bold"
               style={{ color: "var(--ws-ink)" }}
             >
@@ -299,7 +320,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             {/* No self-service reset during the alpha: nothing can send mail
                 yet, and a "forgot password" link that silently goes nowhere is
                 worse than saying so. A known password can be changed in Settings. */}
-            {login_ ? (
+            {byPhone ? (
+              <p>No password needed — each time you sign in, we send a fresh code on WhatsApp.</p>
+            ) : login_ ? (
               <p>
                 Forgot your password?{" "}
                 {SUPPORT_EMAIL ? (

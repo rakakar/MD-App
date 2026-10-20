@@ -11,6 +11,7 @@ import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { ctaPrimaryBar } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
+import { displayPhone } from "@/lib/me";
 import { signInHref } from "@/lib/routes";
 import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceConfig";
 import { UnreadBadge, UnreadDot } from "@/components/notifications/NotificationList";
@@ -331,13 +332,19 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
   );
 }
 
-/** Who the menu belongs to — name, address and initial, as both menus show them. */
+/**
+ * Who the menu belongs to — name, address and initial, as both menus show them.
+ * `email` is the line under the name: the email, or the mobile number of a
+ * reader who signed up with one instead.
+ */
 function identityOf(user: Record<string, unknown>) {
-  const email = (user.email as string | undefined) ?? "";
+  const address = (user.email as string | undefined) ?? "";
+  const email = address || displayPhone(user.phone as string | undefined);
   const name =
     (user.name as string | undefined)?.trim() ||
     (user.first_name as string | undefined)?.trim() ||
-    email.split("@")[0];
+    address.split("@")[0] ||
+    "Reader";
   return { name, email, initial: (name || email || "?").charAt(0).toUpperCase() };
 }
 

@@ -236,20 +236,27 @@ export const upsertItemProgress = (
 
 const ALLAUTH_BASE = "/_allauth/app/v1";
 
-interface AllauthResponse {
+export interface AllauthResponse {
   status: number;
   data?: { user?: MeUser };
   meta?: { session_token?: string };
-  errors?: { message: string; param?: string }[];
+  errors?: { message: string; param?: string; code?: string }[];
 }
 
+/**
+ * `flowToken` is for the WhatsApp code flows: until the code is confirmed,
+ * allauth answers 401 with a token for *that flow*, which is not a signed-in
+ * session and must never be stored as one. The caller holds it and passes it
+ * back; `null` sends no token at all.
+ */
 async function allauth(
   path: string,
   method: string,
-  body?: Record<string, string>
+  body?: Record<string, string>,
+  flowToken?: string | null
 ): Promise<AllauthResponse> {
   const headers: Record<string, string> = { Accept: "application/json" };
-  const token = sessionToken();
+  const token = flowToken === undefined ? sessionToken() : flowToken;
   if (token) headers["X-Session-Token"] = token;
   if (body) headers["Content-Type"] = "application/json";
   const res = await fetch(`${beOrigin()}${ALLAUTH_BASE}${path}`, {
@@ -286,6 +293,39 @@ export const login = (email: string, password: string): Promise<AllauthResponse>
 
 export const signup = (email: string, password: string): Promise<AllauthResponse> =>
   allauth("/auth/signup", "POST", { email, password });
+
+// ---- sign-in by mobile number, code on WhatsApp ----
+//
+// For readers with no email. Indian mobiles only (the BE refuses the rest):
+// `phone` is always "+91" and ten digits. Each of these that sends a code
+// answers 401 with the flow's token in meta.session_token; the confirm call
+// answers 200 with the real session token, which allauth() stores.
+
+/** A returning reader: 400 `unknown_phone` when the number has no account. */
+export const requestPhoneCode = (phone: string): Promise<AllauthResponse> =>
+  allauth("/auth/code/request", "POST", { phone }, null);
+
+export const confirmPhoneCode = (code: string, flowToken: string): Promise<AllauthResponse> =>
+  allauth("/auth/code/confirm", "POST", { code }, flowToken);
+
+export const resendPhoneCode = (flowToken: string): Promise<AllauthResponse> =>
+  allauth("/auth/code/resend", "POST", undefined, flowToken);
+
+/** A new reader: the account is made now, signed in once the code is confirmed. */
+export const signupWithPhone = (phone: string): Promise<AllauthResponse> =>
+  allauth("/auth/signup", "POST", { phone }, null);
+
+export const verifyNewPhone = (code: string, flowToken: string): Promise<AllauthResponse> =>
+  allauth("/auth/phone/verify", "POST", { code }, flowToken);
+
+export const resendNewPhoneCode = (flowToken: string): Promise<AllauthResponse> =>
+  allauth("/auth/phone/verify/resend", "POST", undefined, flowToken);
+
+/** "+919755513333" → "+91 97555 13333", the way the number is said aloud. */
+export function displayPhone(phone: string | undefined | null): string {
+  const m = /^\+91(\d{5})(\d{5})$/.exec(phone ?? "");
+  return m ? `+91 ${m[1]} ${m[2]}` : phone ?? "";
+}
 
 export async function logout(): Promise<AllauthResponse> {
   const res = await allauth("/auth/session", "DELETE");

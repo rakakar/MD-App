@@ -19,7 +19,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { CheckIcon, ChevronRight, CloseIcon } from "@/components/shell/icons";
 import { Sheet, ctaPrimary } from "@/components/ui";
 import { useIsDesktop } from "@/components/ui/Dialog";
-import { changePassword, updateMe } from "@/lib/me";
+import { changePassword, displayPhone, updateMe } from "@/lib/me";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 import { syncPersonal } from "@/lib/personal";
 import { CARD } from "./parts";
@@ -68,8 +68,13 @@ export function AccountCard({ onSaved }: { onSaved: (message: string) => void })
   }
 
   const name = (user.name as string) || "";
+  // A reader who signed up by mobile number has no email — and no password:
+  // they sign in with a WhatsApp code, so there is nothing to change.
   const email = (user.email as string) || "";
-  const initial = (name || email || "?").trim().charAt(0).toUpperCase();
+  const hasPassword = email !== "";
+  const contact = email || displayPhone(user.phone as string | undefined);
+  // "Reader" for a number with no name, as the header menu does — never "+"
+  const initial = (name || email || "Reader").trim().charAt(0).toUpperCase();
 
   const identity = (
     <div className="flex items-center gap-4">
@@ -80,8 +85,8 @@ export function AccountCard({ onSaved }: { onSaved: (message: string) => void })
         {initial}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-title font-semibold text-ink">{name || email}</p>
-        {name && email && <p className="truncate text-sm text-ink-soft">{email}</p>}
+        <p className="truncate text-title font-semibold text-ink">{name || contact}</p>
+        {name && contact && <p className="truncate text-sm text-ink-soft">{contact}</p>}
       </div>
       {desktop && <SyncPill />}
     </div>
@@ -91,10 +96,10 @@ export function AccountCard({ onSaved }: { onSaved: (message: string) => void })
     <div className={`${CARD} px-7`}>
       <div className="py-6">{identity}</div>
       <NameRow name={name} onSaved={onSaved} />
-      <PasswordRow onSaved={onSaved} />
+      {hasPassword && <PasswordRow onSaved={onSaved} />}
     </div>
   ) : (
-    <PhoneAccount identity={identity} name={name} onSaved={onSaved} />
+    <PhoneAccount identity={identity} name={name} hasPassword={hasPassword} onSaved={onSaved} />
   );
 }
 
@@ -298,10 +303,12 @@ function PasswordRow({ onSaved }: { onSaved: (m: string) => void }) {
 function PhoneAccount({
   identity,
   name,
+  hasPassword,
   onSaved,
 }: {
   identity: ReactNode;
   name: string;
+  hasPassword: boolean;
   onSaved: (m: string) => void;
 }) {
   const [sheet, setSheet] = useState<"name" | "password" | null>(null);
@@ -317,10 +324,12 @@ function PhoneAccount({
           <span className="max-w-[50%] truncate text-ink-soft">{name}</span>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
         </button>
-        <button type="button" onClick={() => setSheet("password")} className={row}>
-          <span className="flex-1">Change password</span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
-        </button>
+        {hasPassword && (
+          <button type="button" onClick={() => setSheet("password")} className={row}>
+            <span className="flex-1">Change password</span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+          </button>
+        )}
       </div>
 
       {sheet === "name" && (

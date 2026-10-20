@@ -756,6 +756,8 @@ export interface SearchResponse {
 export interface MeUser {
   id?: number;
   email?: string;
+  /** "+91…" for a reader who signed up by mobile number, else "" */
+  phone?: string;
   name?: string;
   first_name?: string;
   [key: string]: unknown;
