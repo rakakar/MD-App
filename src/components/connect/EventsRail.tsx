@@ -62,22 +62,34 @@ const WEEK = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const WEEK_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 /**
- * Which month to open on: the first event's, so the tinted days are on screen
- * without paging — except that an upcoming or ongoing list never opens on a
- * month already behind it.
+ * Which month to show for a set of event days: for Upcoming and Ongoing the
+ * first month from this one on that has an event, for Past the latest — so
+ * the tinted days are on screen without paging. Worked out from the days
+ * rather than the first card, so it does not depend on the list's order.
  */
-function startMonth(events: EventCard[], bucket: EventBucket): Date {
+function monthFor(days: Set<string>, bucket: EventBucket): Date {
   const today = new Date();
   const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const first = parseDay(events[0]?.start_date);
-  if (!first) return thisMonth;
-  const m = new Date(first.getFullYear(), first.getMonth(), 1);
-  return bucket !== "past" && m < thisMonth ? thisMonth : m;
+  const keys = [...days].sort();
+  if (keys.length === 0) return thisMonth;
+  const from = dayKey(thisMonth);
+  const key =
+    bucket === "past" ? keys[keys.length - 1] : (keys.find((k) => k >= from) ?? keys[0]);
+  const d = parseDay(key)!;
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+/** Whether any of the days falls in the given month. */
+function hasDayIn(days: Set<string>, month: Date): boolean {
+  const prefix = dayKey(month).slice(0, 7);
+  for (const k of days) if (k.startsWith(prefix)) return true;
+  return false;
 }
 
 const card = "rounded-card border border-rule bg-card shadow-card";
 
-/** Remount it (`key`) when the tab changes, so it reopens on that tab's month. */
+/** Remount it (`key`) when the tab changes, so it reopens on that tab's month;
+ *  within a tab it follows the list on its own. */
 export function EventCalendar({
   events,
   bucket,
@@ -89,8 +101,18 @@ export function EventCalendar({
   selected: string | null;
   onSelect: (day: string | null) => void;
 }) {
-  const [month, setMonth] = useState(() => startMonth(events, bucket));
   const days = useMemo(() => eventDays(events), [events]);
+  const [month, setMonth] = useState(() => monthFor(days, bucket));
+
+  // When the list changes — a filter, a search — and the month on screen has
+  // none of its days, move to one that does. Adjusted during render rather
+  // than in an effect, so there is no frame showing an empty month. A month
+  // the reader paged to that still has events is left alone.
+  const [seen, setSeen] = useState(days);
+  if (seen !== days) {
+    setSeen(days);
+    if (days.size > 0 && !hasDayIn(days, month)) setMonth(monthFor(days, bucket));
+  }
   const today = dayKey(new Date());
 
   const y = month.getFullYear();
