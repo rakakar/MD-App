@@ -32,7 +32,7 @@ import type { BookSummary } from "@/lib/types";
 function SignInGate() {
   return (
     <>
-      <h1 className="font-display text-[2.25rem] font-medium leading-tight tracking-[-0.015em] sm:text-5xl">
+      <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
         Start your journey
       </h1>
       <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg">
