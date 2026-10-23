@@ -11,6 +11,7 @@ import { usePlayer } from "@/components/player/PlayerProvider";
 import { PlayIcon, VideoIcon, WaveformIcon } from "@/components/shell/icons";
 import { findLibrary } from "@/lib/api";
 import { albumName } from "@/lib/albumName";
+import { fileTitle } from "@/lib/fileTitle";
 import { EMPTY_FIND } from "@/lib/find";
 import { getProgress } from "@/lib/me";
 import { itemIdFromResumeKey, syncPersonal } from "@/lib/personal";
@@ -197,7 +198,7 @@ export function ContinueAv({
         // honest if something ever does.
         if (kind !== "audio" && kind !== "video") continue;
 
-        const title = file?.title ?? meta?.title ?? "";
+        const title = file?.title ?? fileTitle(meta?.title ?? "");
         if (!title) continue; // unnamed by both — a card with no name is not a card
 
         const durationSeconds = file?.duration_seconds ?? meta?.duration_seconds ?? null;

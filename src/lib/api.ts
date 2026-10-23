@@ -9,6 +9,7 @@ import {
   type EventListResponse,
 } from "./events";
 import { EMPTY_FIND, effectiveOrdering, findQuery, type FindState } from "./find";
+import { withFileTitle } from "./fileTitle";
 import type {
   Centre,
   ContactStates,
@@ -255,7 +256,14 @@ export async function getWorkspaces(): Promise<ApiWorkspace[]> {
  * (§13.3). Callers turn that into `notFound()`.
  */
 export async function getNode(id: number): Promise<LibraryNode> {
-  return apiFetch<LibraryNode>(`nodes/${id}/`);
+  const node = await apiFetch<LibraryNode>(`nodes/${id}/`);
+  // File names lose the archive's catalogue code here, once, so every screen
+  // downstream draws the same name (`fileTitle`).
+  return {
+    ...node,
+    items: (node.items ?? []).map(withFileTitle),
+    linked_items: (node.linked_items ?? []).map(withFileTitle),
+  };
 }
 
 /**
@@ -373,7 +381,8 @@ export async function findLibrary(opts: {
   return {
     ...data,
     count: data.count ?? 0,
-    results: data.results ?? [],
+    // a file row's name without its catalogue code, as `getNode` gives it
+    results: (data.results ?? []).map((row) => (row.type === "file" ? withFileTitle(row) : row)),
     facets: data.facets ?? {},
     // A BE that predates the shelf tiles answers without it, and a tile that
     // cannot say what is inside falls back to its shallow counts rather than
