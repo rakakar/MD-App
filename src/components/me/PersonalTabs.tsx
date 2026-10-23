@@ -189,7 +189,7 @@ export function PersonalHeader({
           the nav can match on the URL. It says which tab it belongs under. */}
       {active !== "highlights" && <NavScope href="/me/bookmarks" />}
 
-      <h1 className="font-display text-2xl font-medium">Highlights &amp; Notes</h1>
+      <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">Highlights &amp; Notes</h1>
       {/* Not on Research: those are on this device whether or not anyone is
           signed in, and the tab says so itself. */}
       {!loading && !user && anything && active !== "research" && (

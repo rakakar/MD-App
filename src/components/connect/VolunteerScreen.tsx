@@ -42,7 +42,7 @@ export function VolunteerScreen({ intro }: { intro: React.ReactNode }) {
    */
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start lg:gap-12">
-      <div className="lg:sticky lg:top-8 lg:pt-2">
+      <div className="lg:sticky lg:top-5">
         {intro}
         {formShown && <FormsLink />}
       </div>

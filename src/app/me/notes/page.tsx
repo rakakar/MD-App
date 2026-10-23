@@ -30,7 +30,10 @@ export default function NotesPage() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer size="shelf">
+      {/* The shelf container, so the title starts where every other page's
+          does; the list keeps its reading width, left-aligned on a desktop. */}
+      <div className="mx-auto max-w-3xl lg:mx-0">
       <PersonalHeader
         active="notes"
         rows={rows}
@@ -96,6 +99,7 @@ export default function NotesPage() {
             })}
           </ul>
         )}
+      </div>
       </div>
     </PageContainer>
   );

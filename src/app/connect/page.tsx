@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { EventsScreen } from "@/components/connect/EventsScreen";
 import { ErrorState, PageContainer } from "@/components/ui";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { getEvents } from "@/lib/api";
 import type { EventListResponse } from "@/lib/events";
 
@@ -34,12 +35,15 @@ export default async function ConnectPage() {
       {/* Phone: no visible heading, as drawn — the app bar says Connect.
           Desktop: the title with its line under it (designer's comp,
           23 Oct 2026), since there is no app bar there to say it. */}
-      <div className="lg:pb-2 lg:pt-6">
-        <h1 className="sr-only lg:not-sr-only lg:font-display lg:text-4xl lg:font-medium lg:leading-tight lg:tracking-[-0.015em]">
-          Events
-        </h1>
-        <p className="mt-1 hidden text-sm text-ink-soft lg:block">Shivirs and study sessions across centres</p>
-      </div>
+      <h1 className="sr-only lg:hidden">Events</h1>
+      {/* The shared title, so it sits and sizes exactly as every other page's;
+          `pt-3` on top of `flushTop`'s `pt-2` is the standard 20px. */}
+      <PageTitle
+        shelf
+        className="hidden lg:block lg:pb-2 lg:pt-3"
+        title="Events"
+        description="Shivirs and study sessions across centres"
+      />
       {initial ? (
         <EventsScreen initial={initial as EventListResponse} />
       ) : (

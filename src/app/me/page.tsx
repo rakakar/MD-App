@@ -35,7 +35,7 @@ function SignInGate() {
       <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
         Start your journey
       </h1>
-      <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg">
+      <p className="mt-1.5 max-w-2xl text-sm text-ink-soft">
         Where you are on the path, what you are reading and listening to, and
         everything you have marked — kept together and synced to your account.
       </p>
@@ -129,7 +129,7 @@ export default function MyJourneyPage() {
   if (!stage) {
     return (
       <PageContainer size="shelf">
-        <h1 className="font-display text-3xl font-medium tracking-[-0.015em] sm:text-4xl">
+        <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
           My Journey
         </h1>
         <PathOverview />
@@ -141,7 +141,7 @@ export default function MyJourneyPage() {
   return (
     <PageContainer size="shelf">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="font-display text-3xl font-medium tracking-[-0.015em] sm:text-4xl">
+        <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
           My Journey
         </h1>
         {/* In the head on a desktop; a phone has it at the foot of the path
