@@ -30,8 +30,16 @@ export default async function ConnectPage() {
   const initial = await getEvents({ bucket: "upcoming" }).catch(() => null);
 
   return (
-    <PageContainer flushTop>
-      <h1 className="sr-only">Events</h1>
+    <PageContainer flushTop size="shelf">
+      {/* Phone: no visible heading, as drawn — the app bar says Connect.
+          Desktop: the title with its line beside it (designer's comp,
+          23 Oct 2026), since there is no app bar there to say it. */}
+      <div className="lg:flex lg:items-baseline lg:gap-4 lg:pb-2 lg:pt-6">
+        <h1 className="sr-only lg:not-sr-only lg:font-display lg:text-4xl lg:font-medium lg:leading-tight lg:tracking-[-0.015em]">
+          Events
+        </h1>
+        <p className="hidden text-ink-soft lg:block">Shivirs and study sessions across centres</p>
+      </div>
       {initial ? (
         <EventsScreen initial={initial as EventListResponse} />
       ) : (

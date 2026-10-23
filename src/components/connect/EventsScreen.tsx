@@ -23,6 +23,8 @@ import {
 import { EventCardView } from "./EventCard";
 import { EventFiltersPopover, EventFiltersSheet } from "./EventFiltersSheet";
 import { useIsDesktop } from "@/components/ui/Dialog";
+import { coversDay, EventCalendar, EventsByType } from "./EventsRail";
+import { dayMonthYear, parseDay } from "@/lib/dates";
 
 /**
  * Connect → Events: the three tabs, the search box, the filter sheet, the
@@ -70,6 +72,8 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
   const [asked, setAsked] = useState("");
   const [filters, setFilters] = useState<EventFilterState>(EMPTY_EVENT_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
+  /** the desktop calendar's chosen day, `YYYY-MM-DD` — see `EventsRail` */
+  const [day, setDay] = useState<string | null>(null);
 
   const [data, setData] = useState<EventListResponse>(initial);
   const [pending, setPending] = useState(false);
@@ -120,24 +124,35 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
 
   const filterCount = activeFilterCount(filters);
   const desktop = useIsDesktop();
+  const results = day ? data.results.filter((e) => coversDay(e, day)) : data.results;
   const clearAll = () => {
+    setDay(null);
     setFilters(EMPTY_EVENT_FILTERS);
     setQuery("");
     setAsked("");
   };
 
   return (
-    <div>
+    <div className="mx-auto max-w-3xl lg:max-w-none">
+      {/* Desktop: the tabs, the box and Filters on one ruled row, as drawn.
+          `contents` below lg, so the sticky search row under it keeps the
+          page as its containing block and still pins on a phone. */}
+      <div className="contents lg:sticky lg:top-0 lg:z-30 lg:-mx-8 lg:flex lg:items-center lg:justify-between lg:gap-8 lg:border-b lg:border-rule lg:bg-surface lg:px-8 lg:py-4">
+      <div className="lg:w-[30rem] lg:shrink-0">
       <CountedSegmented
         label="Events"
         value={bucket}
-        onChange={setBucket}
+        onChange={(b) => {
+          setBucket(b);
+          setDay(null);
+        }}
         segments={EVENT_BUCKETS.map((b) => ({
           value: b,
           label: BUCKET_LABEL[b],
           count: data.counts[b] ?? 0,
         }))}
       />
+      </div>
 
       {/* **Search and filters pin under the app bar.**
 
@@ -166,7 +181,7 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
           `mt-1` rather than `mt-3` to pay for it: unstuck, the padding and the
           margin stack, and the tabs would otherwise sit further from the box
           than they did before it gained any room. */}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-1 bg-surface px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 mt-1 bg-surface px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:mt-0 lg:max-w-[44rem] lg:flex-1 lg:p-0">
         <FindRow
           search={
             <SearchField
@@ -199,26 +214,31 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
           }
         />
       </div>
+      </div>
 
+      <div className="lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8">
       <div
         /* `mt-2`, not `mt-4`: the row above is sticky and already carries its
            own `pb-2`, so the two paddings stacked into a gap wider than any
            other on the screen — and the first card is what the search box is
            for, which is an odd thing to hold at arm's length. */
-        className={`mt-2 transition-opacity ${pending ? "opacity-60" : ""}`}
+        className={`mt-2 transition-opacity lg:mt-0 ${pending ? "opacity-60" : ""}`}
         aria-busy={pending}
       >
         {failed ? (
           <ErrorState />
-        ) : data.results.length > 0 ? (
-          <ul className="flex flex-col gap-3.5">
-            {data.results.map((e) => (
+        ) : results.length > 0 ? (
+          <>
+          {day && <DayNote day={day} count={results.length} onClear={() => setDay(null)} />}
+          <ul className="flex flex-col gap-3.5 lg:gap-5">
+            {results.map((e) => (
               <li key={e.slug}>
                 <EventCardView event={e} />
               </li>
             ))}
           </ul>
-        ) : filterCount > 0 || asked ? (
+          </>
+        ) : filterCount > 0 || asked || day ? (
           // The one empty state a reader can arrive at by their own doing, so
           // it carries the way back out — an empty screen with no control on
           // it is the only place in the app you can be stuck.
@@ -247,6 +267,23 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
         )}
       </div>
 
+      {/* The rail — desktop only, and only once the breakpoint is known, so
+          a phone never mounts the calendar or asks for the category counts.
+          Sticks under the toolbar while the cards scroll. */}
+      {desktop && (
+        <aside className="sticky top-28 flex flex-col gap-5">
+          <EventCalendar
+            key={data.results[0]?.bucket ?? bucket}
+            events={data.results}
+            bucket={bucket}
+            selected={day}
+            onSelect={setDay}
+          />
+          <EventsByType events={results} filters={filters} onChange={setFilters} />
+        </aside>
+      )}
+      </div>
+
       {/* Mounted only while open, so the pending selection is initialised from
           the applied one at mount and thrown away on close — no effect copying
           a prop into state every time the sheet appears. */}
@@ -260,5 +297,25 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
         />
       )}
     </div>
+  );
+}
+
+/** What the calendar has narrowed the list to, with the way back out. */
+function DayNote({ day, count, onClear }: { day: string; count: number; onClear: () => void }) {
+  const d = parseDay(day);
+  return (
+    <p className="mb-3 flex items-center gap-3 text-sm text-ink-soft">
+      <span>
+        {count} {count === 1 ? "event" : "events"} on {d ? dayMonthYear(d) : day}
+      </span>
+      <button
+        type="button"
+        onClick={onClear}
+        className="font-semibold"
+        style={{ color: "var(--ws-ink)" }}
+      >
+        Show all dates
+      </button>
+    </p>
   );
 }

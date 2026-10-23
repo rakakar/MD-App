@@ -162,7 +162,7 @@ function ModeButton({
  * pair of calls rather than six, and aborted on the way out so a slow answer to
  * an abandoned question cannot land after a fresh one.
  */
-function useFilterOptions(bucket: EventBucket, q: string, filters: EventFilterState) {
+export function useFilterOptions(bucket: EventBucket, q: string, filters: EventFilterState) {
   const [options, setOptions] = useState<EventFilterOptions | null>(null);
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
