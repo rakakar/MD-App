@@ -41,7 +41,7 @@ export function CentreCard({ centre }: { centre: Centre }) {
         className="block h-1 w-full"
         style={{ background: "var(--ws-color)" }}
       />
-      <div className="p-3.5">
+      <div className="p-3.5 lg:p-5">
         <div className="flex items-start gap-3">
           {/* The UI sans, not `font-display`. Newsreader is the app's face for
               a *page* title — the shelves, Translations, My Journey — and a

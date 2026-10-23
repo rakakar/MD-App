@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { CheckIcon, PinIcon } from "@/components/shell/icons";
+import { CheckIcon, CloseIcon, PinIcon } from "@/components/shell/icons";
 import { useWorkspace } from "@/components/shell/WorkspaceProvider";
 import { SearchField } from "@/components/SearchField";
 import { Sheet, SheetTextAction } from "@/components/ui";
+import { Dialog, useIsDesktop } from "@/components/ui/Dialog";
 import { ALL_STATES, type ContactStates } from "@/lib/directory";
 
 /**
@@ -26,7 +27,19 @@ import { ALL_STATES, type ContactStates } from "@/lib/directory";
  * states" sits where "Clear all" sits on the filter sheet, because that is what
  * it is.
  */
-export function StateSheet({
+type StatePickerProps = {
+  onClose: () => void;
+  states: ContactStates;
+  selected: string;
+  onSelect: (code: string) => void;
+};
+
+/** The sheet on a phone, a centred dialog on a desktop. */
+export function StateSheet(props: StatePickerProps) {
+  return useIsDesktop() ? <StateDialog {...props} /> : <StateBottomSheet {...props} />;
+}
+
+function StateBottomSheet({
   onClose,
   states,
   selected,
@@ -141,5 +154,118 @@ export function StateSheet({
         )}
       </ul>
     </Sheet>
+  );
+}
+
+const contactsLabel = (n: number) => `${n} ${n === 1 ? "contact" : "contacts"}`;
+
+/**
+ * The desktop picker (designer's comp, 23 Oct 2026): a dialog over the page
+ * rather than a sheet up from the floor, with "All states" as the first row
+ * of the list — on a desktop it is one of the choices, not a header action —
+ * and a radio mark on every row, since exactly one is always on.
+ */
+function StateDialog({ onClose, states, selected, onSelect }: StatePickerProps) {
+  const { workspace } = useWorkspace();
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const sorted = useMemo(
+    () => [...states.states].sort((a, b) => a.name.localeCompare(b.name)),
+    [states.states]
+  );
+  const q = query.trim().toLowerCase();
+  const rows = [
+    // "All states" is not a state, so a search for one leaves it out.
+    ...(q ? [] : [{ code: ALL_STATES, name: "All states", count: states.total }]),
+    ...(q ? sorted.filter((s) => s.name.toLowerCase().includes(q)) : sorted),
+  ];
+
+  const choose = (code: string) => {
+    onSelect(code);
+    onClose();
+  };
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      label="Choose a state"
+      accent={workspace.color}
+      className="flex max-h-[min(40rem,100%)] w-full max-w-xl flex-col"
+    >
+      <div className="flex items-start justify-between gap-4 px-6 pt-6">
+        <div>
+          <h2 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em]">
+            Choose a state
+          </h2>
+          <p className="mt-1 text-sm text-ink-soft">Show contacts from one state.</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-rule text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+        >
+          <CloseIcon className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="border-b border-rule px-6 pb-4 pt-4">
+        <SearchField
+          inputRef={inputRef}
+          value={query}
+          onChange={setQuery}
+          onSubmit={() => undefined}
+          onClear={() => setQuery("")}
+          placeholder="Search state"
+          label="Search states"
+        />
+      </div>
+
+      <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
+        {rows.map((s) => {
+          const on = s.code === selected;
+          return (
+            <li key={s.code}>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => choose(s.code)}
+                className="flex min-h-12 w-full items-center gap-3 rounded-control px-4 text-start transition-colors hover:bg-ink/[.03]"
+                style={
+                  on
+                    ? { background: "color-mix(in srgb, var(--ws-color) 8%, var(--color-card))" }
+                    : undefined
+                }
+              >
+                <span className="min-w-0 flex-1 truncate font-semibold">{s.name}</span>
+                <span className="shrink-0 text-sm tabular-nums text-ink-soft">
+                  {contactsLabel(s.count)}
+                </span>
+                <span
+                  aria-hidden
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                    on ? "text-white" : "border-2 border-rule"
+                  }`}
+                  style={on ? { background: "var(--ws-color)" } : undefined}
+                >
+                  {on && <CheckIcon className="h-3 w-3" />}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+        {rows.length === 0 && (
+          <li className="flex min-h-12 items-center gap-2 px-4 text-sm text-ink-soft">
+            <span aria-hidden className="text-muted">
+              <PinIcon className="h-4 w-4" />
+            </span>
+            No state matches “{query.trim()}”.
+          </li>
+        )}
+      </ul>
+    </Dialog>
   );
 }

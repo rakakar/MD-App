@@ -32,9 +32,12 @@ import { StateSheet } from "./StateSheet";
 export function ContactsScreen({
   initial,
   states,
+  tabs,
 }: {
   initial: DirectoryContact[];
   states: ContactStates;
+  /** Centres | City-wise contacts — beside the picker on a desktop */
+  tabs?: React.ReactNode;
 }) {
   const [state, setState] = useState<string>(ALL_STATES);
   const [rows, setRows] = useState<DirectoryContact[]>(initial);
@@ -80,7 +83,12 @@ export function ContactsScreen({
           a larger `top` would leave a strip of moving list showing above it —
           and `-mx-4 px-4` bleeds the page's own ground to the gutters so the
           rows pass behind it rather than beside it. */}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
+      {/* Desktop: the tabs and the picker on one ruled row, as drawn.
+          `contents` below lg, so the picker's sticky box keeps the page as
+          its containing block and still pins on a phone. */}
+      <div className="contents lg:sticky lg:top-0 lg:z-30 lg:-mx-8 lg:mt-4 lg:flex lg:items-center lg:justify-between lg:gap-8 lg:border-b lg:border-rule lg:bg-surface lg:px-8 lg:pb-6">
+      {tabs && <div className="mt-4 lg:mt-0">{tabs}</div>}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:w-[30rem] lg:shrink-0 lg:p-0">
       <button
         type="button"
         onClick={() => setSheetOpen(true)}
@@ -105,17 +113,18 @@ export function ContactsScreen({
         </span>
       </button>
       </div>
+      </div>
 
       <div
-        className={`mt-3.5 transition-opacity ${pending ? "opacity-60" : ""}`}
+        className={`mt-3.5 transition-opacity lg:mt-8 ${pending ? "opacity-60" : ""}`}
         aria-busy={pending}
       >
         {failed ? (
           <ErrorState />
         ) : rows.length > 0 ? (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-6">
             {rows.map((c) => (
-              <li key={c.id}>
+              <li key={c.id} className="lg:[&>article]:h-full">
                 <ContactCard contact={c} />
               </li>
             ))}

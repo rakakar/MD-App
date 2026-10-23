@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CentreCard } from "@/components/connect/CentreCard";
 import { CentreNoteCard } from "@/components/connect/CentreNote";
+import { CentresTabs } from "@/components/connect/CentresTabs";
 import { ChevronRight, PinIcon } from "@/components/shell/icons";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
-import { getCentres } from "@/lib/api";
+import { getCentres, getContactStates } from "@/lib/api";
 import { CENTRE_NOTES } from "@/lib/centreNotes";
 
 export const revalidate = 900;
@@ -30,18 +31,31 @@ export const metadata: Metadata = {
  * its own empty state. A banner is cheap; a wrong count is not.
  */
 export default async function CentresPage() {
-  const centres = await getCentres().catch(() => null);
+  const [centres, states] = await Promise.all([
+    getCentres().catch(() => null),
+    // only for the tab's count — a failure costs the number, not the page
+    getContactStates().catch(() => null),
+  ]);
 
   return (
-    <PageContainer>
-      <PageTitle title="Centres" description="Browse centre details, contact person, website." />
+    <PageContainer size="shelf">
+      <div className="mx-auto max-w-3xl lg:max-w-none">
+      {/* Title, line and tabs, ruled off from the cards on a desktop, as
+          drawn — the rule runs the width of the pane. */}
+      <div className="lg:-mx-8 lg:border-b lg:border-rule lg:px-8 lg:pb-6">
+        <PageTitle title="Centres" description="Browse centre details, contact person, website." />
+        <div className="mt-4">
+          <CentresTabs active="centres" centres={centres?.length} contacts={states?.total} />
+        </div>
+      </div>
 
       {centres === null ? (
         <div className="mt-4">
           <ErrorState />
         </div>
       ) : centres.length > 0 ? (
-        <ul className="mt-4 flex flex-col gap-3.5">
+        // Two columns on a desktop, each card as tall as its own content.
+        <ul className="mt-4 flex flex-col gap-3.5 lg:mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
           {centres.map((c) => (
             <li key={c.id}>
               <CentreCard centre={c} />
@@ -62,7 +76,7 @@ export default async function CentresPage() {
           here is where you could go, here is what to know before you go, and
           here is who to ask. A caution printed under the contacts banner would
           be a caution nobody reached. */}
-      <div className="mt-4 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-3 lg:mt-6 lg:grid lg:grid-cols-2 lg:gap-6">
         {CENTRE_NOTES.map((note) => (
           <CentreNoteCard key={note.slug} note={note} />
         ))}
@@ -71,10 +85,13 @@ export default async function CentresPage() {
       {/* Not `PromoBand`: that one is the player's dark pill with a play glyph
           on it, and this is the comps' flat teal card with a pin. Same idea,
           different object — and the band is used by two other screens whose
-          look should not move because Connect gained a banner. */}
+          look should not move because Connect gained a banner.
+
+          Phone only: on a desktop the City-wise contacts tab is in view at the
+          top of the page, and the comp draws no banner. */}
       <Link
         href="/connect/centres/contacts"
-        className="mt-4 flex items-center gap-3.5 rounded-card p-4 text-white shadow-card transition-opacity hover:opacity-95"
+        className="mt-4 flex items-center gap-3.5 rounded-card p-4 lg:hidden text-white shadow-card transition-opacity hover:opacity-95"
         style={{ background: "var(--ws-color)" }}
       >
         <span
@@ -95,6 +112,7 @@ export default async function CentresPage() {
           <ChevronRight />
         </span>
       </Link>
+      </div>
     </PageContainer>
   );
 }

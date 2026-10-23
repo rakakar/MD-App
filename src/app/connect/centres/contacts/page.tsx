@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CentresTabs } from "@/components/connect/CentresTabs";
 import { ContactsScreen } from "@/components/connect/ContactsScreen";
 import { BackIcon } from "@/components/shell/icons";
 import { ErrorState, PageContainer } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
-import { getContacts, getContactStates } from "@/lib/api";
+import { getCentres, getContacts, getContactStates } from "@/lib/api";
 
 export const revalidate = 900;
 
@@ -32,30 +33,53 @@ export const metadata: Metadata = {
  * own href, which `Nav`'s prefix rule already covers.
  */
 export default async function CityContactsPage() {
-  const [states, initial] = await Promise.all([
+  const [states, initial, centres] = await Promise.all([
     getContactStates().catch(() => null),
     getContacts().catch(() => null),
+    // only for the Centres tab's count
+    getCentres().catch(() => null),
   ]);
 
+  const tabs = (
+    <CentresTabs active="contacts" centres={centres?.length} contacts={states?.total} />
+  );
+
   return (
-    <PageContainer>
+    <PageContainer size="shelf">
+      <div className="mx-auto max-w-3xl lg:max-w-none">
+      {/* Phone only: on a desktop the Centres tab is the way back. */}
       <Link
         href="/connect/centres"
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-rule bg-card pe-3.5 ps-2.5 text-sm font-semibold text-ink transition-colors active:bg-ink/[.04]"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-rule bg-card pe-3.5 ps-2.5 text-sm font-semibold text-ink transition-colors active:bg-ink/[.04] lg:hidden"
       >
         <BackIcon className="h-4 w-4 shrink-0" />
         Centres
       </Link>
 
-      <PageTitle className="mt-4" title="City-wise contacts" description="Someone to meet in your city." />
+      {/* A desktop heads both halves "Centres", as drawn, with the tabs saying
+          which half this is; a phone keeps the page's own name. */}
+      <PageTitle
+        className="mt-4 lg:mt-0"
+        title={
+          <>
+            <span className="lg:hidden">City-wise contacts</span>
+            <span className="hidden lg:inline">Centres</span>
+          </>
+        }
+        description="Someone to meet in your city."
+      />
 
       {states && initial ? (
-        <ContactsScreen initial={initial} states={states} />
+        <ContactsScreen initial={initial} states={states} tabs={tabs} />
       ) : (
-        <div className="mt-4">
-          <ErrorState />
-        </div>
+        <>
+          <div className="mt-4">{tabs}</div>
+          <div className="mt-4">
+            <ErrorState />
+          </div>
+        </>
       )}
+      </div>
     </PageContainer>
   );
 }
