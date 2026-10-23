@@ -361,7 +361,10 @@ function Header({
             alt=""
             className="aspect-[4/3] w-32 shrink-0 rounded-lg object-cover shadow-[0_2px_8px_rgba(0,0,0,.25)] lg:w-40"
           />
-        ) : isAlbum ? (
+        ) : isAlbum && !(ws === "originals" && !isRecordings) ? (
+          /* Not on the Originals Library's folders (designer, 23 Oct 2026):
+             their headers are the title and its facts alone. Media's series
+             keep their portrait, above. */
           <div className="w-24 shrink-0 lg:w-28">
             <CoverTile
               book={{
