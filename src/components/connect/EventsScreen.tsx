@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { SearchField } from "@/components/SearchField";
 import {
+  ActiveFilters,
   CountedSegmented,
   EmptyState,
   ErrorState,
   FilterButton,
   FindRow,
 } from "@/components/ui";
-import { getEvents } from "@/lib/api";
+import { getEventFilters, getEvents } from "@/lib/api";
 import {
   activeFilterCount,
   BUCKET_LABEL,
@@ -17,6 +18,7 @@ import {
   EVENT_BUCKETS,
   eventQuery,
   type EventBucket,
+  type EventFilterOptions,
   type EventFilterState,
   type EventListResponse,
 } from "@/lib/events";
@@ -132,6 +134,61 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
     setAsked("");
   };
 
+  // Names for the applied-filter chips. The state holds codes ("hi",
+  // "in_person"); `events/filters/` lists every category, language and mode
+  // by name whatever the bucket, so it is asked once, the first time a filter
+  // goes on, and kept.
+  const [names, setNames] = useState<EventFilterOptions | null>(null);
+  const anyFilter = filterCount > 0;
+  useEffect(() => {
+    if (!anyFilter || names) return;
+    getEventFilters()
+      .then(setNames)
+      .catch(() => undefined);
+  }, [anyFilter, names]);
+
+  const nameOf = (list: { code: string; name: string }[] | undefined, code: string) =>
+    list?.find((x) => x.code === code)?.name ?? code;
+  const dayDate = parseDay(day);
+  const chips = [
+    ...filters.categories.map((code) => ({
+      key: `c-${code}`,
+      label:
+        names?.categories.find((c) => c.code === code)?.display ??
+        data.results.find((e) => e.category.code === code)?.category.display ??
+        code,
+      onRemove: () =>
+        setFilters((f) => ({ ...f, categories: f.categories.filter((c) => c !== code) })),
+    })),
+    ...filters.languages.map((code) => ({
+      key: `l-${code}`,
+      label: nameOf(names?.languages, code),
+      onRemove: () =>
+        setFilters((f) => ({ ...f, languages: f.languages.filter((c) => c !== code) })),
+    })),
+    ...(filters.mode
+      ? [
+          {
+            key: "mode",
+            label: nameOf(names?.modes, filters.mode),
+            onRemove: () => setFilters((f) => ({ ...f, mode: "" })),
+          },
+        ]
+      : []),
+    ...(filters.city
+      ? [{ key: "city", label: filters.city, onRemove: () => setFilters((f) => ({ ...f, city: "" })) }]
+      : []),
+    // The calendar's day (desktop only) is a narrowing like any other, so it
+    // is a chip like any other.
+    ...(day
+      ? [{ key: "day", label: dayDate ? dayMonthYear(dayDate) : day, onRemove: () => setDay(null) }]
+      : []),
+  ];
+  const clearChips = () => {
+    setFilters(EMPTY_EVENT_FILTERS);
+    setDay(null);
+  };
+
   return (
     <div className="mx-auto max-w-3xl lg:max-w-none">
       {/* Desktop: the tabs, the box and Filters on one ruled row, as drawn.
@@ -216,6 +273,13 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
       </div>
       </div>
 
+      {/* Phone: what is on, under the bar, as Media draws it. */}
+      {chips.length > 0 && (
+        <div className="mt-1 mb-1 lg:hidden">
+          <ActiveFilters items={chips} onClear={clearChips} />
+        </div>
+      )}
+
       <div className="lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8">
       <div
         /* `mt-2`, not `mt-4`: the row above is sticky and already carries its
@@ -225,11 +289,20 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
         className={`mt-2 transition-opacity lg:mt-0 ${pending ? "opacity-60" : ""}`}
         aria-busy={pending}
       >
+        {/* Desktop: the count with the filters that made it, as removable
+            chips — the same line Media and the Library draw. */}
+        {chips.length > 0 && !failed && (
+          <div className="mb-4 hidden flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-soft lg:flex">
+            <span className="tabular-nums">
+              {results.length} {results.length === 1 ? "event" : "events"}
+            </span>
+            <ActiveFilters items={chips} onClear={clearChips} compact />
+          </div>
+        )}
         {failed ? (
           <ErrorState />
         ) : results.length > 0 ? (
           <>
-          {day && <DayNote day={day} count={results.length} onClear={() => setDay(null)} />}
           <ul className="flex flex-col gap-3.5 lg:gap-5">
             {results.map((e) => (
               <li key={e.slug}>
@@ -300,22 +373,3 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
   );
 }
 
-/** What the calendar has narrowed the list to, with the way back out. */
-function DayNote({ day, count, onClear }: { day: string; count: number; onClear: () => void }) {
-  const d = parseDay(day);
-  return (
-    <p className="mb-3 flex items-center gap-3 text-sm text-ink-soft">
-      <span>
-        {count} {count === 1 ? "event" : "events"} on {d ? dayMonthYear(d) : day}
-      </span>
-      <button
-        type="button"
-        onClick={onClear}
-        className="font-semibold"
-        style={{ color: "var(--ws-ink)" }}
-      >
-        Show all dates
-      </button>
-    </p>
-  );
-}
