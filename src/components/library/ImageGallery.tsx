@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Lightbox } from "@/components/library/Lightbox";
-import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { GRID_SIZES, tileSource } from "@/lib/libraryImage";
 import type { LibraryFile } from "@/lib/types";
 
@@ -44,7 +43,6 @@ export function ImageGallery({ items }: { items: LibraryFile[] }) {
               <span lang="hi" className="hi mt-1.5 block truncate text-xs font-medium">
                 {item.title}
               </span>
-              <ProvenanceBadge provenance={item.provenance} />
             </button>
           </li>
         ))}
