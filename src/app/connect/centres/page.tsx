@@ -41,7 +41,7 @@ export default async function CentresPage() {
       {/* Title, line and tabs, ruled off from the cards on a desktop, as
           drawn — the rule runs the width of the pane. */}
       <div className="lg:-mx-8 lg:border-b lg:border-rule lg:px-8 lg:pb-6">
-        <PageTitle title="Centres" description="Browse centre details, contact person, website." />
+        <PageTitle shelf title="Centres" description="Browse centre details, contact person, website." />
         <div className="mt-4">
           <CentresTabs active="centres" centres={centres?.length} contacts={states?.total} />
         </div>

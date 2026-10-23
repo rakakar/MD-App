@@ -28,8 +28,12 @@ export default async function ConnectLinksPage() {
   const groups = await getLinkGroups().catch(() => null);
 
   return (
-    <PageContainer>
-      <PageTitle title="Links" description="Groups, channels and pages, by kind." />
+    <PageContainer size="shelf">
+      <div className="mx-auto max-w-3xl lg:max-w-none">
+      {/* Ruled off from the panels on a desktop, as on Centres. */}
+      <div className="lg:-mx-8 lg:border-b lg:border-rule lg:px-8 lg:pb-6">
+        <PageTitle shelf title="Links" description="Groups, channels and pages, by kind." />
+      </div>
 
       {groups === null ? (
         <div className="mt-4">
@@ -45,6 +49,7 @@ export default async function ConnectLinksPage() {
           />
         </div>
       )}
+      </div>
     </PageContainer>
   );
 }

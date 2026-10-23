@@ -16,9 +16,18 @@ export const metadata: Metadata = {
  */
 export default function VolunteerPage() {
   return (
-    <PageContainer>
-      <PageTitle title="Volunteer" description="A chance for samagra vyavastha mein bhaagidaari!" />
-      <VolunteerScreen />
+    <PageContainer size="shelf">
+      <div className="mx-auto max-w-3xl lg:max-w-none">
+        <VolunteerScreen
+          intro={
+            <PageTitle
+              shelf
+              title="Volunteer"
+              description="A chance for samagra vyavastha mein bhaagidaari!"
+            />
+          }
+        />
+      </div>
     </PageContainer>
   );
 }

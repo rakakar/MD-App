@@ -48,6 +48,7 @@ export default async function CityContactsPage() {
       {/* A desktop heads both halves "Centres", as drawn, with the tabs saying
           which half this is; a phone keeps the page's own name. */}
       <PageTitle
+        shelf
                 title={
           <>
             <span className="lg:hidden">City-wise contacts</span>

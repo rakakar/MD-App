@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import {
   ChevronDown,
+  ChevronRight,
   ExternalLinkIcon,
   UserIcon,
   VideoIcon,
@@ -86,23 +87,32 @@ function GroupIcon({ icon }: { icon: string }) {
 
 /** One link. Every one of these leaves the app, so every one of them says so —
  *  a new tab, `rel="noopener"`, and the arrow the comps draw. */
-function LinkRowView({ row, indent = false }: { row: LinkRow; indent?: boolean }) {
+function LinkRowView({
+  row,
+  indent = false,
+  wide = false,
+}: {
+  row: LinkRow;
+  indent?: boolean;
+  /** the desktop panel's roomier row, with the comp's small ↗ */
+  wide?: boolean;
+}) {
   const l = contentLang(row.label);
   return (
     <a
       href={row.url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`flex min-h-14 items-start gap-2 py-2.5 pe-4 text-title transition-colors active:bg-ink/[.03] ${
-        indent ? "ps-9" : "ps-4"
-      }`}
+      className={`flex min-h-14 items-start gap-2 text-title transition-colors active:bg-ink/[.03] ${
+        wide ? "py-4 pe-7 hover:bg-ink/[.02]" : "py-2.5 pe-4"
+      } ${indent ? (wide ? "ps-12" : "ps-9") : wide ? "ps-7" : "ps-4"}`}
     >
       <span className="shrink-0 tabular-nums text-ink-soft">{row.number}</span>
       <span {...l} className={`${l.className} min-w-0 flex-1`}>
         {row.label}
       </span>
       <span aria-hidden className="mt-0.5 shrink-0" style={{ color: "var(--ws-ink)" }}>
-        <ExternalLinkIcon className="h-4 w-4" />
+        {wide ? <ArrowUpRight /> : <ExternalLinkIcon className="h-4 w-4" />}
       </span>
     </a>
   );
@@ -110,11 +120,11 @@ function LinkRowView({ row, indent = false }: { row: LinkRow; indent?: boolean }
 
 /** A heading row — the label above its children. Not a link and not tappable:
  *  it has no URL, which is exactly what makes it a heading. */
-function HeadingRow({ row }: { row: LinkRow }) {
+function HeadingRow({ row, wide = false }: { row: LinkRow; wide?: boolean }) {
   const l = contentLang(row.label);
   return (
     <p
-      className="flex items-start gap-2 px-4 py-2.5 text-title font-semibold"
+      className={`flex items-start gap-2 font-semibold ${wide ? "px-7 py-3.5" : "px-4 py-2.5 text-title"}`}
       style={{
         background: "color-mix(in srgb, var(--ws-color) 7%, var(--color-card))",
         color: "var(--ws-ink)",
@@ -211,11 +221,127 @@ function Group({
   );
 }
 
+/** The comp's ↗ — smaller and plainer than the box-and-arrow, for a panel
+ *  where every row leaves the app and the glyph only has to say so. */
+function ArrowUpRight() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-3.5 w-3.5"
+      aria-hidden="true"
+    >
+      <path d="M7 17 17 7M8 7h9v9" />
+    </svg>
+  );
+}
+
+/** Every row that is a link, children included — what "7 links" counts. */
+function linkCount(group: LinkGroup): number {
+  let n = 0;
+  for (const row of group.items) {
+    if (!row.is_heading) n++;
+    for (const kid of row.children ?? []) if (!kid.is_heading) n++;
+  }
+  return n;
+}
+
+/**
+ * **A desktop shows one group at a time beside the list of them** (designer's
+ * comp, 23 Oct 2026) instead of the phone's accordion: the groups down the
+ * left, the chosen one's links in a panel on the right. One is always chosen —
+ * the first, until the reader picks another — so the panel is never empty.
+ */
+function LinksDesktop({ groups }: { groups: LinkGroup[] }) {
+  const [code, setCode] = useState(groups[0].code);
+  const group = groups.find((g) => g.code === code) ?? groups[0];
+  const count = linkCount(group);
+
+  return (
+    <div className="hidden lg:mt-8 lg:grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start lg:gap-8">
+      <ul className="flex flex-col gap-4" aria-label="Link groups">
+        {groups.map((g) => {
+          const on = g.code === group.code;
+          return (
+            <li key={g.code}>
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => setCode(g.code)}
+                className={`flex min-h-20 w-full items-center gap-4 rounded-card border-2 bg-card px-5 text-start shadow-card transition-colors ${
+                  on ? "" : "border-rule hover:border-ink/20"
+                }`}
+                style={on ? { borderColor: "var(--ws-ink)" } : undefined}
+              >
+                <span
+                  aria-hidden
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-tile"
+                  style={{
+                    background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+                    color: "var(--ws-ink)",
+                  }}
+                >
+                  <GroupIcon icon={g.icon} />
+                </span>
+                <span className="min-w-0 flex-1 text-title font-semibold">{g.title}</span>
+                <span aria-hidden className="shrink-0 text-ink-soft">
+                  <ChevronRight />
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <section
+        aria-labelledby="links-panel-title"
+        className="sticky top-8 min-h-[calc(100dvh-14rem)] overflow-hidden rounded-card border border-rule bg-card shadow-card"
+      >
+        <div className="flex items-center justify-between gap-4 border-b border-rule px-7 py-5">
+          <h2 id="links-panel-title" className="text-xl font-semibold">
+            {group.title}
+          </h2>
+          <span className="shrink-0 text-sm tabular-nums text-ink-soft">
+            {count} {count === 1 ? "link" : "links"}
+          </span>
+        </div>
+        <ul>
+          {group.items.map((row) => (
+            <li key={row.id} className="border-b border-rule last:border-b-0">
+              {row.is_heading ? <HeadingRow row={row} wide /> : <LinkRowView row={row} wide />}
+              {row.children && row.children.length > 0 && (
+                <ul>
+                  {row.children.map((kid) => (
+                    <li key={kid.id} className="border-t border-rule">
+                      {kid.is_heading ? (
+                        <HeadingRow row={kid} wide />
+                      ) : (
+                        <LinkRowView row={kid} indent wide />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
 export function LinksScreen({ groups }: { groups: LinkGroup[] }) {
   const [open, setOpen] = useState<string | null>(null);
 
   return (
-    <ul className="mt-4 flex flex-col gap-3">
+    <>
+    <LinksDesktop groups={groups} />
+    {/* Phone: the accordion. */}
+    <ul className="mt-4 flex flex-col gap-3 lg:hidden">
       {groups.map((g) => (
         <li key={g.code}>
           <Group
@@ -226,5 +352,6 @@ export function LinksScreen({ groups }: { groups: LinkGroup[] }) {
         </li>
       ))}
     </ul>
+    </>
   );
 }

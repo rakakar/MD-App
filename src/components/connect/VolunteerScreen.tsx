@@ -20,7 +20,7 @@ import { VOLUNTEER_FORM_EMBED, VOLUNTEER_FORM_URL } from "@/lib/volunteer";
  * `undefined` until the device has been asked, so a returning volunteer never
  * sees the form flash up first, and a blank form is never loaded for nothing.
  */
-export function VolunteerScreen() {
+export function VolunteerScreen({ intro }: { intro: React.ReactNode }) {
   const [signedUpAt, setSignedUpAt] = useState<string | null | undefined>(undefined);
   const [showForm, setShowForm] = useState(false);
   const loads = useRef(0);
@@ -31,46 +31,63 @@ export function VolunteerScreen() {
     setShowForm(at === null);
   }, []);
 
-  if (signedUpAt === undefined) return null;
+  // Undecided until mounted: the title stands, the rest waits a frame.
+  const formShown = signedUpAt !== undefined && (showForm || !signedUpAt);
 
-  if (!showForm && signedUpAt) {
-    return (
-      <SignedUp
-        at={signedUpAt}
-        onAgain={() => {
-          loads.current = 0;
-          setShowForm(true);
-        }}
-      />
-    );
-  }
-
+  /**
+   * **Two columns on a desktop** (designer's comp, 23 Oct 2026): the title,
+   * the line and the way out to Google Forms on the left, held in view, and
+   * the form on the right in a card of its own. A phone stacks the same three
+   * things, as before.
+   */
   return (
-    <>
+    <div className="lg:grid lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start lg:gap-12">
+      <div className="lg:sticky lg:top-8 lg:pt-2">
+        {intro}
+        {formShown && <FormsLink />}
+      </div>
+      <div>
+        {signedUpAt === undefined ? null : formShown ? (
+          <div className="lg:rounded-hero lg:border lg:border-rule lg:bg-card lg:p-10 lg:shadow-card">
+            <iframe
+              src={VOLUNTEER_FORM_EMBED}
+              title="Volunteer Sign up form"
+              onLoad={() => {
+                loads.current += 1;
+                if (loads.current > 1) {
+                  setSignedUpAt(markVolunteerSignup());
+                  setShowForm(false);
+                }
+              }}
+              className="mt-2 block h-[calc(100dvh-var(--bottom-nav-h,0px)-13rem)] min-h-[28rem] w-full rounded-card border border-rule bg-white lg:mt-0 lg:h-[calc(100dvh-10rem)] lg:rounded-none lg:border-0"
+            />
+          </div>
+        ) : (
+          <SignedUp
+            at={signedUpAt!}
+            onAgain={() => {
+              loads.current = 0;
+              setShowForm(true);
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FormsLink() {
+  return (
       <a
         href={VOLUNTEER_FORM_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold"
+        className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold lg:mt-4 lg:text-base"
         style={{ color: "var(--ws-ink)" }}
       >
         Open in Google Forms
         <ExternalLinkIcon className="h-4 w-4 shrink-0" />
       </a>
-      <iframe
-        src={VOLUNTEER_FORM_EMBED}
-        title="Volunteer Sign up form"
-        onLoad={() => {
-          loads.current += 1;
-          if (loads.current > 1) {
-            setSignedUpAt(markVolunteerSignup());
-            setShowForm(false);
-          }
-        }}
-        className="mt-2 block w-full rounded-card border border-rule bg-white"
-        style={{ height: "calc(100dvh - var(--bottom-nav-h, 0px) - 13rem)", minHeight: "28rem" }}
-      />
-    </>
   );
 }
 
@@ -83,7 +100,7 @@ function SignedUp({ at, onAgain }: { at: string; onAgain: () => void }) {
 
   return (
     <section
-      className="mt-5 rounded-card border border-rule bg-card p-5 shadow-card"
+      className="mt-5 rounded-card border border-rule bg-card p-5 shadow-card lg:mt-2"
       aria-live="polite"
     >
       <span
