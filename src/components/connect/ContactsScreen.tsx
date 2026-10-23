@@ -83,12 +83,11 @@ export function ContactsScreen({
           a larger `top` would leave a strip of moving list showing above it —
           and `-mx-4 px-4` bleeds the page's own ground to the gutters so the
           rows pass behind it rather than beside it. */}
-      {/* Desktop: the tabs and the picker on one ruled row, as drawn.
-          `contents` below lg, so the picker's sticky box keeps the page as
-          its containing block and still pins on a phone. */}
-      <div className="contents lg:sticky lg:top-0 lg:z-30 lg:-mx-8 lg:mt-4 lg:flex lg:items-center lg:justify-between lg:gap-8 lg:border-b lg:border-rule lg:bg-surface lg:px-8 lg:pb-6">
-      {tabs && <div className="mt-4 lg:mt-0">{tabs}</div>}
-      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:w-[30rem] lg:shrink-0 lg:p-0">
+      {/* The tabs and the picker pin together as one box — stacked on a
+          phone, one ruled row on a desktop, as drawn. */}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:flex lg:items-center lg:justify-between lg:gap-8 lg:border-b lg:border-rule lg:px-8 lg:pb-6">
+      {tabs}
+      <div className={`${tabs ? "mt-3" : ""} lg:mt-0 lg:w-[30rem] lg:shrink-0`}>
       <button
         type="button"
         onClick={() => setSheetOpen(true)}

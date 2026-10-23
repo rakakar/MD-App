@@ -38,13 +38,14 @@ export default async function CentresPage() {
   return (
     <PageContainer size="shelf">
       <div className="mx-auto max-w-3xl lg:max-w-none">
-      {/* Title, line and tabs, ruled off from the cards on a desktop, as
-          drawn — the rule runs the width of the pane. */}
-      <div className="lg:-mx-8 lg:border-b lg:border-rule lg:px-8 lg:pb-6">
-        <PageTitle shelf title="Centres" description="Browse centre details, contact person, website." />
-        <div className="mt-4">
-          <CentresTabs active="centres" centres={centres?.length} contacts={states?.total} />
-        </div>
+      <PageTitle shelf title="Centres" description="Browse centre details, contact person, website." />
+      {/* The tabs pin under the app bar (top of the pane on a desktop) while
+          the cards scroll, so the other half is always one tap away. Ruled
+          off from the cards on a desktop, as drawn — the rule runs the width
+          of the pane. The air above is padding inside the sticky box, so the
+          cards pass behind it rather than showing above it. */}
+      <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:border-b lg:border-rule lg:px-8 lg:pb-6">
+        <CentresTabs active="centres" centres={centres?.length} contacts={states?.total} />
       </div>
 
       {centres === null ? (
