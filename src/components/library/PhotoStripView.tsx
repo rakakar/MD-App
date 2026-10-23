@@ -6,6 +6,7 @@ import { Lightbox } from "@/components/library/Lightbox";
 import { GridIcon } from "@/components/shell/icons";
 import { findLibrary } from "@/lib/api";
 import { EMPTY_FIND, type FindState } from "@/lib/find";
+import { tileSource } from "@/lib/libraryImage";
 import type { LibraryFile, LibrarySearchRow } from "@/lib/types";
 
 /**
@@ -29,6 +30,10 @@ import type { LibraryFile, LibrarySearchRow } from "@/lib/types";
  * across a 1000px page the big tile was two-thirds of the page wide.
  */
 const SHOWN_WIDE = 5;
+/** the big tile: two of three columns on a phone, two of four from `lg` */
+const BIG_TILE = "(min-width: 1088px) 544px, (min-width: 1024px) 50vw, 67vw";
+/** the others: one column of three, one of four from `lg` */
+const SMALL_TILE = "(min-width: 1088px) 272px, (min-width: 1024px) 25vw, 33vw";
 
 /** how many more to ask for each time */
 const PAGE = 60;
@@ -166,13 +171,13 @@ export function PhotoStripView({
                 i === 0 ? "col-span-2 row-span-2" : ""
               } ${i >= narrow ? "hidden lg:block" : "block"}`}
             >
-              {/* Plain <img>: these are library media on a host the image
-                  optimiser is not configured for, and a broken optimiser here
-                  costs the whole strip. Lazy, because this sits below a grid
-                  most readers never scroll past. */}
+              {/* Plain <img> with a resized `srcset` (`lib/libraryImage.ts`),
+                  not `<Image>`, whose wrapper would fight the mosaic's grid.
+                  Lazy, because this sits below a grid most readers never
+                  scroll past. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={photo.thumbnail_url ?? photo.url}
+                {...tileSource(photo, i === 0 ? BIG_TILE : SMALL_TILE)}
                 alt=""
                 loading="lazy"
                 decoding="async"

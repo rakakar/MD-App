@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, CloseIcon } from "@/components/shell/icons";
+import {
+  GRID_SIZES,
+  reelSource,
+  screenSource,
+  tileSource,
+  type PictureSource,
+} from "@/lib/libraryImage";
 import type { LibraryFile } from "@/lib/types";
 
 /**
@@ -30,6 +37,11 @@ const MAX_SCALE = 6;
 const SWIPE_PX = 48;
 /** how still a finger must be to have tapped rather than dragged */
 const TAP_SLOP_PX = 10;
+/**
+ * Past this zoom the screen-sized copy runs out of pixels and the original is
+ * fetched. A double tap goes to 2.5×, so it always asks for the original.
+ */
+const ORIGINAL_AT = 1.5;
 
 export function Lightbox({
   items,
@@ -77,8 +89,14 @@ export function Lightbox({
   const wasPinch = useRef(false);
 
   // A new image starts unzoomed — carrying the previous one's transform over
-  // lands the reader in the middle of a chart they have not seen yet.
-  useEffect(() => setView({ scale: 1, x: 0, y: 0 }), [index]);
+  // lands the reader in the middle of a chart they have not seen yet. Reset
+  // during render rather than in an effect, so the new picture's first frame
+  // is already at 1× and never asks for its original on the old one's zoom.
+  const [viewOf, setViewOf] = useState(index);
+  if (viewOf !== index) {
+    setViewOf(index);
+    setView({ scale: 1, x: 0, y: 0 });
+  }
 
   // Keep the reel's current thumbnail in view, however the picture was
   // changed. Swiping through twenty photographs while the reel sits on the
@@ -98,11 +116,19 @@ export function Lightbox({
   // decode; loading the original off-screen first means the soft picture is
   // replaced by the sharp one in a single frame.
   //
-  // Held as *which* original has arrived rather than as a boolean, so moving
-  // to the next picture makes this false by derivation. A boolean would need
-  // an effect to reset it on `index` — a second render, and a frame of the new
-  // photograph wearing the old one's "ready".
-  const [loaded, setLoaded] = useState<string | null>(null);
+  // Three steps where the optimiser can take the picture (`lib/libraryImage`):
+  // the grid's tile, then a screen-sized copy, then the original — which is
+  // fetched only once the reader zooms in, because only then is there detail
+  // on screen that the screen copy lacks. Swiping through a folder of 4–9MB
+  // camera originals used to download every one of them in full.
+  //
+  // Held with *which* picture the arrivals belong to rather than as booleans,
+  // so moving to the next picture clears them by derivation. Booleans would
+  // need an effect to reset them on `index` — a second render, and a frame of
+  // the new photograph wearing the old one's "ready".
+  const [arrived, setArrived] = useState<{ url: string; screen?: string; full?: boolean }>({
+    url: "",
+  });
 
   /**
    * Which way the last move went, so the next photograph arrives from that
@@ -113,19 +139,53 @@ export function Lightbox({
    */
   const [moved, setMoved] = useState({ index, dir: 0 });
   if (moved.index !== index) setMoved({ index, dir: index > moved.index ? 1 : -1 });
-  const ready = !item.thumbnail_url || loaded === item.url;
+  const here = arrived.url === item.url ? arrived : { url: item.url };
+  const placeholder = tileSource(item, GRID_SIZES);
+  const screen = screenSource(item);
+  /** nothing lighter than the original exists: draw it, and nothing to wait for */
+  const onlyOriginal = placeholder.src === item.url;
+  /** a screen-sized copy exists between the tile and the original */
+  const hasScreen = screen.src !== item.url;
+  const wantFull = !hasScreen || view.scale > ORIGINAL_AT;
+  const shown: PictureSource = here.full
+    ? { src: item.url }
+    : here.screen
+      ? { src: here.screen }
+      : placeholder;
+  const ready = onlyOriginal || here.full || (!wantFull && !!here.screen);
+
   useEffect(() => {
-    if (!item.thumbnail_url) return;
-    const src = item.url;
-    const full = new window.Image();
-    full.onload = () => setLoaded(src);
-    // No `onerror`: a picture that will not load leaves the thumbnail on
-    // screen, blurry but readable, rather than the alt text of a broken <img>.
-    full.src = src;
+    if (!hasScreen || here.screen) return;
+    const url = item.url;
+    const img = new window.Image();
+    img.onload = () =>
+      setArrived((a) => ({
+        ...(a.url === url ? a : { url }),
+        // whichever width the browser chose, so the visible <img> asks for
+        // exactly the bytes just fetched
+        screen: img.currentSrc || screen.src,
+      }));
+    // `sizes` and `srcset` before `src`, or the browser starts on `src`.
+    if (screen.sizes) img.sizes = screen.sizes;
+    if (screen.srcSet) img.srcset = screen.srcSet;
+    img.src = screen.src;
     return () => {
-      full.onload = null;
+      img.onload = null;
     };
-  }, [item.url, item.thumbnail_url]);
+  }, [item.url, hasScreen, here.screen, screen.src, screen.srcSet, screen.sizes]);
+
+  useEffect(() => {
+    if (onlyOriginal || !wantFull || here.full) return;
+    const url = item.url;
+    const img = new window.Image();
+    img.onload = () => setArrived((a) => ({ ...(a.url === url ? a : { url }), full: true }));
+    // No `onerror`: a picture that will not load leaves the lighter copy on
+    // screen, blurry but readable, rather than the alt text of a broken <img>.
+    img.src = url;
+    return () => {
+      img.onload = null;
+    };
+  }, [item.url, onlyOriginal, wantFull, here.full]);
 
   // The page behind must not scroll while a full-screen chart is open.
   useEffect(() => {
@@ -283,7 +343,7 @@ export function Lightbox({
             <p className="text-xs font-semibold tabular-nums tracking-[0.12em] text-white/70">
               {String(index + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
               {/* Said out loud while the original is still arriving: until it
-                  lands the picture is a 480px thumbnail, and a reader who
+                  lands the picture is a smaller copy, and a reader who
                   pinches into a chart and finds it soft should know it is
                   coming rather than conclude the scan is bad. */}
               {!ready && <span className="tracking-normal"> · Loading full image…</span>}
@@ -330,7 +390,9 @@ export function Lightbox({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={ready ? item.url : (item.thumbnail_url ?? item.url)}
+              src={shown.src}
+              srcSet={shown.srcSet}
+              sizes={shown.sizes}
               alt={item.title}
               draggable={false}
               className="max-h-full max-w-full rounded-card object-contain"
@@ -381,7 +443,7 @@ export function Lightbox({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={thumb.thumbnail_url ?? thumb.url}
+              {...reelSource(thumb)}
               alt=""
               loading="lazy"
               decoding="async"

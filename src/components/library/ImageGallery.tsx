@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Lightbox } from "@/components/library/Lightbox";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
+import { GRID_SIZES, tileSource } from "@/lib/libraryImage";
 import type { LibraryFile } from "@/lib/types";
 
 /**
@@ -16,8 +17,8 @@ import type { LibraryFile } from "@/lib/types";
  * whole point of there being two. The library's photographs are camera
  * originals: `/library/71` is 127 of them at 106MB, against 3.3MB of
  * thumbnails — thirty-two times lighter to open as a grid of postage stamps.
- * Every `?? item.url` below is the fallback for a picture that has no
- * thumbnail yet, which draws heavy rather than blank.
+ * A picture with no thumbnail yet is drawn from a resized copy rather than
+ * from the original — see `lib/libraryImage.ts`.
  */
 export function ImageGallery({ items }: { items: LibraryFile[] }) {
   const [openAt, setOpenAt] = useState<number | null>(null);
@@ -34,7 +35,7 @@ export function ImageGallery({ items }: { items: LibraryFile[] }) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={item.thumbnail_url ?? item.url}
+                {...tileSource(item, GRID_SIZES)}
                 alt={item.title}
                 loading="lazy"
                 decoding="async"
