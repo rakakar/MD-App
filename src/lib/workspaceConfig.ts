@@ -38,7 +38,8 @@ export type NavIcon =
   | "overview"
   | "events"
   | "centers"
-  | "links";
+  | "links"
+  | "volunteer";
 
 export interface Workspace {
   id: WorkspaceId;
@@ -166,11 +167,11 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "connect",
     name: "Connect",
     color: "#2F6E86",
-    tagline: "Shivir Calendar - Contacts - Links",
+    tagline: "Shivir Calendar - Contacts - Links - Volunteer",
     home: "/connect",
     /**
-     * Four slots, as the designer's comps draw them — Events, Centres, Links,
-     * Assistant.
+     * Five slots — Events, Centres, Links, Volunteer, Assistant. The comps drew
+     * four; Volunteer was added on the designer's call (23 Oct 2026).
      *
      * Centres and Links were absent for a while and the note here said why:
      * they had no endpoints, and a tab advertising an empty room is worse than
@@ -191,6 +192,11 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
       { label: "Events", href: "/connect", icon: "events" },
       { label: "Centres", href: "/connect/centres", icon: "centers" },
       { label: "Links", href: "/connect/links", icon: "links" },
+      // Volunteer sign-up — a landing page, then the group's Google Form
+      // embedded at `/connect/volunteer/signup` (under this href, so the tab
+      // stays lit there). Five slots, like Originals: the fifth is still the
+      // Assistant, which holds the same place in every workspace.
+      { label: "Volunteer", href: "/connect/volunteer", icon: "volunteer" },
       { label: "Assistant", href: "/assistant", icon: "assistant", isSearch: true },
     ],
   },

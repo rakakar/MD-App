@@ -198,6 +198,12 @@ export const LinkGlyph = ({ className }: P) => (
   </Svg>
 );
 
+export const HeartGlyph = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M12 20s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.1a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z" />
+  </Svg>
+);
+
 export const JourneyGlyph = ({ className }: P) => (
   <Svg className={className}>
     <path d="M6 20c0-4 3-4 3-8s-3-4-3-8" />
@@ -241,6 +247,8 @@ export function DestinationGlyph({ icon, className }: { icon: DestinationIcon; c
       return <PinGlyph className={className} />;
     case "links":
       return <LinkGlyph className={className} />;
+    case "volunteer":
+      return <HeartGlyph className={className} />;
     case "paribhasha":
       return <EntryIcon className={className} />;
     case "settings":

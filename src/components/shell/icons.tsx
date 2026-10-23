@@ -137,6 +137,12 @@ export function Icon({ name, ...props }: IconProps & { name: NavIcon }) {
           <path d="M13 16.5l-1.8 1.8a3.7 3.7 0 0 1-5.3-5.3L7.7 11.2" />
         </Svg>
       );
+    case "volunteer":
+      return (
+        <Svg {...props}>
+          <path d="M12 20s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.1a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z" />
+        </Svg>
+      );
   }
 }
 

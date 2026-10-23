@@ -22,6 +22,7 @@ export type DestinationIcon =
   | "events"
   | "centres"
   | "links"
+  | "volunteer"
   | "paribhasha"
   | "settings"
   | "download"
@@ -183,6 +184,15 @@ const PLACES: Destination[] = [
     icon: "links",
     keywords: ["links", "link", "website", "youtube", "whatsapp", "group"],
     command: "open links",
+  },
+  {
+    id: "volunteer",
+    section: "Connect",
+    title: "Volunteer",
+    href: "/connect/volunteer",
+    icon: "volunteer",
+    keywords: ["volunteer", "seva", "सेवा", "help", "contribute", "sign up", "signup", "join"],
+    command: "open volunteer",
   },
   {
     id: "paribhasha",
