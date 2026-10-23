@@ -21,7 +21,8 @@ import {
   type EventListResponse,
 } from "@/lib/events";
 import { EventCardView } from "./EventCard";
-import { EventFiltersSheet } from "./EventFiltersSheet";
+import { EventFiltersPopover, EventFiltersSheet } from "./EventFiltersSheet";
+import { useIsDesktop } from "@/components/ui/Dialog";
 
 /**
  * Connect → Events: the three tabs, the search box, the filter sheet, the
@@ -118,6 +119,7 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
   }, []);
 
   const filterCount = activeFilterCount(filters);
+  const desktop = useIsDesktop();
   const clearAll = () => {
     setFilters(EMPTY_EVENT_FILTERS);
     setQuery("");
@@ -182,7 +184,19 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
               pending={pending}
             />
           }
-          filters={<FilterButton count={filterCount} onClick={() => setSheetOpen(true)} />}
+          filters={
+            desktop ? (
+              <EventFiltersPopover
+                bucket={bucket}
+                q={asked}
+                applied={filters}
+                onApply={setFilters}
+                count={filterCount}
+              />
+            ) : (
+              <FilterButton count={filterCount} onClick={() => setSheetOpen(true)} />
+            )
+          }
         />
       </div>
 
@@ -236,7 +250,7 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
       {/* Mounted only while open, so the pending selection is initialised from
           the applied one at mount and thrown away on close — no effect copying
           a prop into state every time the sheet appears. */}
-      {sheetOpen && (
+      {sheetOpen && !desktop && (
         <EventFiltersSheet
           onClose={() => setSheetOpen(false)}
           bucket={bucket}

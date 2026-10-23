@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PinIcon } from "@/components/shell/icons";
 import { useWorkspace } from "@/components/shell/WorkspaceProvider";
-import { Chip, Sheet, SheetAction, SheetTextAction } from "@/components/ui";
+import { Chip, FilterButton, Sheet, SheetAction, SheetTextAction } from "@/components/ui";
 import { getEventFilters, getEvents } from "@/lib/api";
 import {
   categoryStyle,
@@ -38,12 +38,34 @@ import {
 
 /** One axis. No icon: the comps head these with the label alone, and this is
  *  the only sheet in the app drawn that way. */
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+function Section({
+  label,
+  children,
+  dense = false,
+  onClear,
+}: {
+  label: string;
+  children: React.ReactNode;
+  /** the desktop panel's spacing — its sections are ruled by the parent */
+  dense?: boolean;
+  /** the panel's per-axis Clear, shown only while that axis has a choice */
+  onClear?: () => void;
+}) {
   return (
-    <section className="border-b border-rule px-5 py-5 last:border-b-0">
-      <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
-        {label}
-      </h3>
+    <section className={dense ? "px-4 py-3.5" : "border-b border-rule px-5 py-5 last:border-b-0"}>
+      <div className={`flex items-center justify-between ${dense ? "mb-2.5" : "mb-3"}`}>
+        <h3 className="text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">{label}</h3>
+        {onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-xs font-semibold"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
       {children}
     </section>
   );
@@ -100,17 +122,19 @@ function ModeButton({
   label,
   selected,
   onToggle,
+  dense = false,
 }: {
   label: string;
   selected: boolean;
   onToggle: () => void;
+  dense?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-pressed={selected}
       onClick={onToggle}
-      className={`flex min-h-12 flex-1 items-center justify-center rounded-control border px-4 text-sm transition-colors ${
+      className={`flex ${dense ? "min-h-10" : "min-h-12"} flex-1 items-center justify-center rounded-control border px-4 text-sm transition-colors ${
         selected ? "font-semibold" : "border-rule bg-card font-medium text-ink"
       }`}
       style={
@@ -129,6 +153,168 @@ function ModeButton({
 }
 
 /**
+ * The options and the footer's count for a selection — shared by the phone
+ * sheet and the desktop panel.
+ *
+ * Both requests, on every change to the selection — the options because each
+ * is counted with its own filter dropped, the count because it is the footer's
+ * whole job. Debounced together so a run of taps down a row of chips costs one
+ * pair of calls rather than six, and aborted on the way out so a slow answer to
+ * an abandoned question cannot land after a fresh one.
+ */
+function useFilterOptions(bucket: EventBucket, q: string, filters: EventFilterState) {
+  const [options, setOptions] = useState<EventFilterOptions | null>(null);
+  const [count, setCount] = useState<number | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    const id = setTimeout(() => {
+      const opts = { bucket, q, filters, signal: ac.signal };
+      getEventFilters(opts)
+        .then(setOptions)
+        .catch(() => undefined);
+      getEvents(opts)
+        .then((r) => setCount(r.counts[bucket] ?? 0))
+        .catch(() => undefined);
+    }, 180);
+    return () => {
+      clearTimeout(id);
+      ac.abort();
+    };
+  }, [bucket, q, filters]);
+  return { options, count };
+}
+
+const countLabel = (count: number | null) =>
+  // Never "Show — events": until the first answer lands the button says what
+  // it does rather than a number it does not have yet.
+  count === null ? "events" : `${count} ${count === 1 ? "event" : "events"}`;
+
+/** The four axes, drawn the same way in the sheet and in the desktop panel —
+ *  `dense` is the panel's tighter spacing and per-axis Clear. */
+function FilterAxes({
+  options,
+  value,
+  onChange,
+  dense = false,
+}: {
+  options: EventFilterOptions;
+  value: EventFilterState;
+  onChange: (f: EventFilterState) => void;
+  dense?: boolean;
+}) {
+  const toggle = (key: "categories" | "languages", code: string) =>
+    onChange({
+      ...value,
+      [key]: value[key].includes(code)
+        ? value[key].filter((c) => c !== code)
+        : [...value[key], code],
+    });
+  const clear = (patch: Partial<EventFilterState>) =>
+    dense ? () => onChange({ ...value, ...patch }) : undefined;
+  const cities = options.cities;
+
+  return (
+    <>
+      {options.categories.length > 0 && (
+        <Section
+          label="Shivir category"
+          dense={dense}
+          onClear={value.categories.length > 0 ? clear({ categories: [] }) : undefined}
+        >
+          <div className="flex flex-wrap gap-2">
+            {options.categories.map((c) => (
+              <CategoryChip
+                key={c.code}
+                category={c}
+                selected={value.categories.includes(c.code)}
+                onToggle={() => toggle("categories", c.code)}
+              />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {options.languages.length > 0 && (
+        <Section
+          label="Language"
+          dense={dense}
+          onClear={value.languages.length > 0 ? clear({ languages: [] }) : undefined}
+        >
+          <div className="flex flex-wrap gap-2">
+            {options.languages.map((l) => (
+              <Chip
+                key={l.code}
+                label={l.name}
+                variant="tint"
+                selected={value.languages.includes(l.code)}
+                onClick={() => toggle("languages", l.code)}
+              />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {options.modes.length > 0 && (
+        <Section
+          label="Mode"
+          dense={dense}
+          onClear={value.mode ? clear({ mode: "" }) : undefined}
+        >
+          <div className={`flex ${dense ? "gap-2" : "gap-3"}`}>
+            {options.modes.map((m) => (
+              <ModeButton
+                key={m.code}
+                label={m.name}
+                dense={dense}
+                selected={value.mode === m.code}
+                onToggle={() => onChange({ ...value, mode: value.mode === m.code ? "" : m.code })}
+              />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Drawn only when there is somewhere to choose between. `cities`
+          lists only cities that actually have events in this bucket, so an
+          empty list means the dropdown would offer nothing but "All". */}
+      {cities.length > 0 && (
+        <Section
+          label="Location"
+          dense={dense}
+          onClear={value.city ? clear({ city: "" }) : undefined}
+        >
+          <div className="relative flex items-center rounded-control border border-rule bg-card ps-3.5 pe-3">
+            <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
+              <PinIcon />
+            </span>
+            <select
+              aria-label="Location"
+              value={value.city}
+              onChange={(e) => onChange({ ...value, city: e.target.value })}
+              className={`ui-hi w-full appearance-none bg-transparent ps-2.5 pe-2 text-ink outline-none ${
+                dense ? "min-h-10 text-sm" : "min-h-12 text-base"
+              }`}
+            >
+              <option value="">All locations</option>
+              {cities.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <span aria-hidden className="shrink-0 text-ink-soft">
+              ⌄
+            </span>
+          </div>
+        </Section>
+      )}
+    </>
+  );
+}
+
+/**
+ * The phone sheet.
+ *
  * Mounted only while it is open — see `EventsScreen`. That is what makes
  * `useState(applied)` the whole of the reset: a reader who backs out with
  * Escape has not changed their filters, and reopening has to show what is on
@@ -157,40 +343,7 @@ export function EventFiltersSheet({
   // over a blue screen.
   const { workspace } = useWorkspace();
   const [pending, setPending] = useState<EventFilterState>(applied);
-  const [options, setOptions] = useState<EventFilterOptions | null>(null);
-  const [count, setCount] = useState<number | null>(null);
-
-  // Both requests, on every change to the pending set — the options because
-  // each is counted with its own filter dropped, the count because it is the
-  // footer's whole job. Debounced together so a run of taps down a row of
-  // chips costs one pair of calls rather than six, and aborted on the way out
-  // so a slow answer to an abandoned question cannot land after a fresh one.
-  useEffect(() => {
-    const ac = new AbortController();
-    const id = setTimeout(() => {
-      const opts = { bucket, q, filters: pending, signal: ac.signal };
-      getEventFilters(opts)
-        .then(setOptions)
-        .catch(() => undefined);
-      getEvents(opts)
-        .then((r) => setCount(r.counts[bucket] ?? 0))
-        .catch(() => undefined);
-    }, 180);
-    return () => {
-      clearTimeout(id);
-      ac.abort();
-    };
-  }, [bucket, q, pending]);
-
-  const toggle = (key: "categories" | "languages", code: string) =>
-    setPending((f) => ({
-      ...f,
-      [key]: f[key].includes(code)
-        ? f[key].filter((c) => c !== code)
-        : [...f[key], code],
-    }));
-
-  const cities = options?.cities ?? [];
+  const { options, count } = useFilterOptions(bucket, q, pending);
 
   return (
     <Sheet
@@ -212,94 +365,98 @@ export function EventFiltersSheet({
             onClose();
           }}
         >
-          {/* Never "Show — events": until the first answer lands the button
-              says what it does rather than a number it does not have yet. */}
-          {count === null
-            ? "Show events"
-            : `Show ${count} ${count === 1 ? "event" : "events"}`}
+          {`Show ${countLabel(count)}`}
         </SheetAction>
       }
     >
-      {options && (
-        <>
-          {options.categories.length > 0 && (
-            <Section label="Shivir category">
-              <div className="flex flex-wrap gap-2">
-                {options.categories.map((c) => (
-                  <CategoryChip
-                    key={c.code}
-                    category={c}
-                    selected={pending.categories.includes(c.code)}
-                    onToggle={() => toggle("categories", c.code)}
-                  />
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {options.languages.length > 0 && (
-            <Section label="Language">
-              <div className="flex flex-wrap gap-2">
-                {options.languages.map((l) => (
-                  <Chip
-                    key={l.code}
-                    label={l.name}
-                    variant="tint"
-                    selected={pending.languages.includes(l.code)}
-                    onClick={() => toggle("languages", l.code)}
-                  />
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {options.modes.length > 0 && (
-            <Section label="Mode">
-              <div className="flex gap-3">
-                {options.modes.map((m) => (
-                  <ModeButton
-                    key={m.code}
-                    label={m.name}
-                    selected={pending.mode === m.code}
-                    onToggle={() =>
-                      setPending((f) => ({ ...f, mode: f.mode === m.code ? "" : m.code }))
-                    }
-                  />
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {/* Drawn only when there is somewhere to choose between. `cities`
-              lists only cities that actually have events in this bucket, so an
-              empty list means the dropdown would offer nothing but "All". */}
-          {cities.length > 0 && (
-            <Section label="Location">
-              <div className="relative flex items-center rounded-control border border-rule bg-card ps-3.5 pe-3">
-                <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
-                  <PinIcon />
-                </span>
-                <select
-                  aria-label="Location"
-                  value={pending.city}
-                  onChange={(e) => setPending((f) => ({ ...f, city: e.target.value }))}
-                  className="ui-hi min-h-12 w-full appearance-none bg-transparent ps-2.5 pe-2 text-base text-ink outline-none"
-                >
-                  <option value="">All locations</option>
-                  {cities.map((c) => (
-                    <option key={c.name} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <span aria-hidden className="shrink-0 text-ink-soft">
-                  ⌄
-                </span>
-              </div>
-            </Section>
-          )}
-        </>
-      )}
+      {options && <FilterAxes options={options} value={pending} onChange={setPending} />}
     </Sheet>
+  );
+}
+
+/**
+ * **The filters on a desktop: a panel hanging from the button**, the same one
+ * the Originals media shelf uses (`library/FindFilters`), instead of a sheet
+ * rising over the whole window. Every choice applies at once, so the list
+ * behind narrows as the reader picks and there is nothing to confirm; the
+ * panel stays open until they click away or press Escape.
+ */
+export function EventFiltersPopover({
+  bucket,
+  q,
+  applied,
+  onApply,
+  count: filterCount,
+}: {
+  bucket: EventBucket;
+  q: string;
+  applied: EventFilterState;
+  onApply: (f: EventFilterState) => void;
+  /** how many filters are on — the button's badge */
+  count: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <FilterButton count={filterCount} onClick={() => setOpen((o) => !o)} />
+      {open && <PopoverPanel bucket={bucket} q={q} applied={applied} onApply={onApply} />}
+    </div>
+  );
+}
+
+/** Split out so the option requests run only while the panel is open. */
+function PopoverPanel({
+  bucket,
+  q,
+  applied,
+  onApply,
+}: {
+  bucket: EventBucket;
+  q: string;
+  applied: EventFilterState;
+  onApply: (f: EventFilterState) => void;
+}) {
+  const { options, count } = useFilterOptions(bucket, q, applied);
+  return (
+    <div
+      role="dialog"
+      aria-label="Filters"
+      className="absolute right-0 top-full z-40 mt-2 flex max-h-[min(36rem,calc(100dvh-8rem))] w-[26rem] flex-col overflow-hidden rounded-card border border-rule bg-card shadow-raised"
+    >
+      <div className="min-h-0 flex-1 divide-y divide-rule overflow-y-auto overscroll-contain">
+        {options && <FilterAxes options={options} value={applied} onChange={onApply} dense />}
+      </div>
+      <div className="flex items-center justify-between border-t border-rule px-4 py-3">
+        <span className="text-sm text-ink-soft tabular-nums">{count !== null && countLabel(count)}</span>
+        {hasFilters(applied) && (
+          <button
+            type="button"
+            onClick={() => onApply(EMPTY_EVENT_FILTERS)}
+            className="text-sm font-semibold"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
