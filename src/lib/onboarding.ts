@@ -109,7 +109,7 @@ export function advanceLabel(index: number): string {
  */
 export const LAUNCH = {
   title: "Madhyasth Darshan",
-  eyebrow: "Study app",
+  eyebrow: "Study",
   description:
     "The all-in-one platform to read original literature, explore deep study resources, and connect with fellow students on the path of coexistence.",
   founderLine: "मध्यस्थ दर्शन सह-अस्तित्ववाद",

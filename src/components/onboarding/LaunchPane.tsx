@@ -76,7 +76,7 @@ export function LaunchPane({
         <div className="flex flex-col gap-[1.125rem] lg:gap-3">
           {/* Title and eyebrow are one unit, set tight. Spaced like the
               sentence below them they read as three separate announcements;
-              this way STUDY APP is what the name is qualified by. */}
+              this way STUDY is what the name is qualified by. */}
           <div className="flex flex-col gap-1 lg:gap-1.5">
             <h1
               className="launch-in launch-title font-display font-medium"
