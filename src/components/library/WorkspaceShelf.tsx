@@ -78,6 +78,7 @@ export async function WorkspaceShelf({
   photoStrip = true,
   filtersButton = true,
   chipAxis = "kind",
+  afterDoors,
 }: {
   root: LibraryNode;
   /**
@@ -162,6 +163,12 @@ export async function WorkspaceShelf({
    * from the tiles (designer, 23 Oct 2026).
    */
   chipAxis?: "kind" | "provenance";
+  /**
+   * What closes the shelf's folders, above its photographs — Originals' link
+   * to the full scanned archive. Browse only: a find's results are a different
+   * page, and the link is about the shelf, not the answer.
+   */
+  afterDoors?: React.ReactNode;
 }) {
   const files = [...root.items, ...root.linked_items];
   const scope = { workspace: root.workspace };
@@ -503,6 +510,8 @@ export async function WorkspaceShelf({
       {/* Below the grid, where the design puts it: a shelf's photographs are
           worth *seeing* rather than counting, and a folder named for them says
           nothing about what is in it. */}
+      {afterDoors && <div className="mt-5 lg:mt-6">{afterDoors}</div>}
+
       {photoStrip && <PhotoStrip scope={scope} facets={find?.facets} />}
 
       {/* The desktop's copy of the filters, drawn for a 232px column and living

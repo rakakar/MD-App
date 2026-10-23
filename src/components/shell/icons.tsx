@@ -640,6 +640,15 @@ export function FolderIcon({ className }: { className?: string }) {
   );
 }
 
+/** the scanned archive that lives off-app — see `ArchiveLink` */
+export function CloudIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M7 18a4.5 4.5 0 0 1-.5-8.97A6 6 0 0 1 18 8.5a4.75 4.75 0 0 1-.25 9.5Z" />
+    </Svg>
+  );
+}
+
 /** a bare URL we hand over rather than render in place (file kind `link`) */
 export function ExternalLinkIcon({ className }: { className?: string }) {
   return (

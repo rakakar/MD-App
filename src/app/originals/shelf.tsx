@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ArchiveLink } from "@/components/library/ArchiveLink";
 import { ContinueDocument } from "@/components/library/ContinueDocument";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
@@ -8,6 +9,10 @@ import { getNode, getTopics, getWorkspaces } from "@/lib/api";
 import { readFind, type RawParams } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
 import type { Topic } from "@/lib/types";
+
+/** everything as it was scanned, on pCloud — the shelf holds what is published */
+const CLOUD_ARCHIVE =
+  "https://u.pcloud.link/publink/show?code=kZ6Gm05ZfUbbDBW8fKmKB9ejvrO6cSRnRRH7#/filemanager?folder=24106408193";
 
 export const SHELF_METADATA: Metadata = {
   title: "Library · Originals",
@@ -108,6 +113,13 @@ export async function OriginalsShelfPage({ params }: { params: RawParams }) {
            taken out of the row. */
         chipAxis="provenance"
         filtersButton={false}
+        afterDoors={
+          <ArchiveLink
+            href={CLOUD_ARCHIVE}
+            title="Cloud Archive"
+            description="Original scanned manuscripts, bulk downloads"
+          />
+        }
         emptyTitle="The library is on its way"
         emptyHint="Photographs, letters and documents appear here as they are published."
       />
