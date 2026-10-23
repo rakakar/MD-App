@@ -34,6 +34,7 @@ export function SearchField({
   label,
   unasked = false,
   pending = false,
+  roomy = false,
 }: {
   /** the caller's handle on the box — for focusing it, and for asking whether
    *  the reader is in it before anything overwrites what they typed */
@@ -50,6 +51,12 @@ export function SearchField({
   unasked?: boolean;
   /** a search is in flight */
   pending?: boolean;
+  /**
+   * The folder box: 48px tall, the magnifier 16px in, the text a step smaller
+   * (designer, 23 Oct 2026). Every search inside a library folder is this one,
+   * whether it narrows the files on screen or searches the folder beneath.
+   */
+  roomy?: boolean;
 }) {
   return (
     <form
@@ -64,7 +71,9 @@ export function SearchField({
       }}
       // No vertical padding of its own: the button carries the height, and
       // `min-h-11` there is the 44px this row has always been.
-      className="flex items-center gap-1 rounded-control border border-rule bg-card ps-1 pe-3 focus-within:border-(--ws-color)"
+      className={`flex items-center gap-1 rounded-control border border-rule bg-card pe-3 focus-within:border-(--ws-color) ${
+        roomy ? "min-h-12 ps-2" : "ps-1"
+      }`}
     >
       <button
         type="submit"
@@ -75,7 +84,9 @@ export function SearchField({
         // takes the workspace colour only when there is something unasked in
         // the box, so the control that costs a round trip says when it would
         // actually do something.
-        className={`flex min-h-11 shrink-0 items-center justify-center rounded-xl px-2.5 transition-colors ${
+        className={`flex min-h-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
+          roomy ? "px-2" : "px-2.5"
+        } ${
           unasked ? "text-(--ws-color)" : "text-ink-soft"
         }`}
       >
@@ -98,7 +109,9 @@ export function SearchField({
         // folder's own name, and a reader types either script into it — so the
         // stack switches per glyph rather than setting the whole box in the
         // Devanagari serif.
-        className="ui-hi w-full bg-transparent text-base outline-none [&::-webkit-search-cancel-button]:appearance-none"
+        className={`ui-hi w-full bg-transparent outline-none [&::-webkit-search-cancel-button]:appearance-none ${
+          roomy ? "text-sm placeholder:text-ink-soft" : "text-base"
+        }`}
       />
       {value && (
         <button

@@ -43,6 +43,9 @@ import { findHref, MIN_QUERY_CHARS, type FindState } from "@/lib/find";
  * The chips are the deliberate contrast and stay instant: a chip tap *is* the
  * asking, so it navigates on the tap.
  */
+/** what every search inside a folder says — see `folder` below */
+export const FOLDER_PLACEHOLDER = "Search by name, topic, year or place";
+
 export function FindBar({
   basePath,
   state,
@@ -52,6 +55,7 @@ export function FindBar({
   filters,
   placeholder,
   flush = false,
+  folder = false,
 }: {
   basePath: string;
   state: FindState;
@@ -92,6 +96,13 @@ export function FindBar({
    * text size makes the box give.
    */
   filters?: React.ReactNode;
+  /**
+   * Inside a library folder: the folder box — `SearchField`'s roomy size,
+   * "Search by name, topic, year or place" at every width, and no caption,
+   * since the placeholder says what the caption did. The same box a folder of
+   * files narrows its list with, so the two kinds of folder search alike.
+   */
+  folder?: boolean;
 }) {
   const router = useRouter();
   const desktop = useIsDesktop();
@@ -136,7 +147,7 @@ export function FindBar({
   }
 
   return (
-    <div className={placeholder || flush ? "" : `mt-4 ${dense ? "lg:mt-0" : ""}`}>
+    <div className={(placeholder && !folder) || flush ? "" : `mt-4 ${dense ? "lg:mt-0" : ""}`}>
       <FindRow
         search={
           <SearchField
@@ -153,10 +164,13 @@ export function FindBar({
             }}
             // The short placeholder is a phone's, where it stands in for the
             // caption; a desktop names the scope as every other box does.
-            placeholder={(desktop ? null : placeholder) ?? `Search ${scope}…`}
+            placeholder={
+              folder ? FOLDER_PLACEHOLDER : ((desktop ? null : placeholder) ?? `Search ${scope}…`)
+            }
             label={`Search ${scope}`}
             unasked={q.trim() !== state.q}
             pending={pending}
+            roomy={folder}
           />
         }
         /* On every width, beside the box — the designer's call, reversing a
@@ -167,7 +181,7 @@ export function FindBar({
            set of filters is the smaller cost. */
         filters={filters}
       />
-      {!placeholder && (
+      {!placeholder && !folder && (
         <p className={`mt-1.5 px-1 text-xs text-ink-soft ${dense ? "lg:hidden" : ""}`}>
           By name, topic, year or place
         </p>

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { SearchField } from "@/components/SearchField";
 import { FileList } from "@/components/library/FileList";
+import { FOLDER_PLACEHOLDER } from "@/components/library/FindBar";
 import { PhonePlayRow } from "@/components/library/FolderHeroActions";
 import { LARGE_BYTES } from "@/components/library/folderActions";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
@@ -40,6 +42,7 @@ export function FolderFiles({
   fullSeries?: string | null;
 }) {
   const [q, setQ] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const needle = q.trim().toLowerCase();
   const match = (f: LibraryFile) =>
     !needle ||
@@ -58,21 +61,25 @@ export function FolderFiles({
 
   return (
     <>
+      {/* The folder box — the same one a folder with sub-folders searches
+          with (`FindBar`'s `folder`), so every folder's search looks alike.
+          This one narrows as the reader types: every file is already here. */}
       {searchable && (
-        <label className="mt-4 flex min-h-12 items-center gap-3 rounded-control border border-rule bg-card px-4 focus-within:border-(--ws-ink)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-4.5 w-4.5 shrink-0 text-ink-soft" aria-hidden>
-            <circle cx="11" cy="11" r="7" />
-            <path d="M20 20l-3.5-3.5" />
-          </svg>
-          <input
-            type="search"
+        <div className="mt-4">
+          <SearchField
+            inputRef={inputRef}
             value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name, topic, year or place"
-            aria-label="Search this folder"
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-soft"
+            onChange={setQ}
+            onSubmit={() => {}}
+            onClear={() => {
+              setQ("");
+              inputRef.current?.focus();
+            }}
+            placeholder={FOLDER_PLACEHOLDER}
+            label="Search this folder"
+            roomy
           />
-        </label>
+        </div>
       )}
       <PhonePlayRow playAll={playAll} fullSeries={fullSeries} />
       {none ? (

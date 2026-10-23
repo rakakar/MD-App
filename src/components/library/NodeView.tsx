@@ -125,7 +125,7 @@ export async function NodeView({
 
       {searchable && find && (
         <>
-          <FindBar basePath={basePath} state={state} scope={albumName(node.name)} />
+          <FindBar basePath={basePath} state={state} scope={albumName(node.name)} folder />
           <Sieve facets={find.facets} state={state} basePath={basePath} />
         </>
       )}
