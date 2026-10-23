@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { CentresTabs } from "@/components/connect/CentresTabs";
 import { ContactsScreen } from "@/components/connect/ContactsScreen";
-import { BackIcon } from "@/components/shell/icons";
 import { ErrorState, PageContainer } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { getCentres, getContacts, getContactStates } from "@/lib/api";
@@ -47,20 +45,10 @@ export default async function CityContactsPage() {
   return (
     <PageContainer size="shelf">
       <div className="mx-auto max-w-3xl lg:max-w-none">
-      {/* Phone only: on a desktop the Centres tab is the way back. */}
-      <Link
-        href="/connect/centres"
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-rule bg-card pe-3.5 ps-2.5 text-sm font-semibold text-ink transition-colors active:bg-ink/[.04] lg:hidden"
-      >
-        <BackIcon className="h-4 w-4 shrink-0" />
-        Centres
-      </Link>
-
       {/* A desktop heads both halves "Centres", as drawn, with the tabs saying
           which half this is; a phone keeps the page's own name. */}
       <PageTitle
-        className="mt-4 lg:mt-0"
-        title={
+                title={
           <>
             <span className="lg:hidden">City-wise contacts</span>
             <span className="hidden lg:inline">Centres</span>

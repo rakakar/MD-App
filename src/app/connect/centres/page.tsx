@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { CentreCard } from "@/components/connect/CentreCard";
 import { CentreNoteCard } from "@/components/connect/CentreNote";
 import { CentresTabs } from "@/components/connect/CentresTabs";
-import { ChevronRight, PinIcon } from "@/components/shell/icons";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { getCentres, getContactStates } from "@/lib/api";
@@ -71,47 +69,15 @@ export default async function CentresPage() {
         </div>
       )}
 
-      {/* The two standing notes, above the way out and below the list — the
-          order the comps put them in and the order they should be read in:
-          here is where you could go, here is what to know before you go, and
-          here is who to ask. A caution printed under the contacts banner would
-          be a caution nobody reached. */}
+      {/* The two standing notes, below the list: here is where you could go,
+          then what to know before you go. The way to the contacts is the tab
+          at the top — the banner that used to close the page went when the
+          tabs arrived (23 Oct 2026). */}
       <div className="mt-4 flex flex-col gap-3 lg:mt-6 lg:grid lg:grid-cols-2 lg:gap-6">
         {CENTRE_NOTES.map((note) => (
           <CentreNoteCard key={note.slug} note={note} />
         ))}
       </div>
-
-      {/* Not `PromoBand`: that one is the player's dark pill with a play glyph
-          on it, and this is the comps' flat teal card with a pin. Same idea,
-          different object — and the band is used by two other screens whose
-          look should not move because Connect gained a banner.
-
-          Phone only: on a desktop the City-wise contacts tab is in view at the
-          top of the page, and the comp draws no banner. */}
-      <Link
-        href="/connect/centres/contacts"
-        className="mt-4 flex items-center gap-3.5 rounded-card p-4 lg:hidden text-white shadow-card transition-opacity hover:opacity-95"
-        style={{ background: "var(--ws-color)" }}
-      >
-        <span
-          aria-hidden
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/15"
-        >
-          <PinIcon className="h-5 w-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-title font-semibold leading-tight">
-            See city-wise contacts
-          </span>
-          <span className="mt-0.5 block text-sm leading-snug text-white/80">
-            See here for the contacts near you
-          </span>
-        </span>
-        <span aria-hidden className="shrink-0 text-white/70">
-          <ChevronRight />
-        </span>
-      </Link>
       </div>
     </PageContainer>
   );
