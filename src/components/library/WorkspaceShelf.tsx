@@ -55,6 +55,12 @@ import type {
  */
 const PLACEHOLDER = "Search by name, topic, year…";
 
+/** the provenance chips, in reading order — the BE's codes, the interface's English */
+const PROVENANCE_CHIPS = [
+  { value: "moola", label: "Originals" },
+  { value: "sankalan", label: "Compilations" },
+];
+
 export async function WorkspaceShelf({
   root,
   title,
@@ -70,6 +76,8 @@ export async function WorkspaceShelf({
   searchScope = "library",
   hideAxes = [],
   photoStrip = true,
+  filtersButton = true,
+  chipAxis = "kind",
 }: {
   root: LibraryNode;
   /**
@@ -139,6 +147,21 @@ export async function WorkspaceShelf({
    * opt-in, so a new workspace gets the strip unless it says otherwise.
    */
   photoStrip?: boolean;
+  /**
+   * Whether the box has its Filters button beside it. Originals goes without
+   * (designer, 23 Oct 2026): the chip row under the box is the one way that
+   * shelf is cut, and a second, fuller set of choices behind a button was more
+   * than its readers asked for.
+   */
+  filtersButton?: boolean;
+  /**
+   * Which axis the chip row under the box writes. Type ("All · PDFs ·
+   * Images") by default; Originals asks provenance instead — "All ·
+   * Originals · Compilations" — because on a shelf of his papers *whose
+   * words these are* is the first question, and PDF-or-photo answers itself
+   * from the tiles (designer, 23 Oct 2026).
+   */
+  chipAxis?: "kind" | "provenance";
 }) {
   const files = [...root.items, ...root.linked_items];
   const scope = { workspace: root.workspace };
@@ -146,18 +169,25 @@ export async function WorkspaceShelf({
   // Losing the find must not lose the shelf: a failed request drops back to
   // the browse, which needs nothing from it.
   //
-  // Once something is asked, the request is held to the kinds this shelf shows.
-  // The Library's search used to reach every word in the workspace, recordings
-  // included, so a search on Library answered with a column of audio that has
-  // a tab of its own (designer, 19 Oct 2026). Only the request is narrowed —
-  // `state` itself, and so the URL and the chips, stays the reader's.
+  // The request is held to the kinds this shelf shows. The Library's search
+  // used to reach every word in the workspace, recordings included, so a
+  // search on Library answered with a column of audio that has a tab of its
+  // own (designer, 19 Oct 2026). Only the request is narrowed — `state`
+  // itself, and so the URL and the chips, stays the reader's.
+  //
+  // Held before anything is asked too, so every count the page prints is of
+  // this shelf: "Originals 2238" was the recordings talking. The door rollup
+  // comes back the same either way — it is what `hidesDoor` reads — and a
+  // browse wants the facets, not the rows, so it asks for one.
   const asked =
-    hideKinds.length > 0 && isAsked(state)
+    hideKinds.length > 0
       ? lockAxis(state, "kind", KIND_ORDER.filter((kind) => !hideKinds.includes(kind)))
       : state;
-  const find: LibraryFindResponse | null = await findLibrary({ ...scope, state: asked }).catch(
-    () => null
-  );
+  const find: LibraryFindResponse | null = await findLibrary({
+    ...scope,
+    state: asked,
+    limit: isAsked(state) ? undefined : 1,
+  }).catch(() => null);
   const finding = isAsked(state) && find !== null;
 
   const rollup: LibraryRollup = find?.rollup ?? {};
@@ -236,24 +266,37 @@ export async function WorkspaceShelf({
   // The Category axis as a row of chips under the search, as Media has its
   // Audio · Video (designer's call, 1 Oct 2026). Only the kinds this shelf
   // actually shows, in the app's kind order; "All" is the shelf's own total.
-  const kindChoices: KindChoice[] = KIND_ORDER.flatMap((kind) => {
-    const count = countable.find((c) => c.value === kind)?.count ?? 0;
-    return count > 0 ? [{ key: kind, label: KIND_PLURAL[kind], count, kinds: [kind] }] : [];
-  });
-  const chipsShown = kindChoices.length >= 2;
-  const chosenKinds = state.selection.kind ?? [];
+  // Or provenance, where the shelf asks for it (`chipAxis`).
+  const choices: KindChoice[] =
+    chipAxis === "provenance"
+      ? PROVENANCE_CHIPS.flatMap(({ value, label }) => {
+          const count = facets.provenance?.find((c) => c.value === value)?.count ?? 0;
+          return count > 0 ? [{ key: value, label, count, values: [value] }] : [];
+        })
+      : KIND_ORDER.flatMap((kind) => {
+          const count = countable.find((c) => c.value === kind)?.count ?? 0;
+          return count > 0 ? [{ key: kind, label: KIND_PLURAL[kind], count, values: [kind] }] : [];
+        });
+  const chipsShown = choices.length >= 2;
+  const chosen = state.selection[chipAxis] ?? [];
+  // "All" is the whole shelf whichever chip is on. `inScope` is counted off
+  // the Type facet, which a provenance chip narrows; the provenance facet does
+  // not narrow by its own chip, so its sum stays the shelf's total.
+  const allCount =
+    chipAxis === "provenance" ? choices.reduce((n, c) => n + c.count, 0) : inScope;
   const kindRow = chipsShown ? (
     <KindChips
-      label="Category"
-      choices={[{ key: "all", label: "All", count: inScope, kinds: undefined }, ...kindChoices]}
-      active={chosenKinds.length === 1 ? chosenKinds[0] : chosenKinds.length === 0 ? "all" : ""}
+      axis={chipAxis}
+      label={chipAxis === "provenance" ? "Source" : "Category"}
+      choices={[{ key: "all", label: "All", count: allCount, values: undefined }, ...choices]}
+      active={chosen.length === 1 ? chosen[0] : chosen.length === 0 ? "all" : ""}
       state={state}
       basePath={basePath}
     />
   ) : null;
-  // With the chips standing under the search, a Category group in the rail
-  // and in the Filters sheet would be the same choice offered three times.
-  const filterAxes: FindAxis[] = chipsShown ? [...hideAxes, "kind"] : hideAxes;
+  // With the chips standing under the search, the same group in the rail and
+  // in the Filters sheet would be the same choice offered three times.
+  const filterAxes: FindAxis[] = chipsShown ? [...hideAxes, chipAxis] : hideAxes;
 
   if (finding) {
     return (
@@ -274,15 +317,17 @@ export async function WorkspaceShelf({
             flush
             placeholder={PLACEHOLDER}
             filters={
-              <FindFilters
-                topics={topics}
-                facets={facets}
-                state={state}
-                basePath={basePath}
-                itemCount={itemCount}
-                hideAxes={filterAxes}
-                iconOnly
-              />
+              filtersButton && (
+                <FindFilters
+                  topics={topics}
+                  facets={facets}
+                  state={state}
+                  basePath={basePath}
+                  itemCount={itemCount}
+                  hideAxes={filterAxes}
+                  iconOnly
+                />
+              )
             }
           />
           {kindRow && <div className="mt-2.5 flex items-center gap-2">{kindRow}</div>}
@@ -368,6 +413,7 @@ export async function WorkspaceShelf({
                the browse needs nothing from it, but a button that opened onto an
                empty sheet would be worse than no button. */
             filters={
+              filtersButton &&
               find && (
                 <FindFilters
                   topics={topics}

@@ -101,7 +101,13 @@ export async function OriginalsShelfPage({ params }: { params: RawParams }) {
            of A. Nagraj's own papers it was a group the reader had to read past
            to reach the three that answer their question. It stays an axis the
            endpoint counts and a row every other shelf still draws. */
-        hideAxes={["topic"]}
+        hideAxes={["topic", "kind"]}
+        /* Originals · Compilations under the box instead of PDFs · Images,
+           and no Filters button (designer, 23 Oct 2026). Type goes from the
+           rail too, so PDF-or-photo is not offered from the side after being
+           taken out of the row. */
+        chipAxis="provenance"
+        filtersButton={false}
         emptyTitle="The library is on its way"
         emptyHint="Photographs, letters and documents appear here as they are published."
       />

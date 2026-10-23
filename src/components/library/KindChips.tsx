@@ -1,14 +1,13 @@
 import { Chip } from "@/components/ui/Segmented";
-import { findHref, type FindState } from "@/lib/find";
-import type { FileKind } from "@/lib/types";
+import { findHref, type FindAxis, type FindState } from "@/lib/find";
 
-/** One chip in the row: "All", or a kind — what it shows and the kinds it selects. */
+/** One chip in the row: "All", or a value — what it shows and what it selects. */
 export interface KindChoice {
   key: string;
   label: string;
   count: number;
   /** what the chip writes into the find; undefined for All, which writes none */
-  kinds: FileKind[] | undefined;
+  values: string[] | undefined;
 }
 
 /**
@@ -24,6 +23,10 @@ export interface KindChoice {
  * rather than the absence of one.
  *
  * Draws nothing for fewer than two kinds — one option is not a choice.
+ *
+ * Usually the Type axis, but a shelf may promote another: the Originals
+ * Library's row is Originals · Compilations, which is provenance (designer,
+ * 23 Oct 2026).
  */
 export function KindChips({
   label,
@@ -31,7 +34,10 @@ export function KindChips({
   active,
   state,
   basePath,
+  axis = "kind",
 }: {
+  /** the axis the chips write — Type unless the shelf says otherwise */
+  axis?: FindAxis;
   /** the group's accessible name */
   label: string;
   /** "All" first, then each kind */
@@ -63,7 +69,7 @@ export function KindChips({
           // shared, bookmarked and prerendered.
           href={findHref(basePath, {
             ...state,
-            selection: { ...state.selection, kind: c.kinds },
+            selection: { ...state.selection, [axis]: c.values },
           })}
         />
       ))}

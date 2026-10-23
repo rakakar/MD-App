@@ -317,9 +317,9 @@ function AvKindChips({
   const choices: KindChoice[] = [
     // "All" writes no `kind` at all rather than both values — the page
     // supplies the lock, and a bare `/av` is the address worth sharing.
-    { key: "all", label: "All", count: total, kinds: undefined },
-    { key: "audio", label: "Audios", count: counts.get("audio") ?? 0, kinds: ["audio"] },
-    { key: "video", label: "Videos", count: counts.get("video") ?? 0, kinds: ["video"] },
+    { key: "all", label: "All", count: total, values: undefined },
+    { key: "audio", label: "Audios", count: counts.get("audio") ?? 0, values: ["audio"] },
+    { key: "video", label: "Videos", count: counts.get("video") ?? 0, values: ["video"] },
   ];
   const active =
     chosen.length === AV_KINDS.length ? "all" : chosen.includes("audio") ? "audio" : "video";
