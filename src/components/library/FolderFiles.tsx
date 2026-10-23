@@ -49,9 +49,8 @@ export function FolderFiles({
   const shownLinked = linked.filter(match);
   const none = needle && shown.length + shownLinked.length === 0;
 
-  // What Download all takes: every file a reader would save — not a link to
-  // somewhere else, and not a video, which streams. Audio is in: a shivir's
-  // recordings are what a reader takes on a journey with no signal.
+  // The files a reader would save — not a link to somewhere else, and not a
+  // video, which streams — for the Large footnote below the list.
   const downloadable = [...files, ...linked].filter(
     (f) => f.kind !== "link" && f.kind !== "video"
   );
@@ -88,8 +87,7 @@ export function FolderFiles({
           folderProvenance={folderProvenance}
         />
       )}
-      {/* Download all itself is on the folder's panel (`NodeView`); what stays
-          here is the footnote for the Large tags in the list above it. */}
+      {/* The footnote for the Large tags in the list above it. */}
       {large && (
         <p className="mt-4 text-center text-xs text-ink-soft lg:hidden">
           Files marked Large are slow to open on mobile data.

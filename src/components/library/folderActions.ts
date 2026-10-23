@@ -1,6 +1,6 @@
 /**
- * Small shared behaviour for a folder's files — the bulk download and the
- * hero's "Play all".
+ * Small shared behaviour for a folder's files — the selected-files download
+ * and the hero's "Play all".
  */
 
 import { downloadHref } from "@/lib/download";

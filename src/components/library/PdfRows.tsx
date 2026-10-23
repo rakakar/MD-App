@@ -149,8 +149,7 @@ function PdfRow({
         aria-checked={picked}
         aria-label={`Select ${file.title}`}
         onClick={onPick}
-        /* Desktop only: the phone comps (8 Oct 2026) draw no picking — a phone
-           saves a folder with Download all at the list's foot. */
+        /* Desktop only: the phone comps (8 Oct 2026) draw no picking. */
         className="relative z-10 hidden h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors sm:flex"
         style={
           picked

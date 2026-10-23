@@ -47,7 +47,7 @@ export function CollectionHero({
    */
   kicker?: string;
   /**
-   * The panel's own actions — Download all, Play all — at its foot on the
+   * The panel's own actions — Play all, the whole set — at its foot on the
    * right on a desktop, under the words on a phone.
    */
   aside?: React.ReactNode;
@@ -202,8 +202,7 @@ export function CollectionHero({
           </div>
           {/* No phone copy of `aside`: on a phone Play all sits with the list
               it acts on, under the search (designer's phone comps, 8 Oct
-              2026). Download all is passed in `actions` instead, so it stays
-              on the panel at every width. */}
+              2026). */}
 
           {/* A block, not a flex row. The book's actions arrive as one client
               component that owns its own progress bar as well as its buttons —

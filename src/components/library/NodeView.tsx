@@ -2,7 +2,7 @@ import Link from "next/link";
 import { SERIES_PORTRAIT } from "@/lib/media";
 import { albumName, formatYear, splitAlbumName } from "@/lib/albumName";
 import { FolderFiles } from "@/components/library/FolderFiles";
-import { DownloadAllButton, PlayAllButton } from "@/components/library/FolderHeroActions";
+import { PlayAllButton } from "@/components/library/FolderHeroActions";
 import { FindBar } from "@/components/library/FindBar";
 import { FindResults } from "@/components/library/FindResults";
 import { DoorRow } from "@/components/library/CollectionShell";
@@ -268,10 +268,6 @@ function Header({
   // VPS, so for a while a new build talks to an API that has never heard of
   // this field. Without it that window is `undefined + 0` — `NaN`, which is
   // falsy here by luck rather than by decision.
-  // What Download all takes: the files a reader would save, which is every
-  // one except a link to somewhere else and a video, which streams. Audio is
-  // in — see `FolderFiles`, which offers the same set at the phone list's foot.
-  const downloadable = files.filter((f) => f.kind !== "link" && f.kind !== "video");
   const readingCount =
     (node.reading_count ?? 0) + node.linked_items.filter((f) => f.reading).length;
 
@@ -311,17 +307,6 @@ function Header({
   return (
     <CollectionHero
       tone={hue.to}
-      /* Below a desktop the panel's `aside` is hidden, and Download all used
-         to drop to the list's foot — under every row, where a reader saving a
-         shivir never scrolled to it. It stays on the panel instead, under the
-         facts, at every width; the desktop keeps its copy in `aside`. */
-      actions={
-        downloadable.length > 1 ? (
-          <div className="lg:hidden">
-            <DownloadAllButton files={downloadable} />
-          </div>
-        ) : undefined
-      }
       /* Back goes where the reader came from, which for a collection of
          recordings is the A/V tab and not the folder above it. The tree step
          was literally true and useless: a reader arrives here off `/av`, and
@@ -357,11 +342,10 @@ function Header({
         av ? "Media" : libraryTabLabel(ws)
       }`}
       aside={
-        isRecordings || node.external_url || downloadable.length > 1 ? (
+        node.external_url || (isRecordings && isAlbum) ? (
           <>
             {node.external_url && <WholeSetLink url={node.external_url} />}
             {isRecordings && isAlbum && <PlayAllButton />}
-            {downloadable.length > 1 && <DownloadAllButton files={downloadable} />}
           </>
         ) : undefined
       }
@@ -430,8 +414,7 @@ function Header({
         ) : undefined
       }
       /* Phone (designer's comps, 8 Oct 2026): the counts as chips under the
-         facts — "10 PDFS · 1 AS TEXT", "5 VIDEOS · 3 HRS" — and no size,
-         which Download all at the list's foot carries. */
+         facts — "10 PDFS · 1 AS TEXT", "5 VIDEOS · 3 HRS" — and no size. */
       chips={counts}
       chipsClassName="lg:hidden"
       /* Not when it only repeats the title, as a folder's often does. */
