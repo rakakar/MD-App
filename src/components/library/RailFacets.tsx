@@ -135,7 +135,7 @@ export function RailFacets({
                 key={band.label}
                 href={findHref(basePath, toggleGroup(state, "year", band.values))}
                 aria-current={on ? "true" : undefined}
-                className={`min-h-11 inline-flex items-center rounded-full border px-2.5 text-xs font-medium tabular-nums transition-colors ${
+                className={`min-h-11 inline-flex items-center rounded-full border px-2.5 text-sm font-medium tabular-nums transition-colors ${
                   on ? "border-transparent text-white" : "border-rule bg-card text-ink hover:bg-ink/[.03]"
                 }`}
                 style={on ? { background: "var(--ws-color)" } : undefined}
@@ -265,7 +265,7 @@ function FacetRow({
     <Link
       href={href}
       aria-current={on ? "true" : undefined}
-      className={`flex min-h-11 items-center gap-2 rounded-lg px-2 text-xs transition-colors ${
+      className={`flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm transition-colors ${
         on ? "font-semibold" : "text-ink hover:bg-ink/[.04]"
       }`}
       style={
@@ -283,7 +283,7 @@ function FacetRow({
       <span {...contentLang(label)} className={`${contentLang(label).className} min-w-0 flex-1 truncate`}>
         {label}
       </span>
-      <span className="shrink-0 text-xs font-medium tabular-nums text-ink-soft">
+      <span className="shrink-0 text-sm font-medium tabular-nums text-ink-soft">
         {count}
       </span>
     </Link>
