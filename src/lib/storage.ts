@@ -941,3 +941,30 @@ export function clearLocalStore(): void {
   window.localStorage.removeItem(PDF_PAGE_KEY);
   window.localStorage.removeItem(PDF_VIEW_KEY);
 }
+
+// ---- Volunteer sign-up ----
+
+/**
+ * When this device last sent the volunteer form (Connect → Volunteer).
+ *
+ * The form is Google's, embedded, and asks for no sign-in, so neither Google
+ * nor the BE can say whether this reader has filled it. This is the app's own
+ * note that they did, kept so the tab can say "You've signed up" instead of
+ * handing them a blank form again. Device-local by nature: another phone, or
+ * cleared site data, shows the form.
+ */
+const VOLUNTEER_KEY = "md.volunteer.v1";
+
+interface VolunteerSignup {
+  signed_up_at: string;
+}
+
+export function getVolunteerSignup(): string | null {
+  return read<VolunteerSignup | null>(VOLUNTEER_KEY, null)?.signed_up_at ?? null;
+}
+
+export function markVolunteerSignup(): string {
+  const at = new Date().toISOString();
+  write(VOLUNTEER_KEY, { signed_up_at: at } satisfies VolunteerSignup);
+  return at;
+}
