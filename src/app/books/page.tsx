@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
+import { ShoppingBagIcon } from "@/components/shell/icons";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
@@ -27,7 +28,9 @@ export const metadata: Metadata = {
 export default async function BooksPage() {
   // The shelf's own summary line (design 1B: "6 books · 760 pages · A. Nagraj").
   // Unfiltered, so it describes the library rather than the current chips.
-  const all = await getBooks({ workspace: "originals" }).catch(() => [] as BookSummary[]);
+  const all = await getBooks({ workspace: "originals" }).catch(
+    () => [] as BookSummary[],
+  );
   const pages = all.reduce((n, b) => n + (b.page_count ?? 0), 0);
 
   return (
@@ -46,22 +49,48 @@ export default async function BooksPage() {
           a page they have to check they arrived at. Translations keeps its
           own name — its tab still reads "Read", and renaming one shelf's is
           not licence to rename another's. */}
-      <PageTitle
-        shelf
-        title="Books"
-        meta={
-          all.length > 0 && (
-            <>
-              <span>
-                {all.length} {all.length === 1 ? "book" : "books"}
-              </span>
-              {pages > 0 && ` · ${pages} pages`}
-              {" · "}
-              <span {...contentLang(all[0].author)}>{all[0].author}</span>
-            </>
-          )
-        }
-      />
+      {/* "Buy books" beside the title (designer's call, 24 Oct 2026): the
+          printed editions are sold at purchase.madhyasth.org, and the shelf of
+          those same books is where a reader thinks to ask for them. Outlined in
+          the workspace colour, not filled — it leaves the app, so it should not
+          outrank anything that stays in it. Centred on the title + count block
+          on a desktop; on a phone only the title shows, so it is top-aligned
+          and pulled up 8px to centre on the title's line without the row
+          jumping when the `i` opens the description under it. */}
+      <div className="flex items-start justify-between gap-4 lg:items-center">
+        <PageTitle
+          className="min-w-0"
+          shelf
+          title="Books"
+          meta={
+            all.length > 0 && (
+              <>
+                <span>
+                  {all.length} {all.length === 1 ? "book" : "books"}
+                </span>
+                {pages > 0 && ` · ${pages} pages`}
+                {" · "}
+                <span {...contentLang(all[0].author)}>{all[0].author}</span>
+              </>
+            )
+          }
+        />
+        <a
+          href="https://purchase.madhyasth.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control border bg-card px-4 text-sm font-semibold transition-colors hover:bg-accent-tint max-lg:-my-2"
+          style={{
+            color: "var(--ws-ink)",
+            borderColor: "color-mix(in srgb, var(--ws-color) 45%, transparent)",
+          }}
+        >
+          <ShoppingBagIcon className="h-4.5 w-4.5" />
+          Buy books
+          <span aria-hidden>↗</span>
+          <span className="sr-only">(opens in a new tab)</span>
+        </a>
+      </div>
 
       {/* Resume rows sit above the shelf (design 1B): someone opening "Read"
           mid-book is far likelier to want the page they left than the grid.

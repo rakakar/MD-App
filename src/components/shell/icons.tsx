@@ -536,7 +536,15 @@ function Skip10({ className, back }: { className?: string; back: boolean }) {
   );
 }
 
-function SkipIcon({ className, seconds, back }: { className?: string; seconds: number | string; back: boolean }) {
+function SkipIcon({
+  className,
+  seconds,
+  back,
+}: {
+  className?: string;
+  seconds: number | string;
+  back: boolean;
+}) {
   if (seconds === 10) return <Skip10 className={className} back={back} />;
   return (
     <svg
@@ -565,12 +573,20 @@ function SkipIcon({ className, seconds, back }: { className?: string; seconds: n
       {back ? (
         <>
           <path d="M12 4.4a7.6 7.6 0 1 0 6.9 4.4" />
-          <path d="M12.1 1.4 8.6 4.4l3.5 3v-6Z" fill="currentColor" stroke="none" />
+          <path
+            d="M12.1 1.4 8.6 4.4l3.5 3v-6Z"
+            fill="currentColor"
+            stroke="none"
+          />
         </>
       ) : (
         <>
           <path d="M12 4.4a7.6 7.6 0 1 1 -6.9 4.4" />
-          <path d="M11.9 1.4 15.4 4.4l-3.5 3v-6Z" fill="currentColor" stroke="none" />
+          <path
+            d="M11.9 1.4 15.4 4.4l-3.5 3v-6Z"
+            fill="currentColor"
+            stroke="none"
+          />
         </>
       )}
       <text
@@ -589,11 +605,17 @@ function SkipIcon({ className, seconds, back }: { className?: string; seconds: n
   );
 }
 
-export function SkipBackIcon(props: { className?: string; seconds: number | string }) {
+export function SkipBackIcon(props: {
+  className?: string;
+  seconds: number | string;
+}) {
   return <SkipIcon {...props} back />;
 }
 
-export function SkipForwardIcon(props: { className?: string; seconds: number | string }) {
+export function SkipForwardIcon(props: {
+  className?: string;
+  seconds: number | string;
+}) {
   return <SkipIcon {...props} back={false} />;
 }
 
@@ -662,6 +684,16 @@ export function ExternalLinkIcon({ className }: { className?: string }) {
       <path d="M14 4h6v6" />
       <path d="M20 4 11 13" />
       <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+    </Svg>
+  );
+}
+
+/** a shopping bag — the Books shelf's "Buy books", out to the print store */
+export function ShoppingBagIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M6 8h12l-1 12H7L6 8Z" />
+      <path d="M9 10V7a3 3 0 0 1 6 0v3" />
     </Svg>
   );
 }
@@ -844,10 +876,22 @@ export function TypeIcon({ className }: { className?: string }) {
       className={className ?? "h-5 w-5"}
       aria-hidden="true"
     >
-      <text x="1" y="18" fontSize="13" fontWeight="700" fontFamily="system-ui, sans-serif">
+      <text
+        x="1"
+        y="18"
+        fontSize="13"
+        fontWeight="700"
+        fontFamily="system-ui, sans-serif"
+      >
         A
       </text>
-      <text x="11" y="18" fontSize="19" fontWeight="700" fontFamily="system-ui, sans-serif">
+      <text
+        x="11"
+        y="18"
+        fontSize="19"
+        fontWeight="700"
+        fontFamily="system-ui, sans-serif"
+      >
         A
       </text>
     </svg>
