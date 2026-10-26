@@ -30,6 +30,7 @@ import {
 } from "@/lib/personal";
 import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
 import { citationText, paraAnchorId, parseRef } from "@/lib/refs";
+import { searchTermsInLocation, useSearchHitMarks, type SearchHit } from "@/lib/searchHit";
 import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
 import {
   getListeningPosition,
@@ -661,6 +662,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // `restored` also gates the first progress write below, so opening at page 1
   // cannot overwrite the place we are about to jump to.
   const restored = useRef(false);
+  // The words a search result was opened for, marked in its paragraph until
+  // the reader moves to another chapter.
+  const [searchHit, setSearchHit] = useState<SearchHit | null>(null);
+  useSearchHitMarks(searchHit?.chapter === chapterNumber ? searchHit : null);
   useEffect(() => {
     // Wait for the saved prefs as well as the pages: page mode is one of them,
     // and a jump made before it lands is a scroll-mode jump — the reader then
@@ -685,6 +690,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const hash = window.location.hash.match(/^#p-([^-]+)-(.+)$/);
     if (hash) {
       jumpToPage(hash[1], Number(hash[2]) || undefined);
+      const terms = searchTermsInLocation();
+      if (terms.length) setSearchHit({ id: `p-${hash[1]}-${hash[2]}`, terms, chapter: chapterNumber });
       return;
     }
     // 2. pending go-to-page target from cross-chapter navigation
@@ -2577,7 +2584,7 @@ const ParaWrap = memo(function ParaWrap({
         />
       )}
       {aside && (
-        <div className="absolute left-full top-[0.4em] ml-12 hidden w-60 min-[90rem]:block">{aside}</div>
+        <div data-reader-aside className="absolute left-full top-[0.4em] ml-12 hidden w-60 min-[90rem]:block">{aside}</div>
       )}
       <Block para={para} segments={segments} />
     </div>

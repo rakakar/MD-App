@@ -11,6 +11,7 @@ import { search, searchLibrary } from "@/lib/api";
 import { quotedPhrase } from "@/lib/assistant/intent";
 import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
+import { withSearchTerms } from "@/lib/searchHit";
 import { LibraryLane } from "@/components/library/LibraryLane";
 import type { BookSummary, LibrarySearchRow, SearchResponse, SearchResult } from "@/lib/types";
 import { ctaPrimary } from "@/components/ui";
@@ -439,7 +440,7 @@ function PassageCard({ result, terms }: { result: SearchResult; terms: string[] 
       <div className="mt-3 flex items-center border-t border-rule pt-2">
         {ref && (
           <Link
-            href={refToHref(ref)}
+            href={withSearchTerms(refToHref(ref), terms)}
             onClick={() => track("search_result_click", { type: result.type })}
             className="inline-flex min-h-11 flex-1 items-center gap-1 text-sm font-semibold"
             style={{ color: "var(--color-accent-ink)" }}

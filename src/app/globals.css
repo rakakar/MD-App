@@ -1123,6 +1123,13 @@ html[data-reading="1"] body {
   touch-action: manipulation;
 }
 
+/* The words a search result was opened for (lib/searchHit.ts). The search
+   card's own <mark> tint, taken a little deeper so it still reads over a
+   paragraph that is lit or painted. */
+::highlight(search-hit) {
+  background-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
 /* follow-along highlight (TTS, PRD §5) */
 .para-active {
   background: color-mix(in srgb, var(--ws-color) 14%, transparent);
