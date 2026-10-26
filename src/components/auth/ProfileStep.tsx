@@ -4,26 +4,16 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { FIELD, LABEL } from "@/components/auth/fields";
-import { ArrowLeftIcon, CheckIcon, ChevronDownIcon } from "@/components/shell/icons";
+import { LABEL } from "@/components/auth/fields";
+import { ProfileFields, profileReady } from "@/components/auth/ProfileFields";
+import { ArrowLeftIcon, CheckIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
-import { displayPhone, updateMe } from "@/lib/me";
+import { useIsDesktop } from "@/components/ui/Dialog";
+import { displayPhone } from "@/lib/me";
 import { LAUNCH } from "@/lib/onboarding";
-import {
-  INDIAN_STATES,
-  OUTSIDE_INDIA,
-  askForStage,
-  profileFor,
-  saveProfile,
-} from "@/lib/profile";
+import { askForStage, profileFor, storeProfile, type ProfileValues } from "@/lib/profile";
 import { safeReturnPath, signInHref } from "@/lib/routes";
 import { getPrefs } from "@/lib/storage";
-
-/** Digits only, at most ten — a pasted "+91 98765 43210" loses its 91. */
-function tenDigits(raw: string): string {
-  const d = raw.replace(/\D/g, "");
-  return (d.length > 10 && d.startsWith("91") ? d.slice(2) : d).slice(0, 10);
-}
 
 /**
  * **"A little about you" — step 1 of 2 after signing in** (designer's comps,
@@ -49,10 +39,8 @@ export function ProfileStep() {
   const next = safeReturnPath(search.get("next"));
   const { user, loading, refresh } = useAuth();
 
-  const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [state, setState] = useState("");
-  const [city, setCity] = useState("");
+  const desktop = useIsDesktop();
+  const [values, setValues] = useState<ProfileValues>({ name: "", mobile: "", state: "", city: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** null until auth and the local answers have been read */
@@ -69,15 +57,14 @@ export function ProfileStep() {
       return;
     }
     // Prefilled from what the account already knows; the reader can change both.
-    setName((user.name || user.first_name || "").trim());
     const m = /^\+91(\d{10})$/.exec(user.phone ?? "");
-    if (m) setMobile(m[1]);
+    setValues((v) => ({ ...v, name: (user.name || user.first_name || "").trim(), mobile: m ? m[1] : "" }));
     setShow({ stageNext: getPrefs().journeyStage == null });
   }, [loading, user, next, router]);
 
   if (!user || !show) return null;
 
-  const ready = name.trim() !== "" && mobile.length === 10 && state !== "" && city.trim() !== "";
+  const ready = profileReady(values);
   const signedInAs = user.email || displayPhone(user.phone);
 
   const submit = async (e: React.FormEvent) => {
@@ -86,9 +73,7 @@ export function ProfileStep() {
     setBusy(true);
     setError(null);
     try {
-      const nextName = name.trim();
-      if (nextName !== (user.name ?? "").trim()) await updateMe(nextName);
-      saveProfile(user, { name: nextName, mobile, state, city: city.trim() });
+      await storeProfile(user, values);
       await refresh();
       if (show.stageNext) askForStage();
       router.replace(next);
@@ -174,89 +159,9 @@ export function ProfileStep() {
                 </p>
               )}
 
-              <div className="mt-6 flex flex-col gap-5">
-                <label className={LABEL}>
-                  Full name
-                  <input
-                    type="text"
-                    autoComplete="name"
-                    enterKeyHint="next"
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={`${FIELD} normal-case tracking-normal font-normal`}
-                  />
-                </label>
-
-                <div>
-                  <label htmlFor="profile-mobile" className={LABEL}>
-                    Mobile number
-                  </label>
-                  <div className="relative">
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute start-5 top-[calc(50%+0.25rem)] -translate-y-1/2 text-base text-ink-soft"
-                    >
-                      +91
-                    </span>
-                    <input
-                      id="profile-mobile"
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel-national"
-                      enterKeyHint="next"
-                      aria-label="Mobile number, ten digits after +91"
-                      placeholder="98765 43210"
-                      value={mobile}
-                      onChange={(e) => setMobile(tenDigits(e.target.value))}
-                      className={`${FIELD} ps-14`}
-                    />
-                  </div>
-                </div>
-
-                {/* Side by side on a desktop, as drawn; stacked on a phone. */}
-                <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-4">
-                  <div>
-                    <label htmlFor="profile-state" className={LABEL}>
-                      State
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="profile-state"
-                        autoComplete="address-level1"
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        className={`${FIELD} appearance-none pe-12`}
-                        // the unchosen state reads as a placeholder, as drawn
-                        style={state ? undefined : { color: "var(--color-ink-soft)" }}
-                      >
-                        <option value="" disabled>
-                          Choose a state
-                        </option>
-                        {INDIAN_STATES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                        <option value={OUTSIDE_INDIA}>{OUTSIDE_INDIA}</option>
-                      </select>
-                      <ChevronDownIcon className="pointer-events-none absolute end-5 top-[calc(50%+0.25rem)] h-4 w-4 -translate-y-1/2 text-ink-soft" />
-                    </div>
-                  </div>
-
-                  <label className={LABEL}>
-                    City
-                    <input
-                      type="text"
-                      autoComplete="address-level2"
-                      enterKeyHint="done"
-                      placeholder="e.g. Raipur"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className={`${FIELD} normal-case tracking-normal font-normal`}
-                    />
-                  </label>
-                </div>
+              <div className="mt-6">
+                {/* State and City side by side on a desktop, as drawn. */}
+                <ProfileFields value={values} onChange={setValues} split={desktop} />
               </div>
             </div>
 

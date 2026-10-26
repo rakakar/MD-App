@@ -14,6 +14,7 @@
  * so one reader's answers are never shown to another on a shared device.
  */
 
+import { updateMe } from "./me";
 import type { MeUser } from "./types";
 
 const PROFILE_KEY = "md.profile.v1";
@@ -29,6 +30,9 @@ export interface ReaderProfile {
   city: string;
   saved_at: string;
 }
+
+/** What the reader types — a profile before it is stamped. */
+export type ProfileValues = Omit<ReaderProfile, "saved_at">;
 
 type Store = Record<string, ReaderProfile>;
 
@@ -50,7 +54,7 @@ export function profileFor(user: MeUser): ReaderProfile | null {
   return key ? (readStore()[key] ?? null) : null;
 }
 
-export function saveProfile(user: MeUser, profile: Omit<ReaderProfile, "saved_at">): void {
+export function saveProfile(user: MeUser, profile: ProfileValues): void {
   const key = accountKey(user);
   if (!key) return;
   try {
@@ -60,6 +64,16 @@ export function saveProfile(user: MeUser, profile: Omit<ReaderProfile, "saved_at
   } catch {
     // storage full or blocked — the reader is asked again next time, no worse
   }
+}
+
+/**
+ * Save the answers: the name to the account (when it changed), all four on
+ * this device. Throws when the server refuses the name, so the form can say so.
+ */
+export async function storeProfile(user: MeUser, values: ProfileValues): Promise<void> {
+  const name = values.name.trim();
+  if (name !== (user.name ?? "").trim()) await updateMe(name);
+  saveProfile(user, { ...values, name, city: values.city.trim() });
 }
 
 /** Step 1 is done: open the journey question on the next ordinary screen. */

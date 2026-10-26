@@ -223,6 +223,13 @@ export interface Prefs {
    */
   journeyStage: number | null;
   /**
+   * Which answer to "where are you in your journey?" set `journeyStage` — an
+   * `ONBOARDING_OPTIONS` value. Kept beside the stage because two answers
+   * share stage 1, and the Profile page shows the reader's own words back to
+   * them. null for a stage declared before this was recorded.
+   */
+  journeyAnswer: string | null;
+  /**
    * Home's Sutra card folded to its first line. Sticky: a reader who hid it
    * does not want it open again on every visit. Painted before hydration as
    * `data-sutra-collapsed` on <html> (layout.tsx), so a folded card never
@@ -299,6 +306,7 @@ export const DEFAULT_PREFS: Prefs = {
   onboardingSeen: false,
   switcherHintShown: false,
   journeyStage: null,
+  journeyAnswer: null,
   sutraCollapsed: false,
 };
 

@@ -31,6 +31,7 @@ import {
   InfoIcon,
   UserIcon,
   WorkspaceIcon,
+  ChevronRight,
 } from "./icons";
 
 /**
@@ -451,7 +452,16 @@ function AvatarMenu() {
            stands, in a column of things that open, an address reads as
            something to tap. */
         heading={
-          <span className="flex items-center gap-3">
+          // The reader's name opens their Profile (designer, 26 Oct 2026) —
+          // so it now reads as something to tap, chevron and all.
+          <Link
+            href="/profile"
+            onClick={() => {
+              keepWorkspace();
+              setOpen(false);
+            }}
+            className="-mx-2 flex items-center gap-3 rounded-card px-2 py-1 transition-colors active:bg-ink/[.04]"
+          >
             <AccountAvatar initial={me.initial} className="h-11 w-11 text-base" />
             <span className="min-w-0 flex-1">
               <span className="block truncate">{me.name}</span>
@@ -459,7 +469,8 @@ function AvatarMenu() {
                 {me.email}
               </span>
             </span>
-          </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
+          </Link>
         }
       >
         {/* Inset so the glyphs stand on the avatar's edge above them. */}
@@ -689,10 +700,19 @@ export function SidebarAccount() {
           aria-label="Account"
           className="absolute inset-x-0 bottom-full z-50 mb-2 rounded-card border border-rule bg-card p-1.5 shadow-raised"
         >
-          <div className="flex items-center gap-3 px-2.5 pb-2.5 pt-2">
+          <Link
+            href="/profile"
+            role="menuitem"
+            onClick={() => {
+              keepWorkspace();
+              setOpen(false);
+            }}
+            className="flex items-center gap-3 rounded-control px-2.5 pb-2.5 pt-2 transition-colors hover:bg-ink/5"
+          >
             {avatar}
             {who}
-          </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-ink-soft" />
+          </Link>
           <div aria-hidden className="mx-1 mb-1 h-px bg-rule" />
           <Link
             href="/notifications"

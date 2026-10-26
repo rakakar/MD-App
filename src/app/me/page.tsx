@@ -118,8 +118,8 @@ export default function MyJourneyPage() {
 
   const stage = stageById(stageId);
 
-  const declare = (next: number) => {
-    setPrefs({ journeyStage: next });
+  const declare = (next: number, answer: string) => {
+    setPrefs({ journeyStage: next, journeyAnswer: answer });
     setStageId(next);
     setChanging(false);
   };

@@ -11,6 +11,7 @@ import { CARD, SettingsSection, SwitchRow, useToast } from "@/components/setting
 import { SignOutIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useDisplay } from "@/components/shell/DisplayProvider";
+import { BackButton } from "@/components/ui/BackButton";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { applyConsent } from "@/lib/analytics";
 import { formatBytes, listSavedAudio, removeAllAudio, removeAudio, type SavedAudio } from "@/lib/audioCache";
@@ -37,6 +38,14 @@ export default function SettingsPage() {
   const [audio, setAudio] = useState<SavedAudio[]>([]);
   const [quota, setQuota] = useState<number | null>(null);
   const [toast, showToast] = useToast();
+  /**
+   * Opened from the Profile page ("Manage in Settings", or its Settings row):
+   * a back button returns there. Read from the URL on the client rather than
+   * through `useSearchParams`, which would need a Suspense boundary around a
+   * page that is otherwise static. Opened from the account menu, Settings
+   * stays as it was — a destination of its own, with no back.
+   */
+  const [fromProfile, setFromProfile] = useState(false);
 
   const loadDownloads = useCallback(() => {
     void listDownloads().then(setDownloads);
@@ -45,6 +54,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setPrefsState(getPrefs());
+    setFromProfile(new URLSearchParams(window.location.search).get("from") === "profile");
     loadDownloads();
     void listSavedAudio().then(setAudio);
     void navigator.storage?.estimate?.().then((e) => setQuota(e.quota ?? null));
@@ -158,7 +168,10 @@ export default function SettingsPage() {
             1024 it left the cards 430px, and an inline name field narrower
             than the name. Between the two the cards are a desk's, unlisted. */}
         <div className="mx-auto w-full max-w-3xl px-4 pb-10 pt-5 sm:px-6 lg:px-10 lg:pt-10 xl:grid xl:max-w-6xl xl:grid-cols-[13rem_minmax(0,1fr)] xl:gap-14">
-          <h1 className="mb-5 font-display text-2xl font-medium lg:mb-8 lg:text-3xl xl:col-span-2">Settings</h1>
+          <div className="mb-5 flex items-center gap-2 lg:mb-8 xl:col-span-2">
+            {fromProfile && <BackButton fallback="/profile" />}
+            <h1 className="font-display text-2xl font-medium lg:text-3xl">Settings</h1>
+          </div>
           {desktop && <SectionNav />}
           <div className="min-w-0 xl:max-w-4xl">{sections}</div>
         </div>

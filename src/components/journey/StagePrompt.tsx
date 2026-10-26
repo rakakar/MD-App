@@ -52,8 +52,8 @@ export function StagePrompt({ suppressed }: { suppressed: boolean }) {
 
   return (
     <StagePicker
-      onDone={(stage) => {
-        setPrefs({ journeyStage: stage });
+      onDone={(stage, answer) => {
+        setPrefs({ journeyStage: stage, journeyAnswer: answer });
         close();
       }}
       onCancel={close}

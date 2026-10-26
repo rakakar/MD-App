@@ -37,7 +37,8 @@ export function StagePicker({
   onDone,
   onCancel,
 }: {
-  onDone: (stage: number) => void;
+  /** the stage, and which answer chose it (`ONBOARDING_OPTIONS` value) */
+  onDone: (stage: number, answer: string) => void;
   /** present when the reader already has a stage to keep */
   onCancel?: () => void;
 }) {
@@ -47,7 +48,7 @@ export function StagePicker({
   const panelRef = useRef<HTMLDivElement>(null);
 
   const confirm = useCallback(() => {
-    if (picked) onDone(picked.stage);
+    if (picked) onDone(picked.stage, picked.value);
   }, [picked, onDone]);
 
   useEffect(() => {
