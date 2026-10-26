@@ -28,6 +28,11 @@ export interface ReaderProfile {
   mobile: string;
   state: string;
   city: string;
+  /**
+   * Where to reach the reader, when it differs from — or stands in for — the
+   * address they sign in with. Never changes how they sign in.
+   */
+  email?: string;
   saved_at: string;
 }
 
@@ -73,7 +78,8 @@ export function saveProfile(user: MeUser, profile: ProfileValues): void {
 export async function storeProfile(user: MeUser, values: ProfileValues): Promise<void> {
   const name = values.name.trim();
   if (name !== (user.name ?? "").trim()) await updateMe(name);
-  saveProfile(user, { ...values, name, city: values.city.trim() });
+  const email = values.email?.trim();
+  saveProfile(user, { ...values, name, city: values.city.trim(), ...(email !== undefined ? { email } : {}) });
 }
 
 /** Step 1 is done: open the journey question on the next ordinary screen. */

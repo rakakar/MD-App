@@ -74,8 +74,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       if (res.status === 200) {
         track(login_ ? "login" : "signup", { method: "email" });
         await onAuthenticated();
-        // via the profile step, which passes through once it is answered
-        router.replace(welcomeHref(next));
+        // A new account answers "A little about you" first; a returning
+        // reader goes straight back — they can change it in Settings.
+        router.replace(login_ ? next : welcomeHref(next));
       } else {
         setError(
           res.errors?.[0]?.message ??
@@ -294,7 +295,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   <button
                     type="button"
                     onClick={() => {
-                      window.location.href = googleLoginUrl(welcomeHref(next));
+                      window.location.href = googleLoginUrl(next);
                     }}
                     className="min-h-14 w-full rounded-tile border border-rule bg-card text-base font-semibold text-ink"
                   >

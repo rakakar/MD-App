@@ -147,7 +147,8 @@ export function PhoneAuth({
       if (res.status === 200) {
         track(step.flow, { method: "whatsapp" });
         await onAuthenticated();
-        router.replace(welcomeHref(next));
+        // the profile step only for a number that has just become an account
+        router.replace(step.flow === "signup" ? welcomeHref(next) : next);
         return;
       }
       if (res.errors?.[0]?.code === "incorrect_code") {

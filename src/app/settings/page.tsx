@@ -6,6 +6,7 @@ import { NotificationSetting } from "@/components/push/NotificationSetting";
 import { AccountCard } from "@/components/settings/AccountCard";
 import { AppearanceCard } from "@/components/settings/AppearanceCard";
 import { DownloadsCard } from "@/components/settings/DownloadsCard";
+import { PersonalDetailsSection } from "@/components/settings/PersonalDetailsCard";
 import { ReadingCard } from "@/components/settings/ReadingCard";
 import { CARD, SettingsSection, SwitchRow, useToast } from "@/components/settings/parts";
 import { SignOutIcon } from "@/components/shell/icons";
@@ -77,6 +78,10 @@ export default function SettingsPage() {
       <SettingsSection id="account" title="Account">
         <AccountCard onSaved={showToast} />
       </SettingsSection>
+
+      {/* Mobile, email, state and city — asked once on a new account, changed
+          here after. Signed in only; renders its own section. */}
+      <PersonalDetailsSection desktop={desktop} onSaved={showToast} />
 
       <SettingsSection
         id="appearance"

@@ -4,18 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ProfileFields, profileReady } from "@/components/auth/ProfileFields";
 import { StagePicker } from "@/components/journey/StagePicker";
 import { ChevronRight } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
-import { SectionHeading, Sheet, ctaPrimary } from "@/components/ui";
+import { SectionHeading } from "@/components/ui";
 import { BackButton } from "@/components/ui/BackButton";
-import { Dialog, useIsDesktop } from "@/components/ui/Dialog";
+import { useIsDesktop } from "@/components/ui/Dialog";
+import { EditProfile } from "./EditProfile";
 import { getBooks } from "@/lib/api";
 import { contentLang } from "@/lib/script";
 import { ONBOARDING_OPTIONS, stageBooks, stageById } from "@/lib/journey";
 import { displayPhone } from "@/lib/me";
-import { profileFor, storeProfile, type ProfileValues, type ReaderProfile } from "@/lib/profile";
+import { profileFor, type ReaderProfile } from "@/lib/profile";
 import { signInHref } from "@/lib/routes";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import type { BookSummary, MeUser } from "@/lib/types";
@@ -74,7 +74,9 @@ export function ProfileScreen() {
   if (!user || !stage) return null;
 
   const name = (user.name || user.first_name || "").trim();
-  const email = user.email || "";
+  const signInEmail = user.email || "";
+  // where to reach them: their own choice, else the address they sign in with
+  const email = profile?.email ?? signInEmail;
   const location = [profile?.city, profile?.state].filter(Boolean).join(", ");
   const joined = memberSince(user);
 
@@ -91,11 +93,11 @@ export function ProfileScreen() {
           desktop ? "h-24 w-24 text-4xl" : "h-20 w-20 text-3xl"
         }`}
       >
-        {(name || email || "R").charAt(0).toUpperCase()}
+        {(name || signInEmail || "R").charAt(0).toUpperCase()}
       </span>
       <div className={`min-w-0 ${desktop ? "mt-6" : "flex-1"}`}>
         <h2 className="break-words text-2xl font-semibold leading-tight tracking-[-0.015em] text-ink">
-          {name || email || displayPhone(user.phone)}
+          {name || signInEmail || displayPhone(user.phone)}
         </h2>
         {location && <p className="mt-1.5 text-base text-ink-soft">{location}</p>}
         {joined && <p className="mt-1 text-sm text-ink-soft">Member since {joined}</p>}
@@ -154,7 +156,7 @@ export function ProfileScreen() {
                   {email ? (
                     <>
                       <span className="min-w-0 break-all">{email}</span>
-                      {user.email_verified === true && <Verified />}
+                      {email === signInEmail && user.email_verified === true && <Verified />}
                     </>
                   ) : (
                     <Missing />
@@ -219,6 +221,7 @@ export function ProfileScreen() {
         desktop={desktop}
         user={user}
         profile={profile}
+        fields={["name", "mobile", "email", "state", "city"]}
         onClose={() => setEditing(false)}
         onSaved={() => {
           setProfile(profileFor(user));
@@ -400,117 +403,4 @@ function JourneyCard({
       </div>
     </section>
   );
-}
-
-/**
- * Edit personal details — the sign-in step's four fields, in a sheet on a
- * phone and a dialog at a desk. Save stays idle until all four are filled,
- * as Continue does there.
- */
-function EditProfile({
-  open,
-  desktop,
-  user,
-  profile,
-  onClose,
-  onSaved,
-}: {
-  open: boolean;
-  desktop: boolean;
-  user: MeUser;
-  profile: ReaderProfile | null;
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [values, setValues] = useState<ProfileValues>(() => initialValues(user, profile));
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fresh from what is saved each time it opens — not what was typed and
-  // abandoned last time.
-  useEffect(() => {
-    if (open) {
-      setValues(initialValues(user, profile));
-      setError(null);
-    }
-  }, [open, user, profile]);
-
-  const { refresh } = useAuth();
-  const ready = profileReady(values);
-
-  const save = async () => {
-    if (!ready || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await storeProfile(user, values);
-      await refresh();
-      onSaved();
-    } catch {
-      setError("Couldn't save. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const saveButton = (
-    <button
-      type="submit"
-      form="edit-profile"
-      disabled={!ready || busy}
-      className={`${ctaPrimary} min-h-12 w-full sm:w-auto sm:px-7`}
-      style={{ background: "var(--ws-color)" }}
-    >
-      {busy ? "Saving…" : "Save"}
-    </button>
-  );
-
-  const form = (
-    <form
-      id="edit-profile"
-      noValidate
-      onSubmit={(e) => {
-        e.preventDefault();
-        void save();
-      }}
-    >
-      <ProfileFields value={values} onChange={setValues} split={desktop} idPrefix="edit-profile" />
-      {error && (
-        <p role="alert" className="mt-4 rounded-tile border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
-    </form>
-  );
-
-  if (desktop) {
-    return (
-      <Dialog open={open} onClose={onClose} label="Edit personal details" className="w-full max-w-xl rounded-hero bg-card p-8 shadow-raised">
-        <h2 className="font-display text-2xl font-medium text-ink">Personal details</h2>
-        <div className="mt-6">{form}</div>
-        <div className="mt-8 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className={ROW_BUTTON}>
-            Cancel
-          </button>
-          {saveButton}
-        </div>
-      </Dialog>
-    );
-  }
-
-  return (
-    <Sheet open={open} onClose={onClose} title="Personal details" footer={saveButton}>
-      <div className="px-5 pb-4 pt-1">{form}</div>
-    </Sheet>
-  );
-}
-
-function initialValues(user: MeUser, profile: ReaderProfile | null): ProfileValues {
-  const fromPhone = /^\+91(\d{10})$/.exec(user.phone ?? "")?.[1] ?? "";
-  return {
-    name: (user.name || user.first_name || profile?.name || "").trim(),
-    mobile: profile?.mobile || fromPhone,
-    state: profile?.state ?? "",
-    city: profile?.city ?? "",
-  };
 }

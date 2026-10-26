@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LABEL } from "@/components/auth/fields";
-import { ProfileFields, profileReady } from "@/components/auth/ProfileFields";
+import { ProfileFields, STEP_FIELDS, profileReady } from "@/components/auth/ProfileFields";
 import { ArrowLeftIcon, CheckIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useIsDesktop } from "@/components/ui/Dialog";
@@ -20,9 +20,10 @@ import { getPrefs } from "@/lib/storage";
  * 26 Oct 2026). Name, mobile, state and city; step 2 is the journey question,
  * which opens over wherever the reader was headed (`StagePrompt`).
  *
- * Every sign-in lands here first (`welcomeHref`) and the screen passes
- * straight through when this account has already answered on this device, so
- * the three ways in — email, WhatsApp, Google — need no knowledge of it.
+ * **First run only:** creating an account lands here (`welcomeHref`); signing
+ * in again does not — the same details are editable in Settings and on the
+ * Profile page. It still passes straight through if this account has
+ * already answered on this device.
  *
  * Same frame as the sign-in screen on a desktop: the launch artwork as the
  * left panel, the form on the right. A phone drops the band — the four fields
@@ -64,7 +65,7 @@ export function ProfileStep() {
 
   if (!user || !show) return null;
 
-  const ready = profileReady(values);
+  const ready = profileReady(values, STEP_FIELDS, true);
   const signedInAs = user.email || displayPhone(user.phone);
 
   const submit = async (e: React.FormEvent) => {

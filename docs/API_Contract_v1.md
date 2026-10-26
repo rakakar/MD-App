@@ -293,15 +293,17 @@ the reader (highlight a para, bookmark a `canonical_ref`, resume where you left
 off). Anchor all of them to `canonical_ref`, not to positions. `GET /me/`
 returns `id`, `email`, `name`, `user_type`; `PATCH /me/` sets `name`.
 
-**Wanted: profile fields on `/me/`.** Since 26 Oct 2026 every sign-in is
-followed by a "A little about you" step (`/welcome`) asking for full name,
+**Wanted: profile fields on `/me/`.** Since 26 Oct 2026 a new account is
+followed by an "A little about you" step (`/welcome`) asking for full name,
 mobile number, state and city, to share shivir and centre updates near the
-reader. Only `name` reaches the server today; the other three are kept on the
-device (`lib/profile.ts`, key `md.profile.v1`) because `PATCH /me/` does not
-accept them. Proposed: `GET`/`PATCH /me/` carry `mobile` (10 digits, no +91),
-`state` (name) and `city` (free text). Once they exist, the FE sends them in the
-same PATCH and treats a filled `state` as "profile answered", so the step stops
-reappearing on each new device.
+reader. Settings → Personal details and the Profile page edit them later,
+along with a contact email. Only `name` reaches the server today; mobile,
+state, city and contact email are kept on the device (`lib/profile.ts`, key
+`md.profile.v1`) because `PATCH /me/` does not accept them. Proposed:
+`GET`/`PATCH /me/` carry `mobile` (10 digits, no +91), `state` (name), `city`
+(free text) and `contact_email` (where to reach the reader — never the sign-in
+address, which this must not change). Once they exist, the FE sends them in the
+same PATCH, and a reader's details follow them to every device.
 
 ### 6.0 A bookmark's `colour` — a highlight is a painted bookmark
 

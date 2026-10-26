@@ -204,8 +204,9 @@ export function safeReturnPath(next: string | null | undefined): string {
 }
 
 /**
- * Where every sign-in lands first: the "A little about you" step, which
- * passes straight through to `next` once it has been answered on this device.
+ * Where a new account lands first: the "A little about you" step, then
+ * `next`. First run only — a returning reader signing in goes straight to
+ * `next`, and changes these details in Settings or on their Profile.
  */
 export function welcomeHref(next: string): string {
   return `/welcome?next=${encodeURIComponent(safeReturnPath(next))}`;
