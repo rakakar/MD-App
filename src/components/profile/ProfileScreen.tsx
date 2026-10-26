@@ -165,6 +165,8 @@ export function ProfileScreen() {
                 </Row>
                 <Row label="State">{profile?.state || <Missing />}</Row>
                 <Row label="City">{profile?.city || <Missing />}</Row>
+                {/* The opt-in, as Settings shows it; off until the reader turns it on. */}
+                <Row label="WhatsApp updates">{profile?.updates_opt_in ? "On" : "Off"}</Row>
               </dl>
 
               <div className="mt-8">
@@ -222,7 +224,7 @@ export function ProfileScreen() {
         desktop={desktop}
         user={user}
         profile={profile}
-        fields={["name", "mobile", "email", "state", "city"]}
+        fields={["name", "mobile", "email", "state", "city", "updates"]}
         onClose={() => setEditing(false)}
         onSaved={() => {
           setProfile(profileFor(user));
