@@ -116,6 +116,20 @@ export async function getMe(): Promise<MeUser | null> {
 export const updateMe = (name: string): Promise<MeUser> =>
   authedFetch<MeUser>(meUrl(""), { method: "PATCH", body: JSON.stringify({ name }) });
 
+/** The contact card's fields, any of them; mobile as ten digits or "+91…". */
+export interface ProfilePatch {
+  name?: string;
+  mobile?: string;
+  email?: string;
+  state?: string;
+  city?: string;
+  updates_opt_in?: boolean;
+}
+
+/** Change the contact card. Answers the whole of /me/, as GET does. */
+export const updateProfile = (patch: ProfilePatch): Promise<MeUser> =>
+  authedFetch<MeUser>(meUrl(""), { method: "PATCH", body: JSON.stringify(patch) });
+
 export const getBookmarks = async (): Promise<Bookmark[]> =>
   withRef(unwrap(await authedFetch<RawRow[] | { results: RawRow[] }>(meUrl("bookmarks/")))).map(
     (r) => ({

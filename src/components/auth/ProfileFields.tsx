@@ -2,12 +2,14 @@
 
 import { FIELD, LABEL } from "@/components/auth/fields";
 import { ChevronDownIcon } from "@/components/shell/icons";
-import { INDIAN_STATES, OUTSIDE_INDIA, type ProfileValues } from "@/lib/profile";
+import { Switch } from "@/components/ui/Switch";
+import { INDIAN_STATES, OUTSIDE_INDIA, type LockedField, type ProfileValues } from "@/lib/profile";
 
-export type ProfileField = "name" | "mobile" | "email" | "state" | "city";
+/** `updates` is the WhatsApp-updates opt-in, drawn as a switch. */
+export type ProfileField = "name" | "mobile" | "email" | "state" | "city" | "updates";
 
-/** The sign-in step's four. Email is asked for only where details are edited. */
-export const STEP_FIELDS: ProfileField[] = ["name", "mobile", "state", "city"];
+/** The sign-in step's four, and the opt-in. Email is asked for only where details are edited. */
+export const STEP_FIELDS: ProfileField[] = ["name", "mobile", "state", "city", "updates"];
 
 /** Digits only, at most ten — a pasted "+91 98765 43210" loses its 91. */
 function tenDigits(raw: string): string {
@@ -17,28 +19,35 @@ function tenDigits(raw: string): string {
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** A field the reader can read but not change: recessed, its text quieter. */
+const LOCKED_FIELD = FIELD.replace("bg-card", "bg-inset").replace(" text-ink ", " text-ink-soft ");
+
 /**
  * Whether the fields shown can be saved.
  *
- * `required` is the sign-in step: every field filled. Otherwise (editing in
- * Settings or on the Profile) a field may be left empty, but what is typed
- * must be whole — ten digits, an address with an @ — and the name, which the
- * account cannot be without, stays required.
+ * `required` is the sign-in step: every field filled — but a reader outside
+ * India has no +91 number to give, so for them the mobile may stay empty.
+ * Otherwise (editing in Settings or on the Profile) a field may be left
+ * empty, but what is typed must be whole — ten digits, an address with an @ —
+ * and the name, which the account cannot be without, stays required.
  */
 export function profileReady(v: ProfileValues, fields: ProfileField[], required = false): boolean {
   const email = (v.email ?? "").trim();
+  const mobileRequired = required && v.state !== OUTSIDE_INDIA;
   return fields.every((f) => {
     switch (f) {
       case "name":
         return v.name.trim() !== "";
       case "mobile":
-        return required ? v.mobile.length === 10 : v.mobile.length === 0 || v.mobile.length === 10;
+        return mobileRequired ? v.mobile.length === 10 : v.mobile.length === 0 || v.mobile.length === 10;
       case "email":
         return required ? EMAIL.test(email) : email === "" || EMAIL.test(email);
       case "state":
         return !required || v.state !== "";
       case "city":
         return !required || v.city.trim() !== "";
+      case "updates":
+        return true;
     }
   });
 }
@@ -49,9 +58,9 @@ export function profileReady(v: ProfileValues, fields: ProfileField[], required 
  * for the same thing in different ways. `fields` picks which, in this order.
  *
  * `split` puts State and City side by side, as the desktop comps do; stacked
- * otherwise. `signInEmail` is the address the reader signs in with: changing
- * the field changes where we reach them, not how they sign in, and the hint
- * under it says so once the two differ.
+ * otherwise. `locked` are the fields the reader signs in with — the server's
+ * card lists them — which are shown read-only, with a line saying why:
+ * changing them here would change how the reader signs in.
  */
 export function ProfileFields({
   value,
@@ -59,7 +68,7 @@ export function ProfileFields({
   fields = STEP_FIELDS,
   split = false,
   idPrefix = "profile",
-  signInEmail,
+  locked = [],
 }: {
   value: ProfileValues;
   onChange: (next: ProfileValues) => void;
@@ -67,12 +76,18 @@ export function ProfileFields({
   split?: boolean;
   /** two copies on one page (the edit sheet over the page) need distinct ids */
   idPrefix?: string;
-  signInEmail?: string;
+  locked?: LockedField[];
 }) {
   const set = (patch: Partial<ProfileValues>) => onChange({ ...value, ...patch });
   const has = (f: ProfileField) => fields.includes(f);
   const email = value.email ?? "";
-  const emailMoved = !!signInEmail && email.trim() !== "" && email.trim() !== signInEmail;
+  const mobileLocked = locked.includes("mobile");
+  const emailLocked = locked.includes("email");
+  const lockedNote = (field: LockedField) => (
+    <p id={`${idPrefix}-${field}-note`} className="mt-2 text-xs leading-relaxed text-ink-soft">
+      You sign in with this {field === "mobile" ? "number" : "email"}, so it can&rsquo;t be changed here.
+    </p>
+  );
 
   const state = has("state") && (
     <div>
@@ -160,9 +175,12 @@ export function ProfileFields({
               placeholder="10-digit mobile number"
               value={value.mobile}
               onChange={(e) => set({ mobile: tenDigits(e.target.value) })}
-              className={`${FIELD} ps-14`}
+              readOnly={mobileLocked}
+              aria-describedby={mobileLocked ? `${idPrefix}-mobile-note` : undefined}
+              className={`${mobileLocked ? LOCKED_FIELD : FIELD} ps-14`}
             />
           </div>
+          {mobileLocked && lockedNote("mobile")}
         </div>
       )}
 
@@ -179,15 +197,12 @@ export function ProfileFields({
               placeholder="you@example.com"
               value={email}
               onChange={(e) => set({ email: e.target.value })}
-              aria-describedby={emailMoved ? `${idPrefix}-email-note` : undefined}
-              className={`${FIELD} normal-case tracking-normal font-normal`}
+              readOnly={emailLocked}
+              aria-describedby={emailLocked ? `${idPrefix}-email-note` : undefined}
+              className={`${emailLocked ? LOCKED_FIELD : FIELD} normal-case tracking-normal font-normal`}
             />
           </label>
-          {emailMoved && (
-            <p id={`${idPrefix}-email-note`} className="mt-2 text-xs leading-relaxed text-ink-soft">
-              We&rsquo;ll reach you here. You still sign in with {signInEmail}.
-            </p>
-          )}
+          {emailLocked && lockedNote("email")}
         </div>
       )}
 
@@ -203,6 +218,25 @@ export function ProfileFields({
             {city}
           </>
         ))}
+
+      {/* Off until the reader turns it on: WhatsApp's policy and the DPDP Act
+          both want a yes, not a default. */}
+      {has("updates") && (
+        <div className="flex items-center gap-4 rounded-tile border border-rule bg-card px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-semibold text-ink">Shivir and centre updates</p>
+            <p id={`${idPrefix}-updates-note`} className="mt-0.5 text-sm leading-relaxed text-ink-soft">
+              Send them to my WhatsApp. Turn off any time in Settings.
+            </p>
+          </div>
+          <Switch
+            checked={value.updates_opt_in ?? false}
+            onChange={(next) => set({ updates_opt_in: next })}
+            label="Shivir and centre updates on WhatsApp"
+            describedBy={`${idPrefix}-updates-note`}
+          />
+        </div>
+      )}
     </div>
   );
 }

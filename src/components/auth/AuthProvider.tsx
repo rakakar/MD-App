@@ -11,6 +11,7 @@ import {
 } from "react";
 import { getMe, logout as apiLogout } from "@/lib/me";
 import { syncPersonal, watchConnectivity } from "@/lib/personal";
+import { adoptLocalProfile } from "@/lib/profile";
 import { clearLocalStore } from "@/lib/storage";
 import type { MeUser } from "@/lib/types";
 
@@ -41,7 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const me = await getMe();
+    let me = await getMe();
+    // Answers kept on this device before the server had a contact card go up
+    // once, so the welcome step does not ask for them again (lib/profile).
+    if (me) me = (await adoptLocalProfile(me)) ?? me;
     setUser(me);
     setLoading(false);
     // Covers the Google-redirect return path too. Whatever was saved while

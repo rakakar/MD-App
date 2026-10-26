@@ -755,12 +755,35 @@ export interface SearchResponse {
 
 export interface MeUser {
   id?: number;
+  /** the address the reader signs in with, else "" */
   email?: string;
   /** "+91…" for a reader who signed up by mobile number, else "" */
   phone?: string;
   name?: string;
   first_name?: string;
+  date_joined?: string;
+  login?: { method: "email" | "phone"; value: string };
+  /** The contact card (§6). Absent from a server older than it. */
+  profile?: MeProfile;
   [key: string]: unknown;
+}
+
+/**
+ * Who the reader is and where to reach them — server-stored, so it follows
+ * them to every device. The sign-in email or number is on it too, and listed
+ * in `locked`: it can be seen here but changed only where they sign in.
+ */
+export interface MeProfile {
+  name: string;
+  /** "+91…" or "" */
+  mobile: string;
+  email: string;
+  state: string;
+  city: string;
+  updates_opt_in: boolean;
+  locked: ("mobile" | "email")[];
+  /** the "A little about you" step has been answered */
+  complete: boolean;
 }
 
 // /me/ rows (contract §6). All three are anchored to canonical_ref and carry

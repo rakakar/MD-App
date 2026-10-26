@@ -11,7 +11,7 @@ import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { displayPhone } from "@/lib/me";
 import { LAUNCH } from "@/lib/onboarding";
-import { askForStage, profileFor, storeProfile, type ProfileValues } from "@/lib/profile";
+import { askForStage, lockedFields, profileDone, profileFor, storeProfile, type ProfileValues } from "@/lib/profile";
 import { safeReturnPath, signInHref } from "@/lib/routes";
 import { getPrefs } from "@/lib/storage";
 
@@ -23,7 +23,7 @@ import { getPrefs } from "@/lib/storage";
  * **First run only:** creating an account lands here (`welcomeHref`); signing
  * in again does not — the same details are editable in Settings and on the
  * Profile page. It still passes straight through if this account has
- * already answered on this device.
+ * already answered, which the server remembers across devices.
  *
  * Same frame as the sign-in screen on a desktop: the launch artwork as the
  * left panel, the form on the right. A phone drops the band — the four fields
@@ -41,7 +41,13 @@ export function ProfileStep() {
   const { user, loading, refresh } = useAuth();
 
   const desktop = useIsDesktop();
-  const [values, setValues] = useState<ProfileValues>({ name: "", mobile: "", state: "", city: "" });
+  const [values, setValues] = useState<ProfileValues>({
+    name: "",
+    mobile: "",
+    state: "",
+    city: "",
+    updates_opt_in: false,
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** null until auth and the local answers have been read */
@@ -53,13 +59,22 @@ export function ProfileStep() {
       router.replace(signInHref(next));
       return;
     }
-    if (profileFor(user)) {
+    if (profileDone(user)) {
       router.replace(next);
       return;
     }
-    // Prefilled from what the account already knows; the reader can change both.
+    // Prefilled from what the account already knows — the server's card holds
+    // the sign-in number, and anything a half-answered step left behind.
+    const card = profileFor(user);
     const m = /^\+91(\d{10})$/.exec(user.phone ?? "");
-    setValues((v) => ({ ...v, name: (user.name || user.first_name || "").trim(), mobile: m ? m[1] : "" }));
+    setValues((v) => ({
+      ...v,
+      name: (card?.name || user.name || user.first_name || "").trim(),
+      mobile: card?.mobile || (m ? m[1] : ""),
+      state: card?.state ?? "",
+      city: card?.city ?? "",
+      updates_opt_in: card?.updates_opt_in ?? false,
+    }));
     setShow({ stageNext: getPrefs().journeyStage == null });
   }, [loading, user, next, router]);
 
@@ -162,7 +177,7 @@ export function ProfileStep() {
 
               <div className="mt-6">
                 {/* State and City side by side on a desktop, as drawn. */}
-                <ProfileFields value={values} onChange={setValues} split={desktop} />
+                <ProfileFields value={values} onChange={setValues} split={desktop} locked={lockedFields(user)} />
               </div>
             </div>
 
@@ -174,7 +189,7 @@ export function ProfileStep() {
                   {error}
                 </p>
               )}
-              {/* Idle until all four hold something, like Sign in. */}
+              {/* Idle until all four hold something, like Sign in. The opt-in may stay off. */}
               <button
                 type="submit"
                 disabled={!ready || busy}

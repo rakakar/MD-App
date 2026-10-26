@@ -39,10 +39,9 @@ const ROW_BUTTON = `${ROW_BUTTON_BASE} text-ink`;
  *
  * **Nothing here is claimed that the app cannot back.** "Verified" sits only
  * on the number the reader signs in with, since a WhatsApp code proved it;
- * the email carries it only when the server says so (`email_verified`), and
- * "Member since" only when it sends a join date. Today `/me/` sends neither.
- * Mobile, state and city come from this device (`lib/profile.ts`) until the
- * server stores them.
+ * the email carries it only when the server says so (`email_verified`, not
+ * sent yet), and "Member since" only when it sends a join date (`date_joined`).
+ * The details are the server's contact card, read through `lib/profile.ts`.
  */
 export function ProfileScreen() {
   const router = useRouter();
@@ -243,7 +242,7 @@ export function ProfileScreen() {
   );
 }
 
-/** "March 2026", from whichever join date the server sends — none yet. */
+/** "March 2026", from whichever join date the server sends. */
 function memberSince(user: MeUser): string | null {
   const raw = user.date_joined ?? user.created_at;
   if (typeof raw !== "string") return null;

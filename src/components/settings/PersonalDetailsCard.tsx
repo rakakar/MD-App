@@ -8,20 +8,20 @@ import { profileFor, type ReaderProfile } from "@/lib/profile";
 import type { ProfileField } from "@/components/auth/ProfileFields";
 import { CARD, SettingsSection } from "./parts";
 
-const FIELDS: ProfileField[] = ["mobile", "email", "state", "city"];
+const FIELDS: ProfileField[] = ["mobile", "email", "state", "city", "updates"];
 
 /**
- * **Personal details** in Settings — mobile, email, state and city, the
- * answers to "A little about you", editable any time.
+ * **Personal details** in Settings — mobile, email, state, city and the
+ * WhatsApp-updates opt-in, the answers to "A little about you", editable any
+ * time.
  *
  * The sign-in step asks for them once, on a new account; this is where they
  * change after that (as on the Profile page). The name stays in the Account
  * card above, where it always was.
  *
- * The email here is where the app reaches the reader; changing it does not
- * change the address they sign in with, and the editor says so. Mobile, email,
- * state and city are kept on this device until `/me/` stores them
- * (`lib/profile.ts`).
+ * They are the server's contact card (`/me/`'s `profile`, via
+ * `lib/profile.ts`). The email or number the reader signs in with is on it
+ * and shows read-only in the editor; the other one is theirs to add.
  *
  * Renders nothing signed out — there is no account to describe.
  */
@@ -76,6 +76,9 @@ export function PersonalDetailsSection({
         </Row>
         <Row desktop={desktop} label="City">
           {profile?.city || null}
+        </Row>
+        <Row desktop={desktop} label="WhatsApp updates">
+          {profile?.updates_opt_in ? "On" : "Off"}
         </Row>
       </dl>
 

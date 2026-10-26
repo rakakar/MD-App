@@ -5,14 +5,16 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { ProfileFields, profileReady, type ProfileField } from "@/components/auth/ProfileFields";
 import { Sheet, ctaPrimary } from "@/components/ui";
 import { Dialog } from "@/components/ui/Dialog";
-import { storeProfile, type ProfileValues, type ReaderProfile } from "@/lib/profile";
+import { lockedFields, storeProfile, type ProfileValues, type ReaderProfile } from "@/lib/profile";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 import type { MeUser } from "@/lib/types";
 
 /**
  * Edit personal details — the profile fields in a sheet on a phone and a
  * dialog at a desk. The Profile page edits all five; Settings edits mobile,
- * email, state and city (its Account card already has the name).
+ * email, state, city and the WhatsApp-updates opt-in (its Account card
+ * already has the name). The email or number the reader signs in with shows
+ * read-only (`lockedFields`).
  *
  * Unlike the sign-in step, a field may be left empty here — only what is
  * typed must be whole (see `profileReady`).
@@ -96,7 +98,7 @@ export function EditProfile({
         fields={fields}
         split={desktop}
         idPrefix={formId}
-        signInEmail={(user.email as string | undefined) || undefined}
+        locked={lockedFields(user)}
       />
       {error && (
         <p role="alert" className="mt-4 rounded-tile border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger">
@@ -146,5 +148,6 @@ function initialValues(user: MeUser, profile: ReaderProfile | null): ProfileValu
     email: profile?.email ?? ((user.email as string | undefined) || ""),
     state: profile?.state ?? "",
     city: profile?.city ?? "",
+    updates_opt_in: profile?.updates_opt_in ?? false,
   };
 }

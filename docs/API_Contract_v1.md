@@ -293,17 +293,42 @@ the reader (highlight a para, bookmark a `canonical_ref`, resume where you left
 off). Anchor all of them to `canonical_ref`, not to positions. `GET /me/`
 returns `id`, `email`, `name`, `user_type`; `PATCH /me/` sets `name`.
 
-**Wanted: profile fields on `/me/`.** Since 26 Oct 2026 a new account is
-followed by an "A little about you" step (`/welcome`) asking for full name,
-mobile number, state and city, to share shivir and centre updates near the
-reader. Settings → Personal details and the Profile page edit them later,
-along with a contact email. Only `name` reaches the server today; mobile,
-state, city and contact email are kept on the device (`lib/profile.ts`, key
-`md.profile.v1`) because `PATCH /me/` does not accept them. Proposed:
-`GET`/`PATCH /me/` carry `mobile` (10 digits, no +91), `state` (name), `city`
-(free text) and `contact_email` (where to reach the reader — never the sign-in
-address, which this must not change). Once they exist, the FE sends them in the
-same PATCH, and a reader's details follow them to every device.
+**The contact card (`profile`).** Who the reader is and where to reach them,
+stored server-side (`ReaderProfile`) so it follows them to every device. How
+they *sign in* is a separate thing: top-level `email`/`phone` and `login`.
+
+```json
+GET /api/v1/me/
+{
+  "id": 42, "username": "…", "user_type": "public",
+  "email": "", "phone": "+919755513333", "name": "विनोद",
+  "date_joined": "2026-10-26T14:38:17Z",
+  "login": {"method": "phone", "value": "+919755513333"},
+  "profile": {
+    "name": "विनोद", "mobile": "+919755513333", "email": "",
+    "state": "Chhattisgarh", "city": "Raipur",
+    "updates_opt_in": false, "locked": ["mobile"], "complete": true
+  }
+}
+```
+
+- **`locked`** — the card's fields that are the reader's sign-in (`"mobile"`
+  for a mobile sign-up, `"email"` for an email one). They are copied onto the
+  card at signup and kept in step with the account; show them read-only.
+- **`complete`** — the "A little about you" step has been answered: a name,
+  state and city, and a mobile unless the state is `"Outside India"`. Set once
+  and kept, so clearing a field later does not ask again.
+- **`mobile`** is E.164 (`+91…`, Indian mobiles only), not unique and not
+  verified — a number to reach the reader on, never one they sign in with.
+- **`updates_opt_in`** is off until the reader turns it on; the server records
+  when they did.
+
+`PATCH /me/` takes any of `name`, `mobile` (ten digits or `+91…`, spaces and
+dashes allowed), `email`, `state`, `city`, `updates_opt_in`, flat, and answers
+the whole of `GET /me/`. City is stored trimmed with each word capitalised.
+Every field is checked before any is saved: one bad field is a `400` naming
+it, and nothing changes. A locked field may be sent unchanged (send the whole
+form) but changing it is a `400`.
 
 ### 6.0 A bookmark's `colour` — a highlight is a painted bookmark
 
