@@ -662,7 +662,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // cannot overwrite the place we are about to jump to.
   const restored = useRef(false);
   useEffect(() => {
-    if (pages.length === 0) return;
+    // Wait for the saved prefs as well as the pages: page mode is one of them,
+    // and a jump made before it lands is a scroll-mode jump — the reader then
+    // switches to page mode at the chapter's first page and the link's page is
+    // lost (search's "Open in reader" opened p. 195 for p. 198, 26 Oct).
+    if (pages.length === 0 || !prefsLoaded) return;
     // A go-to target that crossed into another chapter, once that chapter's
     // pages have arrived. Checked on every chapter, not only the first: the
     // reader stays mounted as it moves between chapters, and gating this on
@@ -694,7 +698,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const local = localProgressFor(book.code);
     if (local) restoreRef(local.canonical_ref, "saved");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pages]);
+  }, [pages, prefsLoaded]);
 
   // The one thing an account genuinely adds: a position set on another device.
   // It arrives late by nature, so it is offered rather than applied — nobody
