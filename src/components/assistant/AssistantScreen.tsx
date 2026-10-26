@@ -643,7 +643,7 @@ function Header({
   source: { open: boolean; toggle: () => void } | null;
 }) {
   return (
-    <header className="sticky top-0 z-30 shrink-0 border-b border-rule bg-surface lg:static">
+    <header data-assistant-header className="sticky top-0 z-30 shrink-0 border-b border-rule bg-surface lg:static">
       <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
         <Link
           href="/assistant/conversations"

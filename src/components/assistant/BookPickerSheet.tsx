@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CheckIcon, CloseIcon } from "@/components/shell/icons";
 import { Sheet, SheetAction, SheetTextAction } from "@/components/ui";
 import { getBookGenres } from "@/lib/api";
@@ -248,6 +248,28 @@ export function BookPickerTray({
     };
   }, [onClose]);
 
+  // The tray stands on the box and grows upward, so on a short window it can
+  // outgrow the room and slide under the header (Brave on a laptop, 26 Oct).
+  // Cap it to the space between the header and the box; the list scrolls.
+  const [room, setRoom] = useState<number>();
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      const top = document.querySelector("[data-assistant-header]")?.getBoundingClientRect().bottom ?? 0;
+      setRoom(Math.max(240, el.getBoundingClientRect().bottom - Math.max(top, 0) - 12));
+    };
+    fit();
+    const box = new ResizeObserver(fit);
+    const form = el.closest("form");
+    if (form) box.observe(form);
+    window.addEventListener("resize", fit);
+    return () => {
+      box.disconnect();
+      window.removeEventListener("resize", fit);
+    };
+  }, []);
+
   const chosen = everything ? shelf.length : draft.length;
 
   return (
@@ -255,9 +277,10 @@ export function BookPickerTray({
       ref={ref}
       role="dialog"
       aria-label="Search in"
-      className="assistant-fade-in overflow-hidden rounded-card border border-rule bg-card shadow-raised"
+      className="assistant-fade-in flex flex-col overflow-hidden rounded-card border border-rule bg-card shadow-raised"
+      style={{ maxHeight: room }}
     >
-      <div className="flex items-center gap-3 px-4 pt-3">
+      <div className="flex shrink-0 items-center gap-3 px-4 pt-3">
         <p className="w-20 shrink-0 text-sm font-semibold text-ink-soft">Search in</p>
         <div className="min-w-0 flex-1">
           <Chip label="All books" on={all} onClick={() => setDraft([])} />
@@ -272,7 +295,7 @@ export function BookPickerTray({
         </button>
       </div>
 
-      <div className="max-h-[50vh] overflow-y-auto px-4 pb-3">
+      <div className="max-h-[50vh] min-h-0 flex-1 overflow-y-auto px-4 pb-3">
         {groups.map((g) => (
           <div key={g.key} role="group" aria-label={g.name} className="mt-3 flex items-start gap-3">
             <p className="flex min-h-11 w-20 shrink-0 items-center text-sm font-semibold text-ink-soft">
@@ -287,7 +310,7 @@ export function BookPickerTray({
         ))}
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-rule px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-rule px-4 py-3">
         <p className="text-sm text-ink-soft">
           {all ? `All ${shelf.length} books` : `${chosen} of ${shelf.length} books selected`}
         </p>
