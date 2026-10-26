@@ -293,6 +293,16 @@ the reader (highlight a para, bookmark a `canonical_ref`, resume where you left
 off). Anchor all of them to `canonical_ref`, not to positions. `GET /me/`
 returns `id`, `email`, `name`, `user_type`; `PATCH /me/` sets `name`.
 
+**Wanted: profile fields on `/me/`.** Since 26 Oct 2026 every sign-in is
+followed by a "A little about you" step (`/welcome`) asking for full name,
+mobile number, state and city, to share shivir and centre updates near the
+reader. Only `name` reaches the server today; the other three are kept on the
+device (`lib/profile.ts`, key `md.profile.v1`) because `PATCH /me/` does not
+accept them. Proposed: `GET`/`PATCH /me/` carry `mobile` (10 digits, no +91),
+`state` (name) and `city` (free text). Once they exist, the FE sends them in the
+same PATCH and treats a filled `state` as "profile answered", so the step stops
+reappearing on each new device.
+
 ### 6.0 A bookmark's `colour` — a highlight is a painted bookmark
 
 A bookmark row carries **`colour`**: `""`, `amber`, `sage` or `sky`. That is the

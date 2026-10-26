@@ -12,7 +12,7 @@ import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { track } from "@/lib/analytics";
 import { googleLoginUrl, login, primeSession, signup } from "@/lib/me";
 import { LAUNCH } from "@/lib/onboarding";
-import { safeReturnPath } from "@/lib/routes";
+import { safeReturnPath, welcomeHref } from "@/lib/routes";
 
 const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
 
@@ -74,7 +74,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       if (res.status === 200) {
         track(login_ ? "login" : "signup", { method: "email" });
         await onAuthenticated();
-        router.replace(next);
+        // via the profile step, which passes through once it is answered
+        router.replace(welcomeHref(next));
       } else {
         setError(
           res.errors?.[0]?.message ??
@@ -293,7 +294,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   <button
                     type="button"
                     onClick={() => {
-                      window.location.href = googleLoginUrl(next);
+                      window.location.href = googleLoginUrl(welcomeHref(next));
                     }}
                     className="min-h-14 w-full rounded-tile border border-rule bg-card text-base font-semibold text-ink"
                   >

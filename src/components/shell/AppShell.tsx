@@ -11,6 +11,7 @@ import { PlayerBar } from "@/components/player/PlayerBar";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
 import { TrackAudioMode } from "@/components/player/TrackAudioMode";
 import { PushProvider } from "@/components/push/PushProvider";
+import { StagePrompt } from "@/components/journey/StagePrompt";
 import { ownsViewport } from "@/lib/routes";
 import { DisplayProvider } from "./DisplayProvider";
 import { Header } from "./Header";
@@ -45,8 +46,9 @@ function CommandK() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRoutePath();
-  // auth screens are neutral chrome (PRD §4)
-  const neutral = pathname === "/login" || pathname === "/signup";
+  // auth screens are neutral chrome (PRD §4) — and so is the profile step
+  // that follows them, which is still part of signing in
+  const neutral = pathname === "/login" || pathname === "/signup" || pathname === "/welcome";
   // a reader owns the viewport: it has its own back, contents and settings,
   // and app chrome on top of it costs a quarter of a phone screen. Both
   // readers qualify — the book's and the PDF's.
@@ -105,6 +107,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               question nobody asked. The deck is still owed, and it appears on
               the next ordinary screen. */}
           {!bare && !sharedLink && <FirstRunGate />}
+          {/* Step 2 after signing in — the journey question, once the profile
+              step is answered and the deck (if owed) is closed. */}
+          <StagePrompt suppressed={bare || sharedLink} />
           {/* Outside `bare` so a notification arriving mid-chapter is still
               seen — it is the reader's own opt-in, not app chrome. */}
           <PushProvider />

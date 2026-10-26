@@ -479,6 +479,14 @@ export function CheckIcon({ className }: { className?: string }) {
   );
 }
 
+export function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"} strokeWidth={2}>
+      <path d="m6 9 6 6 6-6" />
+    </Svg>
+  );
+}
+
 export function CloseIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

@@ -199,6 +199,14 @@ export function safeReturnPath(next: string | null | undefined): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
     return SIGNED_IN_HOME;
   }
-  if (/^\/(login|signup)(?=$|[/?#])/.test(next)) return SIGNED_IN_HOME;
+  if (/^\/(login|signup|welcome)(?=$|[/?#])/.test(next)) return SIGNED_IN_HOME;
   return next;
+}
+
+/**
+ * Where every sign-in lands first: the "A little about you" step, which
+ * passes straight through to `next` once it has been answered on this device.
+ */
+export function welcomeHref(next: string): string {
+  return `/welcome?next=${encodeURIComponent(safeReturnPath(next))}`;
 }

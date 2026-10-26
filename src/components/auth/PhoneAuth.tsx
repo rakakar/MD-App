@@ -28,6 +28,7 @@ import {
   verifyNewPhone,
   type AllauthResponse,
 } from "@/lib/me";
+import { welcomeHref } from "@/lib/routes";
 
 const CODE_LENGTH = 6;
 /** The BE allows one resend per 30s for a new number; the same for both keeps it simple. */
@@ -146,7 +147,7 @@ export function PhoneAuth({
       if (res.status === 200) {
         track(step.flow, { method: "whatsapp" });
         await onAuthenticated();
-        router.replace(next);
+        router.replace(welcomeHref(next));
         return;
       }
       if (res.errors?.[0]?.code === "incorrect_code") {

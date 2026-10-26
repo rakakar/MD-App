@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { FIRST_RUN_DONE } from "@/components/journey/StagePrompt";
 import { getPrefs, setPrefs } from "@/lib/storage";
 
 /*
@@ -214,6 +215,7 @@ export function FirstRunGate() {
           // an answer; see the note on `onboardingSeen` in `lib/storage.ts`.
           setPrefs({ onboardingSeen: true });
           setDone((d) => ({ ...d, deck: true }));
+          window.dispatchEvent(new Event(FIRST_RUN_DONE));
         }}
       />
     );

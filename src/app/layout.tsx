@@ -208,7 +208,7 @@ if(p.sutraCollapsed)d.setAttribute("data-sutra-collapsed","1");
 var C=window.Capacitor;if(C&&C.isNativePlatform&&C.isNativePlatform())d.setAttribute("data-shell","native");
 if(p.fontScale)d.style.setProperty("--reader-font-scale",String(p.fontScale));
 if(p.lineHeight)d.style.setProperty("--reader-line-height",String(p.lineHeight));
-var bare=reading||/^\\/(login|signup)$|^\\/a\\//.test(location.pathname);
+var bare=reading||/^\\/(login|signup|welcome)$|^\\/a\\//.test(location.pathname);
 if(!bare&&(!p.onboardingSeen||new URLSearchParams(location.search).has("firstrun")))d.setAttribute("data-first-run","1");
 }catch(e){}})()`;
 
