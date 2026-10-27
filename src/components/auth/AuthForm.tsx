@@ -6,11 +6,19 @@ import { useEffect, useState } from "react";
 import { useKeyboardInset } from "@/components/assistant/useKeyboardInset";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { FIELD, LABEL } from "@/components/auth/fields";
+import { CodeEntry } from "@/components/auth/CodeEntry";
 import { PhoneAuth } from "@/components/auth/PhoneAuth";
 import { ArrowLeftIcon, BrandMark, InfoIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { track } from "@/lib/analytics";
-import { googleLoginUrl, login, primeSession, signup } from "@/lib/me";
+import {
+  confirmLoginCode,
+  googleLoginUrl,
+  login,
+  primeSession,
+  requestEmailLoginCode,
+  signup,
+} from "@/lib/me";
 import { LAUNCH } from "@/lib/onboarding";
 import { safeReturnPath, welcomeHref } from "@/lib/routes";
 
@@ -42,6 +50,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   // Mobile number + WhatsApp code instead of email. `?via=whatsapp` keeps the
   // choice across the Sign in ↔ Create account link.
   const [byPhone, setByPhone] = useState(search.get("via") === "whatsapp");
+  // Signing in with a code to the email instead of the password: the flow's
+  // token while the code is out (not a session).
+  const [codeToken, setCodeToken] = useState<string | null>(null);
 
   const keyboard = useKeyboardInset() > 0;
 
@@ -83,6 +94,39 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       setError("Couldn't reach the server. Please try again.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const sendEmailCode = async (): Promise<string | null> => {
+    if (!email.trim()) return "Enter your email first.";
+    try {
+      const res = await requestEmailLoginCode(email.trim());
+      if (res.status === 401 && res.meta?.session_token) {
+        setCodeToken(res.meta.session_token);
+        return null;
+      }
+      if (res.status === 429) return "Too many codes asked for. Please wait a few minutes and try again.";
+      return res.errors?.[0]?.message ?? "Couldn't send the code. Please try again.";
+    } catch {
+      return "Couldn't reach the server. Please try again.";
+    }
+  };
+
+  const confirmEmailCode = async (code: string): Promise<string | null> => {
+    if (!codeToken) return null;
+    try {
+      const res = await confirmLoginCode(code, codeToken);
+      if (res.status === 200) {
+        track("login", { method: "email_code" });
+        await onAuthenticated();
+        router.replace(next);
+        return null;
+      }
+      if (res.errors?.[0]?.code === "incorrect_code") return "That code doesn't match. Check your email and try again.";
+      setCodeToken(null);
+      return null;
+    } catch {
+      return "Couldn't reach the server. Please try again.";
     }
   };
 
@@ -192,7 +236,25 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               : "Free account to sync bookmarks, notes and progress."}
           </p>
 
-          {byPhone ? (
+          {codeToken ? (
+            <div className="mt-6">
+              <CodeEntry
+                sentTo={email.trim()}
+                via="email"
+                onSubmit={confirmEmailCode}
+                onResend={sendEmailCode}
+                footer={
+                  <button
+                    type="button"
+                    onClick={() => setCodeToken(null)}
+                    className="inline-flex min-h-11 items-center font-semibold text-ink-soft"
+                  >
+                    Use password instead
+                  </button>
+                }
+              />
+            </div>
+          ) : byPhone ? (
             <PhoneAuth mode={mode} next={next} onUseEmail={() => setByPhone(false)} />
           ) : (
             <>
@@ -260,6 +322,25 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   {busy ? "Please wait…" : login_ ? "Sign in" : "Create account"}
                 </button>
               </form>
+
+              {/* No password to remember: a code to the same email. */}
+              {login_ && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    setError(null);
+                    setBusy(true);
+                    const err = await sendEmailCode();
+                    setBusy(false);
+                    if (err) setError(err);
+                  }}
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center text-sm font-bold"
+                  style={{ color: "var(--ws-ink)" }}
+                >
+                  Sign in with an email code instead
+                </button>
+              )}
 
               {/* The way round email, for readers who have none or cannot
                   remember it — quiet on purpose: email is the front door. */}

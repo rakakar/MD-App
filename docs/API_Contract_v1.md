@@ -455,10 +455,39 @@ expired). The reader then signs in with the new password. Mobile readers have
 no password and never use this. Changing a known password still takes the
 old one (`/account/password/change`).
 
-Sign-up does not verify an email, and cannot be made to: allauth allows
-mandatory verification only when every sign-up gives an email, and mobile
-sign-ups do not. The reset code is what protects an address — it goes only to
-its real owner. Google sign-in is built but dark (no Google API project).
+allauth's own email verification cannot be made mandatory here — it needs
+every sign-up to give an email, and mobile sign-ups do not — so the app
+verifies emails itself (§6.3). Google sign-in is built but dark (no Google API project).
+
+### 6.3 Verifying an email or mobile — and signing in with it
+
+Every code the app sends is six digits: WhatsApp or email, to sign up, sign
+in, verify or reset.
+
+- **Email sign-ups verify their address** with a code before anything else
+  (the mobile sign-up's WhatsApp code already proved its number). `GET /me/`
+  says where a reader stands: `email_verified`, `phone_verified`,
+  `has_password`. The FE keeps a public reader with `email` set and
+  `email_verified: false` at its code screen, then the profile step.
+- **The other channel, once verified, is a second way to sign in.** A mobile
+  reader verifies an email → they can sign in with email + password (after
+  setting one) or an email code. An email reader verifies a mobile → they can
+  sign in with a WhatsApp code.
+
+| Call | Body | Answers |
+|---|---|---|
+| `POST /me/verify/` | `{channel: "email" \| "mobile", value?}` | `200 {sent_to}`; `400 {<channel>: [msg], code}` |
+| `POST /me/verify/confirm/` | `{channel, code}` | `200` — the whole of `GET /me/`; `400 {<channel>: [msg], code}` |
+
+`value` defaults to the sign-in one. Error `code`s: `taken` (another account
+signs in with it), `locked` (this account already signs in with a different
+one), `verified`, `too_soon` (one code per 30 s), `incorrect_code`, `expired`
+(5 minutes, or 5 wrong tries), `send_failed` (`503`, WhatsApp down).
+
+Sign-in by email code is allauth's: `POST /_allauth/app/v1/auth/code/request
+{email}` → `401` + flow token; `POST …/auth/code/confirm {code}` with it. A
+reader with no password sets one with `POST …/account/password/change
+{new_password}` (no `current_password`).
 
 **Origins and cookies.** The FE is a different origin, so its browser-side
 calls need the API to allow that origin — set `CORS_ALLOWED_ORIGINS` on the

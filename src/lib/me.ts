@@ -116,6 +116,29 @@ export async function getMe(): Promise<MeUser | null> {
 export const updateMe = (name: string): Promise<MeUser> =>
   authedFetch<MeUser>(meUrl(""), { method: "PATCH", body: JSON.stringify({ name }) });
 
+/**
+ * Prove an email or mobile is the reader's with a six-digit code (contract
+ * §6.3). `value` defaults to the sign-in one; another value, once proved,
+ * becomes a second way to sign in. Throws with `data` like the PATCH does —
+ * `{email|mobile: [message], code}`.
+ */
+export const requestVerify = (channel: "email" | "mobile", value?: string): Promise<{ sent_to: string }> =>
+  authedFetch(meUrl("verify/"), { method: "POST", body: JSON.stringify({ channel, ...(value ? { value } : {}) }) });
+
+export const confirmVerify = (channel: "email" | "mobile", code: string): Promise<MeUser> =>
+  authedFetch<MeUser>(meUrl("verify/confirm/"), { method: "POST", body: JSON.stringify({ channel, code }) });
+
+/** The message a refused verify call carries, for its field. */
+export function verifyErrorOf(e: unknown): { message: string; code?: string } {
+  const data = (e as { data?: Record<string, unknown> })?.data ?? {};
+  for (const key of ["email", "mobile", "channel"]) {
+    const v = data[key];
+    const msg = Array.isArray(v) ? v[0] : v;
+    if (typeof msg === "string") return { message: msg, code: data.code as string | undefined };
+  }
+  return { message: "Couldn't reach the server. Please try again." };
+}
+
 /** The contact card's fields, any of them; mobile as ten digits or "+91…". */
 export interface ProfilePatch {
   name?: string;
@@ -328,6 +351,20 @@ export const resendPhoneCode = (flowToken: string): Promise<AllauthResponse> =>
 /** A new reader: the account is made now, signed in once the code is confirmed. */
 export const signupWithPhone = (phone: string): Promise<AllauthResponse> =>
   allauth("/auth/signup", "POST", { phone }, null);
+
+// ---- sign in by email code (no password) ----
+
+/** A code to the account's email; 400 when no account has it. */
+export const requestEmailLoginCode = (email: string): Promise<AllauthResponse> =>
+  allauth("/auth/code/request", "POST", { email }, null);
+
+/** Confirms a sign-in code, whichever channel it went to. */
+export const confirmLoginCode = (code: string, flowToken: string): Promise<AllauthResponse> =>
+  allauth("/auth/code/confirm", "POST", { code }, flowToken);
+
+/** A first password, for a reader who has none (signed up by mobile). */
+export const setPassword = (new_password: string): Promise<AllauthResponse> =>
+  allauth("/account/password/change", "POST", { new_password });
 
 // ---- forgot password ----
 //

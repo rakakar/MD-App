@@ -53,7 +53,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname === "/welcome" ||
-    pathname === "/forgot-password";
+    pathname === "/forgot-password" ||
+    pathname === "/verify-email";
   // a reader owns the viewport: it has its own back, contents and settings,
   // and app chrome on top of it costs a quarter of a phone screen. Both
   // readers qualify — the book's and the PDF's.

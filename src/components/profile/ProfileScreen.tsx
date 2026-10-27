@@ -11,6 +11,7 @@ import { SectionHeading } from "@/components/ui";
 import { BackButton } from "@/components/ui/BackButton";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { EditProfile } from "./EditProfile";
+import { VerifyContact } from "./VerifyContact";
 import { getBooks } from "@/lib/api";
 import { contentLang } from "@/lib/script";
 import { ONBOARDING_OPTIONS, stageBooks, stageById } from "@/lib/journey";
@@ -51,6 +52,7 @@ export function ProfileScreen() {
   const [stage, setStage] = useState<{ id: number | null; answer: string | null } | null>(null);
   const [books, setBooks] = useState<BookSummary[]>([]);
   const [editing, setEditing] = useState(false);
+  const [verifying, setVerifying] = useState<"email" | "mobile" | null>(null);
   const [changingStage, setChangingStage] = useState(false);
 
   useEffect(() => {
@@ -151,13 +153,17 @@ export function ProfileScreen() {
               <dl className={`${CARD} divide-y divide-rule`}>
                 <Row label="Full name">{name || <Missing />}</Row>
                 <Row label="Mobile number">
-                  <MobileValue user={user} profile={profile} />
+                  <MobileValue user={user} profile={profile} onVerify={() => setVerifying("mobile")} />
                 </Row>
                 <Row label="Email">
                   {email ? (
                     <>
                       <span className="min-w-0 break-all">{email}</span>
-                      {email === signInEmail && user.email_verified === true && <Verified />}
+                      {email === signInEmail && user.email_verified === true ? (
+                        <Verified />
+                      ) : (
+                        !signInEmail && <VerifyButton onClick={() => setVerifying("email")} />
+                      )}
                     </>
                   ) : (
                     <Missing />
@@ -219,6 +225,17 @@ export function ProfileScreen() {
         </div>
       </div>
 
+      {verifying && (
+        <VerifyContact
+          open
+          desktop={desktop}
+          channel={verifying}
+          value={verifying === "email" ? email : `+91${profile?.mobile ?? ""}`}
+          onClose={() => setVerifying(null)}
+          onVerified={() => setVerifying(null)}
+        />
+      )}
+
       <EditProfile
         open={editing}
         desktop={desktop}
@@ -262,15 +279,39 @@ function signInMethod(user: MeUser): string {
  * The number on file, and "Verified" only on the one the reader signs in with
  * — that one a WhatsApp code has proved; one typed into a form has not.
  */
-function MobileValue({ user, profile }: { user: MeUser; profile: ReaderProfile | null }) {
+function MobileValue({
+  user,
+  profile,
+  onVerify,
+}: {
+  user: MeUser;
+  profile: ReaderProfile | null;
+  onVerify: () => void;
+}) {
   const signIn = user.phone ?? "";
   const number = profile?.mobile ? `+91${profile.mobile}` : signIn;
   if (!number) return <Missing />;
   return (
     <>
       <span>{displayPhone(number)}</span>
-      {signIn !== "" && number === signIn && <Verified />}
+      {signIn !== "" && number === signIn ? <Verified /> : !signIn && <VerifyButton onClick={onVerify} />}
     </>
+  );
+}
+
+/**
+ * On the contact the reader did not sign up with: prove it with a code and it
+ * becomes a second way to sign in (VerifyContact).
+ */
+function VerifyButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex min-h-11 items-center text-sm font-bold text-accent-ink"
+    >
+      Verify
+    </button>
   );
 }
 

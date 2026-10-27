@@ -764,6 +764,12 @@ export interface MeUser {
   /** "public" for a reader; staff accounts have no contact card to finish */
   user_type?: string;
   date_joined?: string;
+  /** the sign-in email has been proved by a code */
+  email_verified?: boolean;
+  /** the sign-in number has been proved by a WhatsApp code */
+  phone_verified?: boolean;
+  /** false for a reader who signed up by mobile and has not set one */
+  has_password?: boolean;
   login?: { method: "email" | "phone"; value: string };
   /** The contact card (§6). Absent from a server older than it. */
   profile?: MeProfile;

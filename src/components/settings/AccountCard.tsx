@@ -16,7 +16,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { CheckIcon, ChevronRight, CloseIcon } from "@/components/shell/icons";
 import { Sheet, ctaPrimary } from "@/components/ui";
 import { useIsDesktop } from "@/components/ui/Dialog";
-import { changePassword, displayPhone, updateMe } from "@/lib/me";
+import { changePassword, displayPhone, setPassword, updateMe } from "@/lib/me";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 import { syncPersonal } from "@/lib/personal";
 import { CARD } from "./parts";
@@ -62,10 +62,13 @@ export function AccountCard({ onSaved }: { onSaved: (message: string) => void })
   }
 
   const name = (user.name as string) || "";
-  // A reader who signed up by mobile number has no email — and no password:
-  // they sign in with a WhatsApp code, so there is nothing to change.
+  // A reader who signed up by mobile number has no password: they sign in
+  // with a WhatsApp code. Once they have verified an email they may set one
+  // (and sign in with email + password too) — "Set a password", with no old
+  // one to give.
   const email = (user.email as string) || "";
-  const hasPassword = email !== "";
+  const hasPassword = user.has_password ?? email !== "";
+  const canSetPassword = !hasPassword && email !== "" && user.email_verified === true;
   const contact = email || displayPhone(user.phone as string | undefined);
   // "Reader" for a number with no name, as the header menu does — never "+"
   const initial = (name || email || "Reader").trim().charAt(0).toUpperCase();
@@ -90,10 +93,16 @@ export function AccountCard({ onSaved }: { onSaved: (message: string) => void })
     <div className={`${CARD} px-7`}>
       <div className="py-6">{identity}</div>
       <NameRow name={name} onSaved={onSaved} />
-      {hasPassword && <PasswordRow onSaved={onSaved} />}
+      {(hasPassword || canSetPassword) && <PasswordRow setting={!hasPassword} onSaved={onSaved} />}
     </div>
   ) : (
-    <PhoneAccount identity={identity} name={name} hasPassword={hasPassword} onSaved={onSaved} />
+    <PhoneAccount
+      identity={identity}
+      name={name}
+      hasPassword={hasPassword}
+      canSetPassword={canSetPassword}
+      onSaved={onSaved}
+    />
   );
 }
 
@@ -218,12 +227,12 @@ function NameRow({ name, onSaved }: { name: string; onSaved: (m: string) => void
   );
 }
 
-function PasswordRow({ onSaved }: { onSaved: (m: string) => void }) {
+function PasswordRow({ setting = false, onSaved }: { setting?: boolean; onSaved: (m: string) => void }) {
   const [open, setOpen] = useState(false);
   const pw = usePasswordForm(() => {
     setOpen(false);
-    onSaved("Password updated");
-  });
+    onSaved(setting ? "Password set" : "Password updated");
+  }, setting);
 
   const close = () => {
     pw.reset();
@@ -233,30 +242,36 @@ function PasswordRow({ onSaved }: { onSaved: (m: string) => void }) {
   return (
     <div className={`${ROW} pb-5`}>
       <p className="text-title font-medium text-ink">Password</p>
-      <p aria-hidden className="text-title tracking-[0.2em] text-ink">
-        ••••••••
-      </p>
+      {setting ? (
+        <p className="text-title text-ink-soft">Not set</p>
+      ) : (
+        <p aria-hidden className="text-title tracking-[0.2em] text-ink">
+          ••••••••
+        </p>
+      )}
       {open ? (
         <span />
       ) : (
         <button type="button" onClick={() => setOpen(true)} className={ROW_BUTTON}>
-          Change
+          {setting ? "Set" : "Change"}
         </button>
       )}
 
       {open && (
         <form onSubmit={pw.submit} className="col-start-2 col-end-4 mt-4 flex flex-col gap-3">
-          <input
-            type="password"
-            aria-label="Current password"
-            placeholder="Current password"
-            autoComplete="current-password"
-            autoFocus
-            value={pw.current}
-            onChange={(e) => pw.setCurrent(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && close()}
-            className={FIELD}
-          />
+          {!setting && (
+            <input
+              type="password"
+              aria-label="Current password"
+              placeholder="Current password"
+              autoComplete="current-password"
+              autoFocus
+              value={pw.current}
+              onChange={(e) => pw.setCurrent(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && close()}
+              className={FIELD}
+            />
+          )}
           <input
             type="password"
             aria-label="New password"
@@ -283,7 +298,7 @@ function PasswordRow({ onSaved }: { onSaved: (m: string) => void }) {
               className={ctaPrimary}
               style={{ background: "var(--ws-color)" }}
             >
-              {pw.saving ? "Updating…" : "Update password"}
+              {pw.saving ? "Saving…" : setting ? "Set password" : "Update password"}
             </button>
           </div>
         </form>
@@ -298,11 +313,13 @@ function PhoneAccount({
   identity,
   name,
   hasPassword,
+  canSetPassword,
   onSaved,
 }: {
   identity: ReactNode;
   name: string;
   hasPassword: boolean;
+  canSetPassword: boolean;
   onSaved: (m: string) => void;
 }) {
   const [sheet, setSheet] = useState<"name" | "password" | null>(null);
@@ -318,9 +335,9 @@ function PhoneAccount({
           <span className="max-w-[50%] truncate text-ink-soft">{name}</span>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
         </button>
-        {hasPassword && (
+        {(hasPassword || canSetPassword) && (
           <button type="button" onClick={() => setSheet("password")} className={row}>
-            <span className="flex-1">Change password</span>
+            <span className="flex-1">{hasPassword ? "Change password" : "Set a password"}</span>
             <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
           </button>
         )}
@@ -338,10 +355,11 @@ function PhoneAccount({
       )}
       {sheet === "password" && (
         <PasswordSheet
+          setting={!hasPassword}
           onClose={close}
           onSaved={() => {
             close();
-            onSaved("Password updated");
+            onSaved(hasPassword ? "Password updated" : "Password set");
           }}
         />
       )}
@@ -443,8 +461,16 @@ function NameSheet({
   );
 }
 
-function PasswordSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const pw = usePasswordForm(onSaved);
+function PasswordSheet({
+  setting = false,
+  onClose,
+  onSaved,
+}: {
+  setting?: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const pw = usePasswordForm(onSaved, setting);
   const matches = pw.confirm === pw.next;
   // Said once the second copy is as long as the first, not at its first letter.
   const mismatch = !matches && pw.confirm.length >= pw.next.length && pw.confirm !== "";
@@ -453,7 +479,7 @@ function PasswordSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     <Sheet
       open
       onClose={onClose}
-      title="Change password"
+      title={setting ? "Set a password" : "Change password"}
       accent={APP_ACCENT}
       footer={
         <button
@@ -463,7 +489,7 @@ function PasswordSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           className={`${ctaPrimary} min-h-14 w-full text-title`}
           style={{ background: "var(--ws-color)" }}
         >
-          {pw.saving ? "Updating…" : "Update password"}
+          {pw.saving ? "Saving…" : setting ? "Set password" : "Update password"}
         </button>
       }
     >
@@ -472,14 +498,16 @@ function PasswordSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () 
         onSubmit={(e) => (matches ? pw.submit(e) : e.preventDefault())}
         className="flex flex-col gap-4 px-5 pb-4 pt-4"
       >
-        <RevealField
-          id="pw-current"
-          autoFocus
-          label="Current password"
-          autoComplete="current-password"
-          value={pw.current}
-          onChange={pw.setCurrent}
-        />
+        {!setting && (
+          <RevealField
+            id="pw-current"
+            autoFocus
+            label="Current password"
+            autoComplete="current-password"
+            value={pw.current}
+            onChange={pw.setCurrent}
+          />
+        )}
         <RevealField
           id="pw-new"
           label="New password"
@@ -498,12 +526,14 @@ function PasswordSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () 
         {mismatch && <ErrorLine>The two new passwords don&apos;t match.</ErrorLine>}
         <Checks pw={pw.next} />
         {/* The sign-in screen's reset: a code to the account's email. */}
-        <Link
-          href="/forgot-password?next=%2Fsettings"
-          className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-accent-ink"
-        >
-          Forgot current password?
-        </Link>
+        {!setting && (
+          <Link
+            href="/forgot-password?next=%2Fsettings"
+            className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-accent-ink"
+          >
+            Forgot current password?
+          </Link>
+        )}
         {pw.error && <ErrorLine>{pw.error}</ErrorLine>}
       </form>
     </Sheet>
@@ -560,13 +590,14 @@ function RevealField({
 
 /* ----------------------------------------------------------------- shared */
 
-function usePasswordForm(onDone: () => void) {
+/** `setting`: a first password, for a reader who has none — no old one asked. */
+function usePasswordForm(onDone: () => void, setting = false) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const valid = current !== "" && passwordChecks(next).every((c) => c.ok);
+  const valid = (setting || current !== "") && passwordChecks(next).every((c) => c.ok);
 
   const reset = () => {
     setCurrent("");
@@ -581,7 +612,7 @@ function usePasswordForm(onDone: () => void) {
     setSaving(true);
     setError(null);
     try {
-      const res = await changePassword(current, next);
+      const res = setting ? await setPassword(next) : await changePassword(current, next);
       if (res.status === 200) {
         reset();
         onDone();
