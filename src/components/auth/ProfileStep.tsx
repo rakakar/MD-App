@@ -1,12 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LABEL } from "@/components/auth/fields";
-import { ProfileFields, STEP_FIELDS, profileReady } from "@/components/auth/ProfileFields";
-import { ArrowLeftIcon, CheckIcon } from "@/components/shell/icons";
+import {
+  ProfileFields,
+  STEP_FIELDS,
+  fieldErrorsOf,
+  profileReady,
+  type FieldErrors,
+} from "@/components/auth/ProfileFields";
+import { CheckIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { displayPhone } from "@/lib/me";
@@ -17,13 +22,16 @@ import { getPrefs } from "@/lib/storage";
 
 /**
  * **"A little about you" — step 1 of 2 after signing in** (designer's comps,
- * 26 Oct 2026). Name, mobile, state and city; step 2 is the journey question,
- * which opens over wherever the reader was headed (`StagePrompt`).
+ * 26 Oct 2026). Name, state and city are required; mobile and email are
+ * both shown, the one the reader signs in with already filled and locked.
+ * Step 2 is the journey question, which opens over wherever the reader was
+ * headed (`StagePrompt`).
  *
- * **First run only:** creating an account lands here (`welcomeHref`); signing
- * in again does not — the same details are editable in Settings and on the
- * Profile page. It still passes straight through if this account has
- * already answered, which the server remembers across devices.
+ * **Compulsory, once.** Creating an account lands here (`welcomeHref`), and
+ * any signed-in reader whose details are unfinished is sent here from any
+ * screen (`ProfileGate`). There is no skip — only "Sign out", which keeps
+ * reading open to them. Once answered, the server remembers it on every
+ * device; the details change later in Settings and on the Profile page.
  *
  * Same frame as the sign-in screen on a desktop: the launch artwork as the
  * left panel, the form on the right. A phone drops the band — the four fields
@@ -38,18 +46,20 @@ export function ProfileStep() {
   const router = useRouter();
   const search = useSearchParams();
   const next = safeReturnPath(search.get("next"));
-  const { user, loading, refresh } = useAuth();
+  const { user, loading, refresh, logout } = useAuth();
 
   const desktop = useIsDesktop();
   const [values, setValues] = useState<ProfileValues>({
     name: "",
     mobile: "",
+    email: "",
     state: "",
     city: "",
     updates_opt_in: false,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   /** null until auth and the local answers have been read */
   const [show, setShow] = useState<null | { stageNext: boolean }>(null);
 
@@ -71,6 +81,7 @@ export function ProfileStep() {
       ...v,
       name: (card?.name || user.name || user.first_name || "").trim(),
       mobile: card?.mobile || (m ? m[1] : ""),
+      email: card?.email || user.email || "",
       state: card?.state ?? "",
       city: card?.city ?? "",
       updates_opt_in: card?.updates_opt_in ?? false,
@@ -88,15 +99,25 @@ export function ProfileStep() {
     if (!ready || busy) return;
     setBusy(true);
     setError(null);
+    setFieldErrors({});
     try {
       await storeProfile(user, values);
       await refresh();
       if (show.stageNext) askForStage();
       router.replace(next);
-    } catch {
-      setError("Couldn't save. Please try again.");
+    } catch (err) {
+      const byField = fieldErrorsOf(err);
+      if (byField) setFieldErrors(byField);
+      else setError("Couldn't save. Please try again.");
       setBusy(false);
     }
+  };
+
+  // The only way out of a step that is not optional: not "skip", but
+  // "not now" — signed out, the reader can still read everything.
+  const signOut = async () => {
+    await logout();
+    router.replace("/");
   };
 
   return (
@@ -122,13 +143,6 @@ export function ProfileStep() {
                   "linear-gradient(to bottom, transparent 0%, transparent 60%, color-mix(in srgb, var(--color-surface) 72%, transparent) 80%, color-mix(in srgb, var(--color-surface) 90%, transparent) 100%)",
               }}
             />
-            <Link
-              href={next}
-              className="absolute start-4 top-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-rule bg-card/90 pe-4 ps-3.5 text-sm font-semibold text-ink-soft shadow-card backdrop-blur-sm transition-colors hover:bg-card"
-            >
-              <ArrowLeftIcon className="h-4 w-4 shrink-0" />
-              Back to reading
-            </Link>
             <div className="absolute inset-x-6 bottom-9 flex flex-col items-center gap-1.5 text-center">
               <p lang="hi" className="auth-name font-devanagari-sans" style={{ color: "var(--ws-ink)" }}>
                 {LAUNCH.founderLine}
@@ -177,7 +191,13 @@ export function ProfileStep() {
 
               <div className="mt-6">
                 {/* State and City side by side on a desktop, as drawn. */}
-                <ProfileFields value={values} onChange={setValues} split={desktop} locked={lockedFields(user)} />
+                <ProfileFields
+                  value={values}
+                  onChange={setValues}
+                  split={desktop}
+                  locked={lockedFields(user)}
+                  errors={fieldErrors}
+                />
               </div>
             </div>
 
@@ -189,7 +209,7 @@ export function ProfileStep() {
                   {error}
                 </p>
               )}
-              {/* Idle until all four hold something, like Sign in. The opt-in may stay off. */}
+              {/* Idle until name, state and city hold something, like Sign in. */}
               <button
                 type="submit"
                 disabled={!ready || busy}
@@ -200,6 +220,17 @@ export function ProfileStep() {
               >
                 {busy ? "Please wait…" : "Continue"}
               </button>
+              <p className="mt-3 text-center text-sm text-ink-soft">
+                Not now?{" "}
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className="inline-flex min-h-11 items-center ps-1 font-bold"
+                  style={{ color: "var(--ws-ink)" }}
+                >
+                  Sign out
+                </button>
+              </p>
             </div>
           </form>
         </div>

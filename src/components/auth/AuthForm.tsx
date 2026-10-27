@@ -17,14 +17,6 @@ import { safeReturnPath, welcomeHref } from "@/lib/routes";
 const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
 
 /**
- * Where "Write to us" goes. A mail link, not the feedback sheet: the sheet
- * asks a signed-out reader to sign in first, which is the one thing someone
- * who has forgotten their password cannot do. Unset, the words stay but the
- * link does not — a link that goes nowhere is worse than none.
- */
-const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
-
-/**
  * Sign in and Create account — the designer's comps of 22 Sep 2026.
  *
  * The launch artwork, washed back to paper, carries the app's name across the
@@ -50,6 +42,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   // Mobile number + WhatsApp code instead of email. `?via=whatsapp` keeps the
   // choice across the Sign in ↔ Create account link.
   const [byPhone, setByPhone] = useState(search.get("via") === "whatsapp");
+
   const keyboard = useKeyboardInset() > 0;
 
   // Back to what the reader was doing when they were asked to sign in, and
@@ -75,7 +68,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         track(login_ ? "login" : "signup", { method: "email" });
         await onAuthenticated();
         // A new account answers "A little about you" first; a returning
-        // reader goes straight back — they can change it in Settings.
+        // reader goes straight back — and ProfileGate sends them there
+        // anyway if their details were never finished.
         router.replace(login_ ? next : welcomeHref(next));
       } else {
         setError(
@@ -319,26 +313,19 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
           <div className="mt-4 flex gap-3 text-sm leading-relaxed text-ink-soft">
             <InfoIcon className="mt-0.5 h-5 w-5 shrink-0 text-muted" />
-            {/* No self-service reset during the alpha: nothing can send mail
-                yet, and a "forgot password" link that silently goes nowhere is
-                worse than saying so. A known password can be changed in Settings. */}
             {byPhone ? (
               <p>No password needed — each time you sign in, we send a fresh code on WhatsApp.</p>
             ) : login_ ? (
               <p>
                 Forgot your password?{" "}
-                {SUPPORT_EMAIL ? (
-                  <a
-                    href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Password reset — MD Study")}`}
-                    className="font-medium underline-offset-2 hover:underline"
-                    style={{ color: "var(--ws-ink)" }}
-                  >
-                    Write to us
-                  </a>
-                ) : (
-                  "Write to us"
-                )}{" "}
-                — self-service reset isn&rsquo;t available yet in this alpha.
+                <Link
+                  href={`/forgot-password?next=${encodeURIComponent(next)}`}
+                  className="font-medium underline-offset-2 hover:underline"
+                  style={{ color: "var(--ws-ink)" }}
+                >
+                  Reset it with a code
+                </Link>{" "}
+                sent to your email.
               </p>
             ) : (
               <p>Use at least 8 characters. You can change it later in Settings.</p>

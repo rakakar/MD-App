@@ -316,10 +316,18 @@ GET /api/v1/me/
   for a mobile sign-up, `"email"` for an email one). They are copied onto the
   card at signup and kept in step with the account; show them read-only.
 - **`complete`** — the "A little about you" step has been answered: a name,
-  state and city, and a mobile unless the state is `"Outside India"`. Set once
-  and kept, so clearing a field later does not ask again.
-- **`mobile`** is E.164 (`+91…`, Indian mobiles only), not unique and not
-  verified — a number to reach the reader on, never one they sign in with.
+  state and city. Mobile and email are optional there — the sign-in one is
+  already on the card. Set once and kept, so clearing a field later does not
+  ask again. **The FE treats `false` as a gate:** a signed-in reader is sent
+  to the step from any screen until it is `true`.
+- **`mobile`** is E.164 (`+91…`, Indian mobiles only) and not verified — a
+  number to reach the reader on, never one they sign in with. `email` is
+  stored lowercase.
+- **One reader per mobile and per email.** A value another reader already
+  has — as their sign-in or on their card — is refused (`400`, "This
+  number/email is already on another account."). Where a sign-up meets a
+  value someone typed on their card, the sign-up wins and the typed copy is
+  removed: a mobile once its WhatsApp code is confirmed, an email at sign-up.
 - **`updates_opt_in`** is off until the reader turns it on; the server records
   when they did.
 
@@ -415,6 +423,7 @@ Readers authenticate through **django-allauth headless, `app` client**, at
 | Sign in | `POST /auth/login` `{email, password}` |
 | Sign out | `DELETE /auth/session` |
 | Change password | `POST /account/password/change` `{current_password, new_password}` |
+| Forgot password | `POST /auth/password/request` `{email}` → `401` + flow token; then `POST /auth/password/reset` `{key, password}` with that token |
 
 A successful signup or login answers `200` with `meta.session_token`. **Send
 that token as an `X-Session-Token` header on every later request**, to
@@ -435,14 +444,21 @@ adapter, and bounced away from `/panel/` on sight. allauth's own HTML pages are
 switched off (`HEADLESS_ONLY`), so `/accounts/signup/` is a `404` — the FE's
 screens are the only reader-facing auth surface.
 
-### 6.2 Password recovery (alpha limitation)
+### 6.2 Password recovery
 
-No mail is sent yet. Changing a password requires the **old** password, which
-is a pure API round-trip. A reader who has forgotten theirs is reset by a
-manager in `dj-admin` until SMTP is configured; the email-based reset endpoints
-are already wired and start working the moment `EMAIL_HOST` is set and
-`ACCOUNT_EMAIL_VERIFICATION` is flipped to `"optional"`. Sign-up does not
-verify the address. Google sign-in is built but dark (no Google API project).
+**Forgot password is a six-digit code by email**, the same shape as the
+WhatsApp codes. `POST /auth/password/request {email}` mails it and answers
+`401` with a flow token (`400` if no account has that email); `POST
+/auth/password/reset {key: <code>, password}` with that token sets the new
+password (`400` with `param: "key"` for a wrong code, `409` once the flow has
+expired). The reader then signs in with the new password. Mobile readers have
+no password and never use this. Changing a known password still takes the
+old one (`/account/password/change`).
+
+Sign-up does not verify an email, and cannot be made to: allauth allows
+mandatory verification only when every sign-up gives an email, and mobile
+sign-ups do not. The reset code is what protects an address — it goes only to
+its real owner. Google sign-in is built but dark (no Google API project).
 
 **Origins and cookies.** The FE is a different origin, so its browser-side
 calls need the API to allow that origin — set `CORS_ALLOWED_ORIGINS` on the

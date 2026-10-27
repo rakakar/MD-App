@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ProfileFields, profileReady, type ProfileField } from "@/components/auth/ProfileFields";
+import {
+  ProfileFields,
+  fieldErrorsOf,
+  profileReady,
+  type FieldErrors,
+  type ProfileField,
+} from "@/components/auth/ProfileFields";
 import { Sheet, ctaPrimary } from "@/components/ui";
 import { Dialog } from "@/components/ui/Dialog";
 import { lockedFields, storeProfile, type ProfileValues, type ReaderProfile } from "@/lib/profile";
@@ -42,6 +48,7 @@ export function EditProfile({
   const [values, setValues] = useState<ProfileValues>(() => initialValues(user, profile));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   // Fresh from what is saved each time it opens — not what was typed and
   // abandoned last time.
@@ -49,6 +56,7 @@ export function EditProfile({
     if (open) {
       setValues(initialValues(user, profile));
       setError(null);
+      setFieldErrors({});
     }
   }, [open, user, profile]);
 
@@ -58,12 +66,15 @@ export function EditProfile({
     if (!ready || busy) return;
     setBusy(true);
     setError(null);
+    setFieldErrors({});
     try {
       await storeProfile(user, values);
       await refresh();
       onSaved();
-    } catch {
-      setError("Couldn't save. Please try again.");
+    } catch (err) {
+      const byField = fieldErrorsOf(err);
+      if (byField) setFieldErrors(byField);
+      else setError("Couldn't save. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -99,6 +110,7 @@ export function EditProfile({
         split={desktop}
         idPrefix={formId}
         locked={lockedFields(user)}
+        errors={fieldErrors}
       />
       {error && (
         <p role="alert" className="mt-4 rounded-tile border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger">

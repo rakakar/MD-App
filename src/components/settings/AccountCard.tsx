@@ -2,11 +2,8 @@
 
 // The reader's account: who they are, their display name, their password.
 //
-// Changing the password takes the *old* password rather than mailing a link.
-// That is not a shortcut around the usual reset flow — it is the reason there
-// is a working one at all: no mail server is configured yet, and a reset link
-// that never arrives is worse than no button. A reader who has genuinely
-// forgotten their password is reset by a manager until SMTP is switched on.
+// Changing the password takes the *old* password. A reader who has forgotten
+// it resets it with a code to their email (/forgot-password).
 //
 // One account, two shapes (the comps of 19 Oct 2026): at a desk each row opens
 // in place — the name becomes a field, the password row grows its fields under
@@ -23,9 +20,6 @@ import { changePassword, displayPhone, updateMe } from "@/lib/me";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 import { syncPersonal } from "@/lib/personal";
 import { CARD } from "./parts";
-
-/** The same address the sign-in screen's "Write to us" uses. */
-const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
 
 /** The comp's counter reads n/40. */
 const NAME_MAX = 40;
@@ -503,17 +497,13 @@ function PasswordSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () 
         />
         {mismatch && <ErrorLine>The two new passwords don&apos;t match.</ErrorLine>}
         <Checks pw={pw.next} />
-        {/* No self-service reset yet — nothing can send mail. The link is the
-            sign-in screen's: a note to a person who can reset it. With no
-            address configured there is nowhere for it to go, so it is not drawn. */}
-        {SUPPORT_EMAIL && (
-          <a
-            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Password reset — MD Study")}`}
-            className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-accent-ink"
-          >
-            Forgot current password?
-          </a>
-        )}
+        {/* The sign-in screen's reset: a code to the account's email. */}
+        <Link
+          href="/forgot-password?next=%2Fsettings"
+          className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-accent-ink"
+        >
+          Forgot current password?
+        </Link>
         {pw.error && <ErrorLine>{pw.error}</ErrorLine>}
       </form>
     </Sheet>

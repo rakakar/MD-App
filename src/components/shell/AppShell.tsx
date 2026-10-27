@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRoutePath } from "./useRoutePath";
 import { useEffect, type ReactNode } from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ProfileGate } from "@/components/auth/ProfileGate";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { FirstRunGate } from "@/components/onboarding/FirstRunGate";
 import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
@@ -48,7 +49,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRoutePath();
   // auth screens are neutral chrome (PRD §4) — and so is the profile step
   // that follows them, which is still part of signing in
-  const neutral = pathname === "/login" || pathname === "/signup" || pathname === "/welcome";
+  const neutral =
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/welcome" ||
+    pathname === "/forgot-password";
   // a reader owns the viewport: it has its own back, contents and settings,
   // and app chrome on top of it costs a quarter of a phone screen. Both
   // readers qualify — the book's and the PDF's.
@@ -66,6 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     // including the reader, which used to own it and now only asks for it.
     <DisplayProvider>
     <AuthProvider>
+      <ProfileGate />
       <WorkspaceProvider>
         {/* Above the router, because the screen a reader most wants to report
             from is one that has just failed to render — a sheet mounted inside

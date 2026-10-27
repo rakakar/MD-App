@@ -5,11 +5,31 @@ import { ChevronDownIcon } from "@/components/shell/icons";
 import { Switch } from "@/components/ui/Switch";
 import { INDIAN_STATES, OUTSIDE_INDIA, type LockedField, type ProfileValues } from "@/lib/profile";
 
+/** What the server refused, by field — "This number is already on another account." */
+export type FieldErrors = Partial<Record<"name" | "mobile" | "email" | "state" | "city", string>>;
+
+/** A refused PATCH's body → one message per field. DRF sends lists. */
+export function fieldErrorsOf(e: unknown): FieldErrors | null {
+  const data = (e as { data?: unknown })?.data;
+  if (!data || typeof data !== "object") return null;
+  const out: FieldErrors = {};
+  for (const key of ["name", "mobile", "email", "state", "city"] as const) {
+    const v = (data as Record<string, unknown>)[key];
+    const msg = Array.isArray(v) ? v[0] : v;
+    if (typeof msg === "string") out[key] = msg;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 /** `updates` is the WhatsApp-updates opt-in, drawn as a switch. */
 export type ProfileField = "name" | "mobile" | "email" | "state" | "city" | "updates";
 
-/** The sign-in step's four, and the opt-in. Email is asked for only where details are edited. */
-export const STEP_FIELDS: ProfileField[] = ["name", "mobile", "state", "city", "updates"];
+/**
+ * The sign-in step: name, state and city required; mobile and email both
+ * shown — the one the reader signs in with locked and already filled, the
+ * other theirs to add if they have it — and the opt-in.
+ */
+export const STEP_FIELDS: ProfileField[] = ["name", "mobile", "email", "state", "city", "updates"];
 
 /** Digits only, at most ten — a pasted "+91 98765 43210" loses its 91. */
 function tenDigits(raw: string): string {
@@ -25,23 +45,22 @@ const LOCKED_FIELD = FIELD.replace("bg-card", "bg-inset").replace(" text-ink ", 
 /**
  * Whether the fields shown can be saved.
  *
- * `required` is the sign-in step: every field filled — but a reader outside
- * India has no +91 number to give, so for them the mobile may stay empty.
- * Otherwise (editing in Settings or on the Profile) a field may be left
- * empty, but what is typed must be whole — ten digits, an address with an @ —
- * and the name, which the account cannot be without, stays required.
+ * `required` is the sign-in step: name, state and city must be filled. A
+ * way to reach the reader is never missing — the email or number they sign
+ * in with is already on the card — so mobile and email are optional
+ * everywhere; only what is typed must be whole: ten digits, an address with
+ * an @. The name, which the account cannot be without, is always required.
  */
 export function profileReady(v: ProfileValues, fields: ProfileField[], required = false): boolean {
   const email = (v.email ?? "").trim();
-  const mobileRequired = required && v.state !== OUTSIDE_INDIA;
   return fields.every((f) => {
     switch (f) {
       case "name":
         return v.name.trim() !== "";
       case "mobile":
-        return mobileRequired ? v.mobile.length === 10 : v.mobile.length === 0 || v.mobile.length === 10;
+        return v.mobile.length === 0 || v.mobile.length === 10;
       case "email":
-        return required ? EMAIL.test(email) : email === "" || EMAIL.test(email);
+        return email === "" || EMAIL.test(email);
       case "state":
         return !required || v.state !== "";
       case "city":
@@ -69,6 +88,7 @@ export function ProfileFields({
   split = false,
   idPrefix = "profile",
   locked = [],
+  errors = {},
 }: {
   value: ProfileValues;
   onChange: (next: ProfileValues) => void;
@@ -77,6 +97,8 @@ export function ProfileFields({
   /** two copies on one page (the edit sheet over the page) need distinct ids */
   idPrefix?: string;
   locked?: LockedField[];
+  /** the server's word on a field, shown under it */
+  errors?: FieldErrors;
 }) {
   const set = (patch: Partial<ProfileValues>) => onChange({ ...value, ...patch });
   const has = (f: ProfileField) => fields.includes(f);
@@ -88,6 +110,12 @@ export function ProfileFields({
       You sign in with this {field === "mobile" ? "number" : "email"}, so it can&rsquo;t be changed here.
     </p>
   );
+  const errorLine = (field: keyof FieldErrors) =>
+    errors[field] ? (
+      <p id={`${idPrefix}-${field}-error`} role="alert" className="mt-2 text-sm text-danger">
+        {errors[field]}
+      </p>
+    ) : null;
 
   const state = has("state") && (
     <div>
@@ -154,7 +182,7 @@ export function ProfileFields({
       {has("mobile") && (
         <div>
           <label htmlFor={`${idPrefix}-mobile`} className={LABEL}>
-            Mobile number
+            Mobile number{!mobileLocked && <span className="normal-case tracking-normal font-normal"> (optional)</span>}
           </label>
           <div className="relative">
             <span
@@ -181,13 +209,14 @@ export function ProfileFields({
             />
           </div>
           {mobileLocked && lockedNote("mobile")}
+          {errorLine("mobile")}
         </div>
       )}
 
       {has("email") && (
         <div>
           <label className={LABEL}>
-            Email
+            Email{!emailLocked && <span className="normal-case tracking-normal font-normal"> (optional)</span>}
             <input
               type="email"
               inputMode="email"
@@ -203,6 +232,7 @@ export function ProfileFields({
             />
           </label>
           {emailLocked && lockedNote("email")}
+          {errorLine("email")}
         </div>
       )}
 

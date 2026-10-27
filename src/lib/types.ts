@@ -761,6 +761,8 @@ export interface MeUser {
   phone?: string;
   name?: string;
   first_name?: string;
+  /** "public" for a reader; staff accounts have no contact card to finish */
+  user_type?: string;
   date_joined?: string;
   login?: { method: "email" | "phone"; value: string };
   /** The contact card (§6). Absent from a server older than it. */

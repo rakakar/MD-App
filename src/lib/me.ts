@@ -329,6 +329,23 @@ export const resendPhoneCode = (flowToken: string): Promise<AllauthResponse> =>
 export const signupWithPhone = (phone: string): Promise<AllauthResponse> =>
   allauth("/auth/signup", "POST", { phone }, null);
 
+// ---- forgot password ----
+//
+// A six-digit code by email, the same shape as WhatsApp's. Asking answers
+// 401 with the flow's token, held by the caller as the phone flows' are.
+
+/** "Forgot password": mails a code. 400 when no account has this email. */
+export const requestPasswordReset = (email: string): Promise<AllauthResponse> =>
+  allauth("/auth/password/request", "POST", { email }, null);
+
+/** The emailed code and the new password, together. */
+export const resetPassword = (
+  code: string,
+  password: string,
+  flowToken: string
+): Promise<AllauthResponse> =>
+  allauth("/auth/password/reset", "POST", { key: code, password }, flowToken);
+
 export const verifyNewPhone = (code: string, flowToken: string): Promise<AllauthResponse> =>
   allauth("/auth/phone/verify", "POST", { code }, flowToken);
 
@@ -350,11 +367,7 @@ export async function logout(): Promise<AllauthResponse> {
   return res;
 }
 
-/**
- * Change password with the old one — no email involved, which is why this is
- * the reader's only self-service recovery path until SMTP is configured.
- * A reader who has forgotten their password is reset by a manager.
- */
+/** Change password with the old one. A forgotten one is `requestPasswordReset`. */
 export const changePassword = (
   current_password: string,
   new_password: string
