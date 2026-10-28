@@ -7,15 +7,19 @@ import { shelfMap } from "@/lib/library";
 import type { FileKind } from "@/lib/types";
 
 /**
- * How many doors the home band shows before it defers to the shelf.
+ * The folders the home band shows, by name, in this order.
  *
- * Two, and they are the two the shelf itself leads with — the compilations and
- * the recorded conversations, which between them are what a reader coming to
- * this library is looking for. Three tiles filled the row and made the third
- * one a decision nobody was asking to make on a home page; the band is a
- * signpost, and "Open" beside the heading is where the rest is.
+ * प्रवेश संकलन and लेख — the compilations that are the way in, and his
+ * articles (designer, 28 Oct 2026). Two, not three: three tiles filled the row
+ * and made the third a decision nobody was asking to make on a home page; the
+ * band is a signpost, and "Open" beside the heading is where the rest is.
+ *
+ * By name rather than id because ids differ between the live and local
+ * databases. A name that stops matching (renamed, unpublished) is filled from
+ * the shelf's own order, so the band never shrinks to one tile or none.
  */
-const SHOWN = 2;
+const FEATURED = ["प्रवेश संकलन", "लेख"];
+const SHOWN = FEATURED.length;
 
 /**
  * What the Audio/Video tab is showing instead, so this band does not offer it
@@ -67,6 +71,14 @@ export async function LibraryBand({ className = "" }: { className?: string }) {
   );
   if (doors.length === 0) return null;
 
+  const featured = FEATURED.map((name) =>
+    doors.find((door) => door.name.trim() === name)
+  ).filter((door) => door !== undefined);
+  const shown = [
+    ...featured,
+    ...doors.filter((door) => !featured.includes(door)),
+  ].slice(0, SHOWN);
+
   // Its own <section>, so that when there is nothing to show there is no
   // wrapper left behind as an empty grid cell on Home.
   return (
@@ -86,7 +98,7 @@ export async function LibraryBand({ className = "" }: { className?: string }) {
         that exist, so it can never promise an empty shelf.
       */}
       <ul className="grid grid-cols-2 gap-2.5 sm:gap-3">
-        {doors.slice(0, SHOWN).map((door) => (
+        {shown.map((door) => (
           <li key={door.id} className="contents">
             <DoorCard door={door} rollup={rollup} shelves={shelves} />
           </li>
