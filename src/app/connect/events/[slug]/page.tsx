@@ -20,6 +20,7 @@ import {
 import { ctaPrimaryBar, PageContainer } from "@/components/ui";
 import { ApiError, getEvent } from "@/lib/api";
 import { fullDateRange, type EventDetail } from "@/lib/events";
+import { jsonLdHtml } from "@/lib/jsonLd";
 import { contentLang } from "@/lib/script";
 
 export const revalidate = 300;
@@ -85,7 +86,7 @@ export default async function EventDetailPage({
       <EventTracker />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
 
       <EventDetailHeader

@@ -20,6 +20,7 @@ import {
 import { ApiError, bookPdfUrl, getBook, getBookGenres, getBooks } from "@/lib/api";
 import { offShelfHref } from "@/lib/routes";
 import { bookHue } from "@/lib/bookHue";
+import { jsonLdHtml } from "@/lib/jsonLd";
 import { chapterName, genreLabel } from "@/lib/labels";
 import { contentLang } from "@/lib/script";
 import {
@@ -203,7 +204,7 @@ export default async function BookDetailPage({
       <WorkspaceScope ws={ws} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
 
       {/* The phone's hero. From lg, `BookHeroDesktop` above takes its place. */}

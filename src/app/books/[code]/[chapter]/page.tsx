@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Reader } from "@/components/reader/Reader";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { ApiError, getBook, getBooks, getChapter } from "@/lib/api";
+import { jsonLdHtml } from "@/lib/jsonLd";
 import { offShelfHref } from "@/lib/routes";
 import type { BookDetail, ChapterPayload } from "@/lib/types";
 import { contentWorkspace } from "@/lib/workspaceConfig";
@@ -126,7 +127,7 @@ export default async function ChapterPage({
       {chapter && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
         />
       )}
       <Reader
