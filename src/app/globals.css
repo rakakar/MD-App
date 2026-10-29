@@ -1164,11 +1164,15 @@ html[data-reading="1"] body {
    survive appearing on a fifth of the words without turning the page grey. */
 /* 1.5px at 85%, from 1px at 55% — the designer's call, 26 Sep 2026: at the
    old weight the dots read as a texture on the word rather than a mark on it,
-   and on sepia they all but disappeared. */
+   and on sepia they all but disappeared.
+   1px at 65%, 29 Oct 2026: the reader now marks every glossary word every
+   time (about a third of the words), and at 1.5px/85% the page read as
+   underlined rather than as text with marks in it. Thinner dots carry the
+   lightness; the colour stays above the old 55% so sepia keeps them. */
 .paribhasha-word {
   text-decoration: underline dotted;
-  text-decoration-color: color-mix(in srgb, var(--ws-ink) 85%, transparent);
-  text-decoration-thickness: 1.5px;
+  text-decoration-color: color-mix(in srgb, var(--ws-ink) 65%, transparent);
+  text-decoration-thickness: 1px;
   text-underline-offset: 0.32em;
   cursor: pointer;
 }
