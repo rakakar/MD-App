@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/shell/icons";
 import { AccentScope } from "@/components/shell/WorkspaceProvider";
+import { useKeyboardInset } from "@/components/assistant/useKeyboardInset";
 
 /**
  * The bottom sheet — every one of them, in the app and in the book.
@@ -76,6 +77,14 @@ export function Sheet({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  /**
+   * A phone keyboard covers the bottom of the screen without shrinking the
+   * page, so a sheet pinned to `bottom: 0` ends up behind it — the state
+   * picker's search box went out of sight as soon as you typed in it. Standing
+   * the sheet on the keyboard instead, and taking the keyboard off its height,
+   * keeps the box and what you typed in view.
+   */
+  const keyboard = useKeyboardInset();
 
   useEffect(() => {
     if (!open) return;
@@ -124,6 +133,11 @@ export function Sheet({
         // A sheet that ends in a decision must not scroll its own decision off
         // screen, so the footer sits outside the scroller and the body flexes.
         className={`ws-sheet absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-sheet shadow-sheet outline-none ${paint}`}
+        style={
+          keyboard > 0
+            ? { bottom: keyboard, maxHeight: `calc(85dvh - ${keyboard}px)` }
+            : undefined
+        }
       >
         <div className="shrink-0 pt-2.5">
           <div className="mx-auto h-1 w-9 rounded-full bg-current opacity-20" aria-hidden />
