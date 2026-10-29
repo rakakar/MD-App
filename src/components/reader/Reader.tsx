@@ -987,8 +987,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const selectedHeadword = useMemo(() => {
     const text = selection?.text.trim();
     if (!text || !matcher) return null;
-    const normalized = text.replace(/\s+/g, " ");
-    return matcher.has(normalized) ? normalized : null;
+    return matcher.headwordFor(text);
   }, [selection, matcher]);
 
   // prefetch next chapter near the end of this one (PRD §0.4)
@@ -2405,14 +2404,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 const UNMARKED_BLOCKS = new Set(["heading", "subheading", "figure", "table"]);
 
 /**
+ * The reader marks every glossary word, short ones included, every time it
+ * appears — a word the glossary defines should open its definition wherever
+ * the reader meets it. See the note at the top of `lib/paribhasha.ts`.
+ */
+const READER_MARKING = { everyOccurrence: true, minSingleLength: 0 } as const;
+
+/**
  * One display page's paragraphs, with the glossary marks worked out for the
  * page as a whole.
- *
- * The page is the unit on purpose: `matcher.segment` marks each word only on
- * its first appearance, and "first" has to mean something the reader can see.
- * Doing it per paragraph would underline the same word six times down a page;
- * doing it per chapter would mark a word on page 3 and leave it bare on page
- * 40, where the reader has long since lost the definition.
  */
 /**
  * Memoised, as is `ParaWrap` below: the reader re-renders for things that
@@ -2446,7 +2446,8 @@ const PageParas = memo(function PageParas({
   const segments = useMemo(
     () =>
       matcher?.segment(
-        page.paragraphs.map((p) => (UNMARKED_BLOCKS.has(p.block_type) ? null : p.text_hi))
+        page.paragraphs.map((p) => (UNMARKED_BLOCKS.has(p.block_type) ? null : p.text_hi)),
+        READER_MARKING
       ) ?? null,
     [matcher, page]
   );
