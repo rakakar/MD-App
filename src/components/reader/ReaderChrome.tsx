@@ -373,7 +373,7 @@ export function ReaderBottomBar({
             onClick={onListen}
             aria-label={
               deviceFallback
-                ? "Listen with this device's voice (no recorded audio yet)"
+                ? "Listen with your phone's voice — no recording of this chapter"
                 : "Listen to this chapter"
             }
             aria-pressed={listening}
@@ -695,7 +695,7 @@ export function ReaderDesktopBar({
             <button
               type="button"
               onClick={onListen}
-              title={deviceFallback ? "Listen · your computer’s voice (no recording yet)" : undefined}
+              title={deviceFallback ? "Listen · your computer’s voice" : undefined}
               className="flex h-11 shrink-0 items-center gap-2 rounded-control px-4 text-sm font-semibold transition-opacity hover:opacity-90"
               style={
                 listening

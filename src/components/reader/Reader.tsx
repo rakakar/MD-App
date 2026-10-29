@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { CoachMark } from "@/components/onboarding/CoachMark";
 import { Icon } from "@/components/shell/icons";
-import { spokenParas } from "@/components/player/deviceSpeech";
+import { planReading } from "@/components/player/deviceSpeech";
 import {
   activeRendition,
   paraAtPosition,
@@ -398,6 +398,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    * passage. Switching mid-chapter lands on the facing page, which is the one
    * thing a reader doing this actually wants.
    */
+  /** the language being read, on a bilingual edition — what the voice reads too */
+  const sideScript = sides
+    ? readingSide === "original"
+      ? sides.original
+      : sides.translated
+    : null;
+
   const pages: ReaderPage[] = useMemo(() => {
     if (!sides) return allPages;
     const want = readingSide === "original" ? sides.original : sides.translated;
@@ -1103,7 +1110,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // object on every position tick, and a nav callback that depends on it would
   // be re-registered 4× a second — which, with registration living in an
   // effect, is a render loop rather than a slow render.
-  const { playTts, playDeviceTts, deviceVoiceAvailable, setChapterNav } = player;
+  const { playTts, playDeviceTts, deviceScripts, setChapterNav } = player;
 
   const startListeningFor = useCallback(
     (payload: ChapterPayload, opts: { fromSeq?: number; resume?: boolean } = {}) => {
@@ -1132,17 +1139,25 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         );
         return;
       }
-      // No generated rendition — read it with the device's own Hindi voice.
-      if (!deviceVoiceAvailable) return;
+      // No generated rendition — read it with the device's own voices, one
+      // per language, and only the side being read of a bilingual edition.
+      const plan = planReading(payload.paragraphs, { side: sideScript, voices: deviceScripts });
+      if (!plan.readable) return;
+      // "Play from here" on a paragraph the voice leaves out (a table, or a
+      // language this device cannot speak) starts at the next one it reads.
+      const from =
+        seq === undefined ? undefined : plan.paras.find((p) => p.sequence >= seq)?.sequence;
       playDeviceTts(
-        { ...common, paras: spokenParas(payload.paragraphs) },
-        { fromSequence: seq }
+        { ...common, paras: plan.paras, translation: !!book.translation_of },
+        { fromSequence: from }
       );
     },
     [
       playTts,
       playDeviceTts,
-      deviceVoiceAvailable,
+      deviceScripts,
+      sideScript,
+      book.translation_of,
       book.code,
       book.title_hi,
       book.cover_image,
@@ -1478,8 +1493,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   })();
   const hasAudio = (chapter?.audio_renditions.length ?? 0) > 0;
   // Without a generated rendition we can still read aloud, but only if this
-  // device has a Hindi voice — an English engine on Devanagari is gibberish.
-  const deviceFallback = !hasAudio && player.deviceVoiceAvailable;
+  // device has a voice for the language being read — a Hindi engine skips
+  // Kannada outright, and an English one on Devanagari is gibberish.
+  const deviceReadable = useMemo(
+    () =>
+      !!chapter &&
+      planReading(chapter.paragraphs, { side: sideScript, voices: player.deviceScripts }).readable,
+    [chapter, sideScript, player.deviceScripts]
+  );
+  const deviceFallback = !hasAudio && deviceReadable;
   const canListen = hasAudio || deviceFallback;
   // This book's highlights, for the count on the desktop bar's pencil. Read
   // after mount (the store is the browser's, so the server's first render

@@ -23,7 +23,8 @@ import {
 } from "@/lib/storage";
 import type { AudioRendition, ParaTimings } from "@/lib/types";
 import { onMenuRate } from "./audioChrome";
-import { DeviceSpeaker, hindiVoice, onVoicesChanged, type SpokenPara } from "./deviceSpeech";
+import { DeviceSpeaker, deviceScripts, onVoicesChanged, type SpokenPara } from "./deviceSpeech";
+import type { BookScript } from "@/lib/bookLanguage";
 
 export interface TtsSource {
   kind: "tts";
@@ -38,8 +39,8 @@ export interface TtsSource {
 }
 
 /**
- * Fallback read-aloud with the device's own Hindi voice, for chapters with no
- * generated rendition yet. No timeline (the Web Speech API exposes no
+ * Fallback read-aloud with the device's own voices, for chapters with no
+ * generated rendition yet — which is every chapter of every translation. No timeline (the Web Speech API exposes no
  * position), so the bar shows paragraph progress instead of a scrub bar.
  */
 export interface DeviceTtsSource {
@@ -50,6 +51,8 @@ export interface DeviceTtsSource {
   bookTitle: string;
   coverImage?: string | null;
   paras: SpokenPara[];
+  /** a translation, which has no recording coming — Babaji's voice is Hindi */
+  translation?: boolean;
 }
 
 export interface TrackSource {
@@ -94,9 +97,8 @@ interface PlayerState {
   /** device mode only: paragraph being spoken, and how far along we are */
   deviceParaSeq: number | null;
   deviceParaIndex: number;
-  /** whether this device can read Hindi aloud at all (async: voices load late) */
-  deviceVoiceAvailable: boolean;
-  deviceVoiceLabel: string | null;
+  /** the languages this device has a voice for (async: voices load late) */
+  deviceScripts: ReadonlySet<BookScript>;
   playTts: (src: Omit<TtsSource, "kind" | "voiceKey">, opts?: { voiceKey?: string; startMs?: number }) => void;
   playDeviceTts: (src: Omit<DeviceTtsSource, "kind">, opts?: { fromSequence?: number }) => void;
   playTrack: (src: Omit<TrackSource, "kind">, opts?: { startMs?: number }) => void;
@@ -192,7 +194,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const sleepUntil = useRef<number | null>(null);
   const [deviceParaSeq, setDeviceParaSeq] = useState<number | null>(null);
   const [deviceParaIndex, setDeviceParaIndex] = useState(0);
-  const [deviceVoice, setDeviceVoice] = useState<SpeechSynthesisVoice | null>(null);
+  // Kept as a string so a `voiceschanged` that changes nothing we use (Chrome
+  // fires several) does not hand every reader a new set and a re-render.
+  const [deviceScriptKey, setDeviceScriptKey] = useState("");
+  const deviceScriptSet = useMemo(
+    () => new Set(deviceScriptKey ? (deviceScriptKey.split(",") as BookScript[]) : []),
+    [deviceScriptKey]
+  );
   const speaker = useRef<DeviceSpeaker | null>(null);
   const [audioModeOpen, setAudioModeOpen] = useState(false);
   const [chapterNav, setChapterNav] = useState<ChapterNav | null>(null);
@@ -238,7 +246,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // Voice list loads asynchronously in Chrome — check now and on every change,
   // or a device that does have Hindi looks like one that doesn't.
   useEffect(() => {
-    const refresh = () => setDeviceVoice(hindiVoice());
+    const refresh = () => setDeviceScriptKey(deviceScripts().join(","));
     refresh();
     return onVoicesChanged(refresh);
   }, []);
@@ -724,8 +732,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       sleepRemainingMs: sleepRemainingMs,
       deviceParaSeq,
       deviceParaIndex,
-      deviceVoiceAvailable: deviceVoice !== null,
-      deviceVoiceLabel: deviceVoice?.name ?? null,
+      deviceScripts: deviceScriptSet,
       playTts,
       playDeviceTts,
       playTrack,
@@ -751,7 +758,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       sleepRemainingMs,
       deviceParaSeq,
       deviceParaIndex,
-      deviceVoice,
+      deviceScriptSet,
       playTts,
       playDeviceTts,
       playTrack,

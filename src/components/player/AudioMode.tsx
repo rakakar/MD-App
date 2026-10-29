@@ -275,7 +275,7 @@ export function AudioMode({
             : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
         </p>
         {source.kind === "tts" && <VoicePicker source={source} className="mt-3" />}
-        {device && <DeviceVoiceChip who="Your phone’s voice" className="mt-3" />}
+        {device && <DeviceVoiceChip who="Your phone’s voice" translation={source.translation} className="mt-3" />}
         {rendition?.is_stale && (
           <p className="mt-2 text-center text-xs text-audio-ink/60">
             This audio is of an earlier version of the text
@@ -502,7 +502,16 @@ function VoicePicker({ source, className = "" }: { source: TtsSource; className?
  * one limit that bites: it is not background audio, and finding that out with
  * the phone already in a pocket is how an app loses trust.
  */
-function DeviceVoiceChip({ who, className = "" }: { who: string; className?: string }) {
+function DeviceVoiceChip({
+  who,
+  translation,
+  className = "",
+}: {
+  who: string;
+  /** a translation has no recording coming — Babaji's voice reads Hindi */
+  translation?: boolean;
+  className?: string;
+}) {
   return (
     <div className={`flex max-w-full flex-col items-center ${className}`}>
       <span className={VOICE_CHIP}>
@@ -510,7 +519,9 @@ function DeviceVoiceChip({ who, className = "" }: { who: string; className?: str
         {who}
       </span>
       <p className="mt-2 text-center text-xs leading-snug text-audio-ink/60">
-        Recorded audio for this chapter isn&rsquo;t ready yet.
+        {translation
+          ? "Translations aren\u2019t recorded."
+          : "Recorded audio for this chapter isn\u2019t ready yet."}
         <br />
         Stops when the screen locks.
       </p>
@@ -730,7 +741,7 @@ function DesktopAudioMode({
             </p>
           )}
           {source.kind === "tts" && <VoicePicker source={source} className="mt-4" />}
-          {device && <DeviceVoiceChip who="Your computer’s voice" className="mt-4" />}
+          {device && <DeviceVoiceChip who="Your computer’s voice" translation={source.translation} className="mt-4" />}
         </div>
 
         <div className="min-h-0 overflow-y-auto overscroll-contain px-12">

@@ -83,6 +83,19 @@ export function dominantScript(text: string): BookScript | null {
   return c[top] / total >= DOMINANCE ? top : null;
 }
 
+/**
+ * The script most of a text's letters are in, with no majority required, or
+ * `null` when it has no letters at all. For choosing a *voice*: a paragraph
+ * has to be read by somebody, and the one with the most of it to read is the
+ * least wrong — where {@link dominantScript} is for hiding pages, and would
+ * rather leave a mixed one alone.
+ */
+export function mainScript(text: string): BookScript | null {
+  const c = tally(text);
+  if (c.hi + c.en + c.kn === 0) return null;
+  return (Object.keys(c) as BookScript[]).reduce((a, b) => (c[a] >= c[b] ? a : b));
+}
+
 /** The script of a whole printed page, judged on all its paragraphs at once. */
 export function pageScript(paragraphs: Paragraph[]): BookScript | null {
   return dominantScript(paragraphs.map((p) => p.text_hi ?? "").join(" "));

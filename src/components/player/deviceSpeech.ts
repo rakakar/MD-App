@@ -1,28 +1,71 @@
 /**
  * Device-voice read-aloud — the fallback for chapters the BE has not
- * generated audio for yet.
+ * generated audio for yet, and the only voice the translations have.
  *
  * This is deliberately a *second-class* mode, not a substitute for the
  * generated renditions: the voice is whatever the OS ships, there is no
  * timeline to scrub (the Web Speech API exposes no position), and playback
  * stops when the screen locks. The reader labels it as such.
  *
- * We only offer it when the device actually has a Hindi voice — an English
- * engine reading Devanagari produces nonsense, which is worse than no button.
+ * **Each paragraph is read by a voice of its own language.** The Hindi voice
+ * was used for everything once, and on the translations that meant English in
+ * a Hindi accent and Kannada not at all — the engine skips a script it has no
+ * letters for, so a Kannada chapter ran its highlight to the end in silence.
+ * The language is read off the characters, as the reader's हिन्दी|English
+ * toggle does (`lib/bookLanguage.ts`), since a paragraph carries no `lang`.
+ *
+ * We only offer it when the device has a voice for the chapter's main
+ * language, and a paragraph in a language it has no voice for is left out
+ * rather than handed to a voice that cannot read it.
  */
 
+import { groupPages } from "@/components/reader/useChapter";
+import { mainScript, type BookScript } from "@/lib/bookLanguage";
 import type { Paragraph } from "@/lib/types";
-
-/** Mirrors the BE's `_is_spoken`: tables are never read, empties are skipped. */
-export function spokenParas(paragraphs: Paragraph[]): SpokenPara[] {
-  return paragraphs
-    .filter((p) => p.block_type !== "table" && p.text_hi.trim().length > 0)
-    .map((p) => ({ sequence: p.sequence, text: p.text_hi.trim() }));
-}
 
 export interface SpokenPara {
   sequence: number;
   text: string;
+  /** which voice reads it */
+  script: BookScript;
+}
+
+/**
+ * **What the device voice would read of a chapter**, and whether it can.
+ *
+ * - Tables are never read and empties are skipped, mirroring the BE's
+ *   `_is_spoken`.
+ * - On a facing-page bilingual edition, `side` is the language being read:
+ *   only its pages are spoken (and the pages that belong to both, as the
+ *   reader shows them), so reading the English means hearing the English
+ *   rather than every passage twice in alternating languages.
+ * - `voices` is what this device can speak. A paragraph in any other language
+ *   is dropped, and the chapter is readable only if its main language — the
+ *   one most of its letters are in — has a voice.
+ */
+export function planReading(
+  paragraphs: Paragraph[],
+  { side, voices }: { side: BookScript | null; voices: ReadonlySet<BookScript> }
+): { paras: SpokenPara[]; readable: boolean } {
+  const kept = side
+    ? groupPages(paragraphs)
+        .filter((pg) => pg.script === null || pg.script === side)
+        .flatMap((pg) => pg.paragraphs)
+    : paragraphs;
+  const all: SpokenPara[] = [];
+  let fallback: BookScript = side ?? "hi";
+  for (const p of kept) {
+    const text = p.text_hi.trim();
+    if (p.block_type === "table" || !text) continue;
+    // A paragraph of numerals or punctuation has no letters to judge by; it
+    // goes with the language around it.
+    const script = mainScript(text) ?? fallback;
+    fallback = script;
+    all.push({ sequence: p.sequence, text, script });
+  }
+  const main = mainScript(all.map((p) => p.text).join(" "));
+  const paras = all.filter((p) => voices.has(p.script));
+  return { paras, readable: main !== null && voices.has(main) && paras.length > 0 };
 }
 
 /** Long utterances get truncated or dropped by several engines; keep pieces
@@ -68,16 +111,31 @@ export function speechAvailable(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-/** The best Hindi voice on this device, or null if it has none. */
-export function hindiVoice(): SpeechSynthesisVoice | null {
+/** The language tag each script is read in. Indian English, for this corpus. */
+const LANG: Record<BookScript, string> = { hi: "hi-IN", en: "en-IN", kn: "kn-IN" };
+
+/**
+ * The best voice on this device for a script, or null if it has none. The
+ * Indian variant first, an on-device voice before a network one; for English
+ * any English voice will do after that.
+ */
+export function voiceFor(script: BookScript): SpeechSynthesisVoice | null {
   if (!speechAvailable()) return null;
   const voices = window.speechSynthesis.getVoices();
+  const tag = LANG[script];
+  const lang = (v: SpeechSynthesisVoice) => v.lang.replace("_", "-");
   return (
-    voices.find((v) => v.lang === "hi-IN" && v.localService) ??
-    voices.find((v) => v.lang === "hi-IN") ??
-    voices.find((v) => v.lang.startsWith("hi")) ??
+    voices.find((v) => lang(v) === tag && v.localService) ??
+    voices.find((v) => lang(v) === tag) ??
+    voices.find((v) => lang(v).startsWith(`${script}-`) && v.localService) ??
+    voices.find((v) => lang(v).startsWith(script)) ??
     null
   );
+}
+
+/** Every script this device has a voice for. */
+export function deviceScripts(): BookScript[] {
+  return (Object.keys(LANG) as BookScript[]).filter((sc) => voiceFor(sc) !== null);
 }
 
 /**
@@ -268,9 +326,10 @@ export class DeviceSpeaker {
       return;
     }
     const utterance = new SpeechSynthesisUtterance(chunk);
-    const voice = hindiVoice();
+    const script = this.paras[this.index]?.script ?? "hi";
+    const voice = voiceFor(script);
     if (voice) utterance.voice = voice;
-    utterance.lang = voice?.lang ?? "hi-IN";
+    utterance.lang = voice?.lang ?? LANG[script];
     utterance.rate = this.rate;
     utterance.onstart = () => {
       this.chunkStartedAt = performance.now();
