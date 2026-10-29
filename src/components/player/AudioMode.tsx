@@ -267,22 +267,15 @@ export function AudioMode({
             was the engine that made the file, which is a fact about how this
             was produced rather than about what is playing, and it sat on the
             one line under the chapter where a listener looks to see how far in
-            they are. It is named below only where there is a second voice to
-            choose instead. */}
+            they are. It is named below, in its own chip: the recordings are
+            Babaji's voice, which is worth saying on every chapter. */}
         <p className="mt-1 text-xs tabular-nums text-audio-ink/55">
           {device
             ? `Para ${paraProgress}`
             : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
         </p>
         {source.kind === "tts" && <VoicePicker source={source} className="mt-3" />}
-        {/* The one honest sentence this mode owes the listener: the device
-            voice is not background audio, and finding that out with the phone
-            already in a pocket is how an app loses trust. */}
-        {device && (
-          <p className="mt-2 text-center text-xs leading-snug text-audio-accent/85">
-            Device voice — stops when the screen locks
-          </p>
-        )}
+        {device && <DeviceVoiceChip who="Your phone’s voice" className="mt-3" />}
         {rendition?.is_stale && (
           <p className="mt-2 text-center text-xs text-audio-ink/60">
             This audio is of an earlier version of the text
@@ -437,12 +430,34 @@ export function AudioMode({
  * spoken, not from the clock: the two recordings are different lengths, so
  * the same minute is a different sentence in each.
  */
+const VOICE_CHIP =
+  "inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-control bg-audio-ink/10 px-3.5 text-sm font-semibold text-audio-ink/85";
+
+/**
+ * **Whose voice this is**, under the chapter title.
+ *
+ * The recorded voices are Babaji's own, and that is worth saying every time,
+ * not only when there is a second voice to switch to — so a chapter with one
+ * rendition names it in the same chip, without the chevron. With two or more
+ * it opens the menu, as before.
+ */
 function VoicePicker({ source, className = "" }: { source: TtsSource; className?: string }) {
   const player = usePlayer();
   const [open, setOpen] = useState(false);
-  if (source.renditions.length < 2) return null;
   const names = voiceNames(source.renditions);
   const current = names.get(source.voiceKey) ?? "";
+  if (!current) return null;
+  if (source.renditions.length < 2) {
+    return (
+      <div className={`flex max-w-full justify-center ${className}`}>
+        <span className={VOICE_CHIP} aria-label={`Voice: ${current}`}>
+          <span lang="hi" className="hi hi-tight truncate">
+            {current}
+          </span>
+        </span>
+      </div>
+    );
+  }
   return (
     <div className={`relative flex max-w-full justify-center ${className}`}>
       <button
@@ -451,7 +466,7 @@ function VoicePicker({ source, className = "" }: { source: TtsSource; className?
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Voice: ${current}. Change voice`}
-        className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-control bg-audio-ink/10 px-3.5 text-sm font-semibold text-audio-ink/85 transition-colors hover:bg-audio-ink/15 active:bg-audio-ink/20"
+        className={`${VOICE_CHIP} transition-colors hover:bg-audio-ink/15 active:bg-audio-ink/20`}
       >
         <span lang="hi" className="hi hi-tight truncate">
           {current}
@@ -476,6 +491,29 @@ function VoicePicker({ source, className = "" }: { source: TtsSource; className?
           ))}
         </Menu>
       )}
+    </div>
+  );
+}
+
+/**
+ * **The phone's own voice is reading** — said in the voice chip's place, with
+ * the same dot the 🎧 button wears when a chapter has no recording, so the dot
+ * is learnt where it is explained. Under it, why (no recording yet) and the
+ * one limit that bites: it is not background audio, and finding that out with
+ * the phone already in a pocket is how an app loses trust.
+ */
+function DeviceVoiceChip({ who, className = "" }: { who: string; className?: string }) {
+  return (
+    <div className={`flex max-w-full flex-col items-center ${className}`}>
+      <span className={VOICE_CHIP}>
+        <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-audio-accent" />
+        {who}
+      </span>
+      <p className="mt-2 text-center text-xs leading-snug text-audio-ink/60">
+        Recorded audio for this chapter isn&rsquo;t ready yet.
+        <br />
+        Stops when the screen locks.
+      </p>
     </div>
   );
 }
@@ -692,11 +730,7 @@ function DesktopAudioMode({
             </p>
           )}
           {source.kind === "tts" && <VoicePicker source={source} className="mt-4" />}
-          {device && (
-            <p className="mt-4 text-center text-sm text-audio-accent/90">
-              Device voice. Stops when the screen locks.
-            </p>
-          )}
+          {device && <DeviceVoiceChip who="Your computer’s voice" className="mt-4" />}
         </div>
 
         <div className="min-h-0 overflow-y-auto overscroll-contain px-12">

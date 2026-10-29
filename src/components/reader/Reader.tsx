@@ -1773,6 +1773,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         onListen={openListening}
         canListen={canListen}
         listening={listening}
+        deviceFallback={deviceFallback}
         languages={
           sides
             ? {

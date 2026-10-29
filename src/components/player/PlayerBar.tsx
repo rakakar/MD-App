@@ -226,8 +226,11 @@ function PlayerBarInner({
         <span className="hi hi-tight w-full truncate text-sm font-semibold">
           {pillTitle}
         </span>
-        <span className="hi hi-tight w-full truncate text-xs text-white/70">
-          {pillSubtitle}
+        {/* "Play from here" starts the phone's voice without passing Audio
+            Mode, where it is explained — so the pill says it too. */}
+        <span className="flex w-full min-w-0 items-baseline text-xs text-white/70">
+          <span className="hi hi-tight min-w-0 truncate">{pillSubtitle}</span>
+          {device && <span className="shrink-0">{" · phone’s voice"}</span>}
         </span>
       </button>
 
@@ -440,6 +443,7 @@ function DesktopReaderPill({
           {para && (
             <span className="shrink-0 text-xs tabular-nums text-white/55">
               Para {para.at} / {para.of}
+              {device && " · computer’s voice"}
             </span>
           )}
           {!device && player.durationMs > 0 && (

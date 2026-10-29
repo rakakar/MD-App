@@ -377,7 +377,7 @@ export function ReaderBottomBar({
                 : "Listen to this chapter"
             }
             aria-pressed={listening}
-            title="Listen"
+            title={deviceFallback ? "Listen · your phone’s voice" : "Listen"}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-white transition-opacity active:opacity-80"
             style={{ background: "var(--ws-color)" }}
           >
@@ -560,6 +560,7 @@ export function ReaderDesktopBar({
   onListen,
   canListen,
   listening,
+  deviceFallback = false,
   languages,
   assistantHref,
 }: {
@@ -587,6 +588,8 @@ export function ReaderDesktopBar({
   onListen: () => void;
   canListen: boolean;
   listening: boolean;
+  /** no recorded audio — this computer's own voice would read it */
+  deviceFallback?: boolean;
   languages?: LanguageToggle;
   assistantHref: string;
 }) {
@@ -692,6 +695,7 @@ export function ReaderDesktopBar({
             <button
               type="button"
               onClick={onListen}
+              title={deviceFallback ? "Listen · your computer’s voice (no recording yet)" : undefined}
               className="flex h-11 shrink-0 items-center gap-2 rounded-control px-4 text-sm font-semibold transition-opacity hover:opacity-90"
               style={
                 listening
@@ -699,7 +703,18 @@ export function ReaderDesktopBar({
                   : { background: "var(--ws-color)", color: "white" }
               }
             >
-              <HeadphonesIcon className="h-4.5 w-4.5" />
+              {/* The same dot the phone's 🎧 wears, and Audio Mode's voice
+                  chip explains: this chapter would be read by the computer's
+                  own voice, there being no recording yet. */}
+              <span className="relative">
+                <HeadphonesIcon className="h-4.5 w-4.5" />
+                {deviceFallback && (
+                  <span
+                    aria-hidden
+                    className="absolute -end-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-current opacity-70"
+                  />
+                )}
+              </span>
               Listen
             </button>
           )}
