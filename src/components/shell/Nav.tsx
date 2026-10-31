@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRoutePath } from "./useRoutePath";
 import { useEffect, useRef } from "react";
 import { SidebarAccount, WorkspaceSwitcher } from "./Header";
+import { OfflineNotice } from "./OfflineStatus";
 import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
@@ -137,6 +138,8 @@ export function Sidebar() {
         </p>
         <WorkspaceSwitcher variant="popover" />
       </div>
+      {/* desktop's offline notice: the sidebar never scrolls away */}
+      <OfflineNotice placement="sidebar" />
       {/* Nav and the route's own facets scroll together, and the avatar stays
           pinned to the floor. A rail that is only four nav rows tall never
           needed this; one that can also hold six axes of chips on a 800px-high

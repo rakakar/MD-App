@@ -17,6 +17,7 @@ import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceCo
 import { UnreadBadge, UnreadDot } from "@/components/notifications/NotificationList";
 import { useInbox } from "@/components/notifications/useInbox";
 import { useDisplay } from "./DisplayProvider";
+import { OfflineNotice } from "./OfflineStatus";
 import { useEverOpen } from "@/components/ui/useEverOpen";
 import { useWorkspace } from "./WorkspaceProvider";
 import {
@@ -1043,6 +1044,8 @@ export function Header() {
           <AvatarMenu />
         </div>
       </div>
+      {/* inside the bar so it stays in view, and so --app-header-h includes it */}
+      <OfflineNotice placement="header" />
     </header>
   );
 }

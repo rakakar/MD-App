@@ -33,8 +33,17 @@ const NEEDS_INTERNET: { match: (p: string) => boolean; what: string; verb: "need
  * A bar rather than a label in the app bar: the bar's one row is already full
  * at larger text sizes, and a label there squeezed the workspace name to an
  * ellipsis. Nothing at all while online.
+ *
+ * It stays in view by living inside something that already does, not by
+ * being sticky itself. On a phone that is the app bar (`placement="header"`):
+ * the bar measures its own height into `--app-header-h`, and every sticky row
+ * in the app — filter chips, tabs — pins at that, so they all move down with
+ * it. A notice sticky on its own would have had those rows slide under it. On
+ * a desktop there is no app bar, so it sits in the fixed sidebar instead
+ * (`"sidebar"`). `"page"` is for a screen that draws its own app bar — the
+ * Assistant — where it heads the page and scrolls with it.
  */
-export function OfflineNotice() {
+export function OfflineNotice({ placement }: { placement: "header" | "sidebar" | "page" }) {
   const online = useOnline();
   const path = useRoutePath();
   if (online) return null;
@@ -42,7 +51,13 @@ export function OfflineNotice() {
   return (
     <p
       role="status"
-      className="flex items-start gap-2.5 border-b border-rule bg-inset px-4 py-2.5 text-sm text-ink lg:px-8"
+      className={`flex items-start gap-2.5 bg-inset text-sm text-ink ${
+        placement === "header"
+          ? "border-t border-rule px-4 py-2.5"
+          : placement === "sidebar"
+            ? "mx-3 mt-3 rounded-2xl border border-rule px-3 py-2.5"
+            : "border-b border-rule px-4 py-2.5 lg:hidden"
+      }`}
     >
       <CloudOffIcon className="mt-0.5 h-4.5 w-4.5 shrink-0 text-ink-soft" />
       <span>

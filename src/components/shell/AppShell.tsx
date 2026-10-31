@@ -100,8 +100,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-64"
               }
             >
-              {/* one bar while offline; names the feature where it needs internet */}
-              {!bare && <OfflineNotice />}
+              {/* The offline notice lives in the app bar (phone) and the
+                  sidebar (desktop). The Assistant draws its own app bar, so on
+                  a phone it heads the page there instead. */}
+              {!bare && ownHeader && <OfflineNotice placement="page" />}
               {children}
             </main>
           </RailProvider>
