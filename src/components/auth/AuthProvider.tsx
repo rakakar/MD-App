@@ -68,6 +68,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
   useEffect(() => watchConnectivity(() => userRef.current !== null), []);
 
+  // Offline, the user above may be the copy cached on this device (lib/me).
+  // Ask the server again once the network is back, so a session revoked
+  // elsewhere still ends and the profile is current.
+  useEffect(() => {
+    const onOnline = () => {
+      if (userRef.current) void refresh();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [refresh]);
+
   const onAuthenticated = useCallback(async () => {
     await refresh();
   }, [refresh]);

@@ -20,6 +20,27 @@ import type { HighlightColour, HighlightRange } from "./storage";
 import type { Bookmark, MeUser, Note, Progress } from "./types";
 
 const TOKEN_KEY = "md.session_token";
+// The last /me/ answer, kept so a reader who opens the app offline is still
+// shown as signed in. Only ever read when the server cannot be reached.
+const USER_KEY = "md.session_user";
+
+function cachedUser(): MeUser | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as MeUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedUser(user: MeUser | null): void {
+  try {
+    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+    else localStorage.removeItem(USER_KEY);
+  } catch {
+    // storage full or blocked — the offline fallback is a convenience
+  }
+}
 
 function beOrigin(): string {
   return new URL(apiBase()).origin;
@@ -33,7 +54,10 @@ export function sessionToken(): string | null {
 function setSessionToken(token: string | null): void {
   if (typeof localStorage === "undefined") return;
   if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  else {
+    localStorage.removeItem(TOKEN_KEY);
+    setCachedUser(null);
+  }
 }
 
 /**
@@ -100,15 +124,21 @@ export async function getMe(): Promise<MeUser | null> {
   // round-trip on every cold load to be told so.
   if (!sessionToken()) return null;
   try {
-    return await authedFetch<MeUser>(meUrl(""));
+    const me = await authedFetch<MeUser>(meUrl(""));
+    setCachedUser(me);
+    return me;
   } catch (e) {
     // A token the server refuses is worse than no token: it would ride along
     // on every later request and keep failing. Drop it and be plainly signed
-    // out. A network failure is not the same thing — keep the token then, the
-    // reader is still signed in and simply offline.
+    // out. Anything else — airplane mode, a dead connection, a 5xx — is not
+    // the server saying no: keep the token and answer with the last profile
+    // this device saw, so going offline never looks like being signed out.
     const status = (e as { status?: number })?.status;
-    if (status === 401 || status === 403) setSessionToken(null);
-    return null;
+    if (status === 401 || status === 403) {
+      setSessionToken(null);
+      return null;
+    }
+    return cachedUser();
   }
 }
 
