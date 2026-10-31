@@ -167,18 +167,32 @@ function Switcher() {
 
 /* ---- 2. the shelf, and what you left in it --------------------------- */
 
+const R2 = "https://pub-aff003d28f014aa2ae4c6908c9bea57a.r2.dev/books/covers/";
+
 /**
  * Written-down books as the floor, the shelf itself as soon as it answers.
  *
  * The codes are real because `CoverTile` derives a book's fallback hue from its
  * code — an invented one would colour the tile differently here than everywhere
  * else in the app.
+ *
+ * **With their covers** (31 Oct 2026). Without them, the deck showed bare
+ * coloured tiles wherever the `books/` call could not answer — and that is
+ * not only offline: the API allows browser calls from one origin
+ * (md-app-liart.vercel.app), so on welfareinfo.net and on localhost the call
+ * is refused every time and the fallback was all anyone saw. The cover files
+ * never change at an address (the bucket serves them immutable), so writing
+ * the URLs down costs nothing in freshness; the live shelf still replaces this
+ * list where it can be reached. The first six of the Originals shelf, in its
+ * order, so the swap is invisible.
  */
 const FALLBACK_SHELF = [
-  { code: "JVEP", title_hi: "जीवन विद्या एक परिचय", page_count: 110 },
-  { code: "ABVP", title_hi: "विकल्प एवं अध्ययन बिंदु", page_count: 60 },
-  { code: "MKD", title_hi: "मानव कर्म दर्शन", page_count: 178 },
-  { code: "MABD", title_hi: "मानव अभ्यास दर्शन", page_count: 195 },
+  { code: "DP", title_hi: "दिव्य पथ", page_count: 52, cover_image: `${R2}divya-path-cover.jpg` },
+  { code: "JVEP", title_hi: "जीवन विद्या एक परिचय", page_count: 110, cover_image: `${R2}01-JV_Parichay.png` },
+  { code: "ABVP", title_hi: "विकल्प एवं अध्ययन बिंदु", page_count: 60, cover_image: `${R2}14-Vikalp.png` },
+  { code: "MVD", title_hi: "मानव व्यवहार दर्शन", page_count: 203, cover_image: `${R2}02-Vyavahar.png` },
+  { code: "MKD", title_hi: "मानव कर्म दर्शन", page_count: 178, cover_image: `${R2}03-Karm.png` },
+  { code: "MABD", title_hi: "मानव अभ्यास दर्शन", page_count: 195, cover_image: `${R2}04-Abhyaas.png` },
 ] as unknown as BookSummary[];
 
 function useShelf(): BookSummary[] {
@@ -305,25 +319,31 @@ function Shelf() {
  * accent-tinted chip with the file's own facts beside it, and a chevron at the
  * end. A reader who has seen this recognises the screen when they arrive on
  * it, which is the whole reason a fragment is a fragment and not a drawing.
+ *
+ * **Real folders, as the shelf prints them** (31 Oct 2026). These were three
+ * invented titles with an invented note under each. They are now three of the
+ * Student Materials root's own folders, with the chip `cardSummary` writes
+ * for them and the tile `doorFacts` picks (each holds only PDFs, all the way
+ * down, so the tile is PDF rather than folder). The real row has no note when
+ * a folder has no recordings, so this has none either. If a folder is renamed
+ * or its counts move, update it here — it is a picture, not a fetch, so the
+ * deck opens on the first frame offline.
  */
 const MATERIAL = [
   {
     kind: "pdf" as const,
-    name: "शिक्षा में मानवीय मूल्यों का समावेश",
-    chip: "PDF",
-    note: "Shodh patra · 18 pages",
+    name: "अध्ययन श्रृंखला मार्गदर्शिका - Stagewise Study Guides",
+    chip: "9 folders · 2 PDFs",
   },
   {
     kind: "pdf" as const,
-    name: "ग्राम स्वराज्य योजना — कार्य विवरण",
-    chip: "PDF",
-    note: "Yojana · 42 pages",
+    name: "शोध पत्र - विद्यार्थी विवेचन",
+    chip: "4 PDFs",
   },
   {
-    kind: "folder" as const,
-    name: "अभ्यास शिविर — अध्ययन क्रम",
-    chip: "12 items",
-    note: "Study guides",
+    kind: "pdf" as const,
+    name: "शिक्षा सामग्री - School Materials",
+    chip: "9 folders",
   },
 ];
 
@@ -356,7 +376,6 @@ function Material() {
                 >
                   {m.chip}
                 </span>
-                <span className="text-sm text-ink-soft">{m.note}</span>
               </span>
             </span>
             <span aria-hidden className="shrink-0 text-muted">
@@ -557,28 +576,38 @@ function Journey() {
       <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed">{stage.note}</p>
 
       <p className={`${LABEL} mt-4`}>Your next step</p>
-      <div className="mt-1.5 flex items-center gap-3 rounded-card border border-rule bg-card p-2.5">
-        <CoverTile
-          book={{ code: "JVEP", title_hi: "जीवन विद्या एक परिचय", cover_image: null }}
-          size="resume"
-          caption="dash"
-        />
-        <span className="min-w-0 flex-1">
-          <span lang="hi" className="hi hi-tight block truncate text-sm font-semibold">
-            जीवन विद्या एक परिचय
+      {/* `NextStepCard` as a phone draws it for a reader partway in: the
+          stage's lead book (JVEP for stage one, `STAGE_LEADS`), the line
+          `chapterLine` writes, the bar in the workspace colour, and the one
+          button. The position is a real one — page 24 is in chapter 2
+          (pages 17–35) — and the bar is 24 of the book's 110 pages. It said
+          "अध्याय 1 · पृष्ठ 24" before, in words the real card does not use,
+          about a page chapter 1 does not reach. */}
+      <div className="mt-1.5 flex flex-col gap-3 rounded-card border border-rule bg-card p-3">
+        <div className="flex items-center gap-3">
+          <CoverTile
+            book={{ code: "JVEP", title_hi: "जीवन विद्या एक परिचय", cover_image: `${R2}01-JV_Parichay.png` }}
+            size="resume"
+            caption="none"
+          />
+          <span className="min-w-0 flex-1">
+            <span lang="hi" className="hi hi-tight block truncate text-title font-semibold">
+              जीवन विद्या एक परिचय
+            </span>
+            <span className="mt-1 block truncate text-sm text-ink-soft">Chapter 2 · page 24</span>
+            <span className="mt-2 block h-1.5 w-full overflow-hidden rounded-full bg-canvas">
+              <span
+                className="block h-full rounded-full"
+                style={{ width: "22%", background: "var(--ws-color)" }}
+              />
+            </span>
           </span>
-          <span lang="hi" className="hi hi-tight mt-0.5 block text-xs text-ink-soft">
-            अध्याय 1 · पृष्ठ 24
-          </span>
-          <span className="mt-2 block h-1.5 w-full overflow-hidden rounded-full bg-canvas">
-            <span
-              className="block h-full rounded-full"
-              style={{ width: "22%", background: "var(--progress-fill)" }}
-            />
-          </span>
-        </span>
-        <span aria-hidden className="shrink-0 text-muted">
-          <ChevronRight className="h-5 w-5" />
+        </div>
+        <span
+          className="flex min-h-10 items-center justify-center rounded-control text-sm font-semibold text-white"
+          style={{ background: "var(--ws-color)" }}
+        >
+          Continue reading
         </span>
       </div>
     </Stage>
