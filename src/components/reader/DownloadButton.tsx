@@ -8,10 +8,12 @@ import { getChapter, getParibhashaIndex } from "@/lib/api";
 import { ensureFullGlossary } from "@/lib/glossary";
 import {
   getDownload,
+  listDownloads,
   markDownloaded,
   putCachedChapter,
   removeDownload,
 } from "@/lib/idb";
+import { removeBookPages, saveBookPages } from "@/lib/offlinePages";
 import type { BookDetail } from "@/lib/types";
 
 type Status = "idle" | "downloading" | "done";
@@ -47,8 +49,16 @@ export function DownloadButton({
         const ch = book.chapters[i];
         const payload = await getChapter(book.code, ch.number);
         await putCachedChapter(book.code, ch.number, payload);
-        setProgress(Math.round(((i + 1) / book.chapters.length) * 100));
+        // the text is most of the wait; the pages that show it are the rest
+        setProgress(Math.round(((i + 1) / book.chapters.length) * 70));
       }
+      // The pages too, or the text could only be read in chapters already
+      // visited online (lib/offlinePages). Best effort per page.
+      const numbers = book.chapters.map((c) => c.number);
+      const total = numbers.length + 3;
+      await saveBookPages(book.code, numbers, {
+        onEach: (done) => setProgress(70 + Math.round((done / total) * 30)),
+      });
       await markDownloaded({
         code: book.code,
         title_hi: book.title_hi,
@@ -76,6 +86,7 @@ export function DownloadButton({
 
   const remove = async () => {
     await removeDownload(book.code);
+    await removeBookPages(book.code, (await listDownloads()).length).catch(() => undefined);
     setStatus("idle");
   };
 

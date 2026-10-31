@@ -17,7 +17,13 @@ import { useIsDesktop } from "@/components/ui/Dialog";
 import { applyConsent } from "@/lib/analytics";
 import { formatBytes, listSavedAudio, removeAllAudio, removeAudio, type SavedAudio } from "@/lib/audioCache";
 import { APP_VERSION } from "@/lib/feedback";
-import { chapterBytesByBook, listDownloads, removeDownload, type DownloadRecord } from "@/lib/idb";
+import {
+  chapterBytesByBook,
+  listDownloads,
+  removeDownload,
+  type DownloadRecord,
+} from "@/lib/idb";
+import { catchUpDownloads, offlinePagesBytes, removeBookPages } from "@/lib/offlinePages";
 import { getPrefs, setPrefs, type Prefs } from "@/lib/storage";
 
 /**
@@ -36,6 +42,7 @@ export default function SettingsPage() {
   const [prefs, setPrefsState] = useState<Prefs | null>(null);
   const [downloads, setDownloads] = useState<DownloadRecord[]>([]);
   const [bookBytes, setBookBytes] = useState<Record<string, number>>({});
+  const [sharedBytes, setSharedBytes] = useState(0);
   const [audio, setAudio] = useState<SavedAudio[]>([]);
   const [quota, setQuota] = useState<number | null>(null);
   const [toast, showToast] = useToast();
@@ -50,8 +57,24 @@ export default function SettingsPage() {
 
   const loadDownloads = useCallback(() => {
     void listDownloads().then(setDownloads);
-    void chapterBytesByBook().then(setBookBytes);
+    // a book's size is its text plus the pages saved to show it
+    void Promise.all([chapterBytesByBook(), offlinePagesBytes()]).then(([text, pages]) => {
+      const sizes = { ...text };
+      for (const [code, n] of Object.entries(pages.byBook)) sizes[code] = (sizes[code] ?? 0) + n;
+      setBookBytes(sizes);
+      setSharedBytes(pages.shared);
+    });
   }, []);
+
+  // Books downloaded before their pages were saved with them catch up here
+  // as well as on app start (ServiceWorker.tsx); the sizes then include them.
+  useEffect(() => {
+    let live = true;
+    void catchUpDownloads().then(() => live && loadDownloads());
+    return () => {
+      live = false;
+    };
+  }, [loadDownloads]);
 
   useEffect(() => {
     setPrefsState(getPrefs());
@@ -69,7 +92,9 @@ export default function SettingsPage() {
   if (!prefs) return null;
 
   const used =
-    downloads.reduce((n, d) => n + (bookBytes[d.code] ?? 0), 0) + audio.reduce((n, a) => n + a.bytes, 0);
+    downloads.reduce((n, d) => n + (bookBytes[d.code] ?? 0), 0) +
+    (downloads.length ? sharedBytes : 0) +
+    audio.reduce((n, a) => n + a.bytes, 0);
 
   const linkButton = "inline-flex min-h-11 items-center text-sm font-medium text-ink-soft transition-colors hover:text-ink";
 
@@ -119,7 +144,13 @@ export default function SettingsPage() {
           bookBytes={bookBytes}
           audio={audio}
           quota={quota}
-          onRemoveBook={(code) => void removeDownload(code).then(loadDownloads)}
+          sharedBytes={sharedBytes}
+          onRemoveBook={(code) =>
+            void removeDownload(code)
+              .then(async () => removeBookPages(code, (await listDownloads()).length))
+              .catch(() => undefined)
+              .then(loadDownloads)
+          }
           onRemoveAudio={(url) => void removeAudio(url).then(() => listSavedAudio().then(setAudio))}
           onRemoveAllAudio={() => void removeAllAudio().then(() => setAudio([]))}
         />

@@ -123,6 +123,17 @@ export async function chapterBytesByBook(): Promise<Record<string, number>> {
   }
 }
 
+/** The chapter numbers kept for one book, in order. */
+export async function cachedChapterNumbers(code: string): Promise<number[]> {
+  if (typeof indexedDB === "undefined") return [];
+  try {
+    const rows = await tx<CachedChapter[]>(CHAPTERS, "readonly", (s) => s.getAll());
+    return rows.filter((r) => r.code === code).map((r) => r.number).sort((a, b) => a - b);
+  } catch {
+    return [];
+  }
+}
+
 // ---- Paribhasha (§14) ----
 //
 // Three kinds of row in one store, in the order a reader acquires them:

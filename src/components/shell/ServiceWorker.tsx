@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
+import { catchUpDownloads } from "@/lib/offlinePages";
 
 /**
  * Service worker registration plus the update handshake.
@@ -49,6 +50,9 @@ export function ServiceWorker() {
       .register("/sw.js")
       .then((reg) => {
         if (cancelled) return;
+        // Downloaded books missing their pages get them now, while online
+        // (lib/offlinePages). Deferred so it never competes with first paint.
+        setTimeout(() => void catchUpDownloads().catch(() => undefined), 5000);
         // already waiting when we arrived
         if (reg.waiting && navigator.serviceWorker.controller) setWaiting(reg.waiting);
         reg.addEventListener("updatefound", () => {

@@ -11,6 +11,11 @@ const OFFLINE_URL = "/offline";
    outside the VERSION namespace on purpose: a worker upgrade sweeps its own
    caches, and 70 MB a reader chose to download must survive a deploy. */
 const AUDIO_CACHE = "md-audio-v1";
+/* Pages of downloaded books and the build files they run on, written by the
+   app (src/lib/offlinePages.ts), never by this worker. Outside VERSION for the
+   same reason as audio: a download outlives deploys until the reader removes
+   it. Read last, after the network and the visited-pages cache. */
+const BOOKS_CACHE = "md-books-v1";
 
 /* How long each cache may grow, and how long a page may keep a reader waiting.
  *
@@ -46,7 +51,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((k) => !k.startsWith(VERSION) && k !== AUDIO_CACHE)
+            .filter((k) => !k.startsWith(VERSION) && k !== AUDIO_CACHE && k !== BOOKS_CACHE)
             .map((k) => caches.delete(k))
         )
       )
@@ -155,6 +160,13 @@ self.addEventListener("fetch", (event) => {
           }
           return hit;
         }
+        // A downloaded book's page may name files from the build it was saved
+        // under, which this cache may no longer hold; the book keeps its own.
+        const kept = await caches
+          .open(BOOKS_CACHE)
+          .then((c) => c.match(req, { ignoreSearch: true }))
+          .catch(() => undefined);
+        if (kept) return kept;
         const res = await fetch(req);
         if (res.ok) event.waitUntil(cache.put(req, stamped(res.clone())).catch(() => undefined));
         return res;
@@ -188,7 +200,15 @@ self.addEventListener("fetch", (event) => {
           return res;
         });
         event.waitUntil(network.catch(() => undefined));
-        const saved = cache.match(req, { ignoreSearch: true });
+        // a visited page first (it is the newer copy), else a downloaded one
+        const saved = cache
+          .match(req, { ignoreSearch: true })
+          .then(
+            (hit) =>
+              hit ||
+              caches.open(BOOKS_CACHE).then((c) => c.match(req, { ignoreSearch: true }))
+          )
+          .catch(() => undefined);
         const late = new Promise((resolve) => setTimeout(resolve, NAV_TIMEOUT, "late"));
         try {
           const first = await Promise.race([network, late]);

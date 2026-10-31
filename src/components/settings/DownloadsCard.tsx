@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { HeadphonesIcon, TrashIcon } from "@/components/shell/icons";
 import { formatBytes, type SavedAudio } from "@/lib/audioCache";
 import type { DownloadRecord } from "@/lib/idb";
@@ -18,6 +19,7 @@ export function DownloadsCard({
   desktop,
   books,
   bookBytes,
+  sharedBytes = 0,
   audio,
   quota,
   onRemoveBook,
@@ -27,6 +29,8 @@ export function DownloadsCard({
   desktop: boolean;
   books: DownloadRecord[];
   bookBytes: Record<string, number>;
+  /** saved build files and app pages that serve every downloaded book */
+  sharedBytes?: number;
   audio: SavedAudio[];
   /** what the browser says this site may store, when it says */
   quota: number | null;
@@ -34,7 +38,8 @@ export function DownloadsCard({
   onRemoveAudio: (url: string) => void;
   onRemoveAllAudio: () => void;
 }) {
-  const booksTotal = books.reduce((n, b) => n + (bookBytes[b.code] ?? 0), 0);
+  const booksTotal =
+    books.reduce((n, b) => n + (bookBytes[b.code] ?? 0), 0) + (books.length ? sharedBytes : 0);
   const audioTotal = audio.reduce((n, a) => n + a.bytes, 0);
   const pad = desktop ? "px-7" : "px-5";
 
@@ -50,6 +55,7 @@ export function DownloadsCard({
         lang={lang}
         titleClass={className}
         meta={`${b.chapter_count} chapters${size ? ` · ${formatBytes(size)}` : ""}`}
+        href={`/books/${encodeURIComponent(b.code)}`}
         onRemove={() => onRemoveBook(b.code)}
       />
     );
@@ -176,6 +182,7 @@ function Row({
   lang,
   titleClass,
   meta,
+  href,
   onRemove,
 }: {
   desktop: boolean;
@@ -184,10 +191,12 @@ function Row({
   lang: string;
   titleClass: string;
   meta: string;
+  /** where tapping the row goes — a downloaded book opens, offline too */
+  href?: string;
   onRemove: () => void;
 }) {
-  return (
-    <li className="flex items-center gap-4 py-3">
+  const body = (
+    <>
       {thumb}
       <div className="min-w-0 flex-1">
         <p lang={lang} className={`${titleClass} truncate text-title font-semibold text-ink`}>
@@ -195,6 +204,17 @@ function Row({
         </p>
         <p className="truncate text-sm text-ink-soft">{meta}</p>
       </div>
+    </>
+  );
+  return (
+    <li className="flex items-center gap-4 py-3">
+      {href ? (
+        <Link href={href} className="flex min-w-0 flex-1 items-center gap-4 rounded-md">
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
       <button
         type="button"
         onClick={onRemove}
