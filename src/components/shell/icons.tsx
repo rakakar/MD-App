@@ -807,6 +807,17 @@ export function AlertIcon({ className }: { className?: string }) {
   );
 }
 
+/** A cloud struck through — no connection. */
+export function CloudOffIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <path d="M7 18h10.5a3.5 3.5 0 0 0 1.4-6.7A6 6 0 0 0 8.6 8.1" />
+      <path d="M5.6 10.4A4 4 0 0 0 7 18" />
+      <path d="m3 3 18 18" />
+    </Svg>
+  );
+}
+
 export function DownloadIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

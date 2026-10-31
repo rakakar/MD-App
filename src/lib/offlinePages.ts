@@ -19,9 +19,11 @@ import { cachedChapterNumbers, listDownloads } from "./idb";
 
 export const BOOK_PAGES_CACHE = "md-books-v1";
 
-/** Saved with the first download, so the app can be opened and found offline:
- *  the home screen icon opens "/", and Downloads is the way into a book. */
-const SHELL_PATHS = ["/", "/settings"];
+/** Saved with every download, so the app can be opened and found offline:
+ *  the home screen icon opens "/", Downloads is the way into a book, and the
+ *  book lists and the reader's own notes and highlights work from the device.
+ *  Only screens that need nothing from the network once loaded belong here. */
+const SHELL_PATHS = ["/", "/settings", "/books", "/translations", "/me", "/me/bookmarks", "/me/notes"];
 
 const ASSET_RE = /\/(?:_next\/static|brand)\/[^"'`\s\\)<>]+/g;
 const IS_ASSET = /^\/(?:_next\/static|brand)\//;

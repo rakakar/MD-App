@@ -21,6 +21,7 @@ import { BottomNav, Sidebar } from "./Nav";
 import { RailProvider } from "./Rail";
 import { ServiceWorker } from "./ServiceWorker";
 import { WorkspaceProvider, useWorkspace } from "./WorkspaceProvider";
+import { OfflineNotice } from "./OfflineStatus";
 
 /**
  * ⌘K opens the Assistant *in the workspace you are in*. `/assistant` belongs
@@ -99,6 +100,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                     "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-64"
               }
             >
+              {/* one bar while offline; names the feature where it needs internet */}
+              {!bare && <OfflineNotice />}
               {children}
             </main>
           </RailProvider>

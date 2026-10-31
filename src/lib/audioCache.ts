@@ -19,6 +19,7 @@
  */
 
 import type { AudioRendition } from "./types";
+import { keepDownloads } from "./offline";
 
 /** Deliberately outside the `md-sw-v*` namespace: a worker upgrade sweeps its
  *  own caches, and a reader's saved audio must survive a deploy. */
@@ -101,6 +102,7 @@ export async function listSavedAudio(): Promise<SavedAudio[]> {
 
 export async function isAudioSaved(url: string): Promise<boolean> {
   if (!audioSupported()) return false;
+  void keepDownloads();
   try {
     const cache = await caches.open(AUDIO_CACHE);
     return Boolean(await cache.match(url));

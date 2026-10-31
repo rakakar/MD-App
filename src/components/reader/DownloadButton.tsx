@@ -13,6 +13,7 @@ import {
   putCachedChapter,
   removeDownload,
 } from "@/lib/idb";
+import { keepDownloads, refreshDownloaded } from "@/lib/offline";
 import { removeBookPages, saveBookPages } from "@/lib/offlinePages";
 import type { BookDetail } from "@/lib/types";
 
@@ -44,6 +45,7 @@ export function DownloadButton({
   const download = async () => {
     setStatus("downloading");
     setProgress(0);
+    void keepDownloads();
     try {
       for (let i = 0; i < book.chapters.length; i++) {
         const ch = book.chapters[i];
@@ -64,6 +66,7 @@ export function DownloadButton({
         title_hi: book.title_hi,
         chapter_count: book.chapters.length,
       });
+      void refreshDownloaded();
       track("book_download_offline");
       setStatus("done");
     } catch {
@@ -87,6 +90,7 @@ export function DownloadButton({
   const remove = async () => {
     await removeDownload(book.code);
     await removeBookPages(book.code, (await listDownloads()).length).catch(() => undefined);
+    void refreshDownloaded();
     setStatus("idle");
   };
 

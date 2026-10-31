@@ -23,6 +23,7 @@ import {
   removeDownload,
   type DownloadRecord,
 } from "@/lib/idb";
+import { refreshDownloaded } from "@/lib/offline";
 import { catchUpDownloads, offlinePagesBytes, removeBookPages } from "@/lib/offlinePages";
 import { getPrefs, setPrefs, type Prefs } from "@/lib/storage";
 
@@ -149,7 +150,10 @@ export default function SettingsPage() {
             void removeDownload(code)
               .then(async () => removeBookPages(code, (await listDownloads()).length))
               .catch(() => undefined)
-              .then(loadDownloads)
+              .then(() => {
+                loadDownloads();
+                void refreshDownloaded();
+              })
           }
           onRemoveAudio={(url) => void removeAudio(url).then(() => listSavedAudio().then(setAudio))}
           onRemoveAllAudio={() => void removeAllAudio().then(() => setAudio([]))}

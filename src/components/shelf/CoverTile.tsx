@@ -2,6 +2,7 @@ import Image from "next/image";
 import { bookHue, coverGradient, type BookHue } from "@/lib/bookHue";
 import { optimizableCover } from "@/lib/coverImage";
 import type { BookSummary } from "@/lib/types";
+import { DownloadedMark } from "./DownloadedMark";
 
 /**
  * A book's cover, at four densities (design 1A rail, 1B grid, 1C hero, plus
@@ -156,6 +157,9 @@ export function CoverTile({
           {book.title_hi?.[0] ?? "ग्र"}
         </span>
       )}
+
+      {/* which books open offline, on the shelf and the Home rail */}
+      {book.code && (size === "rail" || size === "grid") && <DownloadedMark code={book.code} />}
 
       {showDash && (
         <span
