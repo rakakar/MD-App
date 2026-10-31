@@ -16,6 +16,7 @@ import { StagePrompt } from "@/components/journey/StagePrompt";
 import { ownsViewport } from "@/lib/routes";
 import { DisplayProvider } from "./DisplayProvider";
 import { Header } from "./Header";
+import { NavProgress } from "./NavProgress";
 import { BottomNav, Sidebar } from "./Nav";
 import { RailProvider } from "./Rail";
 import { ServiceWorker } from "./ServiceWorker";
@@ -86,6 +87,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             {!bare && !ownHeader && <Header />}
             {!bare && <Sidebar />}
             <CommandK />
+            {/* every screen, the reader included: a tap from the reader
+                back to its book waits on the network like any other */}
+            <NavProgress />
             <ServiceWorker />
             <main
               className={
