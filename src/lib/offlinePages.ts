@@ -23,7 +23,16 @@ export const BOOK_PAGES_CACHE = "md-books-v1";
  *  the home screen icon opens "/", Downloads is the way into a book, and the
  *  book lists and the reader's own notes and highlights work from the device.
  *  Only screens that need nothing from the network once loaded belong here. */
-const SHELL_PATHS = ["/", "/settings", "/books", "/translations", "/me", "/me/bookmarks", "/me/notes"];
+export const SHELL_PATHS = [
+  "/",
+  "/downloads",
+  "/settings",
+  "/books",
+  "/translations",
+  "/me",
+  "/me/bookmarks",
+  "/me/notes",
+];
 
 const ASSET_RE = /\/(?:_next\/static|brand)\/[^"'`\s\\)<>]+/g;
 const IS_ASSET = /^\/(?:_next\/static|brand)\//;
@@ -107,10 +116,19 @@ async function savePage(cache: Cache, path: string, seen: Set<string>): Promise<
  */
 export async function saveOfflinePages(
   paths: string[],
-  { onlyMissing = false, onEach }: { onlyMissing?: boolean; onEach?: (done: number) => void } = {}
+  {
+    onlyMissing = false,
+    onEach,
+    cacheName = BOOK_PAGES_CACHE,
+  }: {
+    onlyMissing?: boolean;
+    onEach?: (done: number) => void;
+    /** where to keep them — saved PDFs keep their reader pages apart (pdfCache) */
+    cacheName?: string;
+  } = {}
 ): Promise<void> {
   if (!available()) return;
-  const cache = await caches.open(BOOK_PAGES_CACHE);
+  const cache = await caches.open(cacheName);
   const seen = new Set<string>();
   let done = 0;
   for (const path of paths) {

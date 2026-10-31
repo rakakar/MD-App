@@ -12,6 +12,7 @@ import { CheckIcon, DownloadIcon } from "@/components/shell/icons";
 import { KindTile } from "@/components/ui/KindTile";
 import { contentLang } from "@/lib/script";
 import { getPdfPlace } from "@/lib/storage";
+import { useSavedPdf } from "@/lib/useSavedPdf";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
 import { downloadProps } from "@/lib/download";
 
@@ -29,9 +30,12 @@ type File = LibraryFile | LocatedFile;
 export function PdfRows({
   files,
   folderProvenance,
+  folderName = "",
 }: {
   files: File[];
   folderProvenance?: Provenance;
+  /** the folder's name — what Downloads says a saved PDF came from */
+  folderName?: string;
 }) {
   const reading = files.filter((f) => f.reading);
   const plain = files.filter((f) => !f.reading);
@@ -101,6 +105,7 @@ export function PdfRows({
                   picked={picked.has(f.id)}
                   onPick={() => toggle(f.id)}
                   folderProvenance={folderProvenance}
+                  folderName={folderName}
                 />
               </li>
             ))}
@@ -116,12 +121,17 @@ function PdfRow({
   picked,
   onPick,
   folderProvenance,
+  folderName,
 }: {
   file: File;
   picked: boolean;
   onPick: () => void;
   folderProvenance?: Provenance;
+  folderName: string;
 }) {
+  // A cross-posted file names the folder it really lives in.
+  const from = "breadcrumb" in file && file.breadcrumb.length ? file.breadcrumb[file.breadcrumb.length - 1].name : folderName;
+  const offline = useSavedPdf(file, from);
   const [resume, setResume] = useState<number | null>(null);
   useEffect(() => {
     const saved = getPdfPlace(`library-file:${file.id}`);
@@ -179,6 +189,20 @@ function PdfRow({
           {[pagesWord, size].filter(Boolean).join(" · ")}
           {large && <LargeTag />}
         </span>
+        {offline.status !== "idle" && (
+          <span
+            className="mt-0.5 flex items-center gap-1 text-xs font-semibold tabular-nums"
+            style={{ color: offline.status === "failed" ? "var(--color-danger)" : "var(--ws-ink)" }}
+            aria-live="polite"
+          >
+            {offline.status === "saved" && <CheckIcon className="h-3.5 w-3.5" />}
+            {offline.status === "saving"
+              ? `Saving offline · ${Math.round(offline.progress * 100)}%`
+              : offline.status === "saved"
+                ? "Saved offline"
+                : "Couldn’t save — check your connection"}
+          </span>
+        )}
         {(resume || file.provenance !== folderProvenance) && (
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
             {resume && (
@@ -204,13 +228,20 @@ function PdfRow({
       >
         <DownloadIcon className="h-4 w-4" />
       </a>
-      <div className="hidden sm:block">
-        <RowMenu
-          label={file.title}
-          items={[{ label: "Open", href }]}
-          share={{ title: file.title, url: readHref }}
-        />
-      </div>
+      {/* On a phone too, now that it holds Save offline — the one way to
+          keep a PDF readable in the app with no connection. */}
+      <RowMenu
+        label={file.title}
+        items={[
+          { label: "Open", href },
+          offline.status === "saved"
+            ? { label: "Remove offline copy", onClick: offline.remove }
+            : offline.status === "saving"
+              ? { label: "Saving offline…", onClick: () => undefined }
+              : { label: size ? `Save offline · ${size}` : "Save offline", onClick: offline.save },
+        ]}
+        share={{ title: file.title, url: readHref }}
+      />
     </div>
   );
 }

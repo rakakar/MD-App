@@ -16,7 +16,7 @@ export default function OfflinePage() {
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
         <Link
-          href="/settings#downloads"
+          href="/downloads"
           className={ctaPrimary}
           style={{ background: "var(--ws-color)" }}
         >

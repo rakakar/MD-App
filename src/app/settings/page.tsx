@@ -1,30 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationSetting } from "@/components/push/NotificationSetting";
 import { AccountCard } from "@/components/settings/AccountCard";
 import { AppearanceCard } from "@/components/settings/AppearanceCard";
-import { DownloadsCard } from "@/components/settings/DownloadsCard";
 import { PersonalDetailsSection } from "@/components/settings/PersonalDetailsCard";
 import { ReadingCard } from "@/components/settings/ReadingCard";
 import { CARD, SettingsSection, SwitchRow, useToast } from "@/components/settings/parts";
-import { SignOutIcon } from "@/components/shell/icons";
+import { ChevronRight, DownloadIcon, SignOutIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import { BackButton } from "@/components/ui/BackButton";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { applyConsent } from "@/lib/analytics";
-import { formatBytes, listSavedAudio, removeAllAudio, removeAudio, type SavedAudio } from "@/lib/audioCache";
+import { formatBytes } from "@/lib/audioCache";
 import { APP_VERSION } from "@/lib/feedback";
-import {
-  chapterBytesByBook,
-  listDownloads,
-  removeDownload,
-  type DownloadRecord,
-} from "@/lib/idb";
-import { refreshDownloaded } from "@/lib/offline";
-import { catchUpDownloads, offlinePagesBytes, removeBookPages } from "@/lib/offlinePages";
+import { downloadsSummary, useDownloads } from "@/lib/useDownloads";
 import { getPrefs, setPrefs, type Prefs } from "@/lib/storage";
 
 /**
@@ -41,11 +34,7 @@ export default function SettingsPage() {
   const { reset } = useDisplay();
   const desktop = useIsDesktop();
   const [prefs, setPrefsState] = useState<Prefs | null>(null);
-  const [downloads, setDownloads] = useState<DownloadRecord[]>([]);
-  const [bookBytes, setBookBytes] = useState<Record<string, number>>({});
-  const [sharedBytes, setSharedBytes] = useState(0);
-  const [audio, setAudio] = useState<SavedAudio[]>([]);
-  const [quota, setQuota] = useState<number | null>(null);
+  const saved = useDownloads();
   const [toast, showToast] = useToast();
   /**
    * Opened from the Profile page ("Manage in Settings", or its Settings row):
@@ -56,34 +45,10 @@ export default function SettingsPage() {
    */
   const [fromProfile, setFromProfile] = useState(false);
 
-  const loadDownloads = useCallback(() => {
-    void listDownloads().then(setDownloads);
-    // a book's size is its text plus the pages saved to show it
-    void Promise.all([chapterBytesByBook(), offlinePagesBytes()]).then(([text, pages]) => {
-      const sizes = { ...text };
-      for (const [code, n] of Object.entries(pages.byBook)) sizes[code] = (sizes[code] ?? 0) + n;
-      setBookBytes(sizes);
-      setSharedBytes(pages.shared);
-    });
-  }, []);
-
-  // Books downloaded before their pages were saved with them catch up here
-  // as well as on app start (ServiceWorker.tsx); the sizes then include them.
-  useEffect(() => {
-    let live = true;
-    void catchUpDownloads().then(() => live && loadDownloads());
-    return () => {
-      live = false;
-    };
-  }, [loadDownloads]);
-
   useEffect(() => {
     setPrefsState(getPrefs());
     setFromProfile(new URLSearchParams(window.location.search).get("from") === "profile");
-    loadDownloads();
-    void listSavedAudio().then(setAudio);
-    void navigator.storage?.estimate?.().then((e) => setQuota(e.quota ?? null));
-  }, [loadDownloads]);
+  }, []);
 
   const update = (patch: Partial<Prefs>) => {
     setPrefsState(setPrefs(patch));
@@ -92,10 +57,7 @@ export default function SettingsPage() {
 
   if (!prefs) return null;
 
-  const used =
-    downloads.reduce((n, d) => n + (bookBytes[d.code] ?? 0), 0) +
-    (downloads.length ? sharedBytes : 0) +
-    audio.reduce((n, a) => n + a.bytes, 0);
+  const summary = downloadsSummary(saved);
 
   const linkButton = "inline-flex min-h-11 items-center text-sm font-medium text-ink-soft transition-colors hover:text-ink";
 
@@ -133,31 +95,29 @@ export default function SettingsPage() {
           push to offer, and a heading over an empty space explains nothing. */}
       <NotificationSetting desktop={desktop} />
 
-      {/* The Assistant's "open downloads" lands here, on this id. */}
-      <SettingsSection
-        id="downloads"
-        title="Downloads"
-        action={!desktop && used > 0 ? <span className="text-sm text-ink-soft">{formatBytes(used)} used</span> : undefined}
-      >
-        <DownloadsCard
-          desktop={desktop}
-          books={downloads}
-          bookBytes={bookBytes}
-          audio={audio}
-          quota={quota}
-          sharedBytes={sharedBytes}
-          onRemoveBook={(code) =>
-            void removeDownload(code)
-              .then(async () => removeBookPages(code, (await listDownloads()).length))
-              .catch(() => undefined)
-              .then(() => {
-                loadDownloads();
-                void refreshDownloaded();
-              })
-          }
-          onRemoveAudio={(url) => void removeAudio(url).then(() => listSavedAudio().then(setAudio))}
-          onRemoveAllAudio={() => void removeAllAudio().then(() => setAudio([]))}
-        />
+      {/* Storage, as one row: the list itself lives on /downloads, which
+          outgrew a card here. Kept so a reader looking for space in Settings,
+          as on a phone, still finds it. */}
+      <SettingsSection id="storage" title="Storage">
+        <Link
+          href="/downloads"
+          className={`${CARD} flex min-h-16 items-center gap-4 ${desktop ? "px-7" : "px-5"} py-4 transition-colors hover:bg-inset`}
+        >
+          <span
+            aria-hidden
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            style={{ background: "color-mix(in srgb, var(--ws-color) 12%, transparent)", color: "var(--ws-ink)" }}
+          >
+            <DownloadIcon className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-title text-ink">Downloads</span>
+            <span className="block text-sm text-ink-soft">
+              {saved.used ? `${summary} · ${formatBytes(saved.used)}` : "Nothing saved on this device"}
+            </span>
+          </span>
+          <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
+        </Link>
       </SettingsSection>
 
       <SettingsSection id="privacy" title="Privacy">

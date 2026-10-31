@@ -21,6 +21,8 @@ export interface DownloadRecord {
   code: string;
   title_hi: string;
   chapter_count: number;
+  /** for Downloads; absent on books downloaded before it was recorded */
+  cover_image?: string | null;
   saved_at: number;
 }
 

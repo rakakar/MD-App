@@ -65,6 +65,7 @@ export function DownloadButton({
         code: book.code,
         title_hi: book.title_hi,
         chapter_count: book.chapters.length,
+        cover_image: book.cover_image,
       });
       void refreshDownloaded();
       track("book_download_offline");

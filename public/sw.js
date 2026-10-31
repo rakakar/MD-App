@@ -16,6 +16,9 @@ const AUDIO_CACHE = "md-audio-v1";
    same reason as audio: a download outlives deploys until the reader removes
    it. Read last, after the network and the visited-pages cache. */
 const BOOKS_CACHE = "md-books-v1";
+/* Library PDFs saved to read offline, with the reader page that opens each
+   (src/lib/pdfCache.ts). Kept across deploys like the two above. */
+const PDF_CACHE = "md-pdfs-v1";
 
 /* How long each cache may grow, and how long a page may keep a reader waiting.
  *
@@ -51,7 +54,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((k) => !k.startsWith(VERSION) && k !== AUDIO_CACHE && k !== BOOKS_CACHE)
+            .filter((k) => !k.startsWith(VERSION) && k !== AUDIO_CACHE && k !== BOOKS_CACHE && k !== PDF_CACHE)
             .map((k) => caches.delete(k))
         )
       )
@@ -69,10 +72,10 @@ self.addEventListener("activate", (event) => {
  * any more than the page could, so the whole file goes back and the browser
  * takes what it needs. Everything not saved is handed to the network
  * untouched. */
-async function servedAudio(req, url) {
+async function servedAudio(req, url, cacheName = AUDIO_CACHE) {
   let hit;
   try {
-    const cache = await caches.open(AUDIO_CACHE);
+    const cache = await caches.open(cacheName);
     hit = await cache.match(url.href);
   } catch {
     return fetch(req);
@@ -108,7 +111,7 @@ async function servedAudio(req, url) {
     return new Response(body.slice(start, end + 1), {
       status: 206,
       headers: {
-        "Content-Type": hit.headers.get("Content-Type") || "audio/mpeg",
+        "Content-Type": hit.headers.get("Content-Type") || "application/octet-stream",
         "Content-Range": `bytes ${start}-${end}/${size}`,
         "Content-Length": String(end - start + 1),
         "Accept-Ranges": "bytes",
@@ -132,6 +135,10 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) {
     if (req.destination === "audio" || /\.(wav|mp3|m4a|ogg|opus|aac)$/i.test(url.pathname)) {
       event.respondWith(servedAudio(req, url));
+    } else if (/\.pdf$/i.test(url.pathname)) {
+      /* A saved PDF, answered the same way — pdf.js reads a document in
+         ranges, and gets them from the device's copy. */
+      event.respondWith(servedAudio(req, url, PDF_CACHE));
     }
     // API responses are cached in IndexedDB by the app, not here
     return;
@@ -165,6 +172,10 @@ self.addEventListener("fetch", (event) => {
         const kept = await caches
           .open(BOOKS_CACHE)
           .then((c) => c.match(req, { ignoreSearch: true }))
+          .then(
+            (hit) =>
+              hit || caches.open(PDF_CACHE).then((c) => c.match(req, { ignoreSearch: true }))
+          )
           .catch(() => undefined);
         if (kept) return kept;
         const res = await fetch(req);
@@ -206,7 +217,13 @@ self.addEventListener("fetch", (event) => {
           .then(
             (hit) =>
               hit ||
-              caches.open(BOOKS_CACHE).then((c) => c.match(req, { ignoreSearch: true }))
+              caches
+                .open(BOOKS_CACHE)
+                .then((c) => c.match(req, { ignoreSearch: true }))
+                .then(
+                  (kept) =>
+                    kept || caches.open(PDF_CACHE).then((c) => c.match(req, { ignoreSearch: true }))
+                )
           )
           .catch(() => undefined);
         const late = new Promise((resolve) => setTimeout(resolve, NAV_TIMEOUT, "late"));

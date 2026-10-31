@@ -125,7 +125,7 @@ function KindGroup({
     return <VideoPlaylist files={files} />;
   }
 
-  if (kind === "pdf") return <PdfRows files={files} folderProvenance={folderProvenance} />;
+  if (kind === "pdf") return <PdfRows files={files} folderProvenance={folderProvenance} folderName={albumTitle} />;
 
   // `link` and `other`. Both are handed over rather than rendered, and the
   // difference is only what happens next: a link opens where it lives, a file

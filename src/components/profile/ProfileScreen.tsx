@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { StagePicker } from "@/components/journey/StagePicker";
-import { ChevronRight } from "@/components/shell/icons";
+import { ChevronRight, DownloadIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { SectionHeading } from "@/components/ui";
 import { BackButton } from "@/components/ui/BackButton";
@@ -13,6 +13,8 @@ import { useIsDesktop } from "@/components/ui/Dialog";
 import { EditProfile } from "./EditProfile";
 import { VerifyContact } from "./VerifyContact";
 import { getBooks } from "@/lib/api";
+import { formatBytes } from "@/lib/audioCache";
+import { downloadsSummary, useDownloads } from "@/lib/useDownloads";
 import { contentLang } from "@/lib/script";
 import { ONBOARDING_OPTIONS, stageBooks, stageById } from "@/lib/journey";
 import { displayPhone } from "@/lib/me";
@@ -130,6 +132,7 @@ export function ProfileScreen() {
                 books={books}
                 onChange={() => setChangingStage(true)}
               />
+              <DownloadsRow />
             </div>
 
             <div className="mt-8 xl:mt-0">
@@ -446,5 +449,38 @@ function JourneyCard({
         {startRow}
       </div>
     </section>
+  );
+}
+
+/**
+ * The way into Downloads, with what is saved in one line (designer's mock,
+ * 31 Oct 2026). The list itself is its own page; this only says how much.
+ */
+function DownloadsRow() {
+  const saved = useDownloads();
+  const summary = downloadsSummary(saved);
+  return (
+    <div>
+      <SectionHeading>On this device</SectionHeading>
+      <Link
+        href="/downloads"
+        className={`${CARD} flex min-h-16 items-center gap-4 px-5 py-4 transition-colors hover:bg-inset active:bg-ink/[0.03]`}
+      >
+        <span
+          aria-hidden
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+          style={{ background: "color-mix(in srgb, var(--ws-color) 12%, transparent)", color: "var(--ws-ink)" }}
+        >
+          <DownloadIcon className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-title text-ink">Downloads</span>
+          <span className="block text-sm text-ink-soft">
+            {saved.used ? `${summary} · ${formatBytes(saved.used)}` : "Books, PDFs and audio to read offline"}
+          </span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
+      </Link>
+    </div>
   );
 }

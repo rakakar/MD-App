@@ -50,7 +50,7 @@ export function OfflineNotice() {
           ? `You're offline. ${hit.what} ${hit.verb} internet.`
           : "You're offline. Downloaded books, saved audio and your notes still work."}{" "}
         <Link
-          href="/settings#downloads"
+          href="/downloads"
           className="inline-flex font-semibold underline underline-offset-2"
         >
           Your downloads

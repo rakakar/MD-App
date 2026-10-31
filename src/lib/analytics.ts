@@ -72,6 +72,8 @@ export type GaEvent =
   | "login"
   | "signup"
   | "book_download_offline"
+  // a library PDF saved inside the app to read offline (Downloads page)
+  | "pdf_save_offline"
   // Notifications are opt-in and asked for once. The ratio of banner
   // impressions to enables is the only way to tell a prompt people ignore
   // from one they never saw.
