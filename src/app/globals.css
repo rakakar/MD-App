@@ -854,8 +854,8 @@ body {
    texts are printed in, and the reader has its own Typeface control for
    anyone who wants the sans — a global "bolder chrome" switch has no business
    re-setting a chapter. Weight goes back to 400 so the inherited 500 above
-   cannot change the book text. (DPS Shree's 500 is barely heavier than its
-   400, so it wouldn't help anyway.) */
+   cannot change the book text. (The book face ships only 400, which is DPS
+   Shree's Medium cut, and 700, so a 500 would land on the 400 anyway.) */
 [data-bold="1"] .reader-content {
   font-weight: 400;
 }

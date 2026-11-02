@@ -33,18 +33,25 @@ const newsreader = Newsreader({
 
 // The book face: DPS Shree (Modular Infotech, licensed). It replaced Tiro on
 // 2 Nov 2026 (Raka). Each file names itself as its own family, so the weights
-// are mapped here. Medium is left out on purpose: it is barely heavier than
-// Regular, nothing in the book asks for it, and every face here is preloaded
-// on every route. A 500 request falls back to Regular. Its letters draw about 20% smaller than Tiro's at the same
-// font-size, so size-adjust brings it up to match the rest of the type. Without
-// that, every reader size step would read one step small. No metric fallback:
-// the fallback would be a Latin face with no Devanagari in it, and the
-// generated one would ignore the size-adjust anyway.
+// are mapped here. The *Medium* file is the 400: Raka's call, because it reads
+// better than DPS Regular on screen. DPS Regular isn't shipped. Bold is the 700.
+//
+// The WOFF2 files were made from the original TTFs with fontTools
+// (`TTFont(...).flavor = "woff2"`). Don't swap in WOFF2 from an online
+// converter: one batch came back with GSUB/GPOS/GDEF stripped, which breaks
+// every conjunct (क्ष drew as क्‌ष). After any re-conversion, check that a
+// conjunct line renders as it does in the TTF.
+//
+// Its letters draw about 20% smaller than Tiro's at the same font-size, so
+// size-adjust brings it up to match the rest of the type. Without that, every
+// reader size step would read one step small. No metric fallback: the fallback
+// would be a Latin face with no Devanagari in it, and the generated one would
+// ignore the size-adjust anyway.
 const dpsShree = localFont({
   variable: "--font-dps-shree",
   src: [
-    { path: "./fonts/dps-shree-regular.ttf", weight: "400", style: "normal" },
-    { path: "./fonts/dps-shree-bold.ttf", weight: "700", style: "normal" },
+    { path: "./fonts/dps-shree-medium.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/dps-shree-bold.woff2", weight: "700", style: "normal" },
   ],
   declarations: [{ prop: "size-adjust", value: "126%" }],
   adjustFontFallback: false,
