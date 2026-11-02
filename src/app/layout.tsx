@@ -1,18 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import {
-  Instrument_Sans,
-  Mukta,
-  Newsreader,
-  Tiro_Devanagari_Hindi,
-} from "next/font/google";
+import { Instrument_Sans, Mukta, Newsreader } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@/components/consent/ConsentBanner";
 import { InlineScript } from "@/components/InlineScript";
 import { AppShell } from "@/components/shell/AppShell";
 import "./globals.css";
 
 // Type system per the design spec (design_docs/screens): Instrument Sans for
-// chrome and English, Newsreader for display/section titles, Tiro Devanagari
-// Hindi for book content, Mukta for Devanagari inside chrome lines. Content faces are
+// chrome and English, Newsreader for display/section titles, DPS Shree for
+// book content, Mukta for Devanagari inside chrome lines. Content faces are
 // self-hosted via next/font and preloaded — no CLS from font swap (PRD §5).
 const instrumentSans = Instrument_Sans({
   variable: "--font-instrument-sans",
@@ -35,12 +31,23 @@ const newsreader = Newsreader({
   preload: false,
 });
 
-// Tiro ships a single 400 weight; Devanagari headings that ask for 600/700
-// render via synthesized bold, which the spec's own comps accept.
-const tiroDevanagariHindi = Tiro_Devanagari_Hindi({
-  variable: "--font-tiro-devanagari",
-  subsets: ["devanagari", "latin"],
-  weight: "400",
+// The book face: DPS Shree (Modular Infotech, licensed). It replaced Tiro on
+// 2 Nov 2026 (Raka). Each file names itself as its own family, so the weights
+// are mapped here. Medium is left out on purpose: it is barely heavier than
+// Regular, nothing in the book asks for it, and every face here is preloaded
+// on every route. A 500 request falls back to Regular. Its letters draw about 20% smaller than Tiro's at the same
+// font-size, so size-adjust brings it up to match the rest of the type. Without
+// that, every reader size step would read one step small. No metric fallback:
+// the fallback would be a Latin face with no Devanagari in it, and the
+// generated one would ignore the size-adjust anyway.
+const dpsShree = localFont({
+  variable: "--font-dps-shree",
+  src: [
+    { path: "./fonts/dps-shree-regular.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/dps-shree-bold.ttf", weight: "700", style: "normal" },
+  ],
+  declarations: [{ prop: "size-adjust", value: "126%" }],
+  adjustFontFallback: false,
   display: "swap",
   preload: true,
 });
@@ -225,7 +232,7 @@ export default function RootLayout({
       data-reader-face="sans"
       data-reader-theme="original"
       suppressHydrationWarning
-      className={`${instrumentSans.variable} ${newsreader.variable} ${tiroDevanagariHindi.variable} ${mukta.variable} h-full antialiased`}
+      className={`${instrumentSans.variable} ${newsreader.variable} ${dpsShree.variable} ${mukta.variable} h-full antialiased`}
     >
       <head>
         <InlineScript html={THEME_SCRIPT} />

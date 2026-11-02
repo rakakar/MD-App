@@ -284,8 +284,7 @@
   --shadow-raised: 0 8px 28px -10px rgb(26 22 19 / 0.35);
   --shadow-sheet: 0 -20px 44px -20px rgb(26 22 19 / 0.4);
 
-  --font-devanagari: var(--font-tiro-devanagari), "Tiro Devanagari Hindi",
-    serif;
+  --font-devanagari: var(--font-dps-shree), "DPS Shree", serif;
   --font-devanagari-sans: var(--font-mukta), "Mukta", sans-serif;
   --font-ui: var(--font-instrument-sans), system-ui, sans-serif;
   --font-display: var(--font-newsreader), Georgia, serif;
@@ -855,7 +854,8 @@ body {
    texts are printed in, and the reader has its own Typeface control for
    anyone who wants the sans — a global "bolder chrome" switch has no business
    re-setting a chapter. Weight goes back to 400 so the inherited 500 above
-   cannot ask single-weight Tiro for a bold it does not have. */
+   cannot change the book text. (DPS Shree's 500 is barely heavier than its
+   400, so it wouldn't help anyway.) */
 [data-bold="1"] .reader-content {
   font-weight: 400;
 }
@@ -927,6 +927,19 @@ body {
 .hi.font-semibold,
 .hi.font-bold {
   font-family: var(--font-devanagari-sans);
+}
+/* Except in the book itself. DPS Shree (the book face since 2 Nov 2026)
+   has a real Bold, so a bold heading or line inside a chapter or a sutra stays
+   in the book's own face. Before, it switched to Mukta mid-page. 600 resolves
+   to the 700 file. Still loses to the reader's sans choice below, which is
+   more specific. */
+.reader-content .hi.font-medium,
+.reader-content .hi.font-semibold,
+.reader-content .hi.font-bold,
+.hi.sutra-verse.font-medium,
+.hi.sutra-verse.font-semibold,
+.hi.sutra-verse.font-bold {
+  font-family: var(--font-devanagari);
 }
 
 /* A UI line that interleaves both scripts (English chrome around a Hindi name).
