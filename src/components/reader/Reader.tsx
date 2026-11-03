@@ -29,7 +29,7 @@ import {
   type Highlight,
 } from "@/lib/personal";
 import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
-import { citationText, paraAnchorId, parseRef } from "@/lib/refs";
+import { citationWithLink, paraAnchorId, parseRef } from "@/lib/refs";
 import { searchTermsInLocation, useSearchHitMarks, type SearchHit } from "@/lib/searchHit";
 import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
 import {
@@ -1349,12 +1349,17 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    *
    * The citation, not a bare quotation: a paragraph of this material travelling
    * without its reference is how a sentence ends up attributed to the wrong
-   * book. Falls back to the clipboard where the Web Share API is not there,
-   * which is every desktop browser and no phone.
+   * book. The link to the passage rides along so the recipient can open it
+   * where it stands. Falls back to the clipboard where the Web Share API is
+   * not there, which is every desktop browser and no phone.
    */
   const doShare = useCallback(
     async (s: Selection) => {
-      const text = citationText(s.text || s.para.text_hi, s.para.canonical_ref);
+      const text = citationWithLink(
+        s.text || s.para.text_hi,
+        s.para.canonical_ref,
+        window.location.origin
+      );
       try {
         if (navigator.share) {
           await navigator.share({ text });
@@ -1374,7 +1379,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     async (s: Selection) => {
       try {
         await navigator.clipboard.writeText(
-          citationText(s.text || s.para.text_hi, s.para.canonical_ref)
+          citationWithLink(s.text || s.para.text_hi, s.para.canonical_ref, window.location.origin)
         );
         showToast({ text: "Copied with citation." });
       } catch {

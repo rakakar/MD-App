@@ -56,3 +56,25 @@ export function paraAnchorId(pageKey: string | number, paraNumber: number): stri
 export function citationText(text: string, ref: string): string {
   return `${text}\n— ${ref}`;
 }
+
+/**
+ * A passage's address on this site, absolute so it can leave the app.
+ *
+ * `/paras/{ref}` rather than the reader URL `refToHref` builds: it resolves
+ * the ref on the server, so it still lands on the right paragraph after a
+ * book moves, and a compilation is sent to its library home from there.
+ */
+export function passageUrl(ref: string, origin: string): string {
+  return `${origin}/paras/${encodeURIComponent(ref)}`;
+}
+
+/**
+ * What Share and Copy send: the citation, then the link on its own line.
+ *
+ * The link goes inside the text, not in the share sheet's separate `url`
+ * field, because some iOS share targets keep only one of the two. WhatsApp
+ * also builds its link preview from a URL in the message text.
+ */
+export function citationWithLink(text: string, ref: string, origin: string): string {
+  return `${citationText(text, ref)}\n${passageUrl(ref, origin)}`;
+}
