@@ -145,7 +145,7 @@ export function ConversationsPanel({
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search conversations"
                 aria-label="Search conversations"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-soft"
+                className="ui-hi min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-soft"
               />
             </label>
             <div role="group" aria-label="Show" className="mt-3 flex flex-wrap gap-1.5">

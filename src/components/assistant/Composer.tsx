@@ -264,7 +264,7 @@ export function Composer({
               aria-autocomplete="list"
               enterKeyHint="send"
               autoComplete="off"
-              className="min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-ink-soft"
+              className="ui-hi min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-ink-soft"
             />
             {canListen && (
               <button

@@ -99,7 +99,7 @@ export function ConversationsScreen() {
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search conversations"
                 aria-label="Search conversations"
-                className="min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-ink-soft"
+                className="ui-hi min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-ink-soft"
               />
             </label>
 
