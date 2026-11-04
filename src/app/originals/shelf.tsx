@@ -94,7 +94,7 @@ export async function OriginalsShelfPage({ params }: { params: RawParams }) {
       <WorkspaceShelf
         root={root}
         title="Library"
-        description="Compilations, diaries, letters, articles and photos of Shri A. Nagraj."
+        description="Original unpublished diaries, articles, charts by Shri A.Nagraj"
         lead={<ContinueDocument />}
         state={state}
         topics={topics}
