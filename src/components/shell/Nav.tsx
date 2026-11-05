@@ -8,7 +8,7 @@ import { OfflineNotice } from "./OfflineStatus";
 import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
-import type { NavItem } from "@/lib/workspaceConfig";
+import { WORKSPACES, type NavItem } from "@/lib/workspaceConfig";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 /**
@@ -115,7 +115,7 @@ export function BottomNav() {
 
 /** Desktop ≥1024px: persistent sidebar — selector top, nav, avatar bottom. */
 export function Sidebar() {
-  const { workspace, tab, derive } = useWorkspace();
+  const { workspace, tab, derive, select } = useWorkspace();
   const pathname = useRoutePath();
   const claimed = tab && tab.path === pathname ? tab.href : null;
 
@@ -126,8 +126,16 @@ export function Sidebar() {
           the pill alone read as a filter on the nav below it rather than as the
           thing that changes what the nav is */}
       <div className="flex items-center gap-2.5 border-b border-rule px-4 py-4">
-        <BrandMark className="h-7.5 w-7.5" />
-        <span className="text-sm font-semibold tracking-[-0.01em]">MD Study</span>
+        {/* the brand is the way home: Originals' Home, whichever workspace
+            is open (designer, 5 Nov 2026) */}
+        <Link
+          href={WORKSPACES.originals.home}
+          onClick={() => select("originals")}
+          className="flex items-center gap-2.5 rounded-lg"
+        >
+          <BrandMark className="h-7.5 w-7.5" />
+          <span className="text-sm font-semibold tracking-[-0.01em]">MD Study</span>
+        </Link>
         <div className="ms-auto">
           <NotificationBell />
         </div>

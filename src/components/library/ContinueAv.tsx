@@ -169,19 +169,30 @@ export function ContinueAv({
         wanted,
         (id) => onPage.has(id) || named.has(id)
       );
-      if (stillUnnamed.length > 0) {
-        const found = await findLibrary({
+      const take = (kinds: FileKind[]) =>
+        findLibrary({
           workspace: "originals",
-          state: { ...EMPTY_FIND, selection: { kind: [...AV_KINDS] } },
+          state: { ...EMPTY_FIND, selection: { kind: kinds } },
           limit: AV_PAGE,
-        }).catch(() => null);
-        for (const row of found?.results ?? []) {
-          if (row.type !== "file") continue;
-          // A file's breadcrumb ends with its own folder, which is the line the
-          // card wants above the title.
-          const { breadcrumb, ...file } = row;
-          fetched.set(row.id, { file, folder: breadcrumb.at(-1)?.name ?? "" });
-        }
+        })
+          .then((found) => {
+            for (const row of found?.results ?? []) {
+              if (row.type !== "file") continue;
+              // A file's breadcrumb ends with its own folder, which is the line
+              // the card wants above the title.
+              const { breadcrumb, ...file } = row;
+              fetched.set(row.id, { file, folder: breadcrumb.at(-1)?.name ?? "" });
+            }
+          })
+          .catch(() => undefined);
+      if (stillUnnamed.length > 0) await take([...AV_KINDS]);
+      // One page of "audio and video" is a hundred of 1,100-odd, shared
+      // between the two — so a recording the Audio chip's own page holds can
+      // fall off the mixed one, and the card showed under Audio but not under
+      // All (designer, 5 Nov 2026). Each kind's first page as well, then:
+      // whatever a filtered Media page can resume, the unfiltered one can too.
+      if (missing(stillUnnamed, (id) => fetched.has(id)).length > 0) {
+        await Promise.all(AV_KINDS.map((kind) => take([kind])));
       }
 
       const built: ResumeRow[] = [];

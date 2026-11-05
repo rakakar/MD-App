@@ -147,6 +147,38 @@ function PlayerBarInner({
       }
     : () => player.openAudioMode();
 
+  /**
+   * **Back from the notification shade, into the full player.**
+   *
+   * A tap on the OS media notification just brings the app to the front; the
+   * page is told nothing about *what* was tapped. So the one thing it can see
+   * stands in for it: on a phone, the app returning to the front while audio
+   * was playing when it left. Coming back that way is coming back to the
+   * listening, so the full player is the right place to land (designer,
+   * 5 Nov 2026). Device speech is skipped — it has no notification to tap.
+   */
+  const expandRef = useRef(expand);
+  const playingRef = useRef(player.playing);
+  useEffect(() => {
+    expandRef.current = expand;
+    playingRef.current = player.playing;
+  });
+  const notifiable = !desktop && !leaving && source.kind !== "device";
+  useEffect(() => {
+    if (!notifiable) return;
+    let playingWhenHidden = false;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        playingWhenHidden = playingRef.current;
+      } else if (playingWhenHidden) {
+        playingWhenHidden = false;
+        expandRef.current();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [notifiable]);
+
   if (reader && desktop && source.kind !== "track") {
     return (
       <DesktopReaderPill
