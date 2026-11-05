@@ -48,6 +48,17 @@ export default function AboutPage() {
             </p>
           </Section>
 
+          <Section title="Responsible team">
+            <ul className="flex list-disc flex-col gap-1 ps-5 text-ink-soft marker:text-ink-soft/60">
+              {TEAM.map(([name, role]) => (
+                <li key={name}>
+                  <span className="text-ink">{name}</span>
+                  {role && ` (${role})`}
+                </li>
+              ))}
+            </ul>
+          </Section>
+
           <Section title="Official website">
             <a
               href="https://madhyasth.org"
@@ -83,6 +94,18 @@ const PURPOSE = [
   "A connected learning community",
   "AI-assisted understanding and research",
   "One place for publishers, learners and contributors",
+];
+
+/** Name and role, in the order the designer gave (5 Nov 2026). */
+const TEAM: [string, string][] = [
+  ["Vinod Sharma", "PM & dev"],
+  ["Rakesh Kanwar", "UX, FE dev"],
+  ["Suryakant Agrawal", "books"],
+  ["Himanshu Pastagiya", "coord"],
+  ["Hirendra Chauhan", "coord"],
+  ["Testing team", ""],
+  ["Shriram Narasimhan", "content"],
+  ["Achal Agrawal", "Phase 1 design, dev"],
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
