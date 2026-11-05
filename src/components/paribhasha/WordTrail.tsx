@@ -402,7 +402,7 @@ function ParibhashaPopover({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [place, setPlace] = useState<{ left: number; top?: number; bottom?: number; maxH: number } | null>(null);
+  const [place, setPlace] = useState<{ left: number; top: number; up: boolean; maxH: number } | null>(null);
 
   // Where it goes is decided once per word clicked, against the window as it
   // is at that moment.
@@ -413,10 +413,13 @@ function ParibhashaPopover({
     const below = vh - (anchor.bottom - window.scrollY) - POP_GAP - 16;
     const above = anchor.top - window.scrollY - POP_GAP - 80;
     if (below >= 320 || below >= above) {
-      setPlace({ left, top: anchor.bottom + POP_GAP, maxH: Math.min(480, Math.max(240, below)) });
+      setPlace({ left, top: anchor.bottom + POP_GAP, up: false, maxH: Math.min(480, Math.max(240, below)) });
     } else {
-      const docH = document.documentElement.scrollHeight;
-      setPlace({ left, bottom: docH - anchor.top + POP_GAP, maxH: Math.min(480, above) });
+      // Above: pinned by its top at the word and lifted by its own height.
+      // Not `bottom` — the body is not positioned, so `bottom` counts from the
+      // foot of the first screen, not the page, and on a long chapter that
+      // put the card far above the window (iPad landscape, 5 Nov 2026).
+      setPlace({ left, top: anchor.top - POP_GAP, up: true, maxH: Math.min(480, above) });
     }
   }, [anchor]);
 
@@ -452,7 +455,7 @@ function ParibhashaPopover({
           width: POP_W,
           left: place?.left ?? -9999,
           top: place?.top,
-          bottom: place?.bottom,
+          transform: place?.up ? "translateY(-100%)" : undefined,
           maxHeight: place?.maxH,
           visibility: place ? "visible" : "hidden",
         }}
