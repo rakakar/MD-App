@@ -26,8 +26,7 @@ export function SavedCardFooter({
   bookTitle,
   page,
   date,
-  shareTitle,
-  href,
+  shareText,
   onDelete,
   deleteLabel,
   tone = "app",
@@ -37,10 +36,11 @@ export function SavedCardFooter({
   page: string;
   /** already formatted, or empty where the row carries no date */
   date: string;
-  /** what the share sheet is offered as */
-  shareTitle: string;
-  /** the passage's own address, for the share */
-  href: string;
+  /**
+   * The whole message — passage, note, book and page, link — from
+   * `shareCitation`. Built by the caller, which knows the book's name.
+   */
+  shareText: string;
   onDelete: () => void;
   deleteLabel: string;
   /**
@@ -84,7 +84,7 @@ export function SavedCardFooter({
       </div>
       {/* Above the card's stretched link, or neither would be pressable. */}
       <div className="relative z-10 flex shrink-0 items-center">
-        <RowShare title={shareTitle} href={href} reader={reader} />
+        <RowShare text={shareText} reader={reader} />
         <RowButton onClick={onDelete} label={deleteLabel} destructive reader={reader}>
           <TrashIcon className="h-5 w-5" />
         </RowButton>
@@ -129,23 +129,19 @@ function RowButton({
 }
 
 /**
- * Share one saved passage.
- *
- * The passage's own address rather than the page the reader is standing on —
- * `ui/ShareButton` shares `window.location`, which from this list would send
- * everybody the list. Falls back to the clipboard where the browser has no
- * share sheet, which is every desktop one.
+ * Share one saved passage: its words, book, page and own link
+ * (`shareCitation`), not the page the reader is standing on. Falls back to the
+ * clipboard where the browser has no share sheet, which is every desktop one.
  */
-function RowShare({ title, href, reader }: { title: string; href: string; reader?: boolean }) {
+function RowShare({ text, reader }: { text: string; reader?: boolean }) {
   const [copied, setCopied] = useState(false);
   const share = async () => {
-    const url = new URL(href, window.location.origin).toString();
     try {
       if (navigator.share) {
-        await navigator.share({ title, url });
+        await navigator.share({ text });
         return;
       }
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {

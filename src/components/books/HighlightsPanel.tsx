@@ -13,7 +13,7 @@ import {
   SheetTextAction,
 } from "@/components/ui";
 import { type Highlight } from "@/lib/personal";
-import { parseRef, refToHref } from "@/lib/refs";
+import { parseRef, refToHref, shareCitation } from "@/lib/refs";
 import type { HighlightColour } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
 import { chapterName } from "@/lib/labels";
@@ -44,6 +44,7 @@ type Mode = "all" | "notes";
 export function HighlightsPanel({
   rows,
   chapters,
+  bookTitle,
 }: {
   /**
    * The book's highlights, or `null` while the local store has not been read
@@ -53,6 +54,7 @@ export function HighlightsPanel({
    */
   rows: Highlight[] | null;
   chapters: ChapterTocEntry[];
+  bookTitle: string;
 }) {
   const [mode, setMode] = useState<Mode>("all");
   const [picked, setPicked] = useState<string[]>([]);
@@ -190,6 +192,7 @@ export function HighlightsPanel({
                     href={refToHref(t.h.canonical_ref)}
                     highlight={t.h}
                     page={t.page}
+                    bookTitle={bookTitle}
                   />
                 </li>
               ))}
@@ -248,21 +251,48 @@ function HighlightCard({
   href,
   highlight,
   page,
+  bookTitle,
 }: {
   href: string;
   highlight: Highlight;
   page: string | null;
+  bookTitle: string;
 }) {
   const [copied, setCopied] = useState(false);
   const text = highlight.text_hi ?? "";
+  // What Copy and Share both send: the words, the note, the book and page,
+  // and the link (`shareCitation`) — the bare words alone lost their source.
+  const citation = () =>
+    shareCitation({
+      passage: text,
+      note: highlight.note,
+      bookTitle,
+      ref: highlight.canonical_ref,
+      origin: window.location.origin,
+    });
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(citation());
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
       // a browser that refuses the clipboard is not an error worth a dialog
+    }
+  };
+
+  const share = async () => {
+    const message = citation();
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: message });
+        return;
+      }
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // cancelled, or a browser that refuses both
     }
   };
 
@@ -306,13 +336,16 @@ function HighlightCard({
         >
           {copied ? "Copied" : "Copy"}
         </button>
-        <a
-          href={href}
-          aria-label="Open this passage"
+        {/* It was a link back to the passage under a share icon — the card
+            itself already is that link. Now it shares, like the icon says. */}
+        <button
+          type="button"
+          onClick={share}
+          aria-label="Share this passage"
           className="flex h-11 w-9 items-center justify-center text-ink-soft transition-colors hover:text-ink"
         >
           <ShareIcon className="h-4 w-4" />
-        </a>
+        </button>
       </div>
     </div>
   );

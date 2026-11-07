@@ -1,7 +1,7 @@
 "use client";
 
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
-import { parseRef, refToHref } from "@/lib/refs";
+import { parseRef, shareCitation } from "@/lib/refs";
 import type { HighlightColour } from "@/lib/storage";
 
 /**
@@ -53,11 +53,17 @@ export function HighlightCard({
   colour,
   createdAt,
   chapterLabel,
+  bookTitle,
+  note,
   onGo,
   onDelete,
 }: {
   canonicalRef: string;
   text?: string;
+  /** for the shared message — the footer shows the chapter instead */
+  bookTitle: string;
+  /** the paragraph's note, carried along when the highlight is shared */
+  note?: string;
   colour?: HighlightColour;
   createdAt: string;
   /** the chapter's name, where My Journey's card names the book */
@@ -80,8 +86,13 @@ export function HighlightCard({
         bookTitle={chapterLabel}
         page={page}
         date={savedDate(createdAt)}
-        shareTitle={words}
-        href={refToHref(canonicalRef)}
+        shareText={shareCitation({
+          passage: text,
+          note,
+          bookTitle,
+          ref: canonicalRef,
+          origin: window.location.origin,
+        })}
         onDelete={onDelete}
         deleteLabel={`Remove highlight on page ${page}`}
       />
@@ -95,10 +106,12 @@ export function NoteCard({
   passage,
   createdAt,
   chapterLabel,
+  bookTitle,
   onGo,
   onDelete,
 }: {
   canonicalRef: string;
+  bookTitle: string;
   note: string;
   /** the words the note is about */
   passage?: string;
@@ -128,8 +141,13 @@ export function NoteCard({
         bookTitle={chapterLabel}
         page={page}
         date={savedDate(createdAt)}
-        shareTitle={note}
-        href={refToHref(canonicalRef)}
+        shareText={shareCitation({
+          passage,
+          note,
+          bookTitle,
+          ref: canonicalRef,
+          origin: window.location.origin,
+        })}
         onDelete={onDelete}
         deleteLabel={`Delete note on page ${page}`}
       />

@@ -11,7 +11,7 @@ import {
   listSavedToJourney,
   type Conversation,
 } from "@/lib/assistant/conversations";
-import { PERSONAL_SYNCED, localBookmarks, localNotes, syncPersonal } from "@/lib/personal";
+import { PERSONAL_SYNCED, localBookmarks, localNotes, localProgressFor, syncPersonal } from "@/lib/personal";
 import type { LocalBookmark, LocalNote } from "@/lib/storage";
 import type { BookSummary } from "@/lib/types";
 
@@ -140,7 +140,9 @@ export function usePersonalRows(): {
 
 /** The book's own name where the shelf has been read, its code until then. */
 export function bookTitle(code: string, titles: BookTitles): string {
-  return titles.get(code) ?? code;
+  // Before the shelf answers (or offline), the title this device last read the
+  // book under — a shared highlight that says "JVEP" is a code, not a source.
+  return titles.get(code) ?? localProgressFor(code)?.book_title ?? code;
 }
 
 /**

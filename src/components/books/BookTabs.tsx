@@ -46,6 +46,8 @@ function BookTabsFromUrl(props: BookTabsProps) {
 
 interface BookTabsProps {
   bookCode: string;
+  /** for the citation a shared highlight carries */
+  bookTitle: string;
   translations: TranslationRef[];
   chapters: ChapterTocEntry[];
   chapterCount: number;
@@ -56,6 +58,7 @@ interface BookTabsProps {
 
 function BookTabsView({
   bookCode,
+  bookTitle,
   chapters,
   chapterCount,
   chaptersHref,
@@ -112,7 +115,7 @@ function BookTabsView({
       {tab === "highlights" ? (
         <>
           <div className="lg:hidden">
-            <HighlightsPanel rows={rows} chapters={chapters} />
+            <HighlightsPanel rows={rows} chapters={chapters} bookTitle={bookTitle} />
           </div>
           <div className="hidden lg:block">{children}</div>
         </>

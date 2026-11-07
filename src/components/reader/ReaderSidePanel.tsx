@@ -177,7 +177,13 @@ export function ReaderSidePanel({
             onGoToPage={onGoToPage}
           />
         ) : tab === "highlights" ? (
-          <HighlightsTab rows={highlights} chapters={chapters} onGoToRef={onGoToRef} onDelete={removeHighlight} />
+          <HighlightsTab
+            rows={highlights}
+            chapters={chapters}
+            bookTitle={bookTitle}
+            onGoToRef={onGoToRef}
+            onDelete={removeHighlight}
+          />
         ) : (
           <NotesTab
             notes={notes}
@@ -407,11 +413,13 @@ export function chapterLabelOf(ref: string, chapters: ChapterTocEntry[]): string
 function HighlightsTab({
   rows,
   chapters,
+  bookTitle,
   onGoToRef,
   onDelete,
 }: {
   rows: Highlight[];
   chapters: ChapterTocEntry[];
+  bookTitle: string;
   onGoToRef: (ref: string) => void;
   onDelete: (h: Highlight) => void;
 }) {
@@ -484,6 +492,8 @@ function HighlightsTab({
                   canonicalRef={h.canonical_ref}
                   text={h.text_hi}
                   colour={h.colour}
+                  note={h.note}
+                  bookTitle={bookTitle}
                   createdAt={h.created_at}
                   chapterLabel={chapterLabelOf(h.canonical_ref, chapters)}
                   onGo={() => onGoToRef(h.canonical_ref)}
@@ -626,6 +636,7 @@ function NotesTab({
                 <NoteCard
                   canonicalRef={n.canonical_ref}
                   note={n.text}
+                  bookTitle={bookTitle}
                   passage={n.text_hi}
                   createdAt={n.created_at}
                   chapterLabel={chapterLabelOf(n.canonical_ref, chapters)}

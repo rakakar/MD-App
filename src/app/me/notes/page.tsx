@@ -7,7 +7,7 @@ import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/Pers
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
 import { EmptyState, PageContainer } from "@/components/ui";
 import { unsaveNote } from "@/lib/personal";
-import { parseRef, refToHref } from "@/lib/refs";
+import { parseRef, refToHref, shareCitation } from "@/lib/refs";
 
 /**
  * **Notes — the other half of My Journey's Highlights & Notes.**
@@ -88,8 +88,13 @@ export default function NotesPage() {
                          sitting; editing a note's wording months later does not
                          move when the passage caught them. */
                       date={savedDate(n.created_at)}
-                      shareTitle={n.text}
-                      href={href}
+                      shareText={shareCitation({
+                        passage: n.text_hi,
+                        note: n.text,
+                        bookTitle: bookTitle(n.book_code, titles),
+                        ref: n.canonical_ref,
+                        origin: window.location.origin,
+                      })}
                       onDelete={() => remove(n.canonical_ref)}
                       deleteLabel={`Delete note on ${n.canonical_ref}`}
                     />

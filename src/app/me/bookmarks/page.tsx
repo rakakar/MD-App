@@ -7,7 +7,7 @@ import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/Pers
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
 import { EmptyState, PageContainer } from "@/components/ui";
 import { unsaveBookmark } from "@/lib/personal";
-import { parseRef, refToHref } from "@/lib/refs";
+import { parseRef, refToHref, shareCitation } from "@/lib/refs";
 import type { HighlightColour, LocalBookmark } from "@/lib/storage";
 
 /** Tailwind cannot build a class name at runtime; the three are written out. */
@@ -132,8 +132,13 @@ export default function BookmarksPage() {
                       bookTitle={bookTitle(b.book_code, titles)}
                       page={ref?.page ?? ""}
                       date={savedDate(b.created_at)}
-                      shareTitle={painted.text ?? b.canonical_ref}
-                      href={href}
+                      shareText={shareCitation({
+                        passage: painted.text,
+                        note: rows?.notes.find((n) => n.canonical_ref === b.canonical_ref)?.text,
+                        bookTitle: bookTitle(b.book_code, titles),
+                        ref: b.canonical_ref,
+                        origin: window.location.origin,
+                      })}
                       onDelete={() => remove(b.canonical_ref)}
                       deleteLabel={`Remove highlight ${b.canonical_ref}`}
                     />

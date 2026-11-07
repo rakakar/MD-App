@@ -227,6 +227,8 @@ export function TocSheet({
                   canonicalRef={h.canonical_ref}
                   text={h.text_hi}
                   colour={h.colour}
+                  note={h.note}
+                  bookTitle={bookTitle}
                   createdAt={h.created_at}
                   chapterLabel={chapterLabelOf(h.canonical_ref, chapters)}
                   onGo={() => go(h.canonical_ref)}
@@ -247,6 +249,7 @@ export function TocSheet({
               <NoteCard
                 canonicalRef={n.canonical_ref}
                 note={n.text}
+                bookTitle={bookTitle}
                 passage={n.text_hi}
                 createdAt={n.created_at}
                 chapterLabel={chapterLabelOf(n.canonical_ref, chapters)}

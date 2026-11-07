@@ -52,6 +52,46 @@ export function paraAnchorId(pageKey: string | number, paraNumber: number): stri
   return `p-${pageKey}-${paraNumber}`;
 }
 
+/**
+ * **What a shared highlight, note or passage says** (7 Nov 2026).
+ *
+ * The words, the note if there is one, then where they come from as a reader
+ * would write it — the book's name and its printed page — and the link last,
+ * on its own line. The ref ("JVEP 3.51.1") used to stand in for the source;
+ * it is how the app files a passage, and meant nothing to whoever received it.
+ *
+ * The page is the printed one, which is also the page of the original PDF:
+ * the scan and the text edition are numbered alike. Front matter keeps its
+ * roman numeral.
+ *
+ * The link goes inside the text rather than in the share sheet's `url` field,
+ * because some iOS share targets keep only one of the two.
+ */
+export function shareCitation({
+  passage,
+  note,
+  bookTitle,
+  ref,
+  origin,
+}: {
+  passage?: string;
+  note?: string;
+  bookTitle?: string;
+  ref: string;
+  origin: string;
+}): string {
+  const page = parseRef(ref)?.page;
+  const source = [bookTitle?.trim(), page ? `पृष्ठ ${page}` : ""].filter(Boolean).join(", ");
+  const words = passage?.replace(/\s+/g, " ").trim();
+  return [
+    words ? `“${words}”` : "",
+    note?.trim() ? `नोट: ${note.trim()}` : "",
+    `${source ? `— ${source}\n` : ""}${passageUrl(ref, origin)}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 /** "Copy with citation" text (PRD §5 selection actions) */
 export function citationText(text: string, ref: string): string {
   return `${text}\n— ${ref}`;
@@ -68,13 +108,3 @@ export function passageUrl(ref: string, origin: string): string {
   return `${origin}/paras/${encodeURIComponent(ref)}`;
 }
 
-/**
- * What Share and Copy send: the citation, then the link on its own line.
- *
- * The link goes inside the text, not in the share sheet's separate `url`
- * field, because some iOS share targets keep only one of the two. WhatsApp
- * also builds its link preview from a URL in the message text.
- */
-export function citationWithLink(text: string, ref: string, origin: string): string {
-  return `${citationText(text, ref)}\n${passageUrl(ref, origin)}`;
-}

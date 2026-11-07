@@ -349,6 +349,7 @@ export default async function BookDetailPage({
           counts are on it because "2" is the reason to look. */}
       <BookTabs
         bookCode={book.code}
+        bookTitle={book.title_hi}
         chapters={book.chapters}
         chapterCount={mainChapters.length}
         chaptersHref={`/books/${encodeURIComponent(book.code)}`}

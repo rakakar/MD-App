@@ -30,7 +30,7 @@ import {
   type Highlight,
 } from "@/lib/personal";
 import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
-import { citationWithLink, paraAnchorId, parseRef, refToHref } from "@/lib/refs";
+import { paraAnchorId, parseRef, shareCitation } from "@/lib/refs";
 import { searchTermsInLocation, useSearchHitMarks, type SearchHit } from "@/lib/searchHit";
 import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
 import {
@@ -1415,11 +1415,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    */
   const doShare = useCallback(
     async (s: Selection) => {
-      const text = citationWithLink(
-        s.text || s.para.text_hi,
-        s.para.canonical_ref,
-        window.location.origin
-      );
+      const text = shareCitation({
+        passage: s.text || s.para.text_hi,
+        bookTitle: book.title_hi,
+        ref: s.para.canonical_ref,
+        origin: window.location.origin,
+      });
       try {
         if (navigator.share) {
           await navigator.share({ text });
@@ -1432,14 +1433,19 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       }
       clearSelection();
     },
-    [showToast, clearSelection]
+    [showToast, clearSelection, book.title_hi]
   );
 
   const doCopy = useCallback(
     async (s: Selection) => {
       try {
         await navigator.clipboard.writeText(
-          citationWithLink(s.text || s.para.text_hi, s.para.canonical_ref, window.location.origin)
+          shareCitation({
+            passage: s.text || s.para.text_hi,
+            bookTitle: book.title_hi,
+            ref: s.para.canonical_ref,
+            origin: window.location.origin,
+          })
         );
         showToast({ text: "Copied with citation." });
       } catch {
@@ -1447,7 +1453,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       }
       clearSelection();
     },
-    [showToast, clearSelection]
+    [showToast, clearSelection, book.title_hi]
   );
 
   const doReport = useCallback(
@@ -2483,8 +2489,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                   bookTitle={chapterLabelOf(noteView, book.chapters)}
                   page={page}
                   date={savedDate(rows[0]?.created_at)}
-                  shareTitle={note}
-                  href={refToHref(noteView)}
+                  shareText={shareCitation({
+                    passage: words,
+                    note,
+                    bookTitle: book.title_hi,
+                    ref: noteView,
+                    origin: window.location.origin,
+                  })}
                   onDelete={deleteViewedNote}
                   deleteLabel={`Delete note on page ${page}`}
                 />
