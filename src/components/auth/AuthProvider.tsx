@@ -10,7 +10,13 @@ import {
   type ReactNode,
 } from "react";
 import { getMe, logout as apiLogout } from "@/lib/me";
-import { syncPersonal, watchConnectivity } from "@/lib/personal";
+import {
+  announceSync,
+  flushPersonal,
+  hasUnsyncedPersonal,
+  syncPersonal,
+  watchConnectivity,
+} from "@/lib/personal";
 import { adoptLocalProfile } from "@/lib/profile";
 import { clearLocalStore } from "@/lib/storage";
 import type { MeUser } from "@/lib/types";
@@ -22,7 +28,8 @@ interface AuthState {
   refresh: () => Promise<MeUser | null>;
   /** called after a successful login/signup: merge guest data, then refresh */
   onAuthenticated: () => Promise<void>;
-  logout: () => Promise<void>;
+  /** `false` when the reader chose to stay signed in (unsent work, offline) */
+  logout: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -30,7 +37,7 @@ const AuthContext = createContext<AuthState>({
   loading: true,
   refresh: async () => null,
   onAuthenticated: async () => {},
-  logout: async () => {},
+  logout: async () => false,
 });
 
 export function useAuth(): AuthState {
@@ -84,11 +91,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const logout = useCallback(async () => {
-    try {
-      // last chance to push anything still pending, while the cookie is valid
-      await syncPersonal();
-    } catch {
-      // best effort — the server copy is the one that survives a sign-out
+    // Last chance to push anything still pending, while the cookie is valid —
+    // and a fresh sweep, not one already running, which would have missed the
+    // highlight made a second ago.
+    const pushed = await flushPersonal().catch(() => false);
+    // The store is about to be wiped. If something on it never reached the
+    // account (offline, usually), wiping it loses it for good, so ask.
+    if (
+      !pushed &&
+      hasUnsyncedPersonal() &&
+      !window.confirm(
+        "Some of your highlights or notes haven't reached your account yet — you may be offline.\n\nSigning out now removes them from this device. Sign out anyway?"
+      )
+    ) {
+      return false;
     }
     try {
       await apiLogout();
@@ -98,7 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // would show one person's bookmarks to whoever reads next on a shared
       // phone — and they are safe on the server either way.
       clearLocalStore();
+      // Anything already on screen — the reader's painted lines, an open
+      // list — re-reads the now-empty store instead of showing the last
+      // reader's highlights until a reload.
+      announceSync();
     }
+    return true;
   }, []);
 
   return (

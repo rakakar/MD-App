@@ -30,6 +30,7 @@ export function SavedCardFooter({
   href,
   onDelete,
   deleteLabel,
+  tone = "app",
 }: {
   bookTitle: string;
   /** printed page from the ref; front matter gives a roman numeral */
@@ -42,10 +43,21 @@ export function SavedCardFooter({
   href: string;
   onDelete: () => void;
   deleteLabel: string;
+  /**
+   * `reader` inside the reader's Highlights and Notes: the same card on the
+   * book's paper, whose rule and soft ink follow the reader theme (Quiet is
+   * near-black whatever the app theme is) rather than the app's.
+   */
+  tone?: "app" | "reader";
 }) {
   const t = contentLang(bookTitle);
+  const reader = tone === "reader";
   return (
-    <div className="mt-3.5 flex items-end justify-between gap-3 border-t border-rule pt-3">
+    <div
+      className={`mt-3.5 flex items-end justify-between gap-3 border-t pt-3 ${
+        reader ? "border-(--reader-rule)" : "border-rule"
+      }`}
+    >
       <div className="min-w-0">
         {/* `hi-tight`, not a `leading-*` utility: `.hi` is unlayered, so a
             leading class on it is inert whatever the source order — the app
@@ -61,7 +73,10 @@ export function SavedCardFooter({
             it Tiro, the book serif, which is the face for a passage and not
             for a caption under one; it also fixes line-height at 1.85, and
             that was most of the gap between this line and the title. */}
-        <p lang="hi" className="ui-hi truncate text-xs leading-snug text-ink-soft">
+        <p
+          lang="hi"
+          className={`ui-hi truncate text-xs leading-snug ${reader ? "text-(--reader-ink-soft)" : "text-ink-soft"}`}
+        >
           {page ? `पृष्ठ ${page}` : ""}
           {page && date ? " · " : ""}
           {date}
@@ -69,8 +84,8 @@ export function SavedCardFooter({
       </div>
       {/* Above the card's stretched link, or neither would be pressable. */}
       <div className="relative z-10 flex shrink-0 items-center">
-        <RowShare title={shareTitle} href={href} />
-        <RowButton onClick={onDelete} label={deleteLabel} destructive>
+        <RowShare title={shareTitle} href={href} reader={reader} />
+        <RowButton onClick={onDelete} label={deleteLabel} destructive reader={reader}>
           <TrashIcon className="h-5 w-5" />
         </RowButton>
       </div>
@@ -84,11 +99,13 @@ function RowButton({
   onClick,
   label,
   destructive = false,
+  reader = false,
   children,
 }: {
   onClick: () => void;
   label: string;
   destructive?: boolean;
+  reader?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -97,7 +114,9 @@ function RowButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors active:bg-ink/[.06]"
+      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition-colors ${
+        reader ? "text-(--reader-ink-soft) hover:bg-current/5 active:bg-current/10" : "text-ink-soft active:bg-ink/[.06]"
+      }`}
       /* `--color-danger`, declared per theme in globals.css. It was
          `text-red-700`, which is a fine red on a white card and 1.61:1 on the
          dark one — the bin all but vanished in the theme a reader is most
@@ -117,7 +136,7 @@ function RowButton({
  * everybody the list. Falls back to the clipboard where the browser has no
  * share sheet, which is every desktop one.
  */
-function RowShare({ title, href }: { title: string; href: string }) {
+function RowShare({ title, href, reader }: { title: string; href: string; reader?: boolean }) {
   const [copied, setCopied] = useState(false);
   const share = async () => {
     const url = new URL(href, window.location.origin).toString();
@@ -134,7 +153,7 @@ function RowShare({ title, href }: { title: string; href: string }) {
     }
   };
   return (
-    <RowButton onClick={share} label={copied ? "Link copied" : "Share this passage"}>
+    <RowButton onClick={share} label={copied ? "Link copied" : "Share this passage"} reader={reader}>
       {copied ? <span className="text-xs font-semibold">✓</span> : <ShareIcon className="h-5 w-5" />}
     </RowButton>
   );

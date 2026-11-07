@@ -2,11 +2,20 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { localHighlights, localNotes, syncPersonal, type Highlight } from "@/lib/personal";
+import {
+  localHighlights,
+  localNotes,
+  syncPersonal,
+  unpaintSpan,
+  unsaveBookmark,
+  unsaveNote,
+  type Highlight,
+} from "@/lib/personal";
 import { parseRef } from "@/lib/refs";
 import type { HighlightColour, LocalNote } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
 import { chapterName } from "@/lib/labels";
+import { HighlightCard, NoteCard } from "./SavedPassageCard";
 
 /**
  * The desktop reader's left panel: Contents, Highlights, Notes.
@@ -57,6 +66,7 @@ export function ReaderSidePanel({
   onGoToPage,
   noteHere,
   onSaveNote,
+  onChanged,
 }: {
   open: boolean;
   tab: PanelTab;
@@ -74,13 +84,25 @@ export function ReaderSidePanel({
   /** bumped by the reader whenever a highlight or note changes */
   revision: number;
   onChapter: (n: number) => void;
-  onGoToRef: (ref: string) => void;
+  onGoToRef: (ref: string, span?: { start: number; end: number }) => void;
   onGoToPage: (n: number) => void;
   /** the passage at the top of the page, for "New note on this page" */
   noteHere: { canonical_ref: string; text_hi: string } | null;
   onSaveNote: (target: { canonical_ref: string; text_hi: string }, text: string) => void;
+  /** a highlight or note was deleted here — the page repaints and the list re-reads */
+  onChanged: () => void;
 }) {
   const { user, loading } = useAuth();
+  const signedIn = !!user;
+  const removeHighlight = (h: Highlight) => {
+    if (h.span) unpaintSpan(h.canonical_ref, h.span, signedIn);
+    else unsaveBookmark(h.canonical_ref, signedIn);
+    onChanged();
+  };
+  const removeNote = (ref: string) => {
+    unsaveNote(ref, signedIn);
+    onChanged();
+  };
   const [rows, setRows] = useState<Highlight[]>([]);
   const [notes, setNotes] = useState<LocalNote[]>([]);
   const [synced, setSynced] = useState(0);
@@ -155,17 +177,18 @@ export function ReaderSidePanel({
             onGoToPage={onGoToPage}
           />
         ) : tab === "highlights" ? (
-          <HighlightsTab rows={highlights} chapters={chapters} bookType={bookType} onGoToRef={onGoToRef} />
+          <HighlightsTab rows={highlights} chapters={chapters} onGoToRef={onGoToRef} onDelete={removeHighlight} />
         ) : (
           <NotesTab
             notes={notes}
-            colours={new Map(highlights.map((h) => [h.canonical_ref, h.colour!]))}
+            chapters={chapters}
             bookCode={bookCode}
             bookTitle={bookTitle}
             bookType={bookType}
             noteHere={noteHere}
             onSaveNote={onSaveNote}
             onGoToRef={onGoToRef}
+            onDelete={removeNote}
           />
         )}
       </div>
@@ -373,16 +396,24 @@ export function pageOf(ref: string, bookType: "print" | "digital"): string {
   return bookType === "print" && p === String(Number(p)) ? `p. ${p}` : p;
 }
 
+/** what a saved card's footer names: the chapter, since the book is open */
+export function chapterLabelOf(ref: string, chapters: ChapterTocEntry[]): string {
+  const ch = parseRef(ref)?.chapter;
+  if (ch === "fm") return "प्रस्तावना";
+  const entry = chapters.find((c) => String(c.number) === ch && !c.is_front_matter);
+  return entry ? chapterName(entry) : ch ? `अध्याय ${ch}` : "";
+}
+
 function HighlightsTab({
   rows,
   chapters,
-  bookType,
   onGoToRef,
+  onDelete,
 }: {
   rows: Highlight[];
   chapters: ChapterTocEntry[];
-  bookType: "print" | "digital";
-  onGoToRef: (ref: string) => void;
+  onGoToRef: (ref: string, span?: { start: number; end: number }) => void;
+  onDelete: (h: Highlight) => void;
 }) {
   const [filter, setFilter] = useState<HighlightColour | null>(null);
   const colours = useMemo(
@@ -446,34 +477,19 @@ function HighlightsTab({
           <h3 lang="hi" className="hi hi-tight px-1 pb-2 pt-1 text-xs text-(--reader-ink-soft)">
             {chapters.some((c) => String(c.number) === g.key) || g.key === "fm" ? g.label : g.key}
           </h3>
-          <ul className="space-y-2.5">
+          <ul className="space-y-3">
             {g.items.map((h, i) => (
               <li key={`${h.canonical_ref}-${h.span?.start ?? i}`}>
-                <button
-                  type="button"
-                  onClick={() => onGoToRef(h.canonical_ref)}
-                  className="group block w-full rounded-card border border-(--reader-rule) bg-(--reader-bg) p-4 text-start shadow-sm transition-colors hover:border-(--reader-ink-soft)"
-                >
-                  <span className="flex gap-3">
-                    <span aria-hidden className="w-0.5 shrink-0 rounded-full" style={{ background: deep(h.colour ?? "amber") }} />
-                    <span lang="hi" className="hi hi-tight line-clamp-3 min-w-0 flex-1 text-sm">
-                      {h.text_hi}
-                    </span>
-                  </span>
-                  <span className="mt-3 flex items-center gap-1 text-xs text-(--reader-ink-soft)">
-                    <span className="hi-tight">
-                      {[pageOf(h.canonical_ref, bookType), when(h.created_at)].filter(Boolean).join(" · ")}
-                    </span>
-                    {h.note && (
-                      <span className="font-semibold" style={{ color: "var(--ws-ink)" }}>
-                        · Note
-                      </span>
-                    )}
-                    <span className="ml-auto font-semibold transition-colors group-hover:text-(--reader-ink)">
-                      Go to ↗
-                    </span>
-                  </span>
-                </button>
+                <HighlightCard
+                  canonicalRef={h.canonical_ref}
+                  text={h.text_hi}
+                  colour={h.colour}
+                  span={h.span}
+                  createdAt={h.created_at}
+                  chapterLabel={chapterLabelOf(h.canonical_ref, chapters)}
+                  onGo={() => onGoToRef(h.canonical_ref, h.span)}
+                  onDelete={() => onDelete(h)}
+                />
               </li>
             ))}
           </ul>
@@ -487,22 +503,24 @@ function HighlightsTab({
 
 function NotesTab({
   notes,
-  colours,
+  chapters,
   bookCode,
   bookTitle,
   bookType,
   noteHere,
   onSaveNote,
   onGoToRef,
+  onDelete,
 }: {
   notes: LocalNote[];
-  colours: Map<string, HighlightColour>;
+  chapters: ChapterTocEntry[];
   bookCode: string;
   bookTitle: string;
   bookType: "print" | "digital";
   noteHere: { canonical_ref: string; text_hi: string } | null;
   onSaveNote: (target: { canonical_ref: string; text_hi: string }, text: string) => void;
   onGoToRef: (ref: string) => void;
+  onDelete: (ref: string) => void;
 }) {
   // The passage the composer is writing about — fixed when it opens, so
   // scrolling the page while typing does not move the note to another line.
@@ -603,34 +621,20 @@ function NotesTab({
         </p>
       ) : (
         <>
-          <ul className="mt-3 space-y-2.5">
-            {notes.map((n) => {
-              const colour = colours.get(n.canonical_ref);
-              return (
-                <li key={n.canonical_ref}>
-                  <button
-                    type="button"
-                    onClick={() => onGoToRef(n.canonical_ref)}
-                    className="block w-full rounded-card border border-(--reader-rule) bg-(--reader-bg) p-4 text-start shadow-sm transition-colors hover:border-(--reader-ink-soft)"
-                  >
-                    <span className="block whitespace-pre-line text-sm">{n.text}</span>
-                    {n.text_hi && (
-                      <span className="mt-2.5 flex gap-2.5 text-xs text-(--reader-ink-soft)">
-                        <span
-                          aria-hidden
-                          className="w-0.5 shrink-0 rounded-full bg-(--reader-rule)"
-                          style={colour ? { background: deep(colour) } : undefined}
-                        />
-                        <span lang="hi" className="hi hi-tight line-clamp-2">{n.text_hi}</span>
-                      </span>
-                    )}
-                    <span className="hi-tight mt-2.5 block text-xs text-(--reader-ink-soft)">
-                      {[pageOf(n.canonical_ref, bookType), when(n.updated_at)].filter(Boolean).join(" · ")}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
+          <ul className="mt-3 space-y-3">
+            {notes.map((n) => (
+              <li key={n.canonical_ref}>
+                <NoteCard
+                  canonicalRef={n.canonical_ref}
+                  note={n.text}
+                  passage={n.text_hi}
+                  createdAt={n.created_at}
+                  chapterLabel={chapterLabelOf(n.canonical_ref, chapters)}
+                  onGo={() => onGoToRef(n.canonical_ref)}
+                  onDelete={() => onDelete(n.canonical_ref)}
+                />
+              </li>
+            ))}
           </ul>
           <button
             type="button"

@@ -116,8 +116,7 @@ export function ProfileStep() {
   // The only way out of a step that is not optional: not "skip", but
   // "not now" — signed out, the reader can still read everything.
   const signOut = async () => {
-    await logout();
-    router.replace("/");
+    if (await logout()) router.replace("/");
   };
 
   return (

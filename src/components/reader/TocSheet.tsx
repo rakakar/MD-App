@@ -1,13 +1,21 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { localHighlights, syncPersonal, type Highlight } from "@/lib/personal";
-import { parseRef, refToHref } from "@/lib/refs";
-import type { HighlightColour } from "@/lib/storage";
+import {
+  localHighlights,
+  localNotes,
+  syncPersonal,
+  unpaintSpan,
+  unsaveBookmark,
+  unsaveNote,
+  type Highlight,
+} from "@/lib/personal";
+import type { LocalNote } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
 import { chapterName } from "@/lib/labels";
+import { chapterLabelOf } from "./ReaderSidePanel";
+import { HighlightCard, NoteCard } from "./SavedPassageCard";
 import { Sheet } from "./Sheet";
 
 /**
@@ -25,14 +33,7 @@ import { Sheet } from "./Sheet";
  * reader additionally gets a sync each time the sheet opens.
  */
 
-/** Tailwind cannot build a class name at runtime; the three are written out. */
-const SWATCH: Record<HighlightColour, string> = {
-  amber: "bg-hl-amber",
-  sage: "bg-hl-sage",
-  sky: "bg-hl-sky",
-};
-
-type Tab = "contents" | "highlights";
+type Tab = "contents" | "highlights" | "notes";
 
 export function TocSheet({
   open,
@@ -44,6 +45,7 @@ export function TocSheet({
   bookType,
   onSelect,
   onSelectRef,
+  onChanged,
 }: {
   open: boolean;
   onClose: () => void;
@@ -54,18 +56,44 @@ export function TocSheet({
   current: number;
   bookType: "print" | "digital";
   onSelect: (n: number) => void;
-  /**
-   * A marked passage was picked — told to the reader *as well as* followed as
-   * a link. See `highlightRow` for why the link alone is not enough.
-   */
-  onSelectRef?: (ref: string) => void;
+  /** a highlight or note was picked: the reader takes the page there */
+  onSelectRef: (ref: string, span?: { start: number; end: number }) => void;
+  /** one was deleted here — the page repaints */
+  onChanged: () => void;
 }) {
   const { user, loading } = useAuth();
   const activeRef = useRef<HTMLAnchorElement | HTMLButtonElement>(null);
   const [tab, setTab] = useState<Tab>("contents");
   const [rows, setRows] = useState<Highlight[] | null>(null);
+  const [notes, setNotes] = useState<LocalNote[] | null>(null);
 
-  const reload = useCallback(() => setRows(localHighlights(bookCode)), [bookCode]);
+  // The same two lists the desktop panel and My Journey show: painted
+  // passages, and notes — newest first, as My Journey has them.
+  const reload = useCallback(() => {
+    setRows(localHighlights(bookCode).filter((h) => h.colour));
+    setNotes(
+      localNotes()
+        .filter((n) => n.book_code === bookCode)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    );
+  }, [bookCode]);
+
+  const signedIn = !!user;
+  const removeHighlight = (h: Highlight) => {
+    if (h.span) unpaintSpan(h.canonical_ref, h.span, signedIn);
+    else unsaveBookmark(h.canonical_ref, signedIn);
+    reload();
+    onChanged();
+  };
+  const removeNote = (ref: string) => {
+    unsaveNote(ref, signedIn);
+    reload();
+    onChanged();
+  };
+  const go = (ref: string, span?: { start: number; end: number }) => {
+    onSelectRef(ref, span);
+    onClose();
+  };
 
   // Re-read on every open, not once on mount: the reader is the thing that
   // *makes* highlights, so the list is stale the moment you paint one.
@@ -94,10 +122,6 @@ export function TocSheet({
   const frontMatter = chapters.filter((c) => c.is_front_matter);
   const main = chapters.filter((c) => !c.is_front_matter);
 
-  const byChapter = useMemo(
-    () => new Map(chapters.map((c) => [String(c.number), c])),
-    [chapters]
-  );
 
   const row = (ch: ChapterTocEntry) => {
     const active = ch.number === current && !ch.is_front_matter;
@@ -143,67 +167,8 @@ export function TocSheet({
     );
   };
 
-  /**
-   * A marked passage, as a link to where it sits. A plain `<Link>` rather than
-   * `onSelect`: the ref names a paragraph, not just a chapter, and the reader
-   * already resolves `/books/{code}/{chapter}#p-…` — which is the same door the
-   * book page's own list opens, so a highlight lands in the same place from
-   * either side.
-   *
-   * The link is not *sufficient*, though, and `onSelectRef` is why. A highlight
-   * in the chapter already open changes nothing but the hash, and an App Router
-   * navigation is a `pushState`: no remount, and no `hashchange` or `popstate`
-   * for anyone to listen for. Measured — the URL became `#p-97-2` while the
-   * reader sat on page 93. So the reader is told directly, and the link is left
-   * to do what it is genuinely for: the address bar, Back, and opening a
-   * passage in a new tab.
-   */
-  const highlightRow = (h: Highlight, i: number) => {
-    const ref = parseRef(h.canonical_ref);
-    const chapter = ref ? byChapter.get(ref.chapter) : undefined;
-    return (
-      <li key={`${h.canonical_ref}-${i}`}>
-        <Link
-          href={refToHref(h.canonical_ref)}
-          onClick={() => {
-            onSelectRef?.(h.canonical_ref);
-            onClose();
-          }}
-          className="flex gap-3 px-5 py-3 transition-colors active:bg-current/5"
-        >
-          {/* The colour carries nothing on its own — the designer was explicit —
-              so it is a mark beside the words rather than the only thing
-              telling them apart. */}
-          <span
-            aria-hidden
-            className={`mt-1 h-4 w-1 shrink-0 rounded-full ${SWATCH[h.colour ?? "amber"]}`}
-          />
-          <span className="min-w-0 flex-1">
-            <span lang="hi" className="hi hi-tight line-clamp-2 text-sm">
-              {h.text_hi}
-            </span>
-            {h.note && (
-              <span lang="hi" className="hi hi-tight mt-1 line-clamp-1 text-xs opacity-70">
-                {h.note}
-              </span>
-            )}
-            <span className="mt-1 block text-xs text-(--reader-ink-soft)">
-              {chapter ? (
-                <>
-                  <span lang="hi" className="hi">{chapterName(chapter)}</span>
-                  {ref?.page ? ` · ${bookType === "print" ? "p. " : ""}${ref.page}` : ""}
-                </>
-              ) : (
-                h.canonical_ref
-              )}
-            </span>
-          </span>
-        </Link>
-      </li>
-    );
-  };
-
-  const count = rows?.length ?? 0;
+  const hCount = rows?.length ?? 0;
+  const nCount = notes?.length ?? 0;
 
   return (
     // The book's own name, not "This book". A reader who is four levels into
@@ -229,8 +194,14 @@ export function TocSheet({
           <TabButton
             selected={tab === "highlights"}
             onClick={() => setTab("highlights")}
-            label="Highlights & Notes"
-            count={count || undefined}
+            label="Highlights"
+            count={hCount || undefined}
+          />
+          <TabButton
+            selected={tab === "notes"}
+            onClick={() => setTab("notes")}
+            label="Notes"
+            count={nCount || undefined}
           />
         </div>
       </div>
@@ -243,14 +214,49 @@ export function TocSheet({
           {frontMatter.map(row)}
           {main.map(row)}
         </ul>
-      ) : count === 0 ? (
+      ) : tab === "highlights" ? (
+        hCount === 0 ? (
+          <p className="px-5 pb-6 pt-4 text-sm text-(--reader-ink-soft)">
+            {rows === null ? "Looking…" : "Nothing highlighted yet. Press and hold any line, then pick a colour."}
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-3 px-5 pb-6 pt-2">
+            {rows?.map((h, i) => (
+              <li key={`${h.canonical_ref}-${h.span?.start ?? i}`}>
+                <HighlightCard
+                  canonicalRef={h.canonical_ref}
+                  text={h.text_hi}
+                  colour={h.colour}
+                  span={h.span}
+                  createdAt={h.created_at}
+                  chapterLabel={chapterLabelOf(h.canonical_ref, chapters)}
+                  onGo={() => go(h.canonical_ref, h.span)}
+                  onDelete={() => removeHighlight(h)}
+                />
+              </li>
+            ))}
+          </ul>
+        )
+      ) : nCount === 0 ? (
         <p className="px-5 pb-6 pt-4 text-sm text-(--reader-ink-soft)">
-          {rows === null
-            ? "Looking…"
-            : "Nothing highlighted yet. Press and hold any line to highlight it or add a note."}
+          {notes === null ? "Looking…" : "No notes yet. Press and hold any line and choose Note."}
         </p>
       ) : (
-        <ul className="toc-sheet">{rows?.map(highlightRow)}</ul>
+        <ul className="flex flex-col gap-3 px-5 pb-6 pt-2">
+          {notes?.map((n) => (
+            <li key={n.canonical_ref}>
+              <NoteCard
+                canonicalRef={n.canonical_ref}
+                note={n.text}
+                passage={n.text_hi}
+                createdAt={n.created_at}
+                chapterLabel={chapterLabelOf(n.canonical_ref, chapters)}
+                onGo={() => go(n.canonical_ref)}
+                onDelete={() => removeNote(n.canonical_ref)}
+              />
+            </li>
+          ))}
+        </ul>
       )}
     </Sheet>
   );

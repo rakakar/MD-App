@@ -187,7 +187,7 @@ export function HighlightsPanel({
               {items.map((t) => (
                 <li key={`${t.h.canonical_ref}:${t.h.span?.start ?? "all"}`}>
                   <HighlightCard
-                    href={refToHref(t.h.canonical_ref)}
+                    href={refToHref(t.h.canonical_ref, t.h.span)}
                     highlight={t.h}
                     page={t.page}
                   />

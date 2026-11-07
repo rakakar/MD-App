@@ -84,8 +84,7 @@ export function ProfileScreen() {
   const joined = memberSince(user);
 
   const signOut = async () => {
-    await logout();
-    router.replace("/");
+    if (await logout()) router.replace("/");
   };
 
   const identity = (

@@ -536,7 +536,7 @@ export function readingHomeFor(bookCode: string): ReadingHome | null {
  * highlight; re-selecting the same words in another colour repaints them.
  * Reading order, because the renderer walks the paragraph once.
  */
-function addSpan(spans: HighlightRange[], added: HighlightRange): HighlightRange[] {
+export function addSpan(spans: HighlightRange[], added: HighlightRange): HighlightRange[] {
   return [...spans.filter((s) => s.end <= added.start || s.start >= added.end), added].sort(
     (a, b) => a.start - b.start || a.end - b.end
   );
@@ -556,6 +556,19 @@ export function removeLocalSpan(canonicalRef: string, start: number, end: number
     if (!row) return;
     row.ranges = (row.ranges ?? []).filter((s) => !(s.start === start && s.end === end));
     row.dirty = true;
+    // The last highlight on the paragraph, and no whole-paragraph colour under
+    // it: nothing is left, so the row goes. Kept, it showed in every list as
+    // an unpainted "saved" passage nobody had saved.
+    if (row.ranges.length === 0 && !row.colour) {
+      store.bookmarks = store.bookmarks.filter((b) => b !== row);
+      if (row.server_id !== undefined) {
+        store.tombstones.push({
+          kind: "bookmark",
+          canonical_ref: canonicalRef,
+          server_id: row.server_id,
+        });
+      }
+    }
   });
 }
 

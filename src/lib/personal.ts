@@ -33,6 +33,7 @@ import {
 } from "./me";
 import {
   addLocalBookmark,
+  addSpan,
   addLocalNote,
   getLocalStore,
   getPdfPlace,
@@ -320,6 +321,29 @@ export function localHighlights(bookCode: string): Highlight[] {
 
 let inflight: Promise<boolean> | null = null;
 
+/**
+ * A sweep that is guaranteed to have seen every write made before this call.
+ *
+ * `syncPersonal` hands back a sweep already in flight, and that sweep took its
+ * snapshot before whatever the reader did a moment ago. Sign-out wipes the
+ * store straight after, so it needs this one: wait out the old sweep, then run
+ * a new one.
+ */
+export async function flushPersonal(): Promise<boolean> {
+  if (inflight) await inflight;
+  return syncPersonal();
+}
+
+/** Anything on this device the account has not been told about yet. */
+export function hasUnsyncedPersonal(): boolean {
+  const s = getLocalStore();
+  return (
+    s.bookmarks.some((b) => b.server_id === undefined || b.dirty) ||
+    s.notes.some((n) => n.server_id === undefined || n.dirty) ||
+    s.tombstones.some((t) => t.server_id !== undefined)
+  );
+}
+
 /** Resolves `true` when both directions went through — Settings' Synced pill
  *  says so only then — and `false` when the sweep was cut off. */
 export function syncPersonal(): Promise<boolean> {
@@ -332,8 +356,13 @@ export function syncPersonal(): Promise<boolean> {
 
 async function run(): Promise<boolean> {
   try {
-    await push();
+    // Pull first, so that a row saved here while signed out meets the
+    // account's row for the same passage *before* either is sent: `pull`
+    // merges the two, and `push` then sends the merged row. The other order
+    // sent the device's row first, and the server's upsert replaced the
+    // account's highlights on that paragraph with this device's.
     await pull();
+    await push();
     return true;
   } catch {
     // offline, or the session lapsed — local stays authoritative and the next
@@ -470,7 +499,7 @@ const tombstoneKey = (t: { kind: string; canonical_ref: string }) =>
  */
 export const PERSONAL_SYNCED = "md:personal-synced";
 
-function announceSync(): void {
+export function announceSync(): void {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(PERSONAL_SYNCED));
 }
 
@@ -489,7 +518,20 @@ async function pull(): Promise<void> {
   for (const s of bookmarks) {
     if (deleted.has(`bookmark:${s.canonical_ref}`)) continue;
     const mine = byRef.get(s.canonical_ref);
-    if (mine) {
+    if (mine && mine.server_id === undefined) {
+      // Saved here before this device knew the account had the same passage —
+      // typically while signed out. Neither copy is the newer one; both are
+      // things the reader painted, so keep both, and let the push that follows
+      // carry the union up.
+      let spans = s.ranges ?? [];
+      for (const span of mine.ranges ?? []) spans = addSpan(spans, span);
+      mine.ranges = spans.length ? spans : undefined;
+      mine.colour ??= s.colour;
+      mine.text_hi ??= s.text_hi;
+      if (s.created_at && s.created_at < mine.created_at) mine.created_at = s.created_at;
+      mine.server_id = s.id;
+      mine.dirty = true;
+    } else if (mine) {
       mine.server_id = s.id;
       mine.text_hi ??= s.text_hi;
       // The account wins on colour, with two guards, and both of them exist to
@@ -529,7 +571,20 @@ async function pull(): Promise<void> {
   for (const s of notes) {
     if (deleted.has(`note:${s.canonical_ref}`)) continue;
     const mine = notesByRef.get(s.canonical_ref);
-    if (mine) {
+    if (mine && mine.server_id === undefined) {
+      // Two notes on one passage, one from the account and one written here
+      // signed out. There is room for one, so it holds both — the account's
+      // first — rather than quietly dropping whichever lost a race.
+      const theirs = s.text.trim();
+      const ours = mine.text.trim();
+      if (theirs && theirs !== ours && !ours.includes(theirs)) {
+        mine.text = theirs.includes(ours) ? theirs : `${theirs}\n\n${ours}`;
+      }
+      mine.text_hi ??= s.text_hi;
+      if (s.created_at && s.created_at < mine.created_at) mine.created_at = s.created_at;
+      mine.server_id = s.id;
+      mine.dirty = true;
+    } else if (mine) {
       mine.server_id = s.id;
       mine.text_hi ??= s.text_hi;
       if (!mine.dirty) mine.text = s.text;

@@ -78,8 +78,7 @@ export function VerifyEmailStep() {
   };
 
   const signOut = async () => {
-    await logout();
-    router.replace("/");
+    if (await logout()) router.replace("/");
   };
 
   return (

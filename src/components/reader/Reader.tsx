@@ -28,7 +28,7 @@ import {
   unsaveNote,
   type Highlight,
 } from "@/lib/personal";
-import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
+import { flashArrival, paintSegments, selectionSpan, spanInLocation, type PaintedSegment } from "@/lib/highlights";
 import { citationWithLink, paraAnchorId, parseRef } from "@/lib/refs";
 import { searchTermsInLocation, useSearchHitMarks, type SearchHit } from "@/lib/searchHit";
 import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
@@ -164,6 +164,12 @@ export interface ReaderHome {
   note: string;
 }
 
+/** how a passage is marked when the reader is taken to it */
+interface Arrival {
+  /** the painted words, when it was one highlight among a paragraph's */
+  span?: { start: number; end: number };
+}
+
 interface ReaderProps {
   book: ReaderBook;
   initialChapterNumber: number;
@@ -272,6 +278,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const pendingPage = useRef<string | null>(null);
   /** the paragraph on `pendingPage`, when a passage rather than a page was asked for */
   const pendingPara = useRef<number | null>(null);
+  /** the go-to that crossed chapters came from a highlight or note: mark it on arrival */
+  const pendingArrival = useRef<Arrival | null>(null);
   const pageTurns = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -575,12 +583,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const goToChapter = useCallback(
     async (
       n: number,
-      opts: { targetPage?: string; targetPara?: number; push?: boolean } = {}
+      opts: { targetPage?: string; targetPara?: number; push?: boolean; arrival?: Arrival } = {}
     ): Promise<ChapterPayload | null> => {
       setChapterLoading(true);
       setSelection(null);
       pendingPage.current = opts.targetPage ?? null;
       pendingPara.current = opts.targetPara ?? null;
+      pendingArrival.current = opts.arrival ?? null;
       const result = await loadChapter(n);
       if (!result.ok) {
         setChapterLoading(false);
@@ -624,28 +633,69 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   }, []);
 
   // ---- pending page + hash + resume, applied after a chapter renders ----
+
+  /**
+   * **Put a passage in the middle of the screen, and keep it there while the
+   * page settles.**
+   *
+   * One `scrollIntoView` was not enough. It ran a frame after the jump, and the
+   * page above the passage was still changing size after it: the book face
+   * arriving, the glossary index re-cutting every paragraph into underlined
+   * runs, a page-mode page that had not rendered yet. Each of those moved the
+   * passage and nothing moved it back, so a highlight picked from a list could
+   * land a screen away from where it was centred a moment earlier.
+   *
+   * So it re-centres for a couple of seconds and then lets go — and lets go at
+   * once if the reader scrolls, taps or presses a key, because by then they
+   * are reading and a page that pulls itself back is worse than one that drifts.
+   * Timers rather than animation frames: frames do not run in a tab that is in
+   * the background, and a passage opened from a list there should still be
+   * waiting in the right place.
+   */
+  const stopLanding = useRef<() => void>(() => {});
+  const landOn = useCallback(
+    (id: string, block: ScrollLogicalPosition, arrival?: Arrival | null) => {
+      stopLanding.current();
+      const root = contentRef.current;
+      let tries = 0;
+      let flashed = false;
+      const STOP_ON = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+      const stop = () => {
+        clearInterval(timer);
+        for (const ev of STOP_ON) window.removeEventListener(ev, stop, true);
+      };
+      const step = () => {
+        // Scoped to the reader: while a page streams in, React keeps a hidden
+        // copy of it elsewhere in the document with the same ids.
+        const el = (root ?? document).querySelector<HTMLElement>(`[id="${id}"]`);
+        if (el) {
+          el.scrollIntoView({ block });
+          if (arrival && !flashed) {
+            flashed = true;
+            flashArrival(el, arrival.span);
+          }
+        }
+        if (++tries >= 14) stop();
+      };
+      const timer = setInterval(step, 150);
+      for (const ev of STOP_ON) window.addEventListener(ev, stop, { capture: true, passive: true });
+      stopLanding.current = stop;
+      setTimeout(step, 0);
+    },
+    []
+  );
+  useEffect(() => () => stopLanding.current(), []);
+
   const jumpToPage = useCallback(
-    (pageKey: string, paraNumber?: number) => {
+    (pageKey: string, paraNumber?: number, arrival?: Arrival | null) => {
       const idx = pages.findIndex((p) => p.key === pageKey);
       if (idx === -1) return false;
-      if (mode === "page") {
-        setPageIndex(idx);
-        if (paraNumber !== undefined) {
-          requestAnimationFrame(() => {
-            document.getElementById(paraAnchorId(pageKey, paraNumber))?.scrollIntoView({ block: "center" });
-          });
-        }
-      } else {
-        requestAnimationFrame(() => {
-          const el = paraNumber !== undefined
-            ? document.getElementById(paraAnchorId(pageKey, paraNumber))
-            : document.getElementById(`page-${pageKey}`);
-          el?.scrollIntoView({ block: paraNumber !== undefined ? "center" : "start" });
-        });
-      }
+      if (mode === "page") setPageIndex(idx);
+      if (paraNumber !== undefined) landOn(paraAnchorId(pageKey, paraNumber), "center", arrival);
+      else if (mode !== "page") landOn(`page-${pageKey}`, "start");
       return true;
     },
-    [pages, mode]
+    [pages, mode, landOn]
   );
 
   /** Go to a saved ref, or offer it as a banner when it lives elsewhere. */
@@ -686,9 +736,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // first page and dropped the 20.
     if (restored.current) {
       if (pendingPage.current) {
-        jumpToPage(pendingPage.current, pendingPara.current ?? undefined);
+        jumpToPage(pendingPage.current, pendingPara.current ?? undefined, pendingArrival.current);
         pendingPage.current = null;
         pendingPara.current = null;
+        pendingArrival.current = null;
       }
       return;
     }
@@ -696,16 +747,20 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // 1. explicit deep link #p-{page}-{para}
     const hash = window.location.hash.match(/^#p-([^-]+)-(.+)$/);
     if (hash) {
-      jumpToPage(hash[1], Number(hash[2]) || undefined);
+      // A link to a passage is always somebody pointing at it — a highlight, a
+      // note, a shared line — so it is marked on arrival, and the exact words
+      // when the link names them.
+      jumpToPage(hash[1], Number(hash[2]) || undefined, { span: spanInLocation() });
       const terms = searchTermsInLocation();
       if (terms.length) setSearchHit({ id: `p-${hash[1]}-${hash[2]}`, terms, chapter: chapterNumber });
       return;
     }
     // 2. pending go-to-page target from cross-chapter navigation
     if (pendingPage.current) {
-      jumpToPage(pendingPage.current, pendingPara.current ?? undefined);
+      jumpToPage(pendingPage.current, pendingPara.current ?? undefined, pendingArrival.current);
       pendingPage.current = null;
       pendingPara.current = null;
+      pendingArrival.current = null;
       return;
     }
     // 3. saved position
@@ -1681,8 +1736,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     [showPanel, showSettings, marks, marginEditing, book.book_type, book.code, book.title_hi, user, confirmSaved]
   );
 
+  /** a highlight or note deleted from a list: repaint the page, re-read the lists */
+  const personalChanged = () => {
+    refreshPainted();
+    setPersonalRevision((r) => r + 1);
+  };
+
   /** a highlight or note, picked in the panel: this chapter scrolls, another loads */
-  const goToRef = (ref: string) => {
+  const goToRef = (ref: string, span?: { start: number; end: number }) => {
+    const arrival: Arrival = { span };
     const p = parseRef(ref);
     if (!p) return;
     const para = Number(p.para) || undefined;
@@ -1691,8 +1753,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         ? book.chapters.find((c) => c.is_front_matter)?.number
         : Number(p.chapter);
     if (target === undefined || Number.isNaN(target)) return;
-    if (target === chapterNumber) jumpToPage(p.page, para);
-    else void goToChapter(target, { targetPage: p.page, targetPara: para });
+    if (target === chapterNumber) jumpToPage(p.page, para, arrival);
+    else void goToChapter(target, { targetPage: p.page, targetPara: para, arrival });
   };
 
   const pageChrome = (p: ReaderPage) =>
@@ -1833,6 +1895,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         }}
         onGoToRef={goToRef}
         onGoToPage={goToPrintedPage}
+        onChanged={personalChanged}
         noteHere={noteHere}
         onSaveNote={(target, text) => {
           track("note_add");
@@ -2253,12 +2316,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           /* Only when the passage is in the chapter already open: anywhere else
              the link is a real navigation and the reader remounts, which runs
              the hash restore below on its own. */
-          onSelectRef={(ref) => {
-            const p = parseRef(ref);
-            if (!p) return;
-            const here = p.chapter === "fm" ? isFrontMatter : Number(p.chapter) === chapterNumber;
-            if (here) jumpToPage(p.page, Number(p.para) || undefined);
-          }}
+          onSelectRef={goToRef}
+          onChanged={personalChanged}
         />
       )}
 

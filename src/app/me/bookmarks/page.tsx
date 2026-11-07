@@ -88,7 +88,10 @@ export default function BookmarksPage() {
             {highlights.map((b) => {
               const painted = saved(b);
               const ref = parseRef(b.canonical_ref);
-              const href = refToHref(b.canonical_ref);
+              // One highlight on the paragraph: the link names its words, so
+              // the reader marks those on arrival rather than the paragraph.
+              const only = b.ranges?.length === 1 ? b.ranges[0] : undefined;
+              const href = refToHref(b.canonical_ref, only);
               return (
                 <li key={b.canonical_ref}>
                   {/* A card each, not rows in one bordered list. A highlight is
