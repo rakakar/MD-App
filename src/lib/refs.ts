@@ -36,7 +36,7 @@ export function parseRef(ref: string): ParsedRef | null {
  * first paint before `pull()` has run. That is the old behaviour, not a new
  * fault, and it corrects itself as soon as either writer has spoken.
  */
-export function refToHref(ref: string, span?: { start: number; end: number }): string {
+export function refToHref(ref: string): string {
   const p = parseRef(ref);
   if (!p) return "/books";
   if (p.chapter === "fm") return `/paras/${encodeURIComponent(ref)}`;
@@ -45,10 +45,7 @@ export function refToHref(ref: string, span?: { start: number; end: number }): s
   const path = at
     ? documentTextHref(at.node, at.item, Number(p.chapter))
     : `/books/${encodeURIComponent(p.code)}/${p.chapter}`;
-  // Which of the paragraph's highlights was picked, so the reader marks those
-  // words on arrival and not the whole paragraph (`flashArrival`).
-  const query = span ? `${path.includes("?") ? "&" : "?"}span=${span.start}-${span.end}` : "";
-  return `${path}${query}${anchor}`;
+  return `${path}${anchor}`;
 }
 
 export function paraAnchorId(pageKey: string | number, paraNumber: number): string {

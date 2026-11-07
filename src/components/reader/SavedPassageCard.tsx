@@ -51,7 +51,6 @@ export function HighlightCard({
   canonicalRef,
   text,
   colour,
-  span,
   createdAt,
   chapterLabel,
   onGo,
@@ -60,7 +59,6 @@ export function HighlightCard({
   canonicalRef: string;
   text?: string;
   colour?: HighlightColour;
-  span?: { start: number; end: number };
   createdAt: string;
   /** the chapter's name, where My Journey's card names the book */
   chapterLabel: string;
@@ -83,7 +81,7 @@ export function HighlightCard({
         page={page}
         date={savedDate(createdAt)}
         shareTitle={words}
-        href={refToHref(canonicalRef, span)}
+        href={refToHref(canonicalRef)}
         onDelete={onDelete}
         deleteLabel={`Remove highlight on page ${page}`}
       />

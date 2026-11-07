@@ -1136,38 +1136,6 @@ html[data-reading="1"] body {
   touch-action: manipulation;
 }
 
-/* The passage a highlight or note was opened for (lib/highlights.ts,
-   flashArrival). A highlight's own words get a ring in the accent around their
-   fill, so the colour the reader chose still shows through; a paragraph gets a
-   tint reaching a little past the words, like the read-aloud passage. Both fade
-   out after a beat. With reduced motion the mark simply holds, then goes. */
-[data-arrived] {
-  animation: arrive 2.6s ease-out both;
-}
-mark[data-arrived] {
-  animation-name: arrive-ring;
-  border-radius: 0.2em;
-}
-@keyframes arrive {
-  0%, 45% { background-color: color-mix(in srgb, var(--ws-color) 18%, transparent); }
-  100% { background-color: transparent; }
-}
-@keyframes arrive-ring {
-  0%, 55% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ws-color) 75%, transparent); }
-  100% { box-shadow: 0 0 0 2px transparent; }
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-arrived] {
-    animation: none;
-  }
-  [data-arrived]:not(mark) {
-    background-color: color-mix(in srgb, var(--ws-color) 18%, transparent);
-  }
-  mark[data-arrived] {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ws-color) 75%, transparent);
-  }
-}
-
 /* The words a search result was opened for (lib/searchHit.ts). The search
    card's own <mark> tint, taken a little deeper so it still reads over a
    paragraph that is lit or painted. */

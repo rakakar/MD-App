@@ -21,6 +21,7 @@ import {
   localBookmarks,
   localHighlights,
   localProgressFor,
+  paintForNote,
   saveBookmark,
   saveNote,
   saveProgress as savePersonalProgress,
@@ -28,8 +29,8 @@ import {
   unsaveNote,
   type Highlight,
 } from "@/lib/personal";
-import { flashArrival, paintSegments, selectionSpan, spanInLocation, type PaintedSegment } from "@/lib/highlights";
-import { citationWithLink, paraAnchorId, parseRef } from "@/lib/refs";
+import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
+import { citationWithLink, paraAnchorId, parseRef, refToHref } from "@/lib/refs";
 import { searchTermsInLocation, useSearchHitMarks, type SearchHit } from "@/lib/searchHit";
 import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
 import {
@@ -64,7 +65,8 @@ import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
 
 import { Sheet } from "./Sheet";
 import { MarginNote } from "./MarginNote";
-import { ReaderSidePanel, pageOf, when, type PanelTab } from "./ReaderSidePanel";
+import { ReaderSidePanel, chapterLabelOf, pageOf, when, type PanelTab } from "./ReaderSidePanel";
+import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
 import { useReaderChrome } from "./useReaderChrome";
 import { useTouchSelection } from "./useTouchSelection";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
@@ -164,12 +166,6 @@ export interface ReaderHome {
   note: string;
 }
 
-/** how a passage is marked when the reader is taken to it */
-interface Arrival {
-  /** the painted words, when it was one highlight among a paragraph's */
-  span?: { start: number; end: number };
-}
-
 interface ReaderProps {
   book: ReaderBook;
   initialChapterNumber: number;
@@ -262,6 +258,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [noteTarget, setNoteTarget] = useState<Selection | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
+  /**
+   * The passage whose note is open for reading — tapped on the page.
+   *
+   * A note is otherwise invisible in the reader below 1440px: the margin it
+   * hangs in is not there. Its passage is painted (`paintForNote`), and
+   * tapping the painted words is how the note is read.
+   */
+  const [noteView, setNoteView] = useState<string | null>(null);
+  /** for the pointer handlers, which are deliberately not rebuilt per render */
+  const notedRefs = useRef<Set<string>>(new Set());
   const [gotoOpen, setGotoOpen] = useState(false);
   const [gotoValue, setGotoValue] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
@@ -278,8 +284,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const pendingPage = useRef<string | null>(null);
   /** the paragraph on `pendingPage`, when a passage rather than a page was asked for */
   const pendingPara = useRef<number | null>(null);
-  /** the go-to that crossed chapters came from a highlight or note: mark it on arrival */
-  const pendingArrival = useRef<Arrival | null>(null);
   const pageTurns = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -322,7 +326,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // hangs from the bar. Otherwise the desktop bar comes and goes exactly as
   // the phone's does: away as you scroll down, back on a click anywhere in the
   // page (the designer's call, 3 Oct 2026, replacing a focus mode).
-  const modalOpen = settingsOpen || tocOpen || noteOpen || gotoOpen || defineWord !== null;
+  const modalOpen =
+    settingsOpen || tocOpen || noteOpen || noteView !== null || gotoOpen || defineWord !== null;
   // The first-save coach mark points at a button on the bar, so the bar stays
   // up for as long as it is showing.
   const chrome = useReaderChrome(
@@ -583,13 +588,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const goToChapter = useCallback(
     async (
       n: number,
-      opts: { targetPage?: string; targetPara?: number; push?: boolean; arrival?: Arrival } = {}
+      opts: { targetPage?: string; targetPara?: number; push?: boolean } = {}
     ): Promise<ChapterPayload | null> => {
       setChapterLoading(true);
       setSelection(null);
       pendingPage.current = opts.targetPage ?? null;
       pendingPara.current = opts.targetPara ?? null;
-      pendingArrival.current = opts.arrival ?? null;
       const result = await loadChapter(n);
       if (!result.ok) {
         setChapterLoading(false);
@@ -654,11 +658,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    */
   const stopLanding = useRef<() => void>(() => {});
   const landOn = useCallback(
-    (id: string, block: ScrollLogicalPosition, arrival?: Arrival | null) => {
+    (id: string, block: ScrollLogicalPosition) => {
       stopLanding.current();
       const root = contentRef.current;
       let tries = 0;
-      let flashed = false;
       const STOP_ON = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
       const stop = () => {
         clearInterval(timer);
@@ -668,13 +671,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         // Scoped to the reader: while a page streams in, React keeps a hidden
         // copy of it elsewhere in the document with the same ids.
         const el = (root ?? document).querySelector<HTMLElement>(`[id="${id}"]`);
-        if (el) {
-          el.scrollIntoView({ block });
-          if (arrival && !flashed) {
-            flashed = true;
-            flashArrival(el, arrival.span);
-          }
-        }
+        el?.scrollIntoView({ block });
         if (++tries >= 14) stop();
       };
       const timer = setInterval(step, 150);
@@ -687,11 +684,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   useEffect(() => () => stopLanding.current(), []);
 
   const jumpToPage = useCallback(
-    (pageKey: string, paraNumber?: number, arrival?: Arrival | null) => {
+    (pageKey: string, paraNumber?: number) => {
       const idx = pages.findIndex((p) => p.key === pageKey);
       if (idx === -1) return false;
       if (mode === "page") setPageIndex(idx);
-      if (paraNumber !== undefined) landOn(paraAnchorId(pageKey, paraNumber), "center", arrival);
+      if (paraNumber !== undefined) landOn(paraAnchorId(pageKey, paraNumber), "center");
       else if (mode !== "page") landOn(`page-${pageKey}`, "start");
       return true;
     },
@@ -736,10 +733,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // first page and dropped the 20.
     if (restored.current) {
       if (pendingPage.current) {
-        jumpToPage(pendingPage.current, pendingPara.current ?? undefined, pendingArrival.current);
+        jumpToPage(pendingPage.current, pendingPara.current ?? undefined);
         pendingPage.current = null;
         pendingPara.current = null;
-        pendingArrival.current = null;
       }
       return;
     }
@@ -747,20 +743,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // 1. explicit deep link #p-{page}-{para}
     const hash = window.location.hash.match(/^#p-([^-]+)-(.+)$/);
     if (hash) {
-      // A link to a passage is always somebody pointing at it — a highlight, a
-      // note, a shared line — so it is marked on arrival, and the exact words
-      // when the link names them.
-      jumpToPage(hash[1], Number(hash[2]) || undefined, { span: spanInLocation() });
+      jumpToPage(hash[1], Number(hash[2]) || undefined);
       const terms = searchTermsInLocation();
       if (terms.length) setSearchHit({ id: `p-${hash[1]}-${hash[2]}`, terms, chapter: chapterNumber });
       return;
     }
     // 2. pending go-to-page target from cross-chapter navigation
     if (pendingPage.current) {
-      jumpToPage(pendingPage.current, pendingPara.current ?? undefined, pendingArrival.current);
+      jumpToPage(pendingPage.current, pendingPara.current ?? undefined);
       pendingPage.current = null;
       pendingPara.current = null;
-      pendingArrival.current = null;
       return;
     }
     // 3. saved position
@@ -970,6 +962,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       gesture.current = null;
       return;
     }
+    // Painted words with a note under them open the note (`onContentClick`);
+    // the same tap must not also show or hide the bars.
+    const host = el.closest("mark")?.closest("[data-ref]");
+    if (host && notedRefs.current.has(host.getAttribute("data-ref") ?? "")) {
+      gesture.current = null;
+      return;
+    }
     gesture.current = { x: e.clientX, y: e.clientY, t: Date.now() };
   }, []);
 
@@ -1034,8 +1033,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       return;
     }
     const mark = (e.target as HTMLElement).closest?.("[data-paribhasha]");
-    if (!mark) return;
     const sel = window.getSelection();
+    if (!mark) {
+      // Painted words carrying a note: open the note.
+      const host = (e.target as HTMLElement).closest?.("mark")?.closest("[data-ref]");
+      const ref = host?.getAttribute("data-ref");
+      if (ref && notedRefs.current.has(ref) && !(sel && !sel.isCollapsed)) setNoteView(ref);
+      return;
+    }
     if (sel && !sel.isCollapsed) return;
     const word = mark.getAttribute("data-paribhasha");
     if (!word) return;
@@ -1464,23 +1469,23 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const commitNote = useCallback(() => {
     if (!noteTarget || !noteText.trim()) return;
     track("note_add");
-    saveNote(
-      {
-        canonical_ref: noteTarget.para.canonical_ref,
-        book_code: book.code,
-        book_title: book.title_hi,
-        text_hi: noteTarget.para.text_hi,
-      },
-      noteText.trim(),
-      !!user
-    );
+    const target = {
+      canonical_ref: noteTarget.para.canonical_ref,
+      book_code: book.code,
+      book_title: book.title_hi,
+      text_hi: noteTarget.para.text_hi,
+    };
+    saveNote(target, noteText.trim(), !!user);
+    // The selected words, or the paragraph when there was no selection (an
+    // edit opened from the note sheet). See `paintForNote`.
+    if (paintForNote(target, !!user, noteTarget.text ? noteTarget.span : undefined)) refreshPainted();
     confirmSaved("Note saved");
     setPersonalRevision((r) => r + 1);
     setNoteOpen(false);
     setNoteText("");
     setNoteTarget(null);
     clearSelection();
-  }, [noteTarget, noteText, user, book.code, book.title_hi, confirmSaved, clearSelection]);
+  }, [noteTarget, noteText, user, book.code, book.title_hi, confirmSaved, clearSelection, refreshPainted]);
 
   // ---- go to page ----
   const goToPrintedPage = useCallback(
@@ -1584,6 +1589,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     }
     return m;
   }, [personalRows]);
+  useEffect(() => {
+    notedRefs.current = new Set([...marks].filter(([, m]) => m.note).map(([ref]) => ref));
+  }, [marks]);
   /** the passage whose margin note is open for writing */
   const [marginEditing, setMarginEditing] = useState<string | null>(null);
   const progress =
@@ -1736,6 +1744,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     [showPanel, showSettings, marks, marginEditing, book.book_type, book.code, book.title_hi, user, confirmSaved]
   );
 
+  /** Delete, from the note sheet. The passage stays painted — see `paintForNote`. */
+  const deleteViewedNote = () => {
+    if (!noteView) return;
+    unsaveNote(noteView, !!user);
+    setNoteView(null);
+    setPersonalRevision((r) => r + 1);
+    showToast({ text: "Note deleted" });
+  };
+
   /** a highlight or note deleted from a list: repaint the page, re-read the lists */
   const personalChanged = () => {
     refreshPainted();
@@ -1743,8 +1760,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   };
 
   /** a highlight or note, picked in the panel: this chapter scrolls, another loads */
-  const goToRef = (ref: string, span?: { start: number; end: number }) => {
-    const arrival: Arrival = { span };
+  const goToRef = (ref: string) => {
     const p = parseRef(ref);
     if (!p) return;
     const para = Number(p.para) || undefined;
@@ -1753,8 +1769,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         ? book.chapters.find((c) => c.is_front_matter)?.number
         : Number(p.chapter);
     if (target === undefined || Number.isNaN(target)) return;
-    if (target === chapterNumber) jumpToPage(p.page, para, arrival);
-    else void goToChapter(target, { targetPage: p.page, targetPara: para, arrival });
+    if (target === chapterNumber) jumpToPage(p.page, para);
+    else void goToChapter(target, { targetPage: p.page, targetPara: para });
   };
 
   const pageChrome = (p: ReaderPage) =>
@@ -1904,6 +1920,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             text,
             !!user
           );
+          if (
+            paintForNote(
+              { canonical_ref: target.canonical_ref, book_code: book.code, book_title: book.title_hi, text_hi: target.text_hi },
+              !!user
+            )
+          )
+            refreshPainted();
           confirmSaved("Note saved");
           setPersonalRevision((r) => r + 1);
         }}
@@ -2372,7 +2395,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           setNoteOpen(false);
           setNoteTarget(null);
         }}
-        title="Add note"
+        title={noteTarget && marks.get(noteTarget.para.canonical_ref)?.note ? "Edit note" : "Add note"}
       >
         {noteTarget && (
           <div className="px-5">
@@ -2414,6 +2437,60 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             </div>
           </div>
         )}
+      </Sheet>
+
+      {/* Reading a note, from a tap on its painted passage. The card is the
+          one the Notes lists use — the passage, then what was said about it,
+          then Share and Delete — with Edit, which the lists leave to here. */}
+      <Sheet open={noteView !== null} onClose={() => setNoteView(null)} title="Note">
+        {noteView &&
+          (() => {
+            const rows = personalRows.filter((r) => r.canonical_ref === noteView);
+            const note = rows.find((r) => r.note)?.note;
+            if (!note) return null;
+            const words = rows.map((r) => r.text_hi).filter(Boolean).join(" … ");
+            const para = chapter?.paragraphs.find((p) => p.canonical_ref === noteView);
+            const page = parseRef(noteView)?.page ?? "";
+            return (
+              <div className="px-5 pb-2 pt-3">
+                {words && (
+                  <p
+                    lang="hi"
+                    className="hi line-clamp-3 border-s-2 ps-3 text-sm leading-relaxed text-(--reader-ink-soft)"
+                    style={{ borderColor: "var(--ws-color)" }}
+                  >
+                    {words}
+                  </p>
+                )}
+                <p className={`whitespace-pre-wrap text-title leading-relaxed ${words ? "mt-3" : ""}`}>{note}</p>
+                {para && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNoteView(null);
+                      setNoteTarget({ para, text: "" });
+                      setNoteText(note);
+                      setNoteOpen(true);
+                    }}
+                    className="mt-3 min-h-11 rounded-full border border-(--reader-rule) px-4 text-sm font-semibold"
+                    style={{ color: "var(--ws-ink)" }}
+                  >
+                    Edit note
+                  </button>
+                )}
+                <SavedCardFooter
+                  tone="reader"
+                  bookTitle={chapterLabelOf(noteView, book.chapters)}
+                  page={page}
+                  date={savedDate(rows[0]?.created_at)}
+                  shareTitle={note}
+                  href={refToHref(noteView)}
+                  onDelete={deleteViewedNote}
+                  deleteLabel={`Delete note on page ${page}`}
+                />
+              </div>
+            );
+          })()}
       </Sheet>
 
       <Sheet open={gotoOpen} onClose={() => setGotoOpen(false)} title="Go to printed page">

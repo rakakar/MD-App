@@ -99,6 +99,40 @@ export function saveNote(t: SaveTarget, text: string, signedIn: boolean): void {
   if (signedIn) void syncPersonal();
 }
 
+/**
+ * **A note marks its passage.** Written against words that are not painted,
+ * the note paints them amber — the default colour — so the page shows where a
+ * note is without a second kind of marking, and the reader has something to
+ * tap to read it (the reader's note sheet).
+ *
+ * Words already painted keep their colour: the reader chose it, and a note
+ * added later is not a reason to repaint. `span` is the selected words; none
+ * (a note from the panel or a tap) marks the whole paragraph, and only when
+ * nothing on it is painted yet.
+ *
+ * A real highlight, not a display trick: it syncs like any other, shows in
+ * the Highlights lists, and stays if the note is later deleted.
+ */
+export function paintForNote(
+  t: SaveTarget,
+  signedIn: boolean,
+  span?: { start: number; end: number }
+): boolean {
+  const row = getLocalStore().bookmarks.find((b) => b.canonical_ref === t.canonical_ref);
+  if (row?.colour && !row.ranges?.length) return false; // whole paragraph painted
+  const ranges = row?.ranges ?? [];
+  if (span) {
+    if (ranges.some((r) => r.start < span.end && r.end > span.start)) return false;
+    const text = (t.text_hi ?? "").slice(span.start, span.end);
+    if (!text) return false;
+    saveBookmark(t, signedIn, "amber", { ...span, text, colour: "amber" });
+    return true;
+  }
+  if (ranges.length) return false;
+  saveBookmark(t, signedIn, "amber");
+  return true;
+}
+
 export function unsaveNote(canonicalRef: string, signedIn: boolean): void {
   removeLocalNote(canonicalRef);
   if (signedIn) void syncPersonal();

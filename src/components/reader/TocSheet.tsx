@@ -57,7 +57,7 @@ export function TocSheet({
   bookType: "print" | "digital";
   onSelect: (n: number) => void;
   /** a highlight or note was picked: the reader takes the page there */
-  onSelectRef: (ref: string, span?: { start: number; end: number }) => void;
+  onSelectRef: (ref: string) => void;
   /** one was deleted here — the page repaints */
   onChanged: () => void;
 }) {
@@ -90,8 +90,8 @@ export function TocSheet({
     reload();
     onChanged();
   };
-  const go = (ref: string, span?: { start: number; end: number }) => {
-    onSelectRef(ref, span);
+  const go = (ref: string) => {
+    onSelectRef(ref);
     onClose();
   };
 
@@ -227,10 +227,9 @@ export function TocSheet({
                   canonicalRef={h.canonical_ref}
                   text={h.text_hi}
                   colour={h.colour}
-                  span={h.span}
                   createdAt={h.created_at}
                   chapterLabel={chapterLabelOf(h.canonical_ref, chapters)}
-                  onGo={() => go(h.canonical_ref, h.span)}
+                  onGo={() => go(h.canonical_ref)}
                   onDelete={() => removeHighlight(h)}
                 />
               </li>

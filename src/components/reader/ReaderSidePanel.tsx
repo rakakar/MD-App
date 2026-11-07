@@ -84,7 +84,7 @@ export function ReaderSidePanel({
   /** bumped by the reader whenever a highlight or note changes */
   revision: number;
   onChapter: (n: number) => void;
-  onGoToRef: (ref: string, span?: { start: number; end: number }) => void;
+  onGoToRef: (ref: string) => void;
   onGoToPage: (n: number) => void;
   /** the passage at the top of the page, for "New note on this page" */
   noteHere: { canonical_ref: string; text_hi: string } | null;
@@ -412,7 +412,7 @@ function HighlightsTab({
 }: {
   rows: Highlight[];
   chapters: ChapterTocEntry[];
-  onGoToRef: (ref: string, span?: { start: number; end: number }) => void;
+  onGoToRef: (ref: string) => void;
   onDelete: (h: Highlight) => void;
 }) {
   const [filter, setFilter] = useState<HighlightColour | null>(null);
@@ -484,10 +484,9 @@ function HighlightsTab({
                   canonicalRef={h.canonical_ref}
                   text={h.text_hi}
                   colour={h.colour}
-                  span={h.span}
                   createdAt={h.created_at}
                   chapterLabel={chapterLabelOf(h.canonical_ref, chapters)}
-                  onGo={() => onGoToRef(h.canonical_ref, h.span)}
+                  onGo={() => onGoToRef(h.canonical_ref)}
                   onDelete={() => onDelete(h)}
                 />
               </li>
