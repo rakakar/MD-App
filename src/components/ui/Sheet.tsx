@@ -111,6 +111,33 @@ export function Sheet({
     };
   }, [open, onClose]);
 
+  /**
+   * **The page is where it was when the sheet closes.** Focusing a text box
+   * makes iOS scroll the whole page to "reveal" it above the keyboard —
+   * locked page or not — and nothing scrolled it back, so saving a note
+   * dropped the reader somewhere else in the chapter (user testing, Nov 2026).
+   *
+   * Only a move made while the keyboard was up is undone, and only on close:
+   * a sheet that sends the reader somewhere (a page, a chapter) does so after
+   * this has run, so it still lands. Keyed on `open` alone, unlike the effect
+   * above — callers pass a fresh `onClose` every render, and a restore on
+   * every keystroke would fight iOS while the reader types.
+   */
+  const keyboardSeen = useRef(false);
+  useEffect(() => {
+    if (keyboard > 0) keyboardSeen.current = true;
+  }, [keyboard]);
+  useEffect(() => {
+    if (!open) return;
+    const y = window.scrollY;
+    keyboardSeen.current = false;
+    return () => {
+      if (keyboardSeen.current && Math.abs(window.scrollY - y) > 1) {
+        window.scrollTo({ top: y, behavior: "instant" });
+      }
+    };
+  }, [open]);
+
   if (!open || typeof document === "undefined") return null;
 
   const paint =
