@@ -118,6 +118,9 @@ export function Sheet({
       ? "bg-(--reader-bg) text-(--reader-ink)"
       : "bg-surface text-ink";
   const rule = surface === "reader" ? "border-(--reader-rule)" : "border-rule";
+  // Room for the home indicator — unless the keyboard is up, which covers it;
+  // keeping it then left an empty band between the sheet and the keyboard.
+  const floor = keyboard > 0 ? "pb-4" : "pb-[max(1rem,env(safe-area-inset-bottom))]";
 
   const panel = (
     <div className="fixed inset-0 z-60" role="dialog" aria-modal="true" aria-label={title}>
@@ -160,9 +163,22 @@ export function Sheet({
           </div>
         </div>
 
+        {/* With the keyboard up, the sheet stands on it, but the iOS 26
+            keyboard is glass and its toolbar floats clear of it: the page
+            showed through between them, so the sheet looked as if it had
+            come loose and drifted up the screen (user testing, Nov 2026).
+            The sheet's own paper carries on down behind the keyboard. */}
+        {keyboard > 0 && (
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute inset-x-0 top-full ${paint}`}
+            style={{ height: keyboard }}
+          />
+        )}
+
         <div
           className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${
-            footer ? "" : "pb-[max(1rem,env(safe-area-inset-bottom))]"
+            footer ? "" : floor
           }`}
         >
           {children}
@@ -170,7 +186,7 @@ export function Sheet({
 
         {footer && (
           <div
-            className={`shrink-0 border-t px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 ${rule}`}
+            className={`shrink-0 border-t px-5 pt-3 ${floor} ${rule}`}
           >
             {footer}
           </div>
