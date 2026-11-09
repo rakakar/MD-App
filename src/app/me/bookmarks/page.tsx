@@ -138,6 +138,7 @@ export default function BookmarksPage() {
                         bookTitle: bookTitle(b.book_code, titles),
                         ref: b.canonical_ref,
                         origin: window.location.origin,
+                        spans: b.ranges,
                       })}
                       onDelete={() => remove(b.canonical_ref)}
                       deleteLabel={`Remove highlight ${b.canonical_ref}`}

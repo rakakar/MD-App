@@ -55,6 +55,7 @@ export function HighlightCard({
   chapterLabel,
   bookTitle,
   note,
+  span,
   onGo,
   onDelete,
 }: {
@@ -64,6 +65,8 @@ export function HighlightCard({
   bookTitle: string;
   /** the paragraph's note, carried along when the highlight is shared */
   note?: string;
+  /** where the words sit in the paragraph, so a shared link can mark them */
+  span?: { start: number; end: number };
   colour?: HighlightColour;
   createdAt: string;
   /** the chapter's name, where My Journey's card names the book */
@@ -92,6 +95,7 @@ export function HighlightCard({
           bookTitle,
           ref: canonicalRef,
           origin: window.location.origin,
+          spans: [span],
         })}
         onDelete={onDelete}
         deleteLabel={`Remove highlight on page ${page}`}

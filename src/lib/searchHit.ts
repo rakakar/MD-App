@@ -84,7 +84,11 @@ function rangesFor(host: HTMLElement, pattern: RegExp): StaticRange[] {
  * its text nodes are new. Static ranges point at the old ones, so a mutation
  * that disconnects them is the cue to find the words again.
  */
-export function useSearchHitMarks(hit: SearchHit | null) {
+export function useSearchHitMarks(
+  hit: SearchHit | null,
+  /** `shared-hit` for the words a shared link was about — see `sharedWords` */
+  name: "search-hit" | "shared-hit" = NAME
+) {
   useEffect(() => {
     if (!hit || typeof CSS === "undefined" || !("highlights" in CSS)) return;
     const terms = [...hit.terms].sort((a, b) => b.length - a.length);
@@ -99,8 +103,8 @@ export function useSearchHitMarks(hit: SearchHit | null) {
       }
       const host = document.getElementById(hit.id);
       ranges = host ? rangesFor(host, pattern) : [];
-      if (ranges.length) CSS.highlights.set(NAME, new Highlight(...ranges));
-      else CSS.highlights.delete(NAME);
+      if (ranges.length) CSS.highlights.set(name, new Highlight(...ranges));
+      else CSS.highlights.delete(name);
     };
     paint();
     const watch = new MutationObserver(() => {
@@ -110,7 +114,7 @@ export function useSearchHitMarks(hit: SearchHit | null) {
     return () => {
       watch.disconnect();
       cancelAnimationFrame(frame);
-      CSS.highlights.delete(NAME);
+      CSS.highlights.delete(name);
     };
-  }, [hit]);
+  }, [hit, name]);
 }

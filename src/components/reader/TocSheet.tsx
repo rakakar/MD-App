@@ -226,6 +226,7 @@ export function TocSheet({
                 <HighlightCard
                   canonicalRef={h.canonical_ref}
                   text={h.text_hi}
+                  span={h.span}
                   colour={h.colour}
                   note={h.note}
                   bookTitle={bookTitle}

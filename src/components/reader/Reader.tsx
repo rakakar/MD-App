@@ -30,7 +30,7 @@ import {
   type Highlight,
 } from "@/lib/personal";
 import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
-import { paraAnchorId, parseRef, shareCitation } from "@/lib/refs";
+import { paraAnchorId, parseRef, shareCitation, sharedWords, sharedWordsParam } from "@/lib/refs";
 import { searchTermsInLocation, useSearchHitMarks, type SearchHit } from "@/lib/searchHit";
 import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
 import {
@@ -726,6 +726,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // the reader moves to another chapter.
   const [searchHit, setSearchHit] = useState<SearchHit | null>(null);
   useSearchHitMarks(searchHit?.chapter === chapterNumber ? searchHit : null);
+  // The words a shared note or highlight was about, in the highlight amber:
+  // the person opening a friend's link has nothing of their own painted there.
+  const [sharedHit, setSharedHit] = useState<SearchHit | null>(null);
+  useSearchHitMarks(sharedHit?.chapter === chapterNumber ? sharedHit : null, "shared-hit");
   useEffect(() => {
     // Wait for the saved prefs as well as the pages: page mode is one of them,
     // and a jump made before it lands is a scroll-mode jump — the reader then
@@ -750,8 +754,17 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const hash = window.location.hash.match(/^#p-([^-]+)-(.+)$/);
     if (hash) {
       jumpToPage(hash[1], Number(hash[2]) || undefined);
+      // Searched words (`hl`), and the words a shared link was about (`w`),
+      // marked in the paragraph it lands on.
+      const id = `p-${hash[1]}-${hash[2]}`;
       const terms = searchTermsInLocation();
-      if (terms.length) setSearchHit({ id: `p-${hash[1]}-${hash[2]}`, terms, chapter: chapterNumber });
+      if (terms.length) setSearchHit({ id, terms, chapter: chapterNumber });
+      const w = sharedWordsParam(new URLSearchParams(window.location.search).get("w") ?? undefined);
+      const para = w
+        ? pages.find((p) => p.key === hash[1])?.paragraphs.find((q) => q.para_number === Number(hash[2]))
+        : undefined;
+      const shared = w && para ? sharedWords(w, para.text_hi) : [];
+      if (shared.length) setSharedHit({ id, terms: shared, chapter: chapterNumber });
       return;
     }
     // 2. pending go-to-page target from cross-chapter navigation
@@ -1437,6 +1450,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         bookTitle: book.title_hi,
         ref: s.para.canonical_ref,
         origin: window.location.origin,
+        spans: s.text ? [s.span] : undefined,
       });
       try {
         if (navigator.share) {
@@ -1462,6 +1476,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             bookTitle: book.title_hi,
             ref: s.para.canonical_ref,
             origin: window.location.origin,
+            spans: s.text ? [s.span] : undefined,
           })
         );
         showToast({ text: "Copied with citation." });
@@ -2542,6 +2557,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     bookTitle: book.title_hi,
                     ref: noteView,
                     origin: window.location.origin,
+                    spans: rows.map((r) => r.span),
                   })}
                   onDelete={deleteViewedNote}
                   deleteLabel={`Delete note on page ${page}`}

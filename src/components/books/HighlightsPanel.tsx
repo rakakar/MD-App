@@ -269,6 +269,7 @@ function HighlightCard({
       bookTitle,
       ref: highlight.canonical_ref,
       origin: window.location.origin,
+      spans: [highlight.span],
     });
 
   const copy = async () => {

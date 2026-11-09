@@ -1,16 +1,20 @@
 import { notFound, redirect } from "next/navigation";
 import { ApiError, resolvePara } from "@/lib/api";
-import { parseRef } from "@/lib/refs";
+import { parseRef, sharedWordsParam } from "@/lib/refs";
 
 // Paragraph deep link: resolves a canonical_ref (contract §2.5) and opens
 // the reader at that paragraph. Also the landing route for front-matter
 // refs ("MVD fm.iii.2"), whose chapter number isn't derivable locally.
 export default async function ParaDeepLink({
   params,
+  searchParams,
 }: {
   params: Promise<{ ref: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { ref: raw } = await params;
+  // A shared link's words, passed on so the reader can mark them (`sharedWords`).
+  const w = sharedWordsParam((await searchParams).w);
   const ref = decodeURIComponent(raw);
 
   let para;
@@ -24,6 +28,6 @@ export default async function ParaDeepLink({
   const parsed = parseRef(ref);
   const pageKey = para.page_label || parsed?.page || String(para.page_number);
   redirect(
-    `/books/${encodeURIComponent(para.book_code)}/${para.chapter_number}#p-${pageKey}-${para.para_number}`
+    `/books/${encodeURIComponent(para.book_code)}/${para.chapter_number}${w ? `?w=${w}` : ""}#p-${pageKey}-${para.para_number}`
   );
 }

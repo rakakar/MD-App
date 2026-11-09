@@ -73,12 +73,15 @@ export function shareCitation({
   bookTitle,
   ref,
   origin,
+  spans,
 }: {
   passage?: string;
   note?: string;
   bookTitle?: string;
   ref: string;
   origin: string;
+  /** where the shared words sit in the paragraph; none means all of it */
+  spans?: (SharedSpan | undefined)[];
 }): string {
   const page = parseRef(ref)?.page;
   const source = [bookTitle?.trim(), page ? `पृष्ठ ${page}` : ""].filter(Boolean).join(", ");
@@ -86,7 +89,7 @@ export function shareCitation({
   return [
     words ? `“${words}”` : "",
     note?.trim() ? `नोट: ${note.trim()}` : "",
-    `${source ? `— ${source}\n` : ""}${passageUrl(ref, origin)}`,
+    `${source ? `— ${source}\n` : ""}${passageUrl(ref, origin, spans)}`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -104,7 +107,49 @@ export function citationText(text: string, ref: string): string {
  * the ref on the server, so it still lands on the right paragraph after a
  * book moves, and a compilation is sent to its library home from there.
  */
-export function passageUrl(ref: string, origin: string): string {
-  return `${origin}/paras/${encodeURIComponent(ref)}`;
+export function passageUrl(
+  ref: string,
+  origin: string,
+  spans?: (SharedSpan | undefined)[]
+): string {
+  const at = (spans ?? []).filter((x): x is SharedSpan => !!x && x.end > x.start);
+  const w = at.length ? at.map((x) => `${x.start}-${x.end}`).join(",") : "p";
+  return `${origin}/paras/${encodeURIComponent(ref)}?w=${w}`;
+}
+
+/**
+ * **The shared words, marked where the link lands** (Nov 2026).
+ *
+ * A friend opening a shared note or highlight landed on the right paragraph
+ * with nothing to show which words it was about — the sender's colours are
+ * theirs, not the recipient's. So the link says which words: `w=187-209` (or
+ * several, comma-separated) as offsets into the paragraph's `text_hi`, or
+ * `w=p` for the whole paragraph.
+ *
+ * Offsets rather than the words: Devanagari in a URL is nine characters of
+ * percent-encoding per letter, and the link is printed in the message — a
+ * sentence would turn it into a screenful of `%E0%A4`.
+ */
+export interface SharedSpan {
+  start: number;
+  end: number;
+}
+
+const SHARED_W = /^(p|\d+-\d+(,\d+-\d+)*)$/;
+
+/** `w` as `/paras` received it, if it is one this app wrote */
+export function sharedWordsParam(w: string | string[] | undefined): string | null {
+  const v = Array.isArray(w) ? w[0] : w;
+  return v && SHARED_W.test(v) ? v : null;
+}
+
+/** The words a shared link points at in this paragraph's text. */
+export function sharedWords(w: string, text: string): string[] {
+  if (w === "p") return text ? [text] : [];
+  return w
+    .split(",")
+    .map((pair) => pair.split("-").map(Number))
+    .map(([a, b]) => text.slice(a, b).trim())
+    .filter(Boolean);
 }
 
