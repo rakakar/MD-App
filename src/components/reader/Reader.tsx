@@ -204,7 +204,7 @@ interface Selection {
   parts?: { para: Paragraph; text: string; span?: { start: number; end: number } }[];
 }
 
-/** an offer to jump to a saved position in another chapter */
+/** an offer to jump to a saved position: another chapter, or another device's place in this one */
 interface ResumeHint {
   chapter: number;
   ref: string;
@@ -258,6 +258,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [noteTarget, setNoteTarget] = useState<Selection | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
+  /**
+   * A passage holds one note. Noting it again opens that note with the caret
+   * after it, so the new words are added rather than written over it — which
+   * is what a reader testing this expected and what the sheet used to do.
+   */
+  const noteCaretToEnd = useRef(false);
   /**
    * The passage whose note is open for reading — tapped on the page.
    *
@@ -764,7 +770,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // The one thing an account genuinely adds: a position set on another device.
   // It arrives late by nature, so it is offered rather than applied — nobody
   // wants the page yanked out from under them two seconds into a paragraph.
+  //
+  // Offered even when it is in this chapter, and never jumped to. It used to
+  // jump within the chapter, and since the reader keeps writing their own
+  // position while the sync is out, "different from before" was usually just
+  // where they had scrolled to — so a few seconds into reading the page leapt
+  // and re-centred itself (user testing, Nov 2026). `ownRefs` is every
+  // position this reader wrote, so their own scrolling is never mistaken for
+  // another device.
   const otherDeviceChecked = useRef(false);
+  const ownRefs = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (authLoading || !user || otherDeviceChecked.current || pages.length === 0) return;
     otherDeviceChecked.current = true;
@@ -772,10 +787,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const before = localProgressFor(book.code)?.canonical_ref;
     void syncPersonal().then(() => {
       const after = localProgressFor(book.code);
-      if (!after || after.canonical_ref === before) return;
-      restoreRef(after.canonical_ref, "other-device");
+      if (!after || after.canonical_ref === before || ownRefs.current.has(after.canonical_ref)) return;
+      const chapter = Number(after.canonical_ref.match(/^\S+\s+([^.]+)\./)?.[1]);
+      if (chapter) setResumeHint({ chapter, ref: after.canonical_ref, kind: "other-device" });
     });
-  }, [authLoading, user, pages, book.code, restoreRef]);
+  }, [authLoading, user, pages, book.code]);
 
   // ---- progress write-behind (debounced; top visible ref) ----
   // One path for everyone: the local store takes it immediately, and the sync
@@ -804,6 +820,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const saveProgress = useCallback(
     (ref: string) => {
       setCurrentRef(ref);
+      ownRefs.current.add(ref);
       if (!restored.current) return;
       pendingProgress.current = { ref, chapter: chapterNumber };
       if (progressTimer.current) clearTimeout(progressTimer.current);
@@ -1995,7 +2012,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 type="button"
                 onClick={() => {
                   const m = resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\.([^.]+)$/);
-                  void goToChapter(resumeHint.chapter, { targetPage: m?.[1] });
+                  if (resumeHint.chapter === chapterNumber && !isFrontMatter) {
+                    if (m) jumpToPage(m[1], Number(m[2]) || undefined);
+                  } else {
+                    void goToChapter(resumeHint.chapter, { targetPage: m?.[1] });
+                  }
                   setResumeHint(null);
                 }}
                 className="flex min-h-10 min-w-0 items-center gap-1.5 rounded-full px-3 text-sm transition-colors active:bg-white/10"
@@ -2014,8 +2035,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     the reader something they could not otherwise know. */}
                 <span className="truncate">
                   {resumeHint.kind === "other-device" ? "Other device" : "Resume"}
-                  {" · chapter "}
-                  {resumeHint.chapter}
+                  {resumeHint.chapter === chapterNumber && !isFrontMatter
+                    ? ` · page ${resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\./)?.[1] ?? ""}`
+                    : ` · chapter ${resumeHint.chapter}`}
                 </span>
                 <span aria-hidden className="shrink-0">
                   →
@@ -2273,7 +2295,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           bottom={bottomOffset}
           onHighlight={(colour) => doHighlight(selection, colour)}
           onNote={() => {
+            const earlier = marks.get(selection.para.canonical_ref)?.note;
             setNoteTarget(selection);
+            setNoteText(earlier ? `${earlier}\n\n` : "");
+            noteCaretToEnd.current = !!earlier;
             setNoteOpen(true);
           }}
           onShare={() => void doShare(selection)}
@@ -2399,9 +2424,16 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         open={noteOpen && !!noteTarget}
         onClose={() => {
           setNoteOpen(false);
+          setNoteText("");
           setNoteTarget(null);
         }}
-        title={noteTarget && marks.get(noteTarget.para.canonical_ref)?.note ? "Edit note" : "Add note"}
+        title={
+          noteTarget && marks.get(noteTarget.para.canonical_ref)?.note
+            ? noteTarget.text
+              ? "Add to your note"
+              : "Edit note"
+            : "Add note"
+        }
       >
         {noteTarget && (
           <div className="px-5">
@@ -2411,11 +2443,25 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             <p className="mt-1 text-xs text-(--reader-ink-soft)">
               {noteTarget.para.canonical_ref}
             </p>
+            {/* Noting a passage that already has a note: say so, so the
+                earlier words in the box are not mistaken for a stray draft. */}
+            {noteTarget.text && marks.get(noteTarget.para.canonical_ref)?.note && (
+              <p className="mt-3 text-sm text-(--reader-ink)">
+                This passage already has your note. Write below it — nothing is replaced.
+              </p>
+            )}
             <textarea
               autoFocus
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
-              rows={4}
+              onFocus={(e) => {
+                if (!noteCaretToEnd.current) return;
+                noteCaretToEnd.current = false;
+                const box = e.currentTarget;
+                box.setSelectionRange(box.value.length, box.value.length);
+                box.scrollTop = box.scrollHeight;
+              }}
+              rows={noteTarget.text && marks.get(noteTarget.para.canonical_ref)?.note ? 6 : 4}
               placeholder="Your note…"
               className="mt-3 w-full rounded-xl border border-(--reader-rule) bg-transparent p-3 text-base outline-none focus:border-(--ws-ink)"
             />
@@ -2476,6 +2522,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                       setNoteView(null);
                       setNoteTarget({ para, text: "" });
                       setNoteText(note);
+                      noteCaretToEnd.current = true;
                       setNoteOpen(true);
                     }}
                     className="mt-3 min-h-11 rounded-full border border-(--reader-rule) px-4 text-sm font-semibold"
