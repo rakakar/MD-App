@@ -169,7 +169,15 @@ export function AssistantScreen() {
       setConv(null);
       return;
     }
-    if (conv?.id === cParam || created.current === cParam) return;
+    // The URL catching up with a conversation just started here: the screen
+    // already holds it. Recognised once and then forgotten — kept, it barred
+    // the way back in after a visit to another conversation, until the
+    // screen was left and remounted (user testing, Nov 2026).
+    if (created.current === cParam) {
+      created.current = null;
+      return;
+    }
+    if (conv?.id === cParam) return;
     setConv(getConversation(cParam));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cParam]);

@@ -118,6 +118,25 @@ export function putConversation(c: Conversation): void {
   write([c, ...rest]);
 }
 
+/**
+ * Write an answer into whichever stored conversation holds the turn, unless it
+ * already has one.
+ *
+ * For a Research answer that arrives while the reader is in another
+ * conversation: the screen that asked has moved on, so nothing else would
+ * keep it, and reopening the conversation later — after a reload — would ask
+ * the question again. `updatedAt` is left alone, as `setSavedToJourney` does.
+ */
+export function settleStoredTurn(turnId: string, patch: Partial<Turn>): void {
+  let hit = false;
+  const list = read().map((c) => {
+    if (!c.turns.some((t) => t.id === turnId && !t.answer)) return c;
+    hit = true;
+    return { ...c, turns: c.turns.map((t) => (t.id === turnId ? { ...t, ...patch } : t)) };
+  });
+  if (hit) write(list);
+}
+
 export function deleteConversation(id: string): void {
   write(read().filter((c) => c.id !== id));
 }

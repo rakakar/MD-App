@@ -78,26 +78,31 @@ export function BookSearchAnswer({
   const [library, setLibrary] = useState<LibrarySearchRow[] | null>(null);
   useEffect(() => {
     if (phrase || locked) return;
-    const ctrl = new AbortController();
-    searchLibrary(query, ctrl.signal)
-      .then(setLibrary)
-      .catch(() => setLibrary(null));
-    return () => ctrl.abort();
+    let alive = true;
+    remembered(libraryCache, query, () => searchLibrary(query))
+      .then((rows) => alive && setLibrary(rows))
+      .catch(() => alive && setLibrary(null));
+    return () => {
+      alive = false;
+    };
   }, [query, phrase, locked]);
 
   useEffect(() => {
-    const ctrl = new AbortController();
+    let alive = true;
     setResponse(null);
     setFailed(false);
-    searchIn(phrase ?? query, scopeKey ? scopeKey.split(",") : [], raw, ctrl.signal)
-      .then((r) => {
-        setResponse(r);
+    const q = phrase ?? query;
+    remembered(searchCache, `${raw ? 1 : 0}|${scopeKey}|${q}`, () =>
+      searchIn(q, scopeKey ? scopeKey.split(",") : [], raw).then((r) => {
         track("search", { query_length: query.length, results: r.total, mode: r.mode });
+        return r;
       })
-      .catch((e) => {
-        if ((e as Error).name !== "AbortError") setFailed(true);
-      });
-    return () => ctrl.abort();
+    )
+      .then((r) => alive && setResponse(r))
+      .catch(() => alive && setFailed(true));
+    return () => {
+      alive = false;
+    };
   }, [query, phrase, raw, scopeKey]);
 
   /** Passages that really contain the phrase, when one was quoted. */
@@ -311,14 +316,41 @@ function inReadingOrder(hits: SearchResult[]): SearchResult[] {
  */
 const MULTI_BOOK_LIMIT = 50;
 
-async function searchIn(
-  q: string,
-  codes: string[],
-  raw: boolean,
-  signal: AbortSignal
-): Promise<SearchResponse> {
-  if (codes.length <= 1) return search(q, { raw, signal, book: codes[0] });
-  return search(q, { raw, signal, books: codes, limit: MULTI_BOOK_LIMIT });
+/**
+ * **Searched once, shown many times.** A Book search turn used to search again
+ * every time it was shown, so opening a conversation from the list, or coming
+ * back to it from another, cost the whole retrieval again for a list the
+ * reader had already seen. Results are held for the session, keyed by what
+ * was searched, so a conversation reopens at once; a reload asks afresh,
+ * which also keeps them from going stale as books are added.
+ *
+ * Promises rather than results, so two turns asking the same thing share one
+ * request. A failure is forgotten, so the next showing tries again.
+ */
+const CACHE_SIZE = 40;
+const searchCache = new Map<string, Promise<SearchResponse>>();
+const libraryCache = new Map<string, Promise<LibrarySearchRow[]>>();
+
+function remembered<T>(cache: Map<string, Promise<T>>, key: string, load: () => Promise<T>): Promise<T> {
+  const held = cache.get(key);
+  if (held) {
+    // most recently used goes to the back of the queue
+    cache.delete(key);
+    cache.set(key, held);
+    return held;
+  }
+  const job = load();
+  job.catch(() => {
+    if (cache.get(key) === job) cache.delete(key);
+  });
+  while (cache.size >= CACHE_SIZE) cache.delete(cache.keys().next().value as string);
+  cache.set(key, job);
+  return job;
+}
+
+async function searchIn(q: string, codes: string[], raw: boolean): Promise<SearchResponse> {
+  if (codes.length <= 1) return search(q, { raw, book: codes[0] });
+  return search(q, { raw, books: codes, limit: MULTI_BOOK_LIMIT });
 }
 
 function normalise(s: string): string {

@@ -7,7 +7,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CheckIcon, ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
 import { ctaPrimary } from "@/components/ui";
-import { answerAsText, parseAnswer, type Run } from "@/lib/assistant/answer";
+import { answerAsText, firstSentence, parseAnswer, type Run } from "@/lib/assistant/answer";
+import { settleStoredTurn } from "@/lib/assistant/conversations";
 import { glossaryWordsIn } from "@/lib/assistant/related";
 import {
   askChat,
@@ -130,11 +131,24 @@ export function ResearchAnswer({
     const key = `${turnId}:${attempt}`;
     let entry = inflight.get(key);
     if (!entry) {
+      const startedAt = Date.now();
       entry = {
         job: askChat(query, { continueFrom, books, mode: deep ? "deep" : "quick" }),
-        startedAt: Date.now(),
+        startedAt,
       };
       inflight.set(key, entry);
+      // Kept even if the reader has gone to another conversation by the time
+      // it lands — this component is gone then, and `onSettle` with it.
+      entry.job
+        .then(({ answer: a }) =>
+          settleStoredTurn(turnId, {
+            answer: a,
+            summary: firstSentence(a.answer),
+            count: a.citations.length,
+            ...(deep ? { took: Date.now() - startedAt } : {}),
+          })
+        )
+        .catch(() => {});
     }
     const { startedAt: began } = entry;
     entry.job
