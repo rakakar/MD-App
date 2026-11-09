@@ -143,13 +143,16 @@ export function sharedWordsParam(w: string | string[] | undefined): string | nul
   return v && SHARED_W.test(v) ? v : null;
 }
 
-/** The words a shared link points at in this paragraph's text. */
-export function sharedWords(w: string, text: string): string[] {
-  if (w === "p") return text ? [text] : [];
+/**
+ * Where a shared link's words sit in this paragraph, as highlight spans. The
+ * whole paragraph is a span with no words — the shape `anchorSpan` reads as
+ * "all of it". Offsets past the text, or empty, are dropped.
+ */
+export function sharedSpans(w: string, text: string): { start: number; end: number; text: string }[] {
+  if (w === "p") return text ? [{ start: 0, end: text.length, text: "" }] : [];
   return w
     .split(",")
     .map((pair) => pair.split("-").map(Number))
-    .map(([a, b]) => text.slice(a, b).trim())
-    .filter(Boolean);
+    .filter(([a, b]) => a >= 0 && b > a && b <= text.length)
+    .map(([a, b]) => ({ start: a, end: b, text: text.slice(a, b) }));
 }
-

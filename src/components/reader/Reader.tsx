@@ -30,7 +30,7 @@ import {
   type Highlight,
 } from "@/lib/personal";
 import { paintSegments, selectionSpan, type PaintedSegment } from "@/lib/highlights";
-import { paraAnchorId, parseRef, shareCitation, sharedWords, sharedWordsParam } from "@/lib/refs";
+import { paraAnchorId, parseRef, shareCitation, sharedSpans, sharedWordsParam } from "@/lib/refs";
 import { searchTermsInLocation, useSearchHitMarks, type SearchHit } from "@/lib/searchHit";
 import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
 import {
@@ -726,10 +726,24 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // the reader moves to another chapter.
   const [searchHit, setSearchHit] = useState<SearchHit | null>(null);
   useSearchHitMarks(searchHit?.chapter === chapterNumber ? searchHit : null);
-  // The words a shared note or highlight was about, in the highlight amber:
-  // the person opening a friend's link has nothing of their own painted there.
-  const [sharedHit, setSharedHit] = useState<SearchHit | null>(null);
-  useSearchHitMarks(sharedHit?.chapter === chapterNumber ? sharedHit : null, "shared-hit");
+  /**
+   * The words a shared note or highlight was about (`?w=`), painted amber
+   * where its link lands: the person opening a friend's link has nothing of
+   * their own painted there. Painted like a highlight — not saved, and gone
+   * when the chapter changes — because that is the marking every browser
+   * shows; the CSS highlight mark tried first never appeared in Safari.
+   */
+  const [sharedPaint, setSharedPaint] = useState<{
+    chapter: number;
+    ref: string;
+    spans: HighlightRange[];
+  } | null>(null);
+  const shownPaint = useMemo(() => {
+    if (!sharedPaint || sharedPaint.chapter !== chapterNumber) return painted;
+    const m = new Map(painted);
+    m.set(sharedPaint.ref, [...(painted.get(sharedPaint.ref) ?? []), ...sharedPaint.spans]);
+    return m;
+  }, [painted, sharedPaint, chapterNumber]);
   useEffect(() => {
     // Wait for the saved prefs as well as the pages: page mode is one of them,
     // and a jump made before it lands is a scroll-mode jump — the reader then
@@ -763,8 +777,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       const para = w
         ? pages.find((p) => p.key === hash[1])?.paragraphs.find((q) => q.para_number === Number(hash[2]))
         : undefined;
-      const shared = w && para ? sharedWords(w, para.text_hi) : [];
-      if (shared.length) setSharedHit({ id, terms: shared, chapter: chapterNumber });
+      if (w && para) {
+        const spans = sharedSpans(w, para.text_hi).map((x) => ({ ...x, colour: "amber" as const }));
+        if (spans.length) setSharedPaint({ chapter: chapterNumber, ref: para.canonical_ref, spans });
+      }
       return;
     }
     // 2. pending go-to-page target from cross-chapter navigation
@@ -2090,7 +2106,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 matcher={glossaryUnderline ? matcher : null}
                 activeSeq={activeSeq}
                 selectedRefs={selectedRefs}
-                painted={painted}
+                painted={shownPaint}
                 margin={marginFor}
               />
               {/* Forward is the filled one, back is the outline — the same pair
@@ -2167,7 +2183,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     matcher={glossaryUnderline ? matcher : null}
                     activeSeq={activeSeq}
                     selectedRefs={selectedRefs}
-                    painted={painted}
+                    painted={shownPaint}
                     margin={marginFor}
                     chapterLabel={pi === 0 && !isFrontMatter ? `अध्याय ${chapterNumber}` : undefined}
                     pageLabel={

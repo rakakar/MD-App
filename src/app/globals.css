@@ -1143,12 +1143,6 @@ html[data-reading="1"] body {
   background-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
 }
 
-/* the words a shared note or highlight was about, where its link lands —
-   the reader's own amber, since that is what a highlight looks like here */
-::highlight(shared-hit) {
-  background-color: var(--color-hl-amber);
-}
-
 /* follow-along highlight (TTS, PRD §5) */
 .para-active {
   background: color-mix(in srgb, var(--ws-color) 14%, transparent);
