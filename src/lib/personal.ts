@@ -354,6 +354,8 @@ export function localHighlights(bookCode: string): Highlight[] {
 // which matters because it runs on every reconnect.
 
 let inflight: Promise<boolean> | null = null;
+/** how much newer the account's place must be to replace one not yet sent */
+const UNSENT_GRACE_MS = 5_000;
 
 /**
  * A sweep that is guaranteed to have seen every write made before this call.
@@ -381,12 +383,23 @@ export function hasUnsyncedPersonal(): boolean {
 /** Resolves `true` when both directions went through — Settings' Synced pill
  *  says so only then — and `false` when the sweep was cut off. */
 export function syncPersonal(): Promise<boolean> {
-  if (inflight) return inflight;
+  // Asked again mid-sweep: one more sweep after this one, not nothing. The
+  // running one took its snapshot already, so a write made since — the last
+  // position, flushed as the phone is put away — would otherwise wait for
+  // whatever happens to sync next.
+  if (inflight) {
+    queued ??= inflight.then(() => {
+      queued = null;
+      return syncPersonal();
+    });
+    return queued;
+  }
   inflight = run().finally(() => {
     inflight = null;
   });
   return inflight;
 }
+let queued: Promise<boolean> | null = null;
 
 async function run(): Promise<boolean> {
   try {
@@ -652,8 +665,15 @@ async function pull(): Promise<void> {
     }
     const mine = store.progress[s.book_code];
     const theirs = s.updated_at ?? "";
-    if (mine && !mine.synced) continue; // ours is newer and not yet pushed
-    if (mine && theirs <= mine.updated_at) continue;
+    // By time, as times — the server's stamp and this device's need not be
+    // written the same way, so comparing them as strings could be hours out.
+    // An unpushed row here used to win outright, which let a laptop's place
+    // from last week, never sent, overwrite this morning's on the phone. It
+    // still wins a near tie: the server stamps when a row arrives, so this
+    // device's own last push can look a moment newer than what it read since.
+    const theirsAt = Date.parse(theirs) || 0;
+    const mineAt = mine ? Date.parse(mine.updated_at) || 0 : 0;
+    if (mine && theirsAt <= mineAt + (mine.synced ? 0 : UNSENT_GRACE_MS)) continue;
     store.progress[s.book_code] = {
       book_code: s.book_code,
       book_title: s.book_title ?? mine?.book_title,

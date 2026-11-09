@@ -807,12 +807,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // and re-centred itself (user testing, Nov 2026). `ownRefs` is every
   // position this reader wrote, so their own scrolling is never mistaken for
   // another device.
+  //
+  // Checked on opening, and again each time the tab comes back into view: a
+  // desktop tab left open while the reader went on in the phone used to sit
+  // at its old place with nothing to say the phone had moved on.
   const otherDeviceChecked = useRef(false);
   const ownRefs = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (authLoading || !user || otherDeviceChecked.current || pages.length === 0) return;
-    otherDeviceChecked.current = true;
-    if (window.location.hash) return;
+  const checkOtherDevice = useCallback(() => {
     const before = localProgressFor(book.code)?.canonical_ref;
     void syncPersonal().then(() => {
       const after = localProgressFor(book.code);
@@ -820,7 +821,21 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       const chapter = Number(after.canonical_ref.match(/^\S+\s+([^.]+)\./)?.[1]);
       if (chapter) setResumeHint({ chapter, ref: after.canonical_ref, kind: "other-device" });
     });
-  }, [authLoading, user, pages, book.code]);
+  }, [book.code]);
+  useEffect(() => {
+    if (authLoading || !user || otherDeviceChecked.current || pages.length === 0) return;
+    otherDeviceChecked.current = true;
+    if (window.location.hash) return;
+    checkOtherDevice();
+  }, [authLoading, user, pages, checkOtherDevice]);
+  useEffect(() => {
+    if (!user) return;
+    const onReturn = () => {
+      if (document.visibilityState === "visible" && otherDeviceChecked.current) checkOtherDevice();
+    };
+    document.addEventListener("visibilitychange", onReturn);
+    return () => document.removeEventListener("visibilitychange", onReturn);
+  }, [user, checkOtherDevice]);
 
   // ---- progress write-behind (debounced; top visible ref) ----
   // One path for everyone: the local store takes it immediately, and the sync
@@ -862,14 +877,24 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // Back a second after turning a page, so commit it by hand rather than let
   // the timer die with the component — losing the last page turn is exactly
   // the case resume exists for.
+  //
+  // Also when the page is hidden. A phone rarely fires `pagehide` for
+  // switching apps or locking the screen — only `visibilitychange` — so the
+  // last stretch read on the phone stayed there, and the desktop opened at
+  // wherever the 20-second push had last caught it.
   useEffect(() => {
     const flush = () => {
       commitProgress();
       flushProgress(!!user);
     };
+    const onHide = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
     window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHide);
     return () => {
       window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHide);
       flush();
     };
   }, [user, commitProgress]);

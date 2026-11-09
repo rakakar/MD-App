@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PlayIcon } from "@/components/shell/icons";
-import { localProgressFor } from "@/lib/personal";
+import { PERSONAL_SYNCED, localProgressFor } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 
 export interface Resume {
@@ -31,19 +31,26 @@ export interface Resume {
 export function useResume(bookCode: string, pageCount?: number | null): Resume | null {
   const [resume, setResume] = useState<Resume | null>(null);
 
+  // Read again when a sync lands: a place reached on the other device
+  // arrives a moment after this page, and the button kept the old page.
   useEffect(() => {
-    const p = localProgressFor(bookCode);
-    if (!p) return;
-    const ref = parseRef(p.canonical_ref);
-    const page = Number(ref?.page);
-    setResume({
-      href: refToHref(p.canonical_ref),
-      page: ref?.page ?? "",
-      percent:
-        Number.isFinite(page) && pageCount
-          ? Math.min(100, (page / pageCount) * 100)
-          : null,
-    });
+    const read = () => {
+      const p = localProgressFor(bookCode);
+      if (!p) return;
+      const ref = parseRef(p.canonical_ref);
+      const page = Number(ref?.page);
+      setResume({
+        href: refToHref(p.canonical_ref),
+        page: ref?.page ?? "",
+        percent:
+          Number.isFinite(page) && pageCount
+            ? Math.min(100, (page / pageCount) * 100)
+            : null,
+      });
+    };
+    read();
+    window.addEventListener(PERSONAL_SYNCED, read);
+    return () => window.removeEventListener(PERSONAL_SYNCED, read);
   }, [bookCode, pageCount]);
 
   return resume;
