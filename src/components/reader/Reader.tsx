@@ -204,6 +204,13 @@ interface Selection {
   parts?: { para: Paragraph; text: string; span?: { start: number; end: number } }[];
 }
 
+/**
+ * How far under a paragraph's landing line (`.reader-para` scroll-margin-top)
+ * the reading position is read. A few pixels, so a paragraph put back on the
+ * line by a resume is the one read off it again.
+ */
+const READ_LINE_SLACK = 8;
+
 /** an offer to jump to a saved position: another chapter, or another device's place in this one */
 interface ResumeHint {
   chapter: number;
@@ -290,6 +297,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const pendingPage = useRef<string | null>(null);
   /** the paragraph on `pendingPage`, when a passage rather than a page was asked for */
   const pendingPara = useRef<number | null>(null);
+  const pendingBlock = useRef<ScrollLogicalPosition>("center");
   const pageTurns = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -594,12 +602,19 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const goToChapter = useCallback(
     async (
       n: number,
-      opts: { targetPage?: string; targetPara?: number; push?: boolean } = {}
+      opts: {
+        targetPage?: string;
+        targetPara?: number;
+        push?: boolean;
+        /** where the target paragraph lands — `start` for a resume, see `jumpToPage` */
+        block?: ScrollLogicalPosition;
+      } = {}
     ): Promise<ChapterPayload | null> => {
       setChapterLoading(true);
       setSelection(null);
       pendingPage.current = opts.targetPage ?? null;
       pendingPara.current = opts.targetPara ?? null;
+      pendingBlock.current = opts.block ?? "center";
       const result = await loadChapter(n);
       if (!result.ok) {
         setChapterLoading(false);
@@ -689,12 +704,20 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   );
   useEffect(() => () => stopLanding.current(), []);
 
+  /**
+   * `block`: a passage picked from a list, a search hit or a shared link is
+   * centred, so the words are in the middle of the eye. A **resume** is not —
+   * the place saved is the paragraph at the top of the page (`READ_LINE`),
+   * so it goes back to the top. Centring it put the paragraph above it at
+   * the top, that one was saved next, and each trip between devices slipped
+   * the place back a paragraph.
+   */
   const jumpToPage = useCallback(
-    (pageKey: string, paraNumber?: number) => {
+    (pageKey: string, paraNumber?: number, block: ScrollLogicalPosition = "center") => {
       const idx = pages.findIndex((p) => p.key === pageKey);
       if (idx === -1) return false;
       if (mode === "page") setPageIndex(idx);
-      if (paraNumber !== undefined) landOn(paraAnchorId(pageKey, paraNumber), "center");
+      if (paraNumber !== undefined) landOn(paraAnchorId(pageKey, paraNumber), block);
       else if (mode !== "page") landOn(`page-${pageKey}`, "start");
       return true;
     },
@@ -708,7 +731,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       if (!m) return;
       const refChapter = m[1] === "fm" ? null : Number(m[1]);
       if (refChapter === chapterNumber || (m[1] === "fm" && isFrontMatter)) {
-        jumpToPage(m[2], Number(m[3]) || undefined);
+        jumpToPage(m[2], Number(m[3]) || undefined, "start");
       } else if (refChapter !== null) {
         setResumeHint({ chapter: refChapter, ref, kind: hint });
       }
@@ -757,7 +780,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // first page and dropped the 20.
     if (restored.current) {
       if (pendingPage.current) {
-        jumpToPage(pendingPage.current, pendingPara.current ?? undefined);
+        jumpToPage(pendingPage.current, pendingPara.current ?? undefined, pendingBlock.current);
         pendingPage.current = null;
         pendingPara.current = null;
       }
@@ -767,7 +790,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // 1. explicit deep link #p-{page}-{para}
     const hash = window.location.hash.match(/^#p-([^-]+)-(.+)$/);
     if (hash) {
-      jumpToPage(hash[1], Number(hash[2]) || undefined);
+      // A plain link to a paragraph is a place to read from — Continue
+      // reading, Resume, a saved passage — and opens with it at the top. A
+      // search hit or a shared link points at words inside it, so it centres.
+      const q = new URLSearchParams(window.location.search);
+      const marked = q.has("hl") || q.has("w");
+      jumpToPage(hash[1], Number(hash[2]) || undefined, marked ? "center" : "start");
       // Searched words (`hl`), and the words a shared link was about (`w`),
       // marked in the paragraph it lands on.
       const id = `p-${hash[1]}-${hash[2]}`;
@@ -785,7 +813,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     }
     // 2. pending go-to-page target from cross-chapter navigation
     if (pendingPage.current) {
-      jumpToPage(pendingPage.current, pendingPara.current ?? undefined);
+      jumpToPage(pendingPage.current, pendingPara.current ?? undefined, pendingBlock.current);
       pendingPage.current = null;
       pendingPara.current = null;
       return;
@@ -899,38 +927,54 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     };
   }, [user, commitProgress]);
 
-  // page mode: current page's first para is the position
+  /**
+   * **The position is the paragraph at the top of the page** — the one
+   * crossing `READ_LINE`, just under the top bar — in both reading modes.
+   *
+   * The same line a resume puts the paragraph back on (`.reader-para`'s
+   * `scroll-margin-top`, read from the element so the two cannot drift
+   * apart), so saving and restoring are each other's inverse: open it on the
+   * phone, put the phone down, open it on the laptop, and the same paragraph
+   * is at the top of both.
+   *
+   * Page mode used to save only a printed page's first paragraph. On a phone
+   * a printed page is several screens, so everything read below its first
+   * screen was lost and the other device opened at the top of the page. The
+   * scroll mode's band was the top 40% of the screen, while a resume centred
+   * its paragraph — so what came back was not what had been saved.
+   */
   useEffect(() => {
-    if (mode !== "page") return;
-    const first = pages[pageIndex]?.paragraphs[0];
-    if (first) saveProgress(first.canonical_ref);
-  }, [mode, pageIndex, pages, saveProgress]);
-
-  // scroll mode: observe top visible paragraph
-  useEffect(() => {
-    if (mode !== "scroll" || pages.length === 0) return;
+    if (pages.length === 0) return;
     const root = contentRef.current;
     if (!root) return;
-    const paras = root.querySelectorAll<HTMLElement>("[data-ref]");
-    const visible = new Set<HTMLElement>();
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) visible.add(e.target as HTMLElement);
-          else visible.delete(e.target as HTMLElement);
-        }
-        let top: HTMLElement | null = null;
-        for (const el of visible) {
-          if (!top || el.offsetTop < top.offsetTop) top = el;
-        }
-        const ref = top?.dataset.ref;
-        if (ref) saveProgress(ref);
-      },
-      { rootMargin: "0px 0px -60% 0px" }
-    );
-    paras.forEach((p) => io.observe(p));
-    return () => io.disconnect();
-  }, [mode, pages, saveProgress]);
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const paras = root.querySelectorAll<HTMLElement>("[data-ref]");
+      if (paras.length === 0) return;
+      const line = (parseFloat(getComputedStyle(paras[0]).scrollMarginTop) || 0) + READ_LINE_SLACK;
+      // the first paragraph whose bottom is below the line — they are in
+      // reading order down the page, so a binary search
+      let lo = 0;
+      let hi = paras.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (paras[mid].getBoundingClientRect().bottom > line) hi = mid;
+        else lo = mid + 1;
+      }
+      const ref = paras[lo].dataset.ref;
+      if (ref) saveProgress(ref);
+    };
+    const onScroll = () => {
+      frame ||= requestAnimationFrame(measure);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    frame = requestAnimationFrame(measure);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [mode, pages, pageIndex, saveProgress]);
 
   // ---- page turns ----
   const turnPage = useCallback(
@@ -2069,9 +2113,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 onClick={() => {
                   const m = resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\.([^.]+)$/);
                   if (resumeHint.chapter === chapterNumber && !isFrontMatter) {
-                    if (m) jumpToPage(m[1], Number(m[2]) || undefined);
+                    if (m) jumpToPage(m[1], Number(m[2]) || undefined, "start");
                   } else {
-                    void goToChapter(resumeHint.chapter, { targetPage: m?.[1] });
+                    // The paragraph too, not just its page: a printed page
+                    // is several screens on a phone.
+                    void goToChapter(resumeHint.chapter, {
+                      targetPage: m?.[1],
+                      targetPara: Number(m?.[2]) || undefined,
+                      block: "start",
+                    });
                   }
                   setResumeHint(null);
                 }}
@@ -2836,7 +2886,7 @@ const ParaWrap = memo(function ParaWrap({
       /* The fill is on the words now, not on the block. What is left here is
          the selection wash, which stays a block tint because it is about the
          passage the reader is acting on rather than about any words. */
-      className={`relative -mx-1 rounded-md px-1 ${isActive ? "para-active" : ""} ${
+      className={`reader-para relative -mx-1 rounded-md px-1 ${isActive ? "para-active" : ""} ${
         isSelected ? "bg-(--ws-color)/8" : ""
       }`}
     >

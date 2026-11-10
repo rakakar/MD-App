@@ -1139,6 +1139,13 @@ html[data-reading="1"] body {
 /* The words a search result was opened for (lib/searchHit.ts). The search
    card's own <mark> tint, taken a little deeper so it still reads over a
    paragraph that is lit or painted. */
+/* Where a resumed paragraph lands: just under the reader's top bar (57px
+   + the notch on a phone, 64px on a desktop). The reading position is read
+   off the same line — see READ_LINE_SLACK in Reader.tsx. */
+.reader-para {
+  scroll-margin-top: calc(env(safe-area-inset-top) + 4.5rem);
+}
+
 ::highlight(search-hit) {
   background-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
 }
