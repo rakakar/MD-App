@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
-import { EmptyState, PageContainer } from "@/components/ui";
+import { EmptyState, PageContainer, useUndoToast } from "@/components/ui";
 import { unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref, shareCitation } from "@/lib/refs";
 import type { HighlightColour, LocalBookmark } from "@/lib/storage";
@@ -59,9 +59,16 @@ export default function BookmarksPage() {
   const all = rows?.bookmarks ?? null;
   const highlights = all && book ? all.filter((b) => b.book_code === book) : all;
 
+  const [undoToast, offerUndo] = useUndoToast();
+
+  // Immediate, with a way back: see `useUndoToast`.
   const remove = (ref: string) => {
-    unsaveBookmark(ref, !!user);
+    const undo = unsaveBookmark(ref, !!user);
     reload();
+    offerUndo("Highlight deleted", () => {
+      undo();
+      reload();
+    });
   };
 
   return (
@@ -151,6 +158,7 @@ export default function BookmarksPage() {
         )}
       </div>
       </div>
+      {undoToast}
     </PageContainer>
   );
 }

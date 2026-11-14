@@ -22,6 +22,7 @@ export * from "./KindTile";
 export * from "./ListRow";
 export * from "./Segmented";
 export * from "./Skeleton";
+export { useUndoToast } from "./UndoToast";
 export * from "./ShareButton";
 export * from "./Sheet";
 export * from "./Switch";

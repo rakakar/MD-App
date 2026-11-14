@@ -1,5 +1,6 @@
 "use client";
 
+import type { Deleted } from "./TocSheet";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -180,6 +181,8 @@ interface Toast {
   hrefLabel?: string;
   /** chapter to re-request when the toast's Retry is pressed */
   retry?: { n: number; targetPage?: string; push?: boolean };
+  /** put back what was just deleted — the toast stays longer when it carries one */
+  undo?: () => void;
 }
 
 /** what the user has highlighted, and which paragraph it belongs to */
@@ -499,7 +502,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const showToast = useCallback((t: Toast) => {
     setToast(t);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 4000);
+    // A toast with something to press stays long enough to be pressed.
+    toastTimer.current = setTimeout(() => setToast(null), t.undo ? 7000 : 4000);
   }, []);
 
   // ---- prefs bootstrap ----
@@ -1870,14 +1874,30 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   /** Delete, from the note sheet. The passage stays painted — see `paintForNote`. */
   const deleteViewedNote = () => {
     if (!noteView) return;
-    unsaveNote(noteView, !!user);
+    const undo = unsaveNote(noteView, !!user);
     setNoteView(null);
     setPersonalRevision((r) => r + 1);
-    showToast({ text: "Note deleted" });
+    offerUndo("Note deleted", undo);
   };
 
+  /**
+   * "Note deleted · Undo". A delete here is one tap and was final; the toast
+   * is the way back (see `restoreLocalNote`). Undo repaints the page and
+   * re-reads every list, the same two things a delete does.
+   */
+  const offerUndo = (what: string, undo: () => void) =>
+    showToast({
+      text: what,
+      undo: () => {
+        undo();
+        refreshPainted();
+        setPersonalRevision((r) => r + 1);
+      },
+    });
+
   /** a highlight or note deleted from a list: repaint the page, re-read the lists */
-  const personalChanged = () => {
+  const personalChanged = (deleted?: Deleted) => {
+    if (deleted) offerUndo(deleted.what, deleted.undo);
     refreshPainted();
     setPersonalRevision((r) => r + 1);
   };
@@ -2478,6 +2498,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
              the hash restore below on its own. */
           onSelectRef={goToRef}
           onChanged={personalChanged}
+          revision={personalRevision}
         />
       )}
 
@@ -2698,12 +2719,29 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
           style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
         >
-          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-(--reader-ink) px-4 py-2 text-sm text-(--reader-bg) shadow-lg">
+          <div
+            role="status"
+            className="pointer-events-auto flex items-center gap-3 rounded-full bg-(--reader-ink) px-4 py-2 text-sm text-(--reader-bg) shadow-lg"
+          >
             {toast.text}
             {toast.href && (
               <Link href={toast.href} className="font-semibold underline underline-offset-2">
                 {toast.hrefLabel}
               </Link>
+            )}
+            {toast.undo && (
+              <button
+                type="button"
+                onClick={() => {
+                  toast.undo!();
+                  setToast(null);
+                }}
+                /* 44px of target inside a pill that is 36 tall: the negative
+                   margin lets the button reach past the pill's own padding. */
+                className="-my-2 -me-2 flex min-h-11 items-center px-3 font-semibold underline underline-offset-2"
+              >
+                Undo
+              </button>
             )}
             {toast.retry && (
               <button

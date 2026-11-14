@@ -1,5 +1,7 @@
 "use client";
 
+import type { Deleted } from "./TocSheet";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -89,19 +91,20 @@ export function ReaderSidePanel({
   /** the passage at the top of the page, for "New note on this page" */
   noteHere: { canonical_ref: string; text_hi: string } | null;
   onSaveNote: (target: { canonical_ref: string; text_hi: string }, text: string) => void;
-  /** a highlight or note was deleted here — the page repaints and the list re-reads */
-  onChanged: () => void;
+  /** a highlight or note was deleted here — the page repaints, the list re-reads, the reader offers Undo */
+  onChanged: (deleted?: Deleted) => void;
 }) {
   const { user, loading } = useAuth();
   const signedIn = !!user;
   const removeHighlight = (h: Highlight) => {
-    if (h.span) unpaintSpan(h.canonical_ref, h.span, signedIn);
-    else unsaveBookmark(h.canonical_ref, signedIn);
-    onChanged();
+    const undo = h.span
+      ? unpaintSpan(h.canonical_ref, h.span, signedIn)
+      : unsaveBookmark(h.canonical_ref, signedIn);
+    onChanged({ what: "Highlight deleted", undo });
   };
   const removeNote = (ref: string) => {
-    unsaveNote(ref, signedIn);
-    onChanged();
+    const undo = unsaveNote(ref, signedIn);
+    onChanged({ what: "Note deleted", undo });
   };
   const [rows, setRows] = useState<Highlight[]>([]);
   const [notes, setNotes] = useState<LocalNote[]>([]);

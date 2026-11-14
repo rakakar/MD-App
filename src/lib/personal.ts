@@ -43,6 +43,8 @@ import {
   removeLocalBookmark,
   removeLocalSpan,
   removeLocalNote,
+  restoreLocalBookmark,
+  restoreLocalNote,
   setLocalProgress,
   setLocalStore,
   type HighlightColour,
@@ -84,14 +86,38 @@ export function unpaintSpan(
   canonicalRef: string,
   span: { start: number; end: number },
   signedIn: boolean
-): void {
+): Undo {
+  const undo = bookmarkUndo(canonicalRef, signedIn);
   removeLocalSpan(canonicalRef, span.start, span.end);
   if (signedIn) void syncPersonal();
+  return undo;
 }
 
-export function unsaveBookmark(canonicalRef: string, signedIn: boolean): void {
+/**
+ * What a delete hands back: call it to put the row back exactly as it was.
+ * Every delete of something a reader made returns one, so the screen that
+ * deleted it can offer Undo (`ui/UndoToast`) — see `restoreLocalNote`.
+ */
+export type Undo = () => void;
+
+/** Snapshot a saved passage before it changes; the returned call restores it. */
+function bookmarkUndo(canonicalRef: string, signedIn: boolean): Undo {
+  const rows = getLocalStore().bookmarks;
+  const index = rows.findIndex((b) => b.canonical_ref === canonicalRef);
+  if (index === -1) return () => {};
+  // A deep copy: `removeLocalSpan` edits the row's own `ranges` array.
+  const snapshot = JSON.parse(JSON.stringify(rows[index])) as LocalBookmark;
+  return () => {
+    restoreLocalBookmark(snapshot, index);
+    if (signedIn) void syncPersonal();
+  };
+}
+
+export function unsaveBookmark(canonicalRef: string, signedIn: boolean): Undo {
+  const undo = bookmarkUndo(canonicalRef, signedIn);
   removeLocalBookmark(canonicalRef);
   if (signedIn) void syncPersonal();
+  return undo;
 }
 
 export function saveNote(t: SaveTarget, text: string, signedIn: boolean): void {
@@ -133,9 +159,17 @@ export function paintForNote(
   return true;
 }
 
-export function unsaveNote(canonicalRef: string, signedIn: boolean): void {
+export function unsaveNote(canonicalRef: string, signedIn: boolean): Undo {
+  const rows = getLocalStore().notes;
+  const index = rows.findIndex((n) => n.canonical_ref === canonicalRef);
+  const snapshot = index === -1 ? null : ({ ...rows[index] } as LocalNote);
   removeLocalNote(canonicalRef);
   if (signedIn) void syncPersonal();
+  return () => {
+    if (!snapshot) return;
+    restoreLocalNote(snapshot, index);
+    if (signedIn) void syncPersonal();
+  };
 }
 
 /**

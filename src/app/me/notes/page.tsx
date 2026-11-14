@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
-import { EmptyState, PageContainer } from "@/components/ui";
+import { EmptyState, PageContainer, useUndoToast } from "@/components/ui";
 import { unsaveNote } from "@/lib/personal";
 import { parseRef, refToHref, shareCitation } from "@/lib/refs";
 
@@ -24,9 +24,16 @@ export default function NotesPage() {
   const all = rows?.notes ?? null;
   const notes = all && book ? all.filter((n) => n.book_code === book) : all;
 
+  const [undoToast, offerUndo] = useUndoToast();
+
+  // Immediate, with a way back: see `useUndoToast`.
   const remove = (ref: string) => {
-    unsaveNote(ref, !!user);
+    const undo = unsaveNote(ref, !!user);
     reload();
+    offerUndo("Note deleted", () => {
+      undo();
+      reload();
+    });
   };
 
   return (
@@ -106,6 +113,7 @@ export default function NotesPage() {
         )}
       </div>
       </div>
+      {undoToast}
     </PageContainer>
   );
 }

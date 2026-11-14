@@ -12,6 +12,7 @@ import {
   PrevChapterIcon,
   RATES,
   ScrubBar,
+  SleepControl,
   TransportBtn,
   fmt,
   useSheetDismiss,
@@ -42,7 +43,7 @@ import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
  */
 export function TrackAudioMode() {
   const player = usePlayer();
-  const [menu, setMenu] = useState<"rate" | null>(null);
+  const [menu, setMenu] = useState<"rate" | "sleep" | null>(null);
   const { source, audioModeOpen, closeAudioMode } = player;
   // Rises on open, drops on ⌄, and follows a thumb pushed down the screen —
   // the same gesture the chapter's Audio Mode has, from the same hook.
@@ -112,6 +113,12 @@ export function TrackAudioMode() {
             </p>
           )}
         </div>
+        <SleepControl
+          open={menu === "sleep"}
+          onOpenChange={(o) => setMenu(o ? "sleep" : null)}
+          remainingMs={player.sleepRemainingMs}
+          onSet={player.setSleepTimer}
+        />
         <div className="relative shrink-0">
           <button
             type="button"
@@ -219,9 +226,9 @@ export function TrackAudioMode() {
             Audio Mode dropped its own for the same reason: Close repeats the ⌄
             in the header exactly, and a second way to do the one thing this
             screen already offers at the top is a button whose only job is to
-            be found twice. The sleep timer goes with it — it is on the shelf's
-            player bar, and this screen is a recording playing, not a room of
-            settings. */}
+            be found twice. The sleep timer went with it on the belief that it
+            was on the shelf's player bar; it was on no bar, so it is a chip
+            beside the speed in the header now (`SleepControl`). */}
       </div>
     </div>
   );

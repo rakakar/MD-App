@@ -9,6 +9,7 @@ import {
   unpaintSpan,
   unsaveBookmark,
   unsaveNote,
+  type Undo,
   type Highlight,
 } from "@/lib/personal";
 import type { LocalNote } from "@/lib/storage";
@@ -33,6 +34,12 @@ import { Sheet } from "./Sheet";
  * reader additionally gets a sync each time the sheet opens.
  */
 
+/** what a list hands the reader when it deletes: the words for the toast, and the way back */
+export interface Deleted {
+  what: string;
+  undo: Undo;
+}
+
 type Tab = "contents" | "highlights" | "notes";
 
 export function TocSheet({
@@ -46,7 +53,10 @@ export function TocSheet({
   onSelect,
   onSelectRef,
   onChanged,
+  revision = 0,
 }: {
+  /** bumped by the reader when a delete is undone, so the lists re-read */
+  revision?: number;
   open: boolean;
   onClose: () => void;
   bookCode: string;
@@ -58,8 +68,8 @@ export function TocSheet({
   onSelect: (n: number) => void;
   /** a highlight or note was picked: the reader takes the page there */
   onSelectRef: (ref: string) => void;
-  /** one was deleted here — the page repaints */
-  onChanged: () => void;
+  /** one was deleted here — the page repaints, and the reader offers Undo */
+  onChanged: (deleted?: Deleted) => void;
 }) {
   const { user, loading } = useAuth();
   const activeRef = useRef<HTMLAnchorElement | HTMLButtonElement>(null);
@@ -80,15 +90,16 @@ export function TocSheet({
 
   const signedIn = !!user;
   const removeHighlight = (h: Highlight) => {
-    if (h.span) unpaintSpan(h.canonical_ref, h.span, signedIn);
-    else unsaveBookmark(h.canonical_ref, signedIn);
+    const undo = h.span
+      ? unpaintSpan(h.canonical_ref, h.span, signedIn)
+      : unsaveBookmark(h.canonical_ref, signedIn);
     reload();
-    onChanged();
+    onChanged({ what: "Highlight deleted", undo });
   };
   const removeNote = (ref: string) => {
-    unsaveNote(ref, signedIn);
+    const undo = unsaveNote(ref, signedIn);
     reload();
-    onChanged();
+    onChanged({ what: "Note deleted", undo });
   };
   const go = (ref: string) => {
     onSelectRef(ref);
@@ -101,7 +112,7 @@ export function TocSheet({
     if (!open || loading) return;
     reload();
     if (user) void syncPersonal().then(reload);
-  }, [open, user, loading, reload]);
+  }, [open, user, loading, reload, revision]);
 
   // Opens on Contents each time, because that is what the button that opened it
   // is called. A sheet that reopens on the tab you left is friendlier right up

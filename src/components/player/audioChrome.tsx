@@ -228,12 +228,118 @@ export function MenuItem({
       role="menuitem"
       type="button"
       onClick={onClick}
-      className={`block w-full px-4 py-2 text-start text-sm tabular-nums ${
+      className={`flex min-h-11 w-full items-center px-4 text-start text-sm tabular-nums ${
         selected ? "font-bold text-audio-accent" : muted ? "text-audio-ink/55" : "text-audio-ink/85"
       }`}
     >
       {children}
     </button>
+  );
+}
+
+/** Minutes a listener can ask for. Short, because the list is read at bedtime. */
+const SLEEP_MINUTES = [15, 30, 45, 60] as const;
+
+/** "28 min" while there is a minute or more left, seconds for the last one. */
+function sleepLabel(ms: number): string {
+  if (ms >= 60_000) return `${Math.ceil(ms / 60_000)} min`;
+  return `${Math.max(1, Math.ceil(ms / 1000))} s`;
+}
+
+/**
+ * The sleep timer, in both listening surfaces.
+ *
+ * `setSleepTimer` had been in the provider with no caller since the foot row
+ * went: the note that removed it said the timer was "on the shelf's player
+ * bar", and it was not on any bar. This is the screen the tokens themselves
+ * call "often the last thing looked at before sleep", so it stands beside the
+ * speed, as one more 44px chip and not a row of settings.
+ *
+ * Controlled, so the surface that owns the speed menu can keep the two from
+ * being open at once. A moon while off; the time left once set, in the accent,
+ * because a running timer is a state and the colour is not the only signal —
+ * the label changes too.
+ */
+export function SleepControl({
+  open,
+  onOpenChange,
+  remainingMs,
+  onSet,
+  placement = "below",
+  outline = false,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  remainingMs: number | null;
+  onSet: (minutes: number | null) => void;
+  /** which side of the chip the menu opens on */
+  placement?: "below" | "above";
+  /** the desktop bar draws its chips as outlines */
+  outline?: boolean;
+}) {
+  const on = remainingMs !== null && remainingMs > 0;
+  const shape = outline
+    ? "border border-audio-ink/20 transition-colors hover:bg-audio-ink/10"
+    : "bg-audio-ink/10 active:bg-audio-ink/20";
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => onOpenChange(!open)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={on ? `Sleep timer, ${sleepLabel(remainingMs)} left` : "Sleep timer, off"}
+        className={`flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-3 text-sm font-semibold tabular-nums ${shape} ${
+          on ? "text-audio-accent" : "text-audio-ink/80"
+        }`}
+      >
+        <MoonIcon />
+        {on && <span>{sleepLabel(remainingMs)}</span>}
+      </button>
+      {open && (
+        <Menu className={`end-0 w-36 ${placement === "below" ? "top-full mt-1" : "bottom-full mb-2"}`}>
+          <p className="px-4 pb-1 pt-2 text-xs font-semibold text-audio-ink/60">Stop playing in</p>
+          {SLEEP_MINUTES.map((m) => (
+            <MenuItem
+              key={m}
+              onClick={() => {
+                onSet(m);
+                onOpenChange(false);
+              }}
+            >
+              {m} minutes
+            </MenuItem>
+          ))}
+          <MenuItem
+            selected={!on}
+            muted={on}
+            onClick={() => {
+              onSet(null);
+              onOpenChange(false);
+            }}
+          >
+            {on ? "Turn off" : "Off"}
+          </MenuItem>
+        </Menu>
+      )}
+    </div>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-[1.125rem] w-[1.125rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+    </svg>
   );
 }
 

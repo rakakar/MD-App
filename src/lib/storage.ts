@@ -681,6 +681,71 @@ export function removeLocalNote(canonicalRef: string): void {
   });
 }
 
+/**
+ * Put back a note or a saved passage exactly as it was — the Undo behind a
+ * delete (14 Nov 2026).
+ *
+ * A delete here is immediate and was final: one tap on a bin erased a note a
+ * reader had written, with nothing to take it back. Undo re-saving the text
+ * would not do, because a re-save is a new row — it loses the date, the place
+ * in the list and, for a highlight, every span but the one re-added.
+ *
+ * So the caller snapshots the row before deleting and hands it back here with
+ * the index it sat at. Two cases, told apart by the tombstone:
+ *
+ * - **the tombstone is still here** — no sync has run, the server still holds
+ *   the row. Drop the tombstone and the row goes back with its `server_id`.
+ * - **the tombstone is gone** — a sync already deleted it on the server. The
+ *   row goes back *without* its `server_id`, so the next sync creates it
+ *   again rather than patching a row that no longer exists.
+ *
+ * A row that still exists locally (one span of several was removed) is
+ * replaced by the snapshot and marked dirty, which is what carries the span
+ * back to the server.
+ */
+function restoreRow<T extends { canonical_ref: string; server_id?: number; dirty?: boolean }>(
+  list: T[],
+  tombstones: Tombstone[],
+  kind: Tombstone["kind"],
+  snapshot: T,
+  index: number
+): { list: T[]; tombstones: Tombstone[] } {
+  const row = { ...snapshot };
+  const here = list.findIndex((r) => r.canonical_ref === row.canonical_ref);
+  if (here !== -1) {
+    const next = list.slice();
+    next[here] = { ...row, dirty: row.server_id !== undefined ? true : row.dirty };
+    return { list: next, tombstones };
+  }
+  const pending = tombstones.some((t) => t.kind === kind && t.canonical_ref === row.canonical_ref);
+  if (!pending && row.server_id !== undefined) {
+    delete row.server_id;
+    delete row.dirty;
+  }
+  const next = list.slice();
+  next.splice(Math.min(Math.max(index, 0), next.length), 0, row);
+  return {
+    list: next,
+    tombstones: tombstones.filter((t) => !(t.kind === kind && t.canonical_ref === row.canonical_ref)),
+  };
+}
+
+export function restoreLocalNote(snapshot: LocalNote, index: number): void {
+  mutate((store) => {
+    const r = restoreRow(store.notes, store.tombstones, "note", snapshot, index);
+    store.notes = r.list;
+    store.tombstones = r.tombstones;
+  });
+}
+
+export function restoreLocalBookmark(snapshot: LocalBookmark, index: number): void {
+  mutate((store) => {
+    const r = restoreRow(store.bookmarks, store.tombstones, "bookmark", snapshot, index);
+    store.bookmarks = r.list;
+    store.tombstones = r.tombstones;
+  });
+}
+
 export function setLocalProgress(p: Omit<LocalProgress, "updated_at" | "synced">): void {
   mutate((store) => {
     store.progress[p.book_code] = {

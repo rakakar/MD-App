@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
+  DownloadIcon,
   PauseIcon,
   PlayIcon,
   SkipBackIcon,
@@ -22,12 +23,12 @@ import { parseRef } from "@/lib/refs";
 import type { AudioRendition, Paragraph } from "@/lib/types";
 import {
   CoverArt,
-  FootBtn,
   Menu,
   MenuItem,
   NextChapterIcon,
   PrevChapterIcon,
   RATES,
+  SleepControl,
   ScrubBar,
   TransportBtn,
   fmt,
@@ -85,7 +86,7 @@ export function AudioMode({
 }: AudioModeProps) {
   const player = usePlayer();
   const desktop = useIsDesktop();
-  const [menu, setMenu] = useState<"rate" | null>(null);
+  const [menu, setMenu] = useState<"rate" | "sleep" | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement | null>(null);
   const { source } = player;
@@ -220,6 +221,12 @@ export function AudioMode({
             {source.bookTitle}
           </p>
         </div>
+        <SleepControl
+          open={menu === "sleep"}
+          onOpenChange={(o) => setMenu(o ? "sleep" : null)}
+          remainingMs={player.sleepRemainingMs}
+          onSet={player.setSleepTimer}
+        />
         <div className="relative shrink-0">
           <button
             type="button"
@@ -275,6 +282,9 @@ export function AudioMode({
             : `${fmt(player.positionMs)} / ${fmt(player.durationMs)}`}
         </p>
         {source.kind === "tts" && <VoicePicker source={source} className="mt-3" />}
+        {source.kind === "tts" && rendition && (
+          <SaveChapterButton source={source} rendition={rendition} className="mt-2" />
+        )}
         {device && <DeviceVoiceChip who="Your phone’s voice" translation={source.translation} className="mt-3" />}
         {rendition?.is_stale && (
           <p className="mt-2 text-center text-xs text-audio-ink/60">
@@ -404,13 +414,12 @@ export function AudioMode({
         {/* The foot row is gone at the designer's decision — it held
             Chapters, Voice, Sleep, the offline save and Read.
 
-            Two of those had nowhere else to be, and the loss is real rather
-            than tidied away: **the sleep timer** exists on the shelf's player
-            bar but that control is `hidden sm:block`, so on a phone there is
-            now no way to set one at all; and **saving a chapter's audio for
-            offline** was only ever offered here — the book hero's download
-            button caches text, not audio. `SaveChapterButton` below is kept
-            for whatever surface takes it next.
+            Two of those had nowhere else to be. **The sleep timer** was on no
+            bar at all once this row went, so it is back as a chip beside the
+            speed in the header (`SleepControl`, 14 Nov 2026); and **saving a
+            chapter's audio for offline** was only ever offered here — the book hero's download
+            button caches text, not audio — so `SaveChapterButton` now sits
+            under the voice chip, beside the other fact about this recording.
 
             The other three lost nothing. Chapters is the two chapter buttons
             in the transport above; Read is the chevron in the header, which
@@ -548,19 +557,20 @@ function DeviceVoiceChip({
 /**
  * Save this chapter's audio for offline, as a foot-row button.
  *
- * Exported with no caller, which is deliberate and the honest version of what
- * the comment upstairs promises: the foot row it lived in is gone, and the
- * book hero's download button caches text rather than audio, so this is the
- * app's only implementation of saving a recording and there is currently
- * nowhere to press it. Exported rather than left local so it is a thing
- * waiting for a surface instead of dead code with a lint warning on it.
+ * Under the voice chip in both Audio Modes since 14 Nov 2026. For a while it
+ * was exported with no caller — the foot row it lived in had gone — and that
+ * left the app with no way to save audio at all while Downloads still listed
+ * an Audio section. The book hero's download button caches text, not audio,
+ * so this is the only writer to the audio cache.
  */
 export function SaveChapterButton({
   source,
   rendition,
+  className = "",
 }: {
   source: TtsSource;
   rendition: AudioRendition;
+  className?: string;
 }) {
   const [state, setState] = useState<"idle" | "confirm" | "saving" | "saved" | "removing" | "failed">(
     "idle"
@@ -618,9 +628,9 @@ export function SaveChapterButton({
 
   const label =
     state === "saved"
-      ? "✓ Saved"
+      ? "✓ Saved offline"
       : state === "removing"
-        ? "Remove?"
+        ? "Remove from this device?"
         : state === "saving"
           ? // A percentage where the bytes can be counted, and a plain "saving"
             // where they cannot — never a number this button had to invent.
@@ -628,15 +638,32 @@ export function SaveChapterButton({
             ? "Saving…"
             : `${Math.round(progress * 100)}%`
           : state === "confirm"
-            ? `${size} — sure?`
+            ? `${size} is large. Save anyway?`
             : state === "failed"
-              ? "Not saved"
-              : `⤓ ${size}`;
+              ? "Couldn’t save. Try again"
+              : `Save for offline · ${size}`;
 
+  const lit = state === "saved" || state === "confirm" || state === "removing";
   return (
-    <FootBtn onClick={onClick} active={state === "saved" || state === "confirm" || state === "removing"}>
-      {label}
-    </FootBtn>
+    <div className={`flex max-w-full justify-center ${className}`}>
+      {/* The voice chip's own shape, so the two read as one pair of facts
+          about this recording: whose voice, and whether it is on the device.
+          English, so no `.hi` and no `lang` — `FootBtn` carried both. The
+          region is live because the label is the only report of a save that
+          can take a minute. */}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-live="polite"
+        className={`${VOICE_CHIP} tabular-nums transition-colors hover:bg-audio-ink/15 active:bg-audio-ink/20`}
+        /* Inline, not a second `text-*` class: two colour utilities on one
+           element are settled by stylesheet order, not by the class list. */
+        style={lit ? { color: "var(--color-audio-accent)" } : undefined}
+      >
+        {state === "idle" && <DownloadIcon className="h-4 w-4 shrink-0 text-audio-ink/60" />}
+        <span className="truncate">{label}</span>
+      </button>
+    </div>
   );
 }
 
@@ -672,6 +699,7 @@ function DesktopAudioMode({
 }) {
   const player = usePlayer();
   const [rateOpen, setRateOpen] = useState(false);
+  const [sleepOpen, setSleepOpen] = useState(false);
   const source = player.source;
   if (!source || source.kind === "track") return null;
   const device = source.kind === "device";
@@ -741,6 +769,9 @@ function DesktopAudioMode({
             </p>
           )}
           {source.kind === "tts" && <VoicePicker source={source} className="mt-4" />}
+          {source.kind === "tts" && activeRendition(source) && (
+            <SaveChapterButton source={source} rendition={activeRendition(source)!} className="mt-2" />
+          )}
           {device && <DeviceVoiceChip who="Your computer’s voice" translation={source.translation} className="mt-4" />}
         </div>
 
@@ -841,10 +872,24 @@ function DesktopAudioMode({
           </TransportBtn>
 
           <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-3">
+            <SleepControl
+              open={sleepOpen}
+              onOpenChange={(o) => {
+                setSleepOpen(o);
+                if (o) setRateOpen(false);
+              }}
+              remainingMs={player.sleepRemainingMs}
+              onSet={player.setSleepTimer}
+              placement="above"
+              outline
+            />
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setRateOpen((o) => !o)}
+                onClick={() => {
+                  setSleepOpen(false);
+                  setRateOpen((o) => !o);
+                }}
                 aria-haspopup="menu"
                 aria-expanded={rateOpen}
                 aria-label={`Playback speed ${player.rate}x`}
