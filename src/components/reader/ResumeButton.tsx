@@ -83,7 +83,12 @@ export function ResumeButton({
   return (
     <Link
       href={href}
-      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-control bg-card px-4 text-sm font-semibold text-ink shadow-[0_8px_18px_-8px_rgba(0,0,0,.5)] transition-transform active:scale-[.98]"
+      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-control bg-on-accent px-4 text-sm font-semibold shadow-raised transition-transform active:scale-[.98]"
+      /* `on-accent` and `overlay`, not `card` and `ink`: the hero under this is
+         the same saturated hue in every theme, so the button must be too. In
+         dark, `card`/`ink` made it a near-black slab on the cover colour —
+         the fault `HeroAction` was fixed for on 18 Oct, missed here. */
+      style={{ color: "var(--color-overlay)" }}
     >
       <PlayIcon className="h-4 w-4" />
       {r ? (

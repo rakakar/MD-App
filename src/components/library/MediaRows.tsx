@@ -156,7 +156,7 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
           {...downloadProps(item.download.url, item.title)}
           aria-label={`Download ${item.title}`}
           title={item.download.bytes ? `Download · ${formatBytes(item.download.bytes)}` : "Download"}
-          className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+          className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
         >
           <DownloadIcon className="h-4 w-4" />
         </a>

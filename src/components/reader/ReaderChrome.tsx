@@ -8,6 +8,7 @@ import {
   HeadphonesIcon,
   Icon,
   PaletteIcon,
+  CloseIcon,
   ShareIcon,
   TocIcon,
 } from "@/components/shell/icons";
@@ -219,7 +220,7 @@ function ReaderLanguageBar({
   onChange,
 }: LanguageToggle) {
   const seg =
-    "flex min-h-9 flex-1 items-center justify-center rounded-control px-3 text-sm transition-colors";
+    "flex min-h-11 flex-1 items-center justify-center rounded-control px-3 text-sm transition-colors";
   return (
     /* Even padding top and bottom. It was `pb-2` alone while this hung under
        the top bar, where the bar's own row supplied the space above; sitting
@@ -461,44 +462,68 @@ export function SelectionBar({
       data-reader-chrome
       role="toolbar"
       aria-label="Selection actions"
-      // Its own dark surface, fixed in every theme — see above. The scroll is
-      // the honest answer to a bar that can hold four actions or eight: the
-      // comps' four are always first.
-      className="fixed inset-x-2 z-50 mx-auto flex w-fit max-w-[calc(100vw-1rem)] items-center gap-1 overflow-x-auto rounded-full bg-overlay px-2 py-1.5 text-white shadow-raised"
+      // Its own dark surface, fixed in every theme — see above.
+      //
+      // Two rows on a phone, one from `sm` up (14 Nov 2026). As a single
+      // scrolling pill it needed 449px — 627 with Paribhasha and Listen — so on
+      // a 360px phone Report and the ✕ were off the right edge with nothing to
+      // say the bar scrolled. Now the colours and the ✕ hold the first row,
+      // the actions wrap under them, and nothing is ever out of sight. A pill
+      // cannot be two rows tall, so the phone shape is the card radius.
+      className="fixed inset-x-2 z-50 mx-auto flex w-fit max-w-[calc(100vw-1rem)] flex-col rounded-card bg-overlay p-1.5 text-white shadow-raised sm:flex-row sm:items-center sm:gap-1 sm:rounded-full sm:px-2"
       // Above the reader's own bar, and above the audio pill when one is
       // floating there too — `--player-float-h` is that pill's height, and 0
       // whenever nothing is playing. Two things that both float in this corner
       // have to know about each other; nothing else does.
       style={{ bottom: `calc(${bottom} + 3.75rem + var(--player-float-h, 0px))` }}
     >
-      {HIGHLIGHT_COLOURS.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => onHighlight(c)}
-          aria-label={SWATCH_LABEL[c]}
-          title={SWATCH_LABEL[c]}
-          className={`h-8 w-8 shrink-0 rounded-full ring-1 ring-white/25 transition-transform active:scale-90 ${SWATCH[c]}`}
-        />
-      ))}
+      <div className="flex items-center gap-1">
+        {HIGHLIGHT_COLOURS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => onHighlight(c)}
+            aria-label={SWATCH_LABEL[c]}
+            title={SWATCH_LABEL[c]}
+            /* A 44px target around a 32px dot: painting a passage is the most
+               repeated act in the reader, and the dot alone was under the
+               floor. The dot keeps its size, so the bar reads as it did. */
+            className="group flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+          >
+            <span
+              aria-hidden
+              className={`h-8 w-8 rounded-full ring-1 ring-white/25 transition-transform group-active:scale-90 ${SWATCH[c]}`}
+            />
+          </button>
+        ))}
+        <span className="ms-auto sm:hidden">
+          <SelectionAction onClick={onDismiss} ariaLabel="Dismiss">
+            <CloseIcon className="h-4 w-4" />
+          </SelectionAction>
+        </span>
+      </div>
 
-      <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-white/20" />
+      <span aria-hidden className="my-1 h-px w-full shrink-0 bg-white/20 sm:mx-1 sm:my-0 sm:h-6 sm:w-px" />
 
-      <SelectionAction onClick={onNote}>Note</SelectionAction>
-      <SelectionAction onClick={onShare}>
-        <ShareIcon className="h-4 w-4" />
-        Share
-      </SelectionAction>
-      <SelectionAction onClick={onCopy}>Copy</SelectionAction>
+      <div className="flex flex-wrap items-center sm:flex-nowrap">
+        <SelectionAction onClick={onNote}>Note</SelectionAction>
+        <SelectionAction onClick={onShare}>
+          <ShareIcon className="h-4 w-4" />
+          Share
+        </SelectionAction>
+        <SelectionAction onClick={onCopy}>Copy</SelectionAction>
 
-      {onParibhasha && <SelectionAction onClick={onParibhasha}>Paribhasha</SelectionAction>}
-      {onPlayHere && <SelectionAction onClick={onPlayHere}>▶ Listen</SelectionAction>}
-      <SelectionAction onClick={onReport} ariaLabel="Report a problem with this passage">
-        Report
-      </SelectionAction>
-      <SelectionAction onClick={onDismiss} ariaLabel="Dismiss">
-        ✕
-      </SelectionAction>
+        {onParibhasha && <SelectionAction onClick={onParibhasha}>Paribhasha</SelectionAction>}
+        {onPlayHere && <SelectionAction onClick={onPlayHere}>▶ Listen</SelectionAction>}
+        <SelectionAction onClick={onReport} ariaLabel="Report a problem with this passage">
+          Report
+        </SelectionAction>
+        <span className="hidden sm:inline-flex">
+          <SelectionAction onClick={onDismiss} ariaLabel="Dismiss">
+            <CloseIcon className="h-4 w-4" />
+          </SelectionAction>
+        </span>
+      </div>
     </div>
   );
 }
@@ -517,7 +542,7 @@ function SelectionAction({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-sm font-medium transition-colors active:bg-white/15"
+      className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2 text-sm font-medium transition-colors active:bg-white/15 sm:px-3"
     >
       {children}
     </button>

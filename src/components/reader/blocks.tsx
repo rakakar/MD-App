@@ -425,7 +425,7 @@ export function Block({
           {para.footnote_text && (
             <span
               data-not-text
-              className="ms-1 align-super text-[0.7em] text-(--reader-ink-soft)"
+              className="ms-1 align-super text-[max(0.7em,0.8125rem)] text-(--reader-ink-soft)"
               title={para.footnote_text}
             >
               *

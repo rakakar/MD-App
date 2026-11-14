@@ -1,5 +1,6 @@
 "use client";
 
+import { useModalFocus } from "./useModalFocus";
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/shell/icons";
@@ -77,6 +78,7 @@ export function Sheet({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  useModalFocus(open, panelRef);
   /**
    * A phone keyboard covers the bottom of the screen without shrinking the
    * page, so a sheet pinned to `bottom: 0` ends up behind it — the state
@@ -155,6 +157,7 @@ export function Sheet({
         type="button"
         aria-label="Close"
         onClick={onClose}
+        tabIndex={-1}
         className="ws-sheet-backdrop absolute inset-0 bg-black/50"
       />
       <div
@@ -183,7 +186,7 @@ export function Sheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-control border ${rule} transition-colors active:bg-current/5`}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control border ${rule} transition-colors active:bg-current/5`}
             >
               <CloseIcon className="h-4 w-4" />
             </button>
@@ -255,7 +258,7 @@ export function SheetTextAction({
     <button
       type="button"
       {...rest}
-      className="inline-flex min-h-10 shrink-0 items-center rounded-control border border-rule px-3 text-sm font-medium transition-colors active:bg-current/5"
+      className="inline-flex min-h-11 shrink-0 items-center rounded-control border border-rule px-3 text-sm font-medium transition-colors active:bg-current/5"
     >
       {children}
     </button>

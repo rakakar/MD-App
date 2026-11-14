@@ -53,7 +53,7 @@ export function RowMenu({
 
   const absolute = () => new URL(share.url, window.location.href).toString();
   const row =
-    "flex min-h-10 w-full items-center gap-2.5 rounded-md px-3 text-start text-sm text-ink transition-colors hover:bg-ink/5";
+    "flex min-h-11 w-full items-center gap-2.5 rounded-control px-3 text-start text-sm text-ink transition-colors hover:bg-ink/5";
 
   return (
     // Raised while open: every row's download and ⋯ sit at `z-10` too, so at an
@@ -69,7 +69,7 @@ export function RowMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`More for ${label}`}
-        className="flex h-9 w-9 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+        className="flex h-11 w-11 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
       >
         <svg viewBox="0 0 24 24" fill="currentColor" className="h-4.5 w-4.5" aria-hidden>
           <circle cx="5" cy="12" r="1.6" />

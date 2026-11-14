@@ -78,7 +78,7 @@ export function PdfRows({
               <button
                 type="button"
                 onClick={() => downloadFiles(chosen)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md bg-card/15 px-3 font-semibold transition-colors hover:bg-card/25"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-control bg-card/15 px-3 font-semibold transition-colors hover:bg-card/25"
               >
                 <DownloadIcon className="h-4 w-4" />
                 Download
@@ -87,7 +87,7 @@ export function PdfRows({
               <button
                 type="button"
                 onClick={() => setPicked(new Set())}
-                className="h-8 rounded-md px-3 font-medium opacity-80 transition-opacity hover:opacity-100"
+                className="min-h-11 rounded-control px-3 font-medium opacity-80 transition-opacity hover:opacity-100"
               >
                 Clear
               </button>
@@ -251,7 +251,7 @@ function LargeTag() {
   return (
     <span
       title="Large file — slow to open on mobile data"
-      className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-[0.06em]"
+      className="rounded-control px-2 py-0.5 text-xs font-bold uppercase tracking-[0.06em]"
       style={{ background: "color-mix(in srgb, var(--color-hl-amber) 85%, transparent)", color: "var(--color-kind-audio-ink)" }}
     >
       Large

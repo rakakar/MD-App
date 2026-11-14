@@ -5,7 +5,7 @@ import { ContinueDocument } from "@/components/library/ContinueDocument";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
-import { getNode, getTopics, getWorkspaces } from "@/lib/api";
+import { ApiError, getNode, getTopics, getWorkspaces } from "@/lib/api";
 import { readFind, type RawParams } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
 import type { Topic } from "@/lib/types";
@@ -62,14 +62,22 @@ export async function OriginalsShelfPage({ params }: { params: RawParams }) {
   const topicsPromise = getTopics().catch(() => [] as Topic[]);
   const shelvesPromise = shelfMap();
 
-  const workspaces = await getWorkspaces().catch(() => []);
+  // Not `.catch(() => [])`. A failed fetch used to become an empty list, the
+  // empty list a null root, and the null root `notFound()` — so with the
+  // server down or the reader offline, this shelf said "This page was not
+  // found". Thrown, it reaches `app/error.tsx`, which says the screen did not
+  // load and offers Try again. Only a real 404 below means "not published".
+  const workspaces = await getWorkspaces();
   const rootId = workspaces.find((w) => w.code === "originals")?.root_node_id ?? null;
   // Null while the root is unpublished, and then the whole shelf is hidden by
   // the same ancestor rule that hides any branch (§13.3).
   if (rootId === null) notFound();
 
   const [root, topics, shelves] = await Promise.all([
-    getNode(rootId).catch(() => null),
+    getNode(rootId).catch((e: unknown) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    }),
     topicsPromise,
     shelvesPromise,
   ]);

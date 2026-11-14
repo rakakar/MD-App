@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueue";
 import { MediaRows } from "@/components/library/MediaRows";
-import { PLAY_ALL } from "@/components/library/folderActions";
+import { PLAY_ALL, announcePlayAll, resumeIndex } from "@/components/library/folderActions";
 import { WaveformIcon } from "@/components/shell/icons";
 import { AUDIO_POSTER } from "@/lib/media";
 import type { LibraryFile } from "@/lib/types";
@@ -74,12 +74,29 @@ export function AlbumAudio({
   const { play, resumes, activeId } = useAudioQueue(entries);
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
 
-  // The hero's Play all starts from the first track; the queue carries on.
+  // The hero's Play all starts where the listener left off (`resumeIndex`),
+  // or from the first track when nothing is in progress; the queue carries on.
+  const resumeAt = useMemo(
+    () =>
+      resumeIndex(
+        items.map((item) =>
+          item.duration_seconds ? (resumes[trackId(item)] ?? 0) / 1000 / item.duration_seconds : 0
+        )
+      ),
+    [items, resumes]
+  );
   useEffect(() => {
-    const onPlayAll = () => entries[0] && play(entries[0]);
+    announcePlayAll({ index: resumeAt, total: entries.length });
+  }, [resumeAt, entries.length]);
+  useEffect(() => () => announcePlayAll({ index: null, total: 0 }), []);
+  useEffect(() => {
+    const onPlayAll = () => {
+      const entry = entries[resumeAt ?? 0];
+      if (entry) play(entry);
+    };
     window.addEventListener(PLAY_ALL, onPlayAll);
     return () => window.removeEventListener(PLAY_ALL, onPlayAll);
-  }, [entries, play]);
+  }, [entries, play, resumeAt]);
 
   return (
     <MediaRows

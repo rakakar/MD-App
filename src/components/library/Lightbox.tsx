@@ -1,5 +1,6 @@
 "use client";
 
+import { scrollBehavior } from "@/lib/motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, CloseIcon } from "@/components/shell/icons";
 import {
@@ -103,7 +104,7 @@ export function Lightbox({
   // first five is a reel that has stopped describing anything.
   useEffect(() => {
     const el = reelRef.current?.querySelector<HTMLElement>('[data-current="true"]');
-    el?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    el?.scrollIntoView({ block: "nearest", inline: "center", behavior: scrollBehavior() });
   }, [index]);
 
   // The thumbnail is already in the browser's cache — whatever opened this

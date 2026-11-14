@@ -126,7 +126,7 @@ export function PdfFallback({
           )}
         </p>
         {detail && (
-          <p className="mt-1 break-words font-mono text-[0.6875rem] leading-relaxed text-ink-soft opacity-70">
+          <p className="mt-1 break-words font-mono text-xs leading-relaxed text-ink-soft opacity-70">
             {detail}
           </p>
         )}

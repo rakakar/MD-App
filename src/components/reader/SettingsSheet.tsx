@@ -481,7 +481,7 @@ export function SettingsPanel(
           type="button"
           onClick={p.onClose}
           aria-label="Close settings"
-          className="flex h-9 w-9 items-center justify-center rounded-md text-(--reader-ink-soft) transition-colors hover:bg-current/5"
+          className="flex h-11 w-11 items-center justify-center rounded-control text-(--reader-ink-soft) transition-colors hover:bg-current/5"
         >
           ✕
         </button>

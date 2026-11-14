@@ -81,7 +81,7 @@ export function VideoStage({ file, onClose }: { file: LibraryFile; onClose: () =
           type="button"
           onClick={dismiss}
           aria-label="Close video"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-white/10 text-white"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-white/10 text-white"
         >
           <CloseIcon />
         </button>

@@ -81,7 +81,7 @@ export function NotificationBell() {
               type="button"
               aria-label="Close notifications"
               onClick={() => setOpen(false)}
-              className="flex h-9 w-9 items-center justify-center rounded-control text-ink-soft hover:bg-ink/5"
+              className="flex h-11 w-11 items-center justify-center rounded-control text-ink-soft hover:bg-ink/5"
             >
               <CloseIcon className="h-4.5 w-4.5" />
             </button>

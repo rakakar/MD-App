@@ -1,5 +1,6 @@
 "use client";
 
+import { scrollBehavior } from "@/lib/motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CloseIcon, PlayIcon } from "@/components/shell/icons";
@@ -311,7 +312,7 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
   const step = useCallback((by: number) => {
     const el = scroller.current;
     if (!el) return;
-    el.scrollBy({ top: by * el.clientHeight, behavior: "smooth" });
+    el.scrollBy({ top: by * el.clientHeight, behavior: scrollBehavior() });
   }, []);
 
   /**

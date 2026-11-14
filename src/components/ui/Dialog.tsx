@@ -1,5 +1,6 @@
 "use client";
 
+import { useModalFocus } from "./useModalFocus";
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AccentScope } from "@/components/shell/WorkspaceProvider";
@@ -35,6 +36,7 @@ export function Dialog({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  useModalFocus(open, panelRef);
 
   useEffect(() => {
     if (!open) return;
@@ -72,6 +74,7 @@ export function Dialog({
         type="button"
         aria-label="Close"
         onClick={onClose}
+        tabIndex={-1}
         className="ws-sheet-backdrop absolute inset-0 bg-black/30 backdrop-blur-sm"
       />
       <div

@@ -20,7 +20,9 @@ import { Sheet } from "@/components/ui/Sheet";
 import { Dialog, useIsDesktop } from "@/components/ui/Dialog";
 import { useWorkspace } from "@/components/shell/WorkspaceProvider";
 import { CloseIcon } from "@/components/shell/icons";
+import { useRoutePath } from "@/components/shell/useRoutePath";
 import { track } from "@/lib/analytics";
+import { signInHref } from "@/lib/routes";
 import { watchClientErrors } from "@/lib/clientErrors";
 import {
   collectContext,
@@ -103,6 +105,9 @@ function FeedbackSheet({
   prefill: FeedbackPrefill | null;
   onClose: () => void;
 }) {
+  // Back to where the reader was, not to My Journey: they were reporting
+  // something on *this* page, and signing in must not cost them the place.
+  const here = useRoutePath();
   const { user } = useAuth();
   const [kind, setKind] = useState<FeedbackKind>("bug");
   const [message, setMessage] = useState("");
@@ -219,7 +224,47 @@ function FeedbackSheet({
   }
 
   return (
-    <Sheet open onClose={onClose} title={title}>
+    <Sheet
+      open
+      onClose={onClose}
+      title={title}
+      /* The screenshot link and Send, in the sheet's pinned footer. In the
+         body they sat under two text boxes, and with a phone keyboard up the
+         sheet has about 276px — so Send was below the fold of its own sheet,
+         behind the keyboard. The footer stands on the keyboard. */
+      footer={
+        user && phase !== "sent" && phase !== "queued" ? (
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => pickScreenshot(e.target.files?.[0] ?? null)}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="min-h-11 text-sm text-(--reader-ink-soft) underline underline-offset-4"
+          >
+            {screenshot ? `📎 ${screenshot.name.slice(0, 24)}` : "📎 Add screenshot"}
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => void submit()}
+          // Greyed out until there is something to send, as on desktop.
+          disabled={phase === "sending" || message.trim().length === 0}
+          className={ctaPrimary}
+          style={{ background: "var(--ws-color)" }}
+        >
+          {phase === "sending" ? "Sending…" : "Send"}
+        </button>
+      </div>
+        ) : undefined
+      }
+    >
       {/* `pt-3` because the sheet's own body wrapper has no top padding — it
           leaves that to whatever it is given, and this was giving none, so the
           Correction/Bug/Idea/Other chips sat flat against the header's rule at
@@ -234,7 +279,7 @@ function FeedbackSheet({
               Sign in to send feedback — it&apos;s how we can tell you what happened to it.
             </p>
             <Link
-              href="/login?next=/me"
+              href={signInHref(here)}
               onClick={onClose}
               className={`mt-3 ${ctaPrimary}`}
               style={{ background: "var(--ws-color)" }}
@@ -275,7 +320,7 @@ function FeedbackSheet({
 
             {prefill.quoted_text && (
               <div className="mt-3 rounded-xl border border-(--reader-rule) px-3 py-2">
-                <p className="text-[11px] text-(--reader-ink-soft)">
+                <p className="text-xs text-(--reader-ink-soft)">
                   {prefill.canonical_ref || "Selected passage"}
                 </p>
                 <p className="mt-0.5 line-clamp-3 text-sm">{prefill.quoted_text}</p>
@@ -305,36 +350,8 @@ function FeedbackSheet({
 
             {error && <p className="mt-2 text-sm text-danger">{error}</p>}
 
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={(e) => pickScreenshot(e.target.files?.[0] ?? null)}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="min-h-11 text-sm text-(--reader-ink-soft) underline underline-offset-4"
-                >
-                  {screenshot ? `📎 ${screenshot.name.slice(0, 24)}` : "📎 Add screenshot"}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => void submit()}
-                // Greyed out until there is something to send, as on desktop.
-                disabled={phase === "sending" || message.trim().length === 0}
-                className={ctaPrimary}
-                style={{ background: "var(--ws-color)" }}
-              >
-                {phase === "sending" ? "Sending…" : "Send"}
-              </button>
-            </div>
 
-            <p className="mt-3 text-[11px] leading-relaxed text-(--reader-ink-soft)">
+            <p className="mt-3 text-xs leading-relaxed text-(--reader-ink-soft)">
               We also attach the screen you were on, your app version and device — never your
               notes, bookmarks or reading history.
             </p>
@@ -392,6 +409,9 @@ function FeedbackDialog({
   fileInput: ReactNode;
   onSubmit: () => void;
 }) {
+  // Back to where the reader was, not to My Journey: they were reporting
+  // something on *this* page, and signing in must not cost them the place.
+  const here = useRoutePath();
   const field =
     "w-full resize-y rounded-control border border-rule bg-card px-3.5 py-3 text-sm text-ink outline-none transition-[box-shadow,border-color] placeholder:text-ink-soft focus:border-(--ws-color) focus:ring-3 focus:ring-(--ws-color)/15";
   const done = phase === "sent" || phase === "queued";
@@ -404,7 +424,7 @@ function FeedbackDialog({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="-me-2 flex h-9 w-9 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+          className="-me-2 flex h-11 w-11 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
         >
           <CloseIcon className="h-4.5 w-4.5" />
         </button>
@@ -416,7 +436,7 @@ function FeedbackDialog({
             Sign in to send feedback — it&apos;s how we can tell you what happened to it.
           </p>
           <Link
-            href="/login?next=/me"
+            href={signInHref(here)}
             onClick={onClose}
             className={`mt-4 ${ctaPrimary}`}
             style={{ background: "var(--ws-color)" }}

@@ -1,5 +1,6 @@
 "use client";
 
+import { scrollBehavior } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -252,7 +253,7 @@ export function AssistantScreen() {
     const el = turnRefs.current.get(id);
     if (el) {
       scrollTo.current = null;
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
     }
   });
 

@@ -90,7 +90,7 @@ export function SearchField({
           unasked ? "text-(--ws-color)" : "text-ink-soft"
         }`}
       >
-        <Icon name="search" className={`h-4.5 w-4.5 ${pending ? "animate-pulse" : ""}`} />
+        <Icon name="search" className={`h-4.5 w-4.5 ${pending ? "animate-pulse motion-reduce:animate-none" : ""}`} />
       </button>
       <input
         ref={inputRef}

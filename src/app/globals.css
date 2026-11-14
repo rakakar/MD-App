@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* A phone on its side: wide, and about 390px tall. Audio Mode is a column of
+   header, cover, text and transport that needs ~490px, inside a fixed frame
+   that cannot scroll — so turned sideways the Play button was below the
+   screen. `short-landscape:` is the one place a layout asks about height. */
+@custom-variant short-landscape (@media (orientation: landscape) and (max-height: 500px));
+
 /* `static`, not plain `@theme`.
  *
  * Tailwind only emits a theme variable it can see being used, and it decides
@@ -399,7 +405,10 @@
 :root {
   --sutra-bg: linear-gradient(165deg, #fff8f1, #fdeee0 70%, #fae3ce);
   --sutra-ink: #2e2419;
-  --sutra-soft: #8a6a4e;
+  /* #8a6a4e until 14 Nov 2026: it carries the date between the arrows now
+     (that was a literal #B08968, 2.79:1) and had to clear 4.5 on the
+     gradient's deeper end as well — 4.96:1 on #fdeee0, 4.55:1 on #fae3ce. */
+  --sutra-soft: #80614a;
   --sutra-chip: rgb(255 255 255 / 0.75);
   --sutra-rule: linear-gradient(90deg, #eedac4, rgb(238 218 196 / 0));
   /* The hairline around the card. `--sutra-rule` cannot do this job — it is a

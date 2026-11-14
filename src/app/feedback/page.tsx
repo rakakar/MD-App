@@ -131,7 +131,7 @@ export default function MyFeedbackPage() {
                 )}
               </p>
               <span
-                className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   TONE[row.status] ?? "bg-ink/5 text-ink-soft"
                 }`}
               >

@@ -184,7 +184,7 @@ export function Composer({
                   type="button"
                   onClick={pill?.onClear}
                   aria-label={`${shownPill} chosen — clear`}
-                  className="mt-3 inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border pl-3 pr-2 text-sm font-semibold"
+                  className="mt-3 inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border pl-3 pr-2 text-sm font-semibold"
                   style={{
                     borderColor: "color-mix(in srgb, var(--color-accent) 30%, transparent)",
                     background: "color-mix(in srgb, var(--color-accent) 14%, var(--color-card))",
@@ -203,7 +203,7 @@ export function Composer({
                     aria-label={`Books to search: ${pill.option.label}. Change`}
                     data-book-picker-toggle
                     data-ws
-                    className={`mt-3 inline-flex min-h-9 min-w-0 items-center gap-0.5 rounded-full border pl-3 pr-2 text-sm font-semibold ${
+                    className={`mt-3 inline-flex min-h-11 min-w-0 items-center gap-0.5 rounded-full border pl-3 pr-2 text-sm font-semibold ${
                       pill.option.open ? "" : "border-rule bg-card text-ink"
                     }`}
                     style={

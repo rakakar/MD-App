@@ -42,6 +42,53 @@ export function downloadFiles(files: { url: string; title: string }[]): void {
 export const PLAY_ALL = "md:play-all";
 
 /**
+ * Where "Play all" should start — the part a listener is in the middle of.
+ *
+ * The button always opened the first recording, although every row below it
+ * already knew how far it had been played: someone halfway through part 7 of
+ * a fourteen-part shivir pressed the big button and got part 1 again.
+ *
+ * The furthest part that has been started decides. Still unfinished, it is the
+ * one to resume; finished (95%, since nobody listens to the last seconds of
+ * silence), the next part is. Nothing started, or the last part finished,
+ * means from the beginning — `null`.
+ *
+ * `fractions` is each part's progress, 0…1, in list order.
+ */
+export function resumeIndex(fractions: number[]): number | null {
+  let last = -1;
+  fractions.forEach((f, i) => {
+    if (f > 0.01) last = i;
+  });
+  if (last === -1) return null;
+  if (fractions[last] < 0.95) return last;
+  return last + 1 < fractions.length ? last + 1 : null;
+}
+
+/**
+ * The list telling the button what it will do, so the label is true: "Resume ·
+ * 7 of 14" rather than a "Play all" that quietly starts somewhere else. The
+ * same reason `PLAY_ALL` is an event — the hero is server-rendered above the
+ * list. Kept in the module as well as announced, because the button can mount
+ * after the list has already spoken.
+ */
+export const PLAY_ALL_STATE = "md:play-all-state";
+export interface PlayAllState {
+  /** 0-based part "Play all" will open, or null for the first */
+  index: number | null;
+  total: number;
+}
+let playAllState: PlayAllState = { index: null, total: 0 };
+export function currentPlayAllState(): PlayAllState {
+  return playAllState;
+}
+export function announcePlayAll(state: PlayAllState): void {
+  if (state.index === playAllState.index && state.total === playAllState.total) return;
+  playAllState = state;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(PLAY_ALL_STATE));
+}
+
+/**
  * "2006 Kanpur Sammelan - Part 1 | अध्ययन अभ्यास … | अनुभवमूलक विधि" — the way
  * these recordings are named — as the comps draw it: "Part 1" over the
  * subject, with the theme under it. Anything not named that way is returned

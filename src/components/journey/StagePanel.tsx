@@ -434,7 +434,7 @@ function Collection({
     return (
       <div className="flex flex-col gap-3" aria-busy>
         {[0, 1, 2].map((i) => (
-          <span key={i} className="block h-20 animate-pulse rounded-card bg-canvas/60" />
+          <span key={i} className="block h-20 animate-pulse rounded-card motion-reduce:animate-none bg-canvas/60" />
         ))}
       </div>
     );

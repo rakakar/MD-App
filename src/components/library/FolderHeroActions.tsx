@@ -1,6 +1,12 @@
 "use client";
 
-import { PLAY_ALL } from "@/components/library/folderActions";
+import { useSyncExternalStore } from "react";
+import {
+  PLAY_ALL,
+  PLAY_ALL_STATE,
+  currentPlayAllState,
+  type PlayAllState,
+} from "@/components/library/folderActions";
 import { PlayIcon } from "@/components/shell/icons";
 
 /**
@@ -8,8 +14,30 @@ import { PlayIcon } from "@/components/shell/icons";
  * components only because they act: the hero itself is server-rendered.
  */
 
-/** starts the folder's recordings from the first, in the list below */
+const NOTHING: PlayAllState = { index: null, total: 0 };
+
+/**
+ * What the button will do, in its own words. "Play all" until the list below
+ * reports a part in progress; then "Resume · 7 of 14", because that is where
+ * pressing it now lands (`resumeIndex`). The server render says "Play all",
+ * which is also what a first visit shows, so nothing flickers for a new
+ * listener.
+ */
+function usePlayAllLabel(): string {
+  const state = useSyncExternalStore(
+    (notify) => {
+      window.addEventListener(PLAY_ALL_STATE, notify);
+      return () => window.removeEventListener(PLAY_ALL_STATE, notify);
+    },
+    currentPlayAllState,
+    () => NOTHING
+  );
+  return state.index === null ? "Play all" : `Resume · ${state.index + 1} of ${state.total}`;
+}
+
+/** starts the folder's recordings where the listener left off, in the list below */
 export function PlayAllButton() {
+  const label = usePlayAllLabel();
   return (
     <button
       type="button"
@@ -20,7 +48,7 @@ export function PlayAllButton() {
       style={{ color: "var(--ws-color)" }}
     >
       <PlayIcon className="h-3.5 w-3.5" />
-      Play all
+      <span className="tabular-nums">{label}</span>
     </button>
   );
 }
@@ -34,6 +62,7 @@ export function PlayAllButton() {
 
 /** Play all, filled, and the set where it also lives, outlined — one row */
 export function PhonePlayRow({ playAll, fullSeries }: { playAll: boolean; fullSeries?: string | null }) {
+  const label = usePlayAllLabel();
   if (!playAll && !fullSeries) return null;
   return (
     <div className="mt-3 flex gap-2.5 lg:hidden">
@@ -45,7 +74,7 @@ export function PhonePlayRow({ playAll, fullSeries }: { playAll: boolean; fullSe
           style={{ background: "var(--ws-color)" }}
         >
           <PlayIcon className="h-3.5 w-3.5" />
-          Play all
+          <span className="tabular-nums">{label}</span>
         </button>
       )}
       {fullSeries && (

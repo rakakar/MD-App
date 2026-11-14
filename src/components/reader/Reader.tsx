@@ -1,5 +1,6 @@
 "use client";
 
+import { scrollBehavior } from "@/lib/motion";
 import type { Deleted } from "./TocSheet";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -1253,7 +1254,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     }
     const rect = el.getBoundingClientRect();
     if (rect.top < 80 || rect.bottom > window.innerHeight - 160) {
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.scrollIntoView({ block: "center", behavior: scrollBehavior() });
     }
   }, [activeSeq, player.playing, mode, pages, pageIndex]);
 
@@ -2050,7 +2051,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         revision={personalRevision}
         onChapter={(n) => {
           if (n !== chapterNumber) void goToChapter(n);
-          else window.scrollTo({ top: 0, behavior: "smooth" });
+          else window.scrollTo({ top: 0, behavior: scrollBehavior() });
         }}
         onGoToRef={goToRef}
         onGoToPage={goToPrintedPage}
@@ -2561,15 +2562,50 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
               : "Edit note"
             : "Add note"
         }
+        /* Cancel and Save in the pinned footer, not under the text box: with
+           the keyboard up on a small phone the excerpt and the box fill the
+           sheet, and the two buttons were below its fold. The footer stands
+           on the keyboard, which is what `Sheet` built it for. */
+        footer={
+          noteTarget ? (
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setNoteOpen(false);
+                  setNoteText("");
+                  setNoteTarget(null);
+                }}
+                className="min-h-11 rounded-control border border-(--reader-rule) px-4 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={commitNote}
+                disabled={!noteText.trim()}
+                className={ctaPrimary}
+                style={{ background: "var(--ws-color)" }}
+              >
+                Save note
+              </button>
+            </div>
+          ) : undefined
+        }
       >
         {noteTarget && (
           <div className="px-5">
             <p lang="hi" className="hi line-clamp-3 text-sm text-(--reader-ink-soft)">
               {noteTarget.text || noteTarget.para.text_hi}
             </p>
-            <p className="mt-1 text-xs text-(--reader-ink-soft)">
-              {noteTarget.para.canonical_ref}
-            </p>
+            {/* "पृष्ठ 42", as the saved cards say it — not the internal
+                address ("MKD 2.40.7"), which the sutra card dropped for the
+                same reason. Nothing at all where the ref carries no page. */}
+            {parseRef(noteTarget.para.canonical_ref)?.page && (
+              <p lang="hi" className="hi-note mt-1 text-xs text-(--reader-ink-soft)">
+                पृष्ठ {parseRef(noteTarget.para.canonical_ref)?.page}
+              </p>
+            )}
             {/* Noting a passage that already has a note: say so, so the
                 earlier words in the box are not mistaken for a stray draft. */}
             {noteTarget.text && marks.get(noteTarget.para.canonical_ref)?.note && (
@@ -2592,28 +2628,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
               placeholder="Your note…"
               className="mt-3 w-full rounded-xl border border-(--reader-rule) bg-transparent p-3 text-base outline-none focus:border-(--ws-ink)"
             />
-            <div className="mt-3 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setNoteOpen(false);
-                  setNoteText("");
-                  setNoteTarget(null);
-                }}
-                className="min-h-11 rounded-full border border-(--reader-rule) px-4 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={commitNote}
-                disabled={!noteText.trim()}
-                className={ctaPrimary}
-                style={{ background: "var(--ws-color)" }}
-              >
-                Save note
-              </button>
-            </div>
           </div>
         )}
       </Sheet>

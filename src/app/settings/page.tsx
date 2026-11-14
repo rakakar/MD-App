@@ -1,5 +1,6 @@
 "use client";
 
+import { scrollBehavior } from "@/lib/motion";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -251,7 +252,7 @@ function SectionNav() {
                   e.preventDefault();
                   clickedAt.current = Date.now();
                   setActive(i.id);
-                  document.getElementById(i.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  document.getElementById(i.id)?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
                   history.replaceState(null, "", `#${i.id}`);
                 }}
                 className={`flex min-h-11 items-center rounded-control px-4 text-sm transition-colors ${

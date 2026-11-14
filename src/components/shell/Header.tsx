@@ -690,7 +690,7 @@ export function SidebarAccount() {
   );
 
   const row =
-    "flex min-h-10 w-full items-center gap-3 rounded-control px-2.5 text-start text-sm font-medium text-ink transition-colors hover:bg-ink/5";
+    "flex min-h-11 w-full items-center gap-3 rounded-control px-2.5 text-start text-sm font-medium text-ink transition-colors hover:bg-ink/5";
   const glyph = "flex h-4.5 w-4.5 shrink-0 items-center justify-center text-ink-soft";
 
   return (

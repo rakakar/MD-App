@@ -203,7 +203,7 @@ export function SutraCard({
           >
             <ChevronDown className="h-5 w-5 rotate-90" />
           </button>
-          <span className="whitespace-nowrap text-xs font-semibold text-[#B08968]">
+          <span className="whitespace-nowrap text-xs font-semibold text-(--sutra-soft)">
             {sutraDate(sutra.sutra_date)}
           </span>
           <button

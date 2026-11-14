@@ -188,7 +188,7 @@ export function ReadingCard({
         />
         <div className="min-w-0 flex-1">
           <span
-            className="inline-block rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.04em]"
+            className="inline-block rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em]"
             style={{ background: TINT.ink, color: "#fff" }}
           >
             Text edition
@@ -276,7 +276,7 @@ export function ReadingCard({
             {/* The pill is filled and the document rows have none — a badge
                 on both marks neither. */}
             <span
-              className="shrink-0 rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.04em]"
+              className="shrink-0 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em]"
               style={{ background: TINT.ink, color: "#fff" }}
             >
               Text edition

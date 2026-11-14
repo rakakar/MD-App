@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { VideoStage } from "@/components/library/VideoStage";
 import { videoSource } from "@/components/library/VideoView";
 import { MediaRows } from "@/components/library/MediaRows";
-import { PLAY_ALL } from "@/components/library/folderActions";
+import { PLAY_ALL, announcePlayAll, resumeIndex } from "@/components/library/folderActions";
 import { getPlayhead } from "@/lib/storage";
 import type { LibraryFile, LocatedFile } from "@/lib/types";
 
@@ -54,12 +54,27 @@ export function VideoPlaylist({ files }: { files: Row[] }) {
     readProgress();
   }, [readProgress, open]);
 
-  // The hero's Play all starts the first part.
+  // The hero's Play all opens the part the viewer is in the middle of
+  // (`resumeIndex`), or the first when nothing is in progress.
+  const resumeAt = useMemo(
+    () =>
+      resumeIndex(
+        files.map((f) => (f.duration_seconds ? (seen[f.id] ?? 0) / f.duration_seconds : 0))
+      ),
+    [files, seen]
+  );
   useEffect(() => {
-    const onPlayAll = () => files[0] && setOpen(files[0]);
+    announcePlayAll({ index: resumeAt, total: files.length });
+  }, [resumeAt, files.length]);
+  useEffect(() => () => announcePlayAll({ index: null, total: 0 }), []);
+  useEffect(() => {
+    const onPlayAll = () => {
+      const file = files[resumeAt ?? 0];
+      if (file) setOpen(file);
+    };
     window.addEventListener(PLAY_ALL, onPlayAll);
     return () => window.removeEventListener(PLAY_ALL, onPlayAll);
-  }, [files]);
+  }, [files, resumeAt]);
 
   return (
     <>

@@ -129,7 +129,7 @@ export function CoverArt({
   return (
     <div
       className={`relative shrink-0 overflow-hidden shadow-raised ring-1 ring-audio-ink/10 ${
-        large ? "aspect-3/4 w-56 rounded-cover" : "h-[38vw] max-h-44 w-[38vw] max-w-44 rounded-hero"
+        large ? "aspect-3/4 w-56 rounded-cover" : "h-[38vw] max-h-44 w-[38vw] max-w-44 rounded-hero short-landscape:h-[22dvh] short-landscape:w-[22dvh]"
       }`}
       style={{ background: coverGradient(hue) }}
     >

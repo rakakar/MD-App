@@ -5,7 +5,7 @@ import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
 import { ShelfCard } from "@/components/shelf/BookShelf";
 import { PageContainer, SegmentedNav } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
-import { getBooks, getNode, getTopics, getWorkspaces } from "@/lib/api";
+import { ApiError, getBooks, getNode, getTopics, getWorkspaces } from "@/lib/api";
 import { readFind, type RawParams } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
 import type { BookSummary, Topic } from "@/lib/types";
@@ -78,7 +78,12 @@ export async function ResourcesShelfPage({ params }: { params: RawParams }) {
     : Promise.resolve([] as BookSummary[]);
   const shelvesPromise = shelfMap();
 
-  const workspaces = await getWorkspaces().catch(() => []);
+  // Not `.catch(() => [])`. A failed fetch used to become an empty list, the
+  // empty list a null root, and the null root `notFound()` — so with the
+  // server down or the reader offline, this shelf said "This page was not
+  // found". Thrown, it reaches `app/error.tsx`, which says the screen did not
+  // load and offers Try again. Only a real 404 below means "not published".
+  const workspaces = await getWorkspaces();
   const rootId = workspaces.find((w) => w.code === "resources")?.root_node_id ?? null;
   // `root_node_id` is null when the root is unpublished — the whole shelf is
   // then hidden by the same rule that hides any branch, and the honest answer
@@ -86,7 +91,10 @@ export async function ResourcesShelfPage({ params }: { params: RawParams }) {
   if (rootId === null) notFound();
 
   const [root, topics, books, shelves] = await Promise.all([
-    getNode(rootId).catch(() => null),
+    getNode(rootId).catch((e: unknown) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    }),
     topicsPromise,
     // Not fetched while the toggle is off — nothing on the page can show a
     // book row, so a books listing here would just be a request nobody reads.

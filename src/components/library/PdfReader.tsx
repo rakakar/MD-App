@@ -1404,7 +1404,7 @@ export function PdfReader({
             }}
             aria-pressed={cropOn}
             aria-label={cropOn ? "Show the full page" : "Trim the margins"}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rule"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule"
             style={{ color: "var(--ws-ink)" }}
           >
             <CropIcon on={cropOn} />

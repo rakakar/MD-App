@@ -190,7 +190,7 @@ export function EventShare({
         aria-busy={busy}
         style={ring}
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule bg-card text-ink transition-colors active:bg-ink/[.04] ${
-          busy ? "animate-pulse" : ""
+          busy ? "animate-pulse motion-reduce:animate-none" : ""
         }`}
       >
         {copied ? (
@@ -209,7 +209,7 @@ export function EventShare({
       aria-busy={busy}
       style={ring}
       className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-control border border-rule bg-surface px-5 text-sm font-semibold text-ink transition-colors active:bg-ink/[.04] ${
-        busy ? "animate-pulse" : ""
+        busy ? "animate-pulse motion-reduce:animate-none" : ""
       }`}
     >
       {copied ? "Copied" : armed ? "Tap to share" : "Share"}

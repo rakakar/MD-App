@@ -1,5 +1,6 @@
 "use client";
 
+import { scrollBehavior } from "@/lib/motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -127,7 +128,7 @@ export function AudioMode({
   useEffect(() => {
     const el = activeRef.current;
     if (!el) return;
-    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.scrollIntoView({ block: "center", behavior: scrollBehavior() });
   }, [activeSeq]);
 
   // Only paragraphs that are actually spoken can be tapped to play — a table
@@ -264,8 +265,12 @@ export function AudioMode({
         </div>
       </div>
 
+      {/* The cover and the text share this box: stacked, as the comp draws
+          them, and side by side on a phone turned on its side — where stacked
+          they pushed the transport off a screen that cannot scroll. */}
+      <div className="flex min-h-0 flex-1 flex-col short-landscape:flex-row">
       {/* ---- cover + what is playing ---- */}
-      <div className="flex flex-col items-center px-6 pt-5">
+      <div className="flex shrink-0 flex-col items-center px-6 pt-5 short-landscape:w-2/5 short-landscape:shrink short-landscape:overflow-y-auto short-landscape:pb-3 short-landscape:pt-2">
         <CoverArt src={cover} hue={hue} fallback={source.bookTitle?.[0] ?? "\u0917\u094D\u0930"} />
         <p lang="hi" className="hi mt-4 line-clamp-2 text-center text-base font-semibold">
           {source.chapterTitle}
@@ -296,7 +301,7 @@ export function AudioMode({
       {/* ---- the text, following the voice ---- */}
       <div
         ref={listRef}
-        className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-6"
+        className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 short-landscape:mt-0"
       >
         <div className="mx-auto flex max-w-prose flex-col gap-3 py-6">
           {lines.map((p) => {
@@ -327,12 +332,14 @@ export function AudioMode({
         </div>
       </div>
 
+      </div>
+
       {/* ---- transport ----
           24px under the controls. It was 8, which was enough while the foot row
           sat below them and gave the play button something to stand on; with
           that row gone the transport was the last thing on the screen and ended
           a thumb's width from the edge. */}
-      <div className="shrink-0 border-t border-audio-ink/10 bg-audio-bg px-5 pb-6 pt-3">
+      <div className="shrink-0 border-t border-audio-ink/10 bg-audio-bg px-5 pb-6 pt-3 short-landscape:pb-2 short-landscape:pt-1">
         {device ? (
           <div
             className="h-1 w-full overflow-hidden rounded-full bg-audio-ink/12"
