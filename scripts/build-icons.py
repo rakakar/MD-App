@@ -17,11 +17,13 @@ exact and there is no master PNG to keep in step. The same geometry writes
 gradient finish at icon and favicon sizes. The outputs are committed, so
 nothing in `npm run build` depends on Python.
 
+    Mark: a 0.78 bounding box, centred, as ChatGPT's and Gemini's icons are.
+
     web icon-192/512 (purpose any)   the rounded tile, corners clear
     icon-maskable-512                full bleed, mark as on the tile
     apple-touch-icon, iOS AppIcon    full bleed, opaque (the OS rounds it)
     favicon 16/32/48                 the rounded tile
-    Android ic_launcher              the tile; _round: the sheet's Avatar
+    Android ic_launcher              the tile; _round: the same on a circle
     Android adaptive                 the mark alone, sized to the visible
                                      72/108 as it sits on the tile, over a
                                      solid Umber layer
@@ -39,8 +41,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UMBER = "#2B1E16"
 # outermost first — the "on umber" colourway, one step lighter than on paper
 RINGS = [(54, "#FBE9D2"), (42, "#F7BE6E"), (31, "#F2913D"), (21, "#E6622C")]
-MARK_R = 0.316     # the outer circle's radius as a fraction of the tile (sheet)
-AVATAR_R = 0.29    # the same, on the sheet's circular Avatar
+# The outer circle's radius as a fraction of the tile. Sized to the icons it
+# sits beside on a home screen rather than to the identity sheet's 0.316: the
+# ChatGPT and Gemini App Store icons (1024px, measured 15 Nov 2026) centre
+# their mark in a bounding box 0.785 and 0.771 of the tile. 0.39 gives a
+# 0.78 box, and still sits inside the maskable icon's 0.40 safe circle.
+MARK_R = 0.39
+AVATAR_R = MARK_R  # the round launcher icon matches the square one
 TILE_CORNER = 0.22 # the tile's corner radius as a fraction of its side
 SS = 4             # supersampling for antialiasing
 
