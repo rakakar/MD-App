@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Analytics } from "@/components/consent/ConsentBanner";
 import { InlineScript } from "@/components/InlineScript";
 import { AppShell } from "@/components/shell/AppShell";
+import { iconUrl } from "@/lib/iconVersion";
 import "./globals.css";
 
 // Type system per the design spec (design_docs/screens): Instrument Sans for
@@ -105,17 +106,18 @@ export const metadata: Metadata = {
   // a browser-chrome title bar — most of this audience installs from Safari.
   icons: {
     // No SVG here, though the logo is one: a browser that can take an SVG
-    // favicon prefers it to favicon.ico, and at 16px the full mark's ring of
-    // lettering is noise. favicon.ico is the tree alone, drawn for that size.
+    // favicon prefers it to favicon.ico, which is drawn for 16–48px. The PNGs
+    // carry `iconUrl`'s version so a new mark reaches browsers that cached the
+    // old one.
     icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: iconUrl("/icon-192.png"), sizes: "192x192", type: "image/png" },
+      { url: iconUrl("/icon-512.png"), sizes: "512x512", type: "image/png" },
     ],
     // Its own file at its own size. This used to hand iOS the 192 and label it
     // 180, so the mark was resampled on every home screen; and a clear-cornered
     // PNG comes back from iOS as a mark on a black square, which is why the
     // Apple icon is the opaque render rather than the tile.
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    apple: [{ url: iconUrl("/apple-touch-icon.png"), sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     title: "MD Study",
@@ -143,7 +145,7 @@ export const metadata: Metadata = {
     // no picture at all. The 512 logo is the only brand image that is square
     // and big enough for a preview; pages that set their own `openGraph`
     // replace this whole object, so they bring their own (15 Nov 2026).
-    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: "MD Study" }],
+    images: [{ url: iconUrl("/icon-512.png"), width: 512, height: 512, alt: "MD Study" }],
   },
 };
 

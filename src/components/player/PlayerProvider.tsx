@@ -25,6 +25,7 @@ import type { AudioRendition, ParaTimings } from "@/lib/types";
 import { onMenuRate } from "./audioChrome";
 import { DeviceSpeaker, deviceScripts, onVoicesChanged, type SpokenPara } from "./deviceSpeech";
 import type { BookScript } from "@/lib/bookLanguage";
+import { iconUrl } from "@/lib/iconVersion";
 
 export interface TtsSource {
   kind: "tts";
@@ -626,8 +627,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     // Always keep a local fallback last: a cover that 404s or is slow leaves
     // an OS widget with an empty square, which reads as a broken app.
     artwork.push(
-      { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icon-192.png", sizes: "192x192", type: "image/png" }
+      { src: iconUrl("/icon-512.png"), sizes: "512x512", type: "image/png" },
+      { src: iconUrl("/icon-192.png"), sizes: "192x192", type: "image/png" }
     );
     ms.metadata = new MediaMetadata({
       title: msTitle,

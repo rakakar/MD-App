@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { iconUrl } from "@/lib/iconVersion";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -40,10 +41,10 @@ export default function manifest(): MetadataRoute.Manifest {
     // the tile's corners off. Pointing both purposes at one file — which this
     // did — means one of the two is wrong wherever it is shown.
     icons: [
-      { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { src: iconUrl("/icon-192.png"), sizes: "192x192", type: "image/png" },
+      { src: iconUrl("/icon-512.png"), sizes: "512x512", type: "image/png" },
       {
-        src: "/icon-maskable-512.png",
+        src: iconUrl("/icon-maskable-512.png"),
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

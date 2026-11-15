@@ -199,9 +199,11 @@ export function WorkspaceIcon({
  * The app mark that opens the app bar (design 10A / every mobile screen).
  * Since 15 Nov 2026 the Sah Astitva (Coexistence) mark on its Umber tile, as
  * the identity sheet's app comp draws it: four circles on one shared ground.
- * `/brand/logo.svg` is written by `scripts/build-icons.py` from the same
+ * `/brand/sah-astitva-mark.svg` is written by `scripts/build-icons.py` from the same
  * geometry as every raster icon, so the two cannot drift — edit the script,
- * not the SVG.
+ * not the SVG. A new mark gets a new file name: the service worker serves
+ * `/brand/` cache-first, and overwriting `logo.svg` in place left every
+ * returning reader on the old tree mark.
  *
  * A file rather than inline SVG: one cached request, precached by the service
  * worker so it still survives offline. Solid finish only — the brand keeps
@@ -213,7 +215,7 @@ export function BrandMark({ className }: { className?: string }) {
     // passes through untouched, and this one is 32px of always-visible chrome.
     // eslint-disable-next-line @next/next/no-img-element -- see above
     <img
-      src="/brand/logo.svg"
+      src="/brand/sah-astitva-mark.svg"
       alt=""
       aria-hidden="true"
       width={40}

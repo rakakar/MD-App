@@ -651,20 +651,22 @@ mitigation for Connect being two taps away, and what it cost was the four things
 wrapping to two rows at the text sizes this audience actually uses. Its job moved onto
 Home, where a shivir can say where it is.
 
-**The app mark is a file, and there are five renders of it.** The designer's export is
-`design_docs/MD Study logo.svg` — the Divya Path Sansthan tree emblem, white on a `#CD7233`
-rounded tile, with "DIVYA PATH SANSTHAN · AMARKANTAK · ESTD. 1981" set around the ring.
-`public/brand/logo.svg` is that file at 2dp and without its fixed 40×40, and it is what
-`BrandMark` renders; `scripts/build-icons.py` turns it into the manifest icons, the
-maskable icon, the Apple touch icon and the favicon. Change the logo in one place and
-re-run that script — do not hand-edit anything under `public/`.
+**The app mark is drawn, not traced.** Since 15 Nov 2026 it is the Sah Astitva
+(Coexistence) mark — four circles on one shared ground, radii 54 · 42 · 31 · 21 — on an
+Umber tile, in the identity's on-umber colourway (Hint, Marigold, Saffron, Vermilion core).
+`scripts/build-icons.py` draws it from those numbers and writes every render: the SVG that
+`BrandMark` shows (`public/brand/sah-astitva-mark.svg`), the manifest, maskable and Apple
+icons, the favicon, and the iOS/Android icons and splashes. Change the script and re-run
+it — do not hand-edit anything under `public/`.
 
-Two things follow from the mark being this detailed. The ring text stops being legible
-below roughly 64px, so the 32px app bar and the 30px sidebar show it as a tree in a circle
-and that is fine — it is the mark, not a sign to read. And the emblem is a *circle* inside
-the tile, which is what makes the maskable icon work: Android's circle crop takes the tile
-corners, never the artwork. Anything that needs the name spelled out should set "MD Study"
-in type beside the mark, the way the desktop sidebar already does.
+The mark fills a centred 0.78 box of the tile, matched to the ChatGPT (0.785) and Gemini
+(0.771) icons it sits beside on a home screen, rather than the identity sheet's 0.63.
+
+**A new mark needs new URLs.** The service worker serves `/brand/` cache-first and
+browsers hold the PNG icons for a long time. Overwriting `logo.svg` in place left returning
+readers on the old tree in the app bar and sidebar. So the SVG gets a new file name, and
+the PNGs carry `ICON_V` from `src/lib/iconVersion.ts` (and the matching `?v=` in
+`public/firebase-messaging-sw.js`) — bump it with every new mark.
 
 ---
 

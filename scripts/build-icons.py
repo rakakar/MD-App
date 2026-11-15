@@ -12,7 +12,7 @@ step lighter than on paper: Saffron Hint outside, Vermilion at the core.
 
 Nothing is traced from a raster: the circles are drawn here, so every size is
 exact and there is no master PNG to keep in step. The same geometry writes
-`public/brand/logo.svg` (the app's `BrandMark`) and the designer-facing
+`public/brand/sah-astitva-mark.svg` (the app's `BrandMark`) and the designer-facing
 `design_docs/sah-astitva-app-icon.svg`. Solid only — the brand forbids the
 gradient finish at icon and favicon sizes. The outputs are committed, so
 nothing in `npm run build` depends on Python.
@@ -114,7 +114,7 @@ def svg(size=160):
     )
 
 
-for rel in ("public/brand/logo.svg", "design_docs/sah-astitva-app-icon.svg"):
+for rel in ("public/brand/sah-astitva-mark.svg", "design_docs/sah-astitva-app-icon.svg"):
     with open(os.path.join(ROOT, rel), "w") as f:
         f.write(svg())
     print(f"{rel:68}   (svg) {os.path.getsize(os.path.join(ROOT, rel)):>7} B")

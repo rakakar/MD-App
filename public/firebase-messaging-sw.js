@@ -21,8 +21,9 @@
  */
 
 const FALLBACK_TITLE = "MD Study";
-const ICON = "/icon-192.png";
-const BADGE = "/icon-192.png";
+// ?v= matches ICON_V in src/lib/iconVersion.ts — bump both together.
+const ICON = "/icon-192.png?v=2";
+const BADGE = "/icon-192.png?v=2";
 
 /** FCM's push body varies by message type; take whichever half is present. */
 function readPayload(event) {
