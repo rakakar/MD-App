@@ -419,9 +419,17 @@ A theme is these eight values and nothing else. `[data-theme="sepia"]` and
 
 ### The app accent — fill, text and tint are three tokens
 
+Since Nov 2026 the accent comes from the Sah Astitva identity: **Vermilion**, deepened
+along its own hue to `#B64416` (was terracotta `#C8621A`), with `#A93F14` as `accent-deep`.
+The brand's raw Vermilion `#E6622C` is 3.42:1 under white and 3.2:1 on paper, so it cannot
+carry text or white labels; it and the other identity colours live as `brand-*` tokens for
+the mark and decoration only. Originals' workspace hue is the same `#B64416`; the other
+four are unchanged. `danger` moved to a cooler rose (`#9F1239`) so a delete control never
+reads as the brand red-orange.
+
 `accent` / `accent-deep` are **fills** (white type on them passes in every theme).
-`accent-ink` is the accent as **text** — `accent-deep` on paper and sepia, the 55% lift
-toward ink in dark (`#c4916b`, 4.8–6.8:1 on every ground it sits on). `accent-tint` is the
+`accent-ink` is the accent as **text** — `#B64416` on paper and sepia (5.14 / 4.65:1),
+brand Saffron `#F2913D` in dark (7.3:1 on card). `accent-tint` is the
 pale wash behind a chip in light and a warm dark step (`#2e2119`) in dark. Until 18 Oct
 2026 neither had a dark value: the sutra card's label sat at 2.9:1 and every folder's
 count chip was a lit peach pill on a black page. Never put `accent-deep` on text.

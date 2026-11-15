@@ -63,9 +63,10 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
   originals: {
     id: "originals",
     name: "Originals",
-    // designer palette (spec 10A), each hue deepened only as far as AA on the
-    // sepia reading surface requires — terracotta uses the spec's own 700
-    color: "#A64E12",
+    // Vermilion from the Sah Astitva identity (Nov 2026), deepened along its
+    // own hue to clear AA under white and as text on paper and sepia — the
+    // brand's raw #E6622C does neither. Was terracotta #A64E12.
+    color: "#B64416",
     tagline: "All works of Shri A. Nagraj",
     home: "/",
     /**
@@ -150,7 +151,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "journey",
     name: "My Journey",
     color: "#89631F",
-    tagline: "Study Roadmap - History - Highlights & Notes",
+    tagline: "Study roadmap · History · Highlights & notes",
     home: "/me",
     // Three slots, not four. "Saved" and "Notes" were the two most alike tabs
     // in the app and are one now — see `PersonalTabs` for why the reader's own
@@ -167,7 +168,7 @@ export const WORKSPACES: Record<WorkspaceId, Workspace> = {
     id: "connect",
     name: "Connect",
     color: "#2F6E86",
-    tagline: "Shivir Calendar - Contacts - Links - Volunteer",
+    tagline: "Shivir calendar · Contacts · Links · Volunteer",
     home: "/connect",
     /**
      * Five slots — Events, Centres, Links, Volunteer, Assistant. The comps drew

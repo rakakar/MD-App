@@ -197,19 +197,15 @@ export function WorkspaceIcon({
 
 /**
  * The app mark that opens the app bar (design 10A / every mobile screen).
- * The Divya Path Sansthan emblem, redrawn by the designer on 14 Oct 2026 —
- * `design_docs/DPS logo new.svg`, minified into `/brand/logo.svg` (the two
- * terracotta shapes laid over the tile, invisible, dropped). The raster icons
- * come from the PNG master beside it, via `scripts/build-icons.py`.
+ * Since 15 Nov 2026 the Sah Astitva (Coexistence) mark on its Umber tile, as
+ * the identity sheet's app comp draws it: four circles on one shared ground.
+ * `/brand/logo.svg` is written by `scripts/build-icons.py` from the same
+ * geometry as every raster icon, so the two cannot drift — edit the script,
+ * not the SVG.
  *
- * A file rather than inline SVG, which reverses the earlier call and is worth
- * saying why: the placeholder was three shapes, and this mark is 41 paths of
- * leaf and ring-text detail — ~48KB of path data that would otherwise repeat
- * in the HTML of every page. One cached request instead, precached by the
- * service worker so it still survives offline.
- *
- * Terracotta, not the workspace hue: the mark is app identity, and 10A keeps
- * terracotta on shared chrome while the hue moves only through the switcher.
+ * A file rather than inline SVG: one cached request, precached by the service
+ * worker so it still survives offline. Solid finish only — the brand keeps
+ * the gradient mark for sizes of 200px and up.
  */
 export function BrandMark({ className }: { className?: string }) {
   return (

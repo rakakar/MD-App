@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
-"""Every app icon — web, iOS, Android — from the designer's raster master.
+"""Every app icon — web, iOS, Android — and the in-app mark, from geometry.
 
     python3 -m pip install pillow
     python3 scripts/build-icons.py
 
-Source of truth is `design_docs/DPS-logo-new_1000x1000.png` (14 Oct 2026): a
-rounded tile in exactly #A64E12, the app's terracotta, with the mark in white.
-Its vector twin, `design_docs/DPS logo new.svg`, is what the app draws in its
-chrome (`/brand/logo.svg`); the icons are cut from the PNG so nothing here
-needs an SVG renderer. Re-run when the logo changes — the outputs are
-committed, so nothing in `npm run build` depends on Python.
+Since 15 Nov 2026 the mark is the Sah Astitva (Coexistence) identity, and the
+icon is the identity sheet's own "App icon — Umber" tile, as its app comp
+draws it. The mark is four circles resting on one shared ground, radii
+54 · 42 · 31 · 21 (अनुभव · विचार · व्यवहार · कार्य). On Umber the rings shift one
+step lighter than on paper: Saffron Hint outside, Vermilion at the core.
 
-The white art is lifted off the tile and placed per platform, inside the
-circle each one crops to:
+Nothing is traced from a raster: the circles are drawn here, so every size is
+exact and there is no master PNG to keep in step. The same geometry writes
+`public/brand/logo.svg` (the app's `BrandMark`) and the designer-facing
+`design_docs/sah-astitva-app-icon.svg`. Solid only — the brand forbids the
+gradient finish at icon and favicon sizes. The outputs are committed, so
+nothing in `npm run build` depends on Python.
 
-    web icon-192/512 (purpose any)   the tile as drawn, corners clear
-    icon-maskable-512                full bleed, art radius 0.38 (Android: 0.40)
-    apple-touch-icon, iOS AppIcon    full bleed, opaque, art radius 0.42
-    favicon 16/32/48                 the tree alone — the lettering is noise there
-    Android ic_launcher              the tile; _round: a circle, art radius 0.44
-    Android adaptive                 art only at radius 0.30 (safe zone 66/108)
-                                     over a solid terracotta layer
+    web icon-192/512 (purpose any)   the rounded tile, corners clear
+    icon-maskable-512                full bleed, mark as on the tile
+    apple-touch-icon, iOS AppIcon    full bleed, opaque (the OS rounds it)
+    favicon 16/32/48                 the rounded tile
+    Android ic_launcher              the tile; _round: the sheet's Avatar
+    Android adaptive                 the mark alone, sized to the visible
+                                     72/108 as it sits on the tile, over a
+                                     solid Umber layer
 """
 import os
 import sys
@@ -31,59 +35,50 @@ except ImportError:  # pragma: no cover - the message is the point
     sys.exit("needs pillow: python3 -m pip install pillow")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "design_docs/DPS-logo-new_1000x1000.png")
-BG = (166, 78, 18)        # #A64E12 — the master's tile, and the app's terracotta
-ART_R = 0.435             # the art's radius, as a fraction of the canvas
-TREE_R = 0.362            # the tree's — the ring of lettering starts at ~0.38
-CENTRE = (0.497, 0.499)   # the art's centre in the master
 
-master = Image.open(SRC).convert("RGBA")
-W = master.width
-
-
-def lift(limit=None):
-    """The white art alone, antialiasing kept: how far a pixel's blue has risen
-    from the tile's (18) toward white is how opaque its white is. `limit`
-    keeps only what is inside that radius of the centre."""
-    art = Image.new("RGBA", master.size, (255, 255, 255, 0))
-    mp, ap = master.load(), art.load()
-    cx, cy = CENTRE[0] * W, CENTRE[1] * W
-    for y in range(W):
-        for x in range(W):
-            if limit and (x - cx) ** 2 + (y - cy) ** 2 > (limit * W) ** 2:
-                continue
-            r, g, b, a = mp[x, y]
-            ap[x, y] = (255, 255, 255, max(0, min(255, round((b - BG[2]) / (255 - BG[2]) * a))))
-    return art
+UMBER = "#2B1E16"
+# outermost first — the "on umber" colourway, one step lighter than on paper
+RINGS = [(54, "#FBE9D2"), (42, "#F7BE6E"), (31, "#F2913D"), (21, "#E6622C")]
+MARK_R = 0.316     # the outer circle's radius as a fraction of the tile (sheet)
+AVATAR_R = 0.29    # the same, on the sheet's circular Avatar
+TILE_CORNER = 0.22 # the tile's corner radius as a fraction of its side
+SS = 4             # supersampling for antialiasing
 
 
-ART = lift()
+def rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def placed(size, safe_r, under=None):
-    """The art centred on `under` (or clear), scaled so its radius is safe_r·size."""
-    canvas = under or Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    a = ART.resize((round(size * safe_r / ART_R),) * 2, Image.LANCZOS)
-    off = (size - a.width) // 2
-    canvas.alpha_composite(a, (off, off))
-    return canvas
+def circles(cx, cy, outer_r):
+    """(cx, cy, r, colour) for each ring, all tangent at the shared ground."""
+    ground = cy + outer_r
+    k = outer_r / RINGS[0][0]
+    return [(cx, ground - r * k, r * k, c) for r, c in RINGS]
 
 
-def full_bleed(size, safe_r):
-    return placed(size, safe_r, Image.new("RGBA", (size, size), BG + (255,)))
+def draw(size, mark_r, ground=None, corner=None, circle_bg=False):
+    """The mark at outer radius `mark_r`·size, centred, over `ground`:
+    None (clear), full bleed, a rounded tile (`corner`) or a circle."""
+    S = size * SS
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    if ground:
+        fill = rgb(ground) + (255,)
+        if circle_bg:
+            d.ellipse((0, 0, S - 1, S - 1), fill=fill)
+        elif corner:
+            d.rounded_rectangle((0, 0, S - 1, S - 1), radius=corner * S, fill=fill)
+        else:
+            d.rectangle((0, 0, S, S), fill=fill)
+    for cx, cy, r, c in circles(S / 2, S / 2, mark_r * S):
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=rgb(c) + (255,))
+    return im.resize((size, size), Image.LANCZOS)
 
 
-def round_crop(im):
-    s = im.width * 4
-    m = Image.new("L", (s, s), 0)
-    ImageDraw.Draw(m).ellipse((0, 0, s - 1, s - 1), fill=255)
-    out = im.copy()
-    out.putalpha(m.resize(im.size, Image.LANCZOS))
-    return out
-
-
-def tile(size):
-    return master.resize((size, size), Image.LANCZOS)
+tile = lambda n: draw(n, MARK_R, UMBER, TILE_CORNER)
+full_bleed = lambda n: draw(n, MARK_R, UMBER)
+avatar = lambda n: draw(n, AVATAR_R, UMBER, circle_bg=True)
 
 
 def save(im, rel, opaque=False):
@@ -93,38 +88,66 @@ def save(im, rel, opaque=False):
         # the App Store wants a plain opaque PNG
         im.convert("RGB").save(path, optimize=True)
     else:
-        # two colours and their antialiasing: a 256-colour palette is lossless
-        # to the eye and a fraction of the bytes
-        method = Image.Quantize.FASTOCTREE if im.mode == "RGBA" else Image.Quantize.MEDIANCUT
-        im.quantize(colors=256, method=method).save(path, optimize=True)
+        # five flat colours and their antialiasing: a 256-colour palette is
+        # lossless to the eye and a fraction of the bytes
+        im.quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(path, optimize=True)
     print(f"{rel:68} {im.width:>5}px {os.path.getsize(path):>7} B")
 
+
+def svg(size=160):
+    """The tile as SVG — round numbers at this viewBox."""
+    rings = "".join(
+        f'<circle cx="{cx:g}" cy="{cy:g}" r="{r:g}" fill="{c}"/>'
+        for cx, cy, r, c in circles(size / 2, size / 2, round(MARK_R * size, 2))
+    )
+    rx = round(TILE_CORNER * size, 2)
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}">'
+        f'<rect width="{size}" height="{size}" rx="{rx:g}" fill="{UMBER}"/>{rings}</svg>\n'
+    )
+
+
+for rel in ("public/brand/logo.svg", "design_docs/sah-astitva-app-icon.svg"):
+    with open(os.path.join(ROOT, rel), "w") as f:
+        f.write(svg())
+    print(f"{rel:68}   (svg) {os.path.getsize(os.path.join(ROOT, rel)):>7} B")
 
 # web
 save(tile(192), "public/icon-192.png")
 save(tile(512), "public/icon-512.png")
-save(full_bleed(512, 0.38), "public/icon-maskable-512.png")
-save(full_bleed(180, 0.42), "public/apple-touch-icon.png", opaque=True)
+save(full_bleed(512), "public/icon-maskable-512.png")
+save(full_bleed(180), "public/apple-touch-icon.png", opaque=True)
 
-# favicon: the tree on a small rounded tile
-tree = lift(TREE_R)
-c = (CENTRE[0] * W, CENTRE[1] * W)
-tree = tree.crop((int(c[0] - TREE_R * W), int(c[1] - TREE_R * W), int(c[0] + TREE_R * W), int(c[1] + TREE_R * W)))
-fav = Image.new("RGBA", (2048, 2048), (0, 0, 0, 0))
-ImageDraw.Draw(fav).rounded_rectangle((0, 0, 2047, 2047), radius=450, fill=BG + (255,))
-t = tree.resize((1761, 1761), Image.LANCZOS)
-fav.alpha_composite(t, ((2048 - 1761) // 2,) * 2)
-fav.resize((256, 256), Image.LANCZOS).save(os.path.join(ROOT, "src/app/favicon.ico"), sizes=[(16, 16), (32, 32), (48, 48)])
+# favicon
+tile(256).save(os.path.join(ROOT, "src/app/favicon.ico"), sizes=[(16, 16), (32, 32), (48, 48)])
 print(f"{'src/app/favicon.ico':68}  16/32/48 {os.path.getsize(os.path.join(ROOT, 'src/app/favicon.ico')):>7} B")
 
 # iOS
-save(full_bleed(1024, 0.42), "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png", opaque=True)
+save(full_bleed(1024), "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png", opaque=True)
 
 # Android
 RES = "android/app/src/main/res"
 for d, n in {"ldpi": 36, "mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}.items():
     save(tile(n), f"{RES}/mipmap-{d}/ic_launcher.png")
-    save(round_crop(full_bleed(n * 4, 0.44)).resize((n, n), Image.LANCZOS), f"{RES}/mipmap-{d}/ic_launcher_round.png")
+    save(avatar(n), f"{RES}/mipmap-{d}/ic_launcher_round.png")
 for d, n in {"ldpi": 81, "mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}.items():
-    save(placed(n, 0.30), f"{RES}/mipmap-{d}/ic_launcher_foreground.png")
-    save(Image.new("RGB", (n, n), BG), f"{RES}/mipmap-{d}/ic_launcher_background.png")
+    # the launcher shows the middle 72/108, so the tile's proportion there is
+    # MARK_R · 72/108 of the full layer
+    save(draw(n, MARK_R * 72 / 108), f"{RES}/mipmap-{d}/ic_launcher_foreground.png")
+    save(Image.new("RGB", (n, n), rgb(UMBER)), f"{RES}/mipmap-{d}/ic_launcher_background.png")
+
+# Splash screens — Android and iOS, light and night. Each keeps the ground it
+# was drawn on (#FDFBF8 / #14110F, read off its own corner) and puts the tile
+# in the middle at the proportion the old splash used, 0.62 of the short side.
+import glob
+
+SPLASH_TILE = 0.62
+for path in sorted(
+    glob.glob(os.path.join(ROOT, "android/app/src/main/res/drawable*/splash.png"))
+    + glob.glob(os.path.join(ROOT, "ios/App/App/Assets.xcassets/Splash.imageset/Default@*.png"))
+):
+    old = Image.open(path).convert("RGB")
+    out = Image.new("RGBA", old.size, old.getpixel((2, 2)) + (255,))
+    n = round(min(old.size) * SPLASH_TILE)
+    out.alpha_composite(tile(n), ((old.width - n) // 2, (old.height - n) // 2))
+    save(out, os.path.relpath(path, ROOT), opaque=True)

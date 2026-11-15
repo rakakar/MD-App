@@ -75,7 +75,7 @@ export default function GlobalError({
             <button
               type="button"
               onClick={reset}
-              style={{ ...button, border: "none", background: "#a64e12", color: "#fff" }}
+              style={{ ...button, border: "none", background: "#b64416", color: "#fff" }}
             >
               Try again
             </button>

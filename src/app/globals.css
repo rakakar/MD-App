@@ -32,21 +32,39 @@
      same reason), and Translations/Journey needed a nudge past the sepia
      surface. All values here measure ≥4.55:1 as text on paper AND sepia, and
      ≥4.6:1 under white labels. */
-  --color-ws-originals: #a64e12;
+  /* Originals takes Vermilion, the Sah Astitva identity's primary (Nov
+     2026), deepened along its own hue until it clears AA both ways: the
+     brand's #E6622C is 3.42:1 under white and 3.2:1 as text on paper. This
+     is 5.49:1 under white, 5.14:1 on paper, 4.65:1 on sepia. The other four
+     keep their tuned hues. */
+  --color-ws-originals: #b64416;
   --color-ws-translations: #4a7260;
   --color-ws-resources: #5e5a8c;
   --color-ws-journey: #89631f;
   --color-ws-connect: #2f6e86;
 
-  /* Terracotta stays the app-level accent on shared chrome (spec 10A);
-     scale from spec 6A. */
-  --color-accent: #c8621a;
-  --color-accent-deep: #a64e12;
-  --color-accent-tint: #fdf3ea;
+  /* The app-level accent on shared chrome, from the Sah Astitva identity
+     (Nov 2026). It was terracotta (spec 10A). Vermilion, deepened exactly as
+     Originals' is above — the raw #E6622C cannot carry text or white labels.
+     `accent-deep` is one step further along the same hue (6.16:1 under
+     white). */
+  --color-accent: #b64416;
+  --color-accent-deep: #a93f14;
+  --color-accent-tint: #fdf3ea; /* accent-ink on it: 5.01:1 */
   /* The accent as *text*. `accent-deep` is also a fill under white type, so
      it cannot lift for dark without breaking those buttons; this one can.
-     Same value as `accent-deep` on paper and sepia. */
-  --color-accent-ink: #a64e12;
+     Deepened Vermilion on paper and sepia (5.14 / 4.65:1); Saffron in dark. */
+  --color-accent-ink: #b64416;
+
+  /* The six identity colours as drawn, for the mark and for decoration only
+     (illustration, the gradient mark ≥200px). Not for text or for fills
+     under text — use the accent tokens above for those. */
+  --color-brand-vermilion: #e6622c;
+  --color-brand-saffron: #f2913d;
+  --color-brand-marigold: #f7be6e;
+  --color-brand-hint: #fbe9d2;
+  --color-brand-sindoor: #c7302a;
+  --color-brand-umber: #2b1e16;
 
   /* Warm ink & paper neutrals (spec 6A). "Muted" #9C9187 is 2.98:1 on paper
      — decoration only, never text; secondary text uses Body.
@@ -75,7 +93,8 @@
      lighter *again* in dark, because raised means "closer to the light"
      whichever way the theme runs */
   --color-card: #ffffff;
-  --color-ink: #1a1613;
+  /* Umber, the identity's text colour (was #1a1613): 15.1:1 on paper. */
+  --color-ink: #2b1e16;
   --color-ink-soft: #4a413a;
   --color-muted: #9c9187;
   --color-rule: #e4dbd1;
@@ -86,8 +105,12 @@
      afternoon — that measured 1.61:1 on the dark card, so the bin all but
      vanished in the theme where a reader is most likely to be reading. These
      three are measured against their own `--color-card`: 6.5:1 light, 6.3:1
-     sepia, 7.1:1 dark, all well past the 3:1 an icon needs. */
-  --color-danger: #b3261e;
+     sepia, 7.1:1 dark, all well past the 3:1 an icon needs.
+
+     Moved off brick red to a cooler rose (Nov 2026), so a delete control
+     never reads as the brand's red-orange accent. Now 8.0:1 on white / 7.8:1 sepia card / 8.4:1
+     dark card. */
+  --color-danger: #9f1239;
 
   /* The one "all is well" colour — Settings' Synced pill and a met password
      rule. Text on its own tint: 5.5:1 light, 5.4:1 sepia, 7.3:1 dark. */
@@ -120,8 +143,8 @@
      reader's selection bar, the audio pill. Deliberately the same near-black
      in every theme and on every reading surface, as the comps draw it: a bar
      in the page's own colours reads as part of the page, which is how a reader
-     ends up unsure what its buttons apply to. White on it is 15.9:1. */
-  --color-overlay: #1c1917;
+     ends up unsure what its buttons apply to. Umber; white on it is 16.2:1. */
+  --color-overlay: #2b1e16;
 
   /* The chip a control takes when it is sitting *on* a coloured panel — the
      hero's primary button. Fixed in every theme, for the same reason the panel
@@ -152,7 +175,7 @@
   --color-audio-ink: #f2ece2; /* 16.0:1 — 5.4:1 at the 55% the unspoken
                                  follow-along lines are set in, which is the
                                  floor those had to be raised to */
-  --color-audio-accent: #e08b3e; /* 7.09:1 on bg · 4.73:1 on top */
+  --color-audio-accent: #f2913d; /* brand Saffron — 7.87:1 on bg · 5.30:1 on top */
   --color-audio-raised: #241e19; /* menus and the surface under a control;
                                     ink/55 lands 5.15:1 on it */
 
@@ -339,7 +362,7 @@
   --app-header-h: calc(env(safe-area-inset-top) + 3.5625rem);
 
   /* active workspace identity colour — set inline by the shell */
-  --ws-color: #a64e12;
+  --ws-color: #b64416;
   /* The same accent, but for text and hairlines rather than fills. A single
      colour cannot be legible on both a near-white page and a near-black one:
      these accents clear AA as text on the light and sepia surfaces and land
@@ -471,7 +494,7 @@
   --color-ink-soft: #756449;
   --color-muted: #a1937c;
   --color-rule: #ddcdb0;
-  --color-danger: #a83027;
+  --color-danger: #9a1238; /* 7.8:1 on card */
   --color-success: #3a6645;
   --color-success-tint: #e6eedd;
   /* ink-soft clears 4.57:1 on this tint too, for a line set under a caution */
@@ -482,7 +505,7 @@
   /* Light's #FDF3EA is within a shade of this card (#FCF6EC), so folder count
      chips, unread rows and Settings' "you are here" wash vanished on sepia.
      Sepia's own audio tile: 1.11:1 off the card, accent-ink 4.74:1 on it. */
-  --color-accent-tint: #f8e9d8;
+  --color-accent-tint: #faede0; /* accent-ink on it 4.77:1 */
 
   /* The same four pairs, warmed onto sepia paper. Glyphs measure 5.35 / 5.22 /
      5.55 / 4.97 on their own tiles. */
@@ -512,7 +535,7 @@
   --color-rule: #2e2921;
   /* Lifted well off the light value — a 5:1 red on white is a 1.6:1 red on a
      near-black card, and the bin has to be findable in both. */
-  --color-danger: #f08a80;
+  --color-danger: #f49ab8;
   --color-success: #8cc29a;
   --color-success-tint: #1f2a22;
   --color-warning: #e3b363;
@@ -526,7 +549,7 @@
      2.9:1 on the sutra card. The ink is the same 55% lift the workspace inks
      take (6.0:1 on the sutra card, 4.8:1 on its Hide chip); the tint is a warm
      step above the card that the lifted inks clear at 5.5–5.9:1. */
-  --color-accent-ink: #c4916b;
+  --color-accent-ink: #f2913d; /* brand Saffron — 7.3:1 on card, 6.6:1 on its tint */
   --color-accent-tint: #2e2119;
 
   /* Inverted rather than dimmed: on a near-black card the pale tiles would be
@@ -580,18 +603,18 @@
   --color-surface: #faf7f3;
   --color-canvas: #efeae3;
   --color-card: #ffffff;
-  --color-ink: #1a1613;
+  --color-ink: #2b1e16;
   --color-ink-soft: #4a413a;
   --color-muted: #9c9187;
   --color-rule: #e4dbd1;
-  --color-danger: #b3261e;
+  --color-danger: #9f1239;
   --color-success: #3d6b4a;
   --color-success-tint: #edf4ee;
   --color-warning: #8a5a14;
   --color-warning-tint: #fbefd9;
 
   --color-inset: #f7f3ec;
-  --color-accent-ink: #a64e12;
+  --color-accent-ink: #b64416;
   --color-accent-tint: #fdf3ea;
 
   --color-kind-doc: #e6e1f5;
