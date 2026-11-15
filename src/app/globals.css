@@ -131,6 +131,14 @@
      in every theme: it darkens whatever is under it, so it needs no restating. */
   --color-scrim: rgb(0 0 0 / 0.45);
 
+  /* Two curves for the whole app: things arrive on `enter` and leave on
+     `exit` (15 Nov 2026). There were six, three of them near-copies of the
+     enter curve. The launch screen's own (`0.215, 0.61, 0.355, 1`) and the
+     nav progress creep are choreography with their own timing, and keep it.
+     Read as `ease-enter` / `ease-exit` utilities too. */
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 0.9, 0.6);
+
   /* A sunk panel *inside* a card — the note block under a highlight, the track
      a segmented control's pill slides along, the counter strip on a filter
      sheet. `canvas` cannot do this job: canvas is the ground a card sits on,
@@ -1164,7 +1172,7 @@ html[data-reading="1"] body {
 /* ---- immersive chrome ---- */
 .reader-chrome {
   transition:
-    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.26s var(--ease-enter),
     opacity 0.18s ease;
 }
 .reader-chrome[data-hidden="true"] {
@@ -1313,7 +1321,7 @@ html[data-reading="1"] body {
 
 /* bottom sheets (workspace switcher) */
 .ws-sheet {
-  animation: sheet-up 0.22s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: sheet-up 0.22s var(--ease-enter) 1;
 }
 .ws-sheet-backdrop {
   background: var(--color-scrim);
@@ -1339,10 +1347,10 @@ html[data-reading="1"] body {
    a set reads as moving along it rather than as one picture being swapped
    for another. Short — a reader flicking through forty should never wait. */
 .lightbox-from-next {
-  animation: lightbox-from-next 0.32s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: lightbox-from-next 0.32s var(--ease-enter) 1;
 }
 .lightbox-from-prev {
-  animation: lightbox-from-prev 0.32s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: lightbox-from-prev 0.32s var(--ease-enter) 1;
 }
 @keyframes lightbox-from-next {
   from {
@@ -1360,7 +1368,7 @@ html[data-reading="1"] body {
 /* the centred desktop modal (`Dialog`) — rises a little and fades, rather
    than travelling the whole screen height the way a sheet does */
 .ws-dialog {
-  animation: dialog-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: dialog-in 0.22s var(--ease-enter) 1;
 }
 @keyframes dialog-in {
   from {
@@ -1444,11 +1452,11 @@ html[data-reading="1"] body {
  * as it lands. The pill's own entrance is deliberately shorter than the exit,
  * so it appears to be uncovered by the sheet rather than to follow it. */
 .audio-mode-in {
-  animation: audio-mode-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: audio-mode-up 0.3s var(--ease-enter) 1;
   transform-origin: 50% 100%;
 }
 .audio-mode-out {
-  animation: audio-mode-down 0.26s cubic-bezier(0.4, 0, 0.9, 0.6) 1 forwards;
+  animation: audio-mode-down 0.26s var(--ease-exit) 1 forwards;
   transform-origin: 50% 100%;
 }
 /* The pill opening. Not a shared-element transition either — it is the exit
@@ -1500,10 +1508,10 @@ html[data-reading="1"] body {
  * `translate`/`scale` rather than `transform`, so nothing here fights the
  * pill's own transform if it ever gets one. */
 .player-pill-in {
-  animation: player-pill-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: player-pill-up 0.28s var(--ease-enter) 1;
 }
 .player-pill-out {
-  animation: player-pill-down 0.28s cubic-bezier(0.4, 0, 0.8, 0.4) 1;
+  animation: player-pill-down 0.28s var(--ease-exit) 1;
   animation-fill-mode: forwards;
 }
 @keyframes player-pill-up {
@@ -1698,7 +1706,7 @@ a[data-nav-pending] {
    entrance — a card this size flew in from a full card-height below, which is
    a lot of movement to announce a hint nobody asked for. */
 .coach-card {
-  animation: coach-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: coach-in 0.32s var(--ease-enter) 1;
 }
 @keyframes coach-in {
   from {
@@ -1862,7 +1870,7 @@ html[data-first-run] body > :not(.launch) {
    fade, and three percent of scale — because nothing is being replaced there
    and the movement has to say "beside", not "instead of". */
 .launch-panel {
-  animation: launch-page 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: launch-page 0.42s var(--ease-enter) both;
 }
 @keyframes launch-page {
   from {
@@ -1991,7 +1999,7 @@ html[data-first-run] body > :not(.launch) {
 .disclosure {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: grid-template-rows 0.22s var(--ease-enter);
 }
 .disclosure[data-open="true"] {
   grid-template-rows: 1fr;
@@ -2129,10 +2137,10 @@ html[data-first-run] body > :not(.launch) {
 /* A conversation arriving: the question rises into place, then its answer
    follows a beat later — the thread builds downward the way it is read. */
 .assistant-turn-in {
-  animation: assistant-rise 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: assistant-rise 360ms var(--ease-enter) both;
 }
 .assistant-answer-in {
-  animation: assistant-rise 360ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms both;
+  animation: assistant-rise 360ms var(--ease-enter) 120ms both;
 }
 @keyframes assistant-rise {
   from {

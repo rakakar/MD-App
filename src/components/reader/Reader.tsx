@@ -8,7 +8,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { CoachMark } from "@/components/onboarding/CoachMark";
-import { Icon } from "@/components/shell/icons";
+import { CloseIcon, Icon } from "@/components/shell/icons";
 import { planReading } from "@/components/player/deviceSpeech";
 import {
   activeRendition,
@@ -207,6 +207,11 @@ interface Selection {
    * the first paragraph, all of the text, and the first paragraph's span.
    */
   parts?: { para: Paragraph; text: string; span?: { start: number; end: number } }[];
+}
+
+/** The printed footnotes of every paragraph a selection touches, for Copy and Share. */
+function footnotesOf(s: Selection): string[] {
+  return (s.parts ?? [s]).map((p) => p.para.footnote_text).filter(Boolean);
 }
 
 /**
@@ -670,8 +675,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         setChapterLoading(false);
         showToast(
           result.reason === "offline"
-            ? { text: "You're offline and this chapter isn't downloaded." }
-            : { text: "Couldn't load this chapter.", retry: { n, ...opts } }
+            ? { text: "You’re offline and this chapter isn’t downloaded." }
+            : { text: "Couldn’t load this chapter.", retry: { n, ...opts } }
         );
         return null;
       }
@@ -1121,7 +1126,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // scrollable table
     if (
       el.closest(
-        "[data-reader-chrome],[data-paribhasha],a,button,input,textarea,select,label,table"
+        "[data-reader-chrome],[data-paribhasha],[data-footnote],a,button,input,textarea,select,label,table"
       )
     ) {
       gesture.current = null;
@@ -1582,6 +1587,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     async (s: Selection) => {
       const text = shareCitation({
         passage: s.text || s.para.text_hi,
+        footnotes: footnotesOf(s),
         bookTitle: book.title_hi,
         ref: s.para.canonical_ref,
         origin: window.location.origin,
@@ -1608,6 +1614,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         await navigator.clipboard.writeText(
           shareCitation({
             passage: s.text || s.para.text_hi,
+            footnotes: footnotesOf(s),
             bookTitle: book.title_hi,
             ref: s.para.canonical_ref,
             origin: window.location.origin,
@@ -2270,9 +2277,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 type="button"
                 onClick={() => setResumeHint(null)}
                 aria-label="Dismiss resume suggestion"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors active:bg-white/10"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors active:bg-white/10"
               >
-                ✕
+                <CloseIcon className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -2832,7 +2839,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           is often not announced at all, because there was no region yet to
           watch for the change. */}
       <div
-        className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
+        className="pointer-events-none fixed inset-x-0 z-55 flex justify-center px-4"
         style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
       >
         <div role="status">
@@ -3079,7 +3086,7 @@ const ParaWrap = memo(function ParaWrap({
           aria-hidden
           data-not-text
           lang="hi"
-          className="hi hi-tight absolute -left-32 top-[0.5em] hidden w-20 text-right text-sm tracking-wide text-(--reader-ink-soft) lg:block max-[90rem]:group-data-[panel=open]/reader:hidden"
+          className="hi hi-tight absolute -left-32 top-[0.5em] hidden w-20 text-right text-sm text-(--reader-ink-soft) lg:block max-[90rem]:group-data-[panel=open]/reader:hidden"
         >
           {gutter}
         </p>

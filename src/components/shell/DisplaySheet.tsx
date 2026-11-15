@@ -189,7 +189,7 @@ export function DisplayControls({ variant = "sheet" }: { variant?: "sheet" | "di
         <h3 className="mb-2 text-sm font-medium">Theme</h3>
         <ThemeSwatches />
         <p className="mt-2 text-xs text-ink-soft">
-          Auto follows your device&apos;s light and dark setting, and changes with it.
+          Auto follows your device’s light and dark setting, and changes with it.
         </p>
         {/* Why a book can stay cream in a dark app (15 Nov 2026). The two are
             separate on purpose — see "Six themes in the reader sheet" in the
@@ -252,7 +252,7 @@ export function DisplayControls({ variant = "sheet" }: { variant?: "sheet" | "di
           aria-label="Bold text"
           onClick={() => setBoldText(!boldText)}
           className={`relative h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-[''] ${
-            boldText ? "" : "bg-ink/20"
+            boldText ? "" : "bg-muted"
           }`}
           style={boldText ? { background: "var(--ws-color)" } : undefined}
         >
@@ -329,7 +329,7 @@ function DialogControls() {
         <h3 className="mb-3 text-sm font-semibold">Theme</h3>
         <ThemePages />
         <p className="mt-4 text-xs text-ink-soft">
-          Auto follows your device&apos;s light and dark setting, and changes with it.
+          Auto follows your device’s light and dark setting, and changes with it.
         </p>
         {/* Why a book can stay cream in a dark app (15 Nov 2026). The two are
             separate on purpose — see "Six themes in the reader sheet" in the
@@ -388,7 +388,7 @@ function DialogControls() {
           aria-checked={boldText}
           aria-label="Bold text"
           onClick={() => setBoldText(!boldText)}
-          className={`relative h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors ${boldText ? "" : "bg-ink/20"}`}
+          className={`relative h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors ${boldText ? "" : "bg-muted"}`}
           style={boldText ? { background: "var(--ws-color)" } : undefined}
         >
           <span

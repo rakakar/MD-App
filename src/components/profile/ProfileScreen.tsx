@@ -23,7 +23,7 @@ import { signInHref } from "@/lib/routes";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import type { BookSummary, MeUser } from "@/lib/types";
 
-const CARD = "overflow-hidden rounded-card border border-rule bg-card";
+const CARD = "overflow-hidden rounded-card border border-rule bg-card shadow-card";
 
 /** The quiet bordered button — Change, Edit, Sign out — as Settings draws it. */
 const ROW_BUTTON_BASE =
@@ -110,7 +110,7 @@ export function ProfileScreen() {
   return (
     <AppAccent>
       <div className="min-h-full bg-canvas lg:bg-surface">
-        <div className="mx-auto w-full max-w-3xl px-4 pb-12 pt-3 sm:px-6 lg:px-10 lg:pt-10 xl:max-w-6xl">
+        <div className="mx-auto w-full max-w-3xl px-4 pb-12 pt-5 sm:px-6 lg:px-10 lg:pt-10 xl:max-w-6xl">
           <div className="flex items-center gap-2 lg:mb-8">
             <span className="lg:hidden">
               <BackButton />
@@ -122,7 +122,7 @@ export function ProfileScreen() {
               details card was left 264px wide, one letter to a line. */}
           <div className="mt-6 lg:mt-0 xl:grid xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:items-start xl:gap-10">
             {/* The reader, and where they are on the path. */}
-            <div className="flex flex-col gap-8 lg:gap-6">
+            <div className="flex flex-col gap-8">
               {identity}
               <JourneyCard
                 desktop={desktop}

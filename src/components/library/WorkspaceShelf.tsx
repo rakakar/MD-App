@@ -1,4 +1,5 @@
 import { FileList } from "./FileList";
+import { count } from "@/lib/labels";
 import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
@@ -249,9 +250,9 @@ export async function WorkspaceShelf({
   const meta =
     !finding && (itemCount > 0 || doors.length > 0) ? (
       <>
-        {itemCount > 0 && <>{itemCount} items</>}
+        {itemCount > 0 && count(itemCount, "item")}
         {itemCount > 0 && doors.length > 0 && " · "}
-        {doors.length > 0 && <>{doors.length} collections</>}
+        {doors.length > 0 && count(doors.length, "collection")}
       </>
     ) : null;
   const heading = (
@@ -475,7 +476,7 @@ export async function WorkspaceShelf({
                  a name and a weight — all of which survive half a screen — and
                  the shelf a reader came to browse fits on one screen instead of
                  scrolling past its own controls. */
-              <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {doors.map((door) => (
                   <li key={door.id} className="contents">
                     <DoorCard door={door} rollup={rollup} shelves={shelves} />

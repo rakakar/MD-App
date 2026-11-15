@@ -53,7 +53,7 @@ export function useUndoToast(): [ReactNode, (message: string, undo: () => void) 
       role="status"
       aria-live="polite"
       // Above the bottom nav on a phone, the same band Settings' toast uses.
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 lg:bottom-8"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-55 flex justify-center px-4 lg:bottom-8"
     >
       {offer && (
         <div

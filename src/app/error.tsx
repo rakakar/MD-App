@@ -30,9 +30,9 @@ export default function ErrorScreen({
 
   return (
     <div className="flex min-h-[60dvh] flex-col items-center justify-center px-6 text-center">
-      <h1 className="text-lg font-semibold">This screen didn&apos;t load</h1>
+      <h1 className="text-lg font-semibold">This screen didn’t load</h1>
       <p className="mt-1 max-w-xs text-sm text-ink-soft">
-        Sorry — something broke on our side. Telling us takes a moment and we&apos;ll have the
+        Sorry — something broke on our side. Telling us takes a moment and we’ll have the
         details already.
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-3">

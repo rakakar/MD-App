@@ -96,8 +96,8 @@ export function usePush() {
     if (result.reason === "unsupported") {
       setError(
         native
-          ? "This version of the app can't show notifications — please update it."
-          : "This browser can't show notifications."
+          ? "This version of the app can’t show notifications — please update it."
+          : "This browser can’t show notifications."
       );
     } else {
       // A reader gets a plain sentence; the raw reason (a service-worker or

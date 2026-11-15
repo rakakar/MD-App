@@ -17,7 +17,7 @@ export default function Loading() {
       <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {Array.from({ length: 8 }, (_, i) => (
           <li key={i} className="flex flex-col gap-1">
-            <Skeleton className="aspect-[3/4] w-full rounded-cover" />
+            <Skeleton className="aspect-[102/139] w-full rounded-cover" />
             <Skeleton className="mt-1.5 h-4 w-5/6 rounded-md" />
             <Skeleton className="h-4 w-1/2 rounded-md" />
           </li>

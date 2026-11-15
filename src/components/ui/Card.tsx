@@ -53,7 +53,7 @@ export function CollectionCard({
       href={href}
       // h-full so two cards in a grid row match height whatever their titles
       // do, and the meta lines below them stay on one baseline.
-      className="group flex h-full flex-col rounded-card border border-rule bg-card p-4 shadow-card transition-shadow hover:shadow-raised"
+      className="group flex h-full flex-col rounded-card border border-rule bg-card p-4 shadow-card transition-[box-shadow,transform] hover:shadow-raised active:scale-[0.99] active:shadow-none"
     >
       <KindTile kind={kind} cover={cover} />
       {eyebrow && (
@@ -120,7 +120,7 @@ export function StatTile({
       // could not do this: with a definite width the ratio gives a definite
       // height, and content simply overflows it. `min-h-full` keeps all three
       // level once one of them has grown.
-      className="grid min-h-full grid-cols-1 rounded-card border border-rule bg-card p-3 shadow-card transition-shadow hover:shadow-raised"
+      className="grid min-h-full grid-cols-1 rounded-card border border-rule bg-card p-3 shadow-card transition-[box-shadow,transform] hover:shadow-raised active:scale-[0.99] active:shadow-none"
     >
       <span aria-hidden className="col-start-1 row-start-1 aspect-square w-full" />
       <span className="col-start-1 row-start-1 flex flex-col gap-1.5">

@@ -1,5 +1,7 @@
 "use client";
 
+import { SrName } from "@/components/ui";
+import { count } from "@/lib/labels";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
@@ -144,7 +146,7 @@ function PdfRow({
   const large = (file.file_size ?? 0) >= LARGE_BYTES;
   const pages = file.page_count ? `${file.page_count} pp` : "";
   // Spelt out on a phone, where it is a line of words rather than a column.
-  const pagesWord = file.page_count ? `${file.page_count} pages` : "";
+  const pagesWord = file.page_count ? count(file.page_count, "page") : "";
   const size = formatBytes(file.file_size);
   const t = contentLang(file.title);
 
@@ -222,10 +224,10 @@ function PdfRow({
       </span>
       <a
         {...downloadProps(file.url, file.title)}
-        aria-label={`Download ${file.title}`}
         title={size ? `Download · ${size}` : "Download"}
         className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
       >
+        <SrName verb="Download" name={file.title} />
         <DownloadIcon className="h-4 w-4" />
       </a>
       {/* On a phone too, now that it holds Save offline — the one way to

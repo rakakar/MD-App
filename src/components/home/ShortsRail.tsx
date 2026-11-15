@@ -67,7 +67,7 @@ export function ShortsRail({ shorts }: { shorts: Short[] }) {
               >
                 <PlayIcon className="h-3.5 w-3.5" />
               </span>
-              <span className="absolute right-2.5 top-2.5 rounded-md bg-black/45 px-1.5 py-0.5 text-xs font-semibold tabular-nums backdrop-blur-sm">
+              <span className="absolute right-2.5 top-2.5 rounded-md bg-black/75 px-1.5 py-0.5 text-xs font-semibold tabular-nums">
                 {shortDuration(s.seconds)}
               </span>
               <span

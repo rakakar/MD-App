@@ -561,7 +561,7 @@ function SourceToggle({
         aria-label="Show book & page"
         onClick={() => set(!on)}
         className={`relative h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-[''] ${
-          on ? "" : "bg-ink/20"
+          on ? "" : "bg-muted"
         }`}
         style={on ? { background: "var(--ws-color)" } : undefined}
       >

@@ -90,12 +90,13 @@ export function ViewToggle({
             aria-label={label}
             title={label}
             onClick={() => onView(value)}
-            // The app's one selected-segment look, at icon size — see
-            // `SEGMENT_TRACK` in `ui/Segmented`.
+            // The raised segment (`SEGMENT_ON_RAISED` in `ui/Segmented`), at
+            // icon size: a card with an accent ring and a dark glyph. It was a
+            // filled square, which said "selected" by colour alone (15 Nov
+            // 2026). Still 36px: at 44 the chips beside it ran off a 390pt row.
             className={`flex h-9 w-9 items-center justify-center rounded-control transition-colors ${
-              active ? "text-white" : "text-ink-soft"
+              active ? "bg-card text-ink shadow-card inset-ring inset-ring-(color:--ws-ink)" : "text-ink-soft"
             }`}
-            style={active ? { background: "var(--ws-color)" } : undefined}
           >
             {icon}
           </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { CloseIcon } from "@/components/shell/icons";
 import type { Deleted } from "./TocSheet";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -160,9 +161,9 @@ export function ReaderSidePanel({
           type="button"
           onClick={onClose}
           aria-label="Close panel"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-(--reader-ink-soft) transition-colors hover:bg-current/5"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-(--reader-ink-soft) transition-colors hover:bg-current/5"
         >
-          ✕
+          <CloseIcon className="h-4 w-4" />
         </button>
       </div>
 

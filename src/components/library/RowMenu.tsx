@@ -1,5 +1,6 @@
 "use client";
 
+import { SrName } from "@/components/ui";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CopyIcon, ShareIcon } from "@/components/shell/icons";
@@ -68,9 +69,9 @@ export function RowMenu({
         }}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`More for ${label}`}
         className="flex h-11 w-11 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
       >
+        <SrName verb="More for" name={label} />
         <svg viewBox="0 0 24 24" fill="currentColor" className="h-4.5 w-4.5" aria-hidden>
           <circle cx="5" cy="12" r="1.6" />
           <circle cx="12" cy="12" r="1.6" />

@@ -36,10 +36,10 @@ export function NotificationSetting({ desktop }: { desktop: boolean }) {
           title="Notifications"
           description={
             status === "granted"
-              ? "You'll hear about new chapters, shivirs and announcements."
+              ? "You’ll hear about new chapters, shivirs and announcements."
               : status === "denied"
                 ? native
-                  ? "Turned off in your phone's settings."
+                  ? "Turned off in your phone’s settings."
                   : "Blocked in your browser settings."
                 : status === "ios-install"
                   ? "Available once the app is on your home screen."
@@ -70,14 +70,14 @@ export function NotificationSetting({ desktop }: { desktop: boolean }) {
           (native ? (
             <p className={box}>
               Notifications are switched off for MD Study. Only you can turn them back on — open
-              your phone&apos;s <strong>Settings</strong>, then <strong>Apps</strong> →{" "}
+              your phone’s <strong>Settings</strong>, then <strong>Apps</strong> →{" "}
               <strong>MD Study</strong> → <strong>Notifications</strong>.
             </p>
           ) : (
             <p className={box}>
               Your browser is blocking notifications for this site. Only you can undo that — look
-              for the lock or ⓘ icon beside the address, or this site&apos;s entry in your
-              browser&apos;s notification settings.
+              for the lock or ⓘ icon beside the address, or this site’s entry in your
+              browser’s notification settings.
             </p>
           ))}
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}

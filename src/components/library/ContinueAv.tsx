@@ -513,7 +513,7 @@ function ResumeCard({
             alt=""
             loading="lazy"
             aria-hidden
-            className="aspect-video h-11 shrink-0 rounded-lg bg-black object-cover"
+            className="aspect-video h-11 shrink-0 rounded-cover bg-black object-cover"
           />
         ) : (
           <span

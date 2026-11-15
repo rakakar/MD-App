@@ -140,7 +140,7 @@ export function PdfScreen({
               className="mt-2 text-xs font-semibold underline underline-offset-2"
               style={{ color: "var(--ws-ink)" }}
             >
-              Open it in your browser&apos;s viewer instead
+              Open it in your browser’s viewer instead
             </button>
           </div>
         </div>

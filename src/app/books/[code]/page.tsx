@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { count } from "@/lib/labels";
 import { notFound, redirect } from "next/navigation";
 import { BookHeroActions } from "@/components/books/BookHeroActions";
 import { BookHeroDesktop } from "@/components/books/BookHeroDesktop";
@@ -267,7 +268,7 @@ export default async function BookDetailPage({
                 {mainChapters.length > 0 &&
                   `${mainChapters.length} ${mainChapters.length === 1 ? "chapter" : "chapters"}`}
                 {mainChapters.length > 0 && book.page_count ? " · " : ""}
-                {book.page_count ? `${book.page_count} pages` : ""}
+                {book.page_count ? count(book.page_count, "page") : ""}
               </span>
             )}
             {/*
@@ -330,7 +331,14 @@ export default async function BookDetailPage({
         or bookmark breaks on that day.
       */}
       {book.is_pdf_only ? (
-        <section id="pdf" className="mt-7 scroll-mt-4">
+        <section
+          id="pdf"
+          // Clear of the sticky app bar, not 16px under it: "Read PDF" landed
+          // with the card's top hidden (15 Nov 2026). Here and not as a global
+          // `scroll-padding`, which would also move the reader's paragraph
+          // anchors.
+          className="mt-7 scroll-mt-[calc(var(--app-header-h,3.5625rem)+1rem)]"
+        >
           <p className="rounded-2xl border border-rule bg-card p-4 text-sm text-ink-soft">
             <span className="font-semibold text-ink">
               This book is currently available as a PDF.
@@ -410,7 +418,7 @@ export default async function BookDetailPage({
 /** A fact chip on the tinted hero (design 1C) — translucent white, not paper. */
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-[7px] bg-white/15 px-2 py-0.5 text-xs font-semibold text-white/90">
+    <span className="rounded-control bg-white/15 px-2 py-0.5 text-xs font-semibold text-white/90">
       {children}
     </span>
   );

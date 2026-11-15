@@ -1,5 +1,6 @@
 "use client";
 
+import { CloseIcon } from "@/components/shell/icons";
 import { useState } from "react";
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import {
@@ -483,7 +484,7 @@ export function SettingsPanel(
           aria-label="Close settings"
           className="flex h-11 w-11 items-center justify-center rounded-control text-(--reader-ink-soft) transition-colors hover:bg-current/5"
         >
-          ✕
+          <CloseIcon className="h-4 w-4" />
         </button>
       </div>
 

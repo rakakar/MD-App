@@ -218,7 +218,7 @@ function StateDialog({ onClose, states, selected, onSelect }: StatePickerProps) 
           onChange={setQuery}
           onSubmit={() => undefined}
           onClear={() => setQuery("")}
-          placeholder="Search state"
+          placeholder="Search states…"
           label="Search states"
         />
       </div>

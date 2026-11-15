@@ -46,10 +46,10 @@ export function ForgotPassword() {
       } else if (res.status === 429) {
         setError("Too many codes asked for. Please wait a few minutes and try again.");
       } else {
-        setError(res.errors?.[0]?.message ?? "Couldn't send the code. Please try again.");
+        setError(res.errors?.[0]?.message ?? "Couldn’t send the code. Please try again.");
       }
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      setError("Couldn’t reach the server. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -75,12 +75,12 @@ export function ForgotPassword() {
         const err = res.errors?.[0];
         setError(
           err?.param === "key"
-            ? "That code doesn't match. Check your email and try again."
-            : (err?.message ?? "Couldn't change the password. Please try again.")
+            ? "That code doesn’t match. Check your email and try again."
+            : (err?.message ?? "Couldn’t change the password. Please try again.")
         );
       }
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      setError("Couldn’t reach the server. Please try again.");
     } finally {
       setBusy(false);
     }

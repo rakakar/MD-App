@@ -326,7 +326,7 @@ export function AudioMode({
           })}
           {lines.length === 0 && (
             <p className="py-10 text-center text-sm text-audio-ink/60">
-              The text of this chapter isn&apos;t here.
+              The text of this chapter isn’t here.
             </p>
           )}
         </div>
@@ -815,7 +815,7 @@ function DesktopAudioMode({
               );
             })}
             {lines.length === 0 && (
-              <p className="py-10 text-sm text-audio-ink/60">The text of this chapter isn&apos;t here.</p>
+              <p className="py-10 text-sm text-audio-ink/60">The text of this chapter isn’t here.</p>
             )}
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { count } from "@/lib/labels";
 import { scrollBehavior } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -98,7 +99,7 @@ export function AssistantScreen() {
       ? "All books"
       : shownScope.length === 1
         ? (books?.find((b) => b.code === shownScope[0])?.title_hi ?? "1 book")
-        : `${shownScope.length} books`;
+        : count(shownScope.length, "book");
   const [text, setText] = useState("");
   const [quota, setQuota] = useState<ChatQuota | null>(null);
   const [listening, setListening] = useState(false);

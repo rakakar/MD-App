@@ -376,7 +376,7 @@ export function ReaderBottomBar({
             onClick={onListen}
             aria-label={
               deviceFallback
-                ? "Listen with your phone's voice — no recording of this chapter"
+                ? "Listen with your phone’s voice — no recording of this chapter"
                 : "Listen to this chapter"
             }
             aria-pressed={listening}

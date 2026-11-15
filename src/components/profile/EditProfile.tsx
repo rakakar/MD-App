@@ -74,7 +74,7 @@ export function EditProfile({
     } catch (err) {
       const byField = fieldErrorsOf(err);
       if (byField) setFieldErrors(byField);
-      else setError("Couldn't save. Please try again.");
+      else setError("Couldn’t save. Please try again.");
     } finally {
       setBusy(false);
     }

@@ -392,6 +392,13 @@ depart from a comp or from what this file said before.
 | Voice input: a hand-built sheet | `ui/Sheet`: status as the sheet title, language choice centred under it, the standard close as well as the comp's round ✕ | It had no close, no focus handling and no scroll lock. |
 | Feedback status pills in Tailwind amber/emerald at 11px | `--color-warning` / `--color-warning-tint` (new, per theme) and the success pair, at 13px | They did not follow the theme. |
 | Two page-title literals | `--text-display` (2rem, auth) and `--text-hero` (1.3125rem) | Repeated literals drift. |
+| Grid/List toggle selected as a filled square | The raised segment at icon size: card, `--ws-ink` inset ring, ink glyph | Selection was colour alone. Kept at 36px: at 44 the chips beside it run off a 390pt row. |
+| Collection grids two-up until 1024px | Three-up from `sm`, 12px gaps — as the book shelves | The same tablet showed books 3-up and collections 2-up. |
+| Off switch track at ink/15–20 | `bg-muted` | An inactive control is muted's documented job; the track was 1.4:1. |
+| Toasts on z-50 with Audio Mode | `z-55`: above full-screen takeovers, below sheets (60) | Which one won depended on document order. |
+| Six easing curves | `--ease-enter` and `--ease-exit` (also `ease-enter` / `ease-exit` utilities) | Three were near-copies of the enter curve. The launch screen and the nav progress line keep their own. |
+| Shorts advance at a clip's end | Not under Reduce Motion: the clip stops on its last frame | A whole screen moving by itself is what that setting asks to stop. |
+| Interface copy with straight apostrophes | ’ in every user-visible string (82, by the TypeScript parser, so no comment or code was touched) | Two spellings of one sentence across screens. |
 
 ---
 

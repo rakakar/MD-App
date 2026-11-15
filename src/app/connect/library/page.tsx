@@ -12,7 +12,7 @@ export const revalidate = 900;
 
 export const metadata: Metadata = {
   title: "Connect · Library",
-  description: "Centres, programmes, contacts and participation — Connect's own material.",
+  description: "Centres, programmes, contacts and participation — Connect’s own material.",
 };
 
 /**

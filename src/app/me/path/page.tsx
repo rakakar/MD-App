@@ -14,9 +14,9 @@ import {
   type Stage,
   type StageTab,
 } from "@/lib/journey";
-import { KindTile } from "@/components/ui";
+import { KindTile, useUndoToast } from "@/components/ui";
 import { journeyFolderHref } from "@/lib/routes";
-import { getPrefs } from "@/lib/storage";
+import { getPrefs, setPrefs } from "@/lib/storage";
 
 /**
  * **The full path** — opt-in, reached from the dashboard (full path revision
@@ -34,7 +34,9 @@ import { getPrefs } from "@/lib/storage";
  * over", and the foot says the path is one student's estimate of their own
  * journey. Nothing here is locked and
  * nothing is ticked off: the one mark is "You are here", against the stage
- * the reader themselves declared.
+ * the reader themselves declared — and since 15 Nov 2026 every stage can be
+ * declared from here ("This is where I am", with Undo), which the first-run
+ * picker's five answers could not do for stages 3 and 6 to 9.
  */
 export default function FullPathPage() {
   return (
@@ -65,6 +67,22 @@ function FullPath() {
   useEffect(() => {
     setDeclared(getPrefs().journeyStage);
   }, []);
+
+  const [undoToast, offerUndo] = useUndoToast();
+  /**
+   * Declare a stage. The answer that set the old one is cleared: it named
+   * where the reader was, and no longer does. Undo puts both back.
+   */
+  const declare = (stage: Stage) => {
+    const prev = getPrefs();
+    const before = { journeyStage: prev.journeyStage, journeyAnswer: prev.journeyAnswer };
+    setPrefs({ journeyStage: stage.id, journeyAnswer: null });
+    setDeclared(stage.id);
+    offerUndo(`Stage ${stage.id} is now where you are`, () => {
+      setPrefs(before);
+      setDeclared(before.journeyStage);
+    });
+  };
 
   const picked = stageById(Number(params.get("stage")));
   const tabParam = params.get("tab");
@@ -101,6 +119,8 @@ function FullPath() {
               tab={tab}
               onTab={(t) => router.replace(`/me/path?stage=${picked.id}${t === "about" ? "" : `&tab=${t}`}`, { scroll: false })}
               variant="screen"
+              here={picked.id === declared}
+              onSetHere={() => declare(picked)}
             />
           </div>
         </div>
@@ -210,8 +230,11 @@ function FullPath() {
           tab={tab}
           onTab={(t) => go(selected.id, t)}
           variant="panel"
+          here={selected.id === declared}
+          onSetHere={() => declare(selected)}
         />
       </div>
+      {undoToast}
     </div>
   );
 }

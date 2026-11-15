@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "MD Study — Madhyasth Darshan",
     short_name: "MD Study",
     description:
-      "Read A. Nagrajji's books, listen to discourses, study translations and resources.",
+      "Read A. Nagrajji’s books, listen to discourses, study translations and resources.",
     start_url: "/",
     display: "standalone",
     // browsers that support it get the edge-to-edge treatment; the rest fall

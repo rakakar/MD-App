@@ -1,5 +1,6 @@
 "use client";
 
+import { count } from "@/lib/labels";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
@@ -16,7 +17,7 @@ import { useDownloads } from "@/lib/useDownloads";
 type Filter = "all" | "books" | "pdfs" | "audio";
 type Sort = "recent" | "size";
 
-const CARD = "rounded-card border border-rule bg-card";
+const CARD = "rounded-card border border-rule bg-card shadow-card";
 const EYEBROW = "text-xs font-bold uppercase tracking-[0.09em] text-ink-soft";
 /** an audio group shows this many chapters before "Show more" */
 const GROUP_PREVIEW = 3;
@@ -252,7 +253,7 @@ export function DownloadsScreen() {
                             title={b.title_hi}
                             meta={
                               <>
-                                {`${b.chapter_count} chapters${size ? ` · ${formatBytes(size)}` : ""}`}
+                                {`${count(b.chapter_count, "chapter")}${size ? ` · ${formatBytes(size)}` : ""}`}
                                 {heard ? <span style={{ color: "var(--ws-ink)" }}>{` · ${heard} audio`}</span> : null}
                               </>
                             }
@@ -279,7 +280,7 @@ export function DownloadsScreen() {
                           check={check(`pdf:${p.id}`, p.title)}
                           thumb={<KindTile kind="pdf" cover={p.thumbnail_url} size="md" />}
                           title={p.title}
-                          meta={[p.folder, p.page_count ? `${p.page_count} pages` : "", formatBytes(p.bytes)]
+                          meta={[p.folder, p.page_count ? count(p.page_count, "page") : "", formatBytes(p.bytes)]
                             .filter(Boolean)
                             .join(" · ")}
                           href={selecting ? undefined : readerPath(p.node, p.id)}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { NodeCardView } from "@/components/library/NodeCard";
 import { EmptyState, PageContainer } from "@/components/ui";
 import { getTopics, openTopic } from "@/lib/api";
@@ -46,8 +46,10 @@ export default async function LibraryTopicPage({
 }) {
   const { topic } = await searchParams;
   // The only thing this page is for. Without a topic there is no "whole
-  // library" list worth showing — that is what the shelves are.
-  if (!topic) notFound();
+  // library" list worth showing — that is what the shelves are, so a bare
+  // /library (the natural guess, trimming a topic link) goes to the Library
+  // shelf rather than to "page not found" (15 Nov 2026).
+  if (!topic) redirect("/originals");
 
   const [row, nodes, shelves] = await Promise.all([
     findTopic(topic),

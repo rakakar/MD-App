@@ -10,7 +10,7 @@ import type { LibraryFindResponse, Topic } from "@/lib/types";
 export const SHELF_METADATA: Metadata = {
   title: "Media · Originals",
   description:
-    "A. Nagraj ji's recorded discourses, satsangs and shivir sessions — every recording in Originals, in one place.",
+    "A. Nagraj ji’s recorded discourses, satsangs and shivir sessions — every recording in Originals, in one place.",
 };
 
 /**

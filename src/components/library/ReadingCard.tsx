@@ -1,5 +1,6 @@
 "use client";
 
+import { count } from "@/lib/labels";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
@@ -50,8 +51,10 @@ import { downloadProps } from "@/lib/download";
  * संवाद and सत्संग: they have editions, they are not books.
  */
 
-/** Matches the tint a PDF gets everywhere else, so one document looks like itself. */
-const TINT = { bg: "#E7E4F1", ink: "#4C4878" };
+/** The document family's tile and ink, so one document looks like itself in
+ *  every theme. It was a private `#4C4878` under white — 2.06:1 against the
+ *  dark card, and a shade off the token it said it matched (15 Nov 2026). */
+const TINT = "bg-kind-doc text-kind-doc-ink";
 
 /**
  * Where this document was left, whichever way it was being read.
@@ -188,8 +191,7 @@ export function ReadingCard({
         />
         <div className="min-w-0 flex-1">
           <span
-            className="inline-block rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em]"
-            style={{ background: TINT.ink, color: "#fff" }}
+            className={`inline-block rounded-control px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em] ${TINT}`}
           >
             Text edition
           </span>
@@ -276,8 +278,7 @@ export function ReadingCard({
             {/* The pill is filled and the document rows have none — a badge
                 on both marks neither. */}
             <span
-              className="shrink-0 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em]"
-              style={{ background: TINT.ink, color: "#fff" }}
+              className={`shrink-0 rounded-control px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em] ${TINT}`}
             >
               Text edition
             </span>
@@ -321,7 +322,7 @@ export function ReadingCard({
       <div className="relative z-10 flex shrink-0 items-center gap-1 border-t border-rule pt-3 sm:border-0 sm:pt-0">
         <Link
           href={pagesHref}
-          title={`Original pages${file.page_count ? ` — ${file.page_count} pages` : ""}`}
+          title={`Original pages${file.page_count ? ` — ${count(file.page_count, "page")}` : ""}`}
           className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-control px-2.5 text-sm text-ink transition-colors hover:bg-ink/5 sm:px-3"
         >
           <DocumentIcon className="h-4 w-4 text-ink-soft" />

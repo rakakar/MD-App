@@ -257,6 +257,12 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
               // that repeats the same sixty seconds asks the viewer to decide
               // when to leave it, and the whole point of the form is that it
               // carries them.
+              //
+              // Except for a viewer who has asked their device for less motion
+              // (15 Nov 2026): a whole screen moving by itself is the thing
+              // that setting is for. The clip stops on its last frame and the
+              // next is a swipe or ↓ away.
+              if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
               stepRef.current(1);
             }
           },

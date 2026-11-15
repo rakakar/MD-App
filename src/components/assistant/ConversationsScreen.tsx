@@ -65,8 +65,8 @@ export function ConversationsScreen() {
 
   return (
     <AppAccent>
-      <div className="mx-auto w-full max-w-3xl px-4 pb-10 sm:px-6">
-        <header className="-mx-4 flex items-center gap-3 border-b border-rule px-4 pb-4 pt-5 sm:-mx-6 sm:px-6">
+      <div className="mx-auto w-full max-w-3xl px-4 pb-10 sm:px-6 lg:px-8">
+        <header className="-mx-4 flex items-center gap-3 border-b border-rule px-4 pb-4 pt-5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <Link
             href="/assistant"
             aria-label="Back to the Assistant"
@@ -100,7 +100,7 @@ export function ConversationsScreen() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search conversations"
+                placeholder="Search conversations…"
                 aria-label="Search conversations"
                 className="ui-hi min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-ink-soft"
               />

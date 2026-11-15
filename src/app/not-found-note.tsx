@@ -19,7 +19,7 @@ export function MovedNote() {
 
   return (
     <p className="mt-4 rounded-2xl border border-rule bg-card p-4 text-sm leading-relaxed">
-      This link points into the library&apos;s old structure. Everything lives in
+      This link points into the library’s old structure. Everything lives in
       one place now — open it from Resources, or search above.
       <span className="mt-1 block text-xs text-ink-soft">
         The library was reorganised into one folder tree; the old collection and

@@ -85,7 +85,7 @@ export function NotificationList({
             ))}
           </ul>
         ) : filter === "unread" && items && items.length > 0 ? (
-          <EmptyState title="You're all caught up" hint="Nothing unread." />
+          <EmptyState title="You’re all caught up" hint="Nothing unread." />
         ) : (
           <EmptyState
             title="No notifications yet"

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { count } from "@/lib/labels";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
 import { ShoppingBagIcon } from "@/components/shell/icons";
@@ -68,7 +69,7 @@ export default async function BooksPage() {
                 <span>
                   {all.length} {all.length === 1 ? "book" : "books"}
                 </span>
-                {pages > 0 && ` · ${pages} pages`}
+                {pages > 0 && ` · ${count(pages, "page")}`}
                 {" · "}
                 <span {...contentLang(all[0].author)}>{all[0].author}</span>
               </>

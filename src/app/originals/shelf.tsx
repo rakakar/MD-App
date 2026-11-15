@@ -17,7 +17,7 @@ const CLOUD_ARCHIVE =
 export const SHELF_METADATA: Metadata = {
   title: "Library · Originals",
   description:
-    "A. Nagraj ji's recordings, photographs, letters and papers — everything in Originals that is not a book.",
+    "A. Nagraj ji’s recordings, photographs, letters and papers — everything in Originals that is not a book.",
 };
 
 /**

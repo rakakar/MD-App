@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { count } from "@/lib/labels";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
 import { ImportantNoteIcon } from "@/components/shell/icons";
@@ -11,7 +12,7 @@ export const revalidate = 900;
 
 export const metadata: Metadata = {
   title: "Translations",
-  description: "A. Nagraj ji's works rendered into other languages.",
+  description: "A. Nagraj ji’s works rendered into other languages.",
 };
 
 export default async function TranslationsHome() {
@@ -42,7 +43,7 @@ export default async function TranslationsHome() {
           all.length > 0 && (
             <>
               {all.length} {all.length === 1 ? "book" : "books"}
-              {pages > 0 && ` · ${pages} pages`}
+              {pages > 0 && ` · ${count(pages, "page")}`}
             </>
           )
         }

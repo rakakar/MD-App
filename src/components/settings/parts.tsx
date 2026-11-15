@@ -33,7 +33,7 @@ export function SettingsSection({
   );
 }
 
-export const CARD = "overflow-hidden rounded-card border border-rule bg-card";
+export const CARD = "overflow-hidden rounded-card border border-rule bg-card shadow-card";
 
 /** Title and a line of explanation, with a switch opposite. */
 export function SwitchRow({
@@ -103,7 +103,7 @@ export function useToast(): [ReactNode, (message: string) => void] {
       role="status"
       aria-live="polite"
       // Above the bottom nav on a phone, the same band the push toast uses.
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 lg:bottom-8"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-55 flex justify-center px-4 lg:bottom-8"
     >
       {message && (
         <p className="flex items-center gap-2.5 rounded-tile bg-overlay px-5 py-3 text-sm font-medium text-white shadow-raised">

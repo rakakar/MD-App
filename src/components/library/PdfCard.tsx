@@ -7,7 +7,7 @@ import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { ReadingCard } from "@/components/library/ReadingCard";
 import { formatBytes } from "@/components/library/format";
 import { AlertIcon, DownloadIcon } from "@/components/shell/icons";
-import { KindTile } from "@/components/ui";
+import { KindTile, SrName } from "@/components/ui";
 import { contentLang } from "@/lib/script";
 import { getPdfPlace } from "@/lib/storage";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
@@ -186,10 +186,10 @@ export function PdfCard({
       */}
       <a
         {...downloadProps(file.url, file.title)}
-        aria-label={`Download ${file.title}`}
         title="Download PDF"
         className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/[.04] hover:text-ink"
       >
+        <SrName verb="Download" name={file.title} />
         <DownloadIcon className="h-4.5 w-4.5" />
       </a>
 

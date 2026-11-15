@@ -34,7 +34,7 @@ export function Switch({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative h-7.5 w-13 shrink-0 rounded-full p-0.5 transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] disabled:opacity-50 ${
-        checked ? "" : "bg-ink/15"
+        checked ? "" : "bg-muted" /* the off track — an inactive control is what `muted` is for; at ink/15 it was 1.4:1 and an off switch nearly vanished (15 Nov 2026) */
       }`}
       style={checked ? { background: "var(--ws-color)" } : undefined}
     >

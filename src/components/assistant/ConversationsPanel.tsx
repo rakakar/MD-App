@@ -94,7 +94,7 @@ export function ConversationsPanel({
       aria-hidden={!open || undefined}
       inert={!open || undefined}
       className={`hidden shrink-0 overflow-hidden lg:block ${
-        animate ? "transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none" : ""
+        animate ? "transition-[width] duration-300 ease-enter motion-reduce:transition-none" : ""
       }`}
       style={{ width: open ? "17.5rem" : 0 }}
     >
@@ -144,7 +144,7 @@ export function ConversationsPanel({
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search conversations"
+                placeholder="Search conversations…"
                 aria-label="Search conversations"
                 className="ui-hi min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-soft"
               />

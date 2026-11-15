@@ -62,8 +62,8 @@ export function OfflineNotice({ placement }: { placement: "header" | "sidebar" |
       <CloudOffIcon className="mt-0.5 h-4.5 w-4.5 shrink-0 text-ink-soft" />
       <span>
         {hit
-          ? `You're offline. ${hit.what} ${hit.verb} internet.`
-          : "You're offline. Downloaded books, saved audio and your notes still work."}{" "}
+          ? `You’re offline. ${hit.what} ${hit.verb} internet.`
+          : "You’re offline. Downloaded books, saved audio and your notes still work."}{" "}
         <Link
           href="/downloads"
           className="inline-flex font-semibold underline underline-offset-2"

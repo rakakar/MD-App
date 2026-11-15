@@ -74,8 +74,13 @@ export function shareCitation({
   ref,
   origin,
   spans,
+  footnotes,
 }: {
   passage?: string;
+  /** the shared paragraphs' printed footnotes, sent under the words they
+   *  annotate — a passage that travels without its footnote can mean
+   *  something else (UX audit RD6, 15 Nov 2026) */
+  footnotes?: string[];
   note?: string;
   bookTitle?: string;
   ref: string;
@@ -88,6 +93,11 @@ export function shareCitation({
   const words = passage?.replace(/\s+/g, " ").trim();
   return [
     words ? `“${words}”` : "",
+    (footnotes ?? [])
+      .map((f) => f.trim())
+      .filter(Boolean)
+      .map((f) => `* ${f}`)
+      .join("\n"),
     note?.trim() ? `नोट: ${note.trim()}` : "",
     `${source ? `— ${source}\n` : ""}${passageUrl(ref, origin, spans)}`,
   ]

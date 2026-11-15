@@ -59,7 +59,7 @@ export function ListRow({
   const cls = `flex min-h-14 w-full items-center gap-3.5 text-start ${className}`;
   if (href) {
     return (
-      <Link href={href} className={`${cls} group transition-colors active:bg-ink/[0.03]`}>
+      <Link href={href} className={`${cls} group transition-colors hover:bg-ink/[0.03] active:bg-ink/5`}>
         {inner}
       </Link>
     );
@@ -70,7 +70,7 @@ export function ListRow({
         type="button"
         onClick={onClick}
         aria-label={label}
-        className={`${cls} group transition-colors active:bg-ink/[0.03]`}
+        className={`${cls} group transition-colors hover:bg-ink/[0.03] active:bg-ink/5`}
       >
         {inner}
       </button>

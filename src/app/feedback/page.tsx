@@ -55,7 +55,7 @@ export default function MyFeedbackPage() {
       <PageContainer>
         <h1 className="font-display text-2xl font-medium">My feedback</h1>
         <div className="mt-4 rounded-2xl border border-rule bg-card p-4">
-          <p className="text-sm text-ink-soft">Sign in to see what you&apos;ve sent us.</p>
+          <p className="text-sm text-ink-soft">Sign in to see what you’ve sent us.</p>
           <Link
             href="/login?next=/feedback"
             className={`mt-3 ${ctaPrimary}`}
@@ -99,13 +99,13 @@ export default function MyFeedbackPage() {
 
       {queued > 0 && (
         <p className="mt-3 rounded-xl bg-ink/5 px-3 py-2 text-xs text-ink-soft">
-          {queued === 1 ? "One report is" : `${queued} reports are`} waiting to send — they&apos;ll
+          {queued === 1 ? "One report is" : `${queued} reports are`} waiting to send — they’ll
           go out on your next connection.
         </p>
       )}
 
       {failed && (
-        <p className="mt-4 text-sm text-ink-soft">Couldn&apos;t load this just now.</p>
+        <p className="mt-4 text-sm text-ink-soft">Couldn’t load this just now.</p>
       )}
 
       {rows?.length === 0 && !failed && (

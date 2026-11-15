@@ -359,7 +359,7 @@ function Header({
           <img
             src={SERIES_PORTRAIT}
             alt=""
-            className="aspect-[4/3] w-32 shrink-0 rounded-lg object-cover shadow-card lg:w-40"
+            className="aspect-[4/3] w-32 shrink-0 rounded-cover object-cover shadow-card lg:w-40"
           />
         ) : isAlbum && !(ws === "originals" && !isRecordings) && ws !== "resources" ? (
           /* Not on the Originals Library's folders (designer, 23 Oct 2026)

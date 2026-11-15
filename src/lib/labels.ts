@@ -93,3 +93,14 @@ export function chapterName(ch: { title_hi: string; is_front_matter?: boolean })
   // A chapter's prev/next neighbour carries no flag, only the title.
   return ch.is_front_matter || ch.title_hi === "Front-matters" ? FRONT_MATTER : ch.title_hi;
 }
+
+/**
+ * "1 page", "12 pages" — a count with its noun (15 Nov 2026).
+ *
+ * About seventy places spelled `=== 1 ?` out by hand and a dozen forgot to, so
+ * a one-chapter download read "1 chapters". `plural` is for the nouns that do
+ * not just take an s.
+ */
+export function count(n: number, noun: string, plural = `${noun}s`): string {
+  return `${n} ${n === 1 ? noun : plural}`;
+}

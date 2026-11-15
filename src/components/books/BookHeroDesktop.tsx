@@ -97,7 +97,10 @@ export function BookHeroDesktop({
             <p lang="hi" className="hi hi-tight mt-2 text-title text-white/80">
               {book.author}
               {book.translation_of && book.translator && (
-                <span className="text-sm">
+                // One size on one line, and the English marked as English
+                // (15 Nov 2026): at a step smaller it read as a footnote to
+                // the author rather than the second half of the credit.
+                <span lang="en" className="font-ui">
                   {" "}
                   · Translator: <span className="font-semibold text-white">{book.translator}</span>
                 </span>

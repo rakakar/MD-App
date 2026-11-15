@@ -144,7 +144,7 @@ export function GlossaryBrowser({
         )}
         {error && (
           <p className="text-center text-sm text-ink-soft">
-            The glossary isn&apos;t available right now.
+            The glossary isn’t available right now.
           </p>
         )}
         {!busy && !error && rows.length === 0 && (

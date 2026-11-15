@@ -94,11 +94,11 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "MD Study — A. Nagrajji's Literature",
+    default: "MD Study — A. Nagrajji’s Literature",
     template: "%s · MD Study",
   },
   description:
-    "Read A. Nagrajji's published books (Madhyasth Darshan), listen to discourses, and study translations and resources.",
+    "Read A. Nagrajji’s published books (Madhyasth Darshan), listen to discourses, and study translations and resources.",
   applicationName: "MD Study",
   manifest: "/manifest.webmanifest",
   // Without these an iOS home-screen install gets a screenshot for an icon and

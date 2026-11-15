@@ -14,7 +14,7 @@ import {
   PlayIcon,
   WaveformIcon,
 } from "@/components/shell/icons";
-import { KindTile } from "@/components/ui";
+import { KindTile, Skeleton, SrName, ctaSecondary } from "@/components/ui";
 import { getNode } from "@/lib/api";
 import { downloadProps } from "@/lib/download";
 import {
@@ -55,12 +55,18 @@ export function StagePanel({
   tab,
   onTab,
   variant,
+  here,
+  onSetHere,
 }: {
   stage: Stage;
   tab: StageTab;
   onTab: (tab: StageTab) => void;
   /** `panel` beside the list on a desktop; `screen` on its own on a phone */
   variant: "panel" | "screen";
+  /** this is the stage the reader has declared */
+  here?: boolean;
+  /** declare this stage as where the reader is; omitted, no control is drawn */
+  onSetHere?: () => void;
 }) {
   const tabs = stageTabs(stage);
   const active = tabs.includes(tab) ? tab : "about";
@@ -88,6 +94,7 @@ export function StagePanel({
         <h1 lang="hi" className="hi hi-tight mt-1.5 text-3xl font-semibold">
           {stage.hi}
         </h1>
+        {onSetHere && <StageHere here={!!here} onSet={onSetHere} />}
         {tabs.length > 1 && (
           <div
             role="tablist"
@@ -120,6 +127,7 @@ export function StagePanel({
         <h2 lang="hi" className="hi hi-tight mt-1.5 text-3xl font-semibold">
           {stage.hi}
         </h2>
+        {onSetHere && <StageHere here={!!here} onSet={onSetHere} />}
         {tabs.length > 1 && (
           <div role="tablist" aria-label="This stage" className="-mb-px mt-4 flex gap-7">
             {tabs.map((t) => {
@@ -147,6 +155,42 @@ export function StagePanel({
         {content}
       </div>
     </div>
+  );
+}
+
+/**
+ * "This is where I am" — the one way to declare any of the nine stages.
+ *
+ * Until 15 Nov 2026 the only control that set a stage was the picker's five
+ * answers, which lead to stages 1, 1, 2, 4 and 5: a reader in अवलोकन (3), in
+ * मनन (6) or further on could not say so, and the full path marked "You are
+ * here" without offering a way to move it (UX audit ST2). The picker stays the
+ * first-run question; this is the reader correcting it with the path in front
+ * of them. Quiet, because reading the stage is what this screen is for, and
+ * the page offers Undo, because a stage is somewhere you say you are and
+ * saying the wrong one should cost nothing.
+ */
+function StageHere({ here, onSet }: { here: boolean; onSet: () => void }) {
+  if (here) {
+    return (
+      <p
+        className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold"
+        style={{
+          color: "var(--ws-ink)",
+          background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+        }}
+      >
+        <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3.5 8.5l3 3 6-7" />
+        </svg>
+        You are here
+      </p>
+    );
+  }
+  return (
+    <button type="button" onClick={onSet} className={`${ctaSecondary} mt-3`}>
+      This is where I am
+    </button>
   );
 }
 
@@ -434,7 +478,7 @@ function Collection({
     return (
       <div className="flex flex-col gap-3" aria-busy>
         {[0, 1, 2].map((i) => (
-          <span key={i} className="block h-20 animate-pulse rounded-card motion-reduce:animate-none bg-canvas/60" />
+          <Skeleton key={i} className="block h-20 rounded-card" />
         ))}
       </div>
     );
@@ -498,7 +542,7 @@ function Collection({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search in this collection"
+            placeholder="Search in this collection…"
             className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-ink-soft"
           />
         </label>
@@ -709,10 +753,10 @@ function PdfRow({
             // this anchor for the check before its own default action ran.
             setTimeout(onDownload, 0);
           }}
-          aria-label={`Download ${file.title}`}
           title="Download PDF"
           className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/[.04] hover:text-ink"
         >
+          <SrName verb="Download" name={file.title} />
           <DownloadIcon className="h-5 w-5" />
         </a>
       )}

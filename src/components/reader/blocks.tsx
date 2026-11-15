@@ -8,6 +8,7 @@ import {
 } from "@/lib/richText";
 import type { HighlightColour } from "@/lib/storage";
 import type { Paragraph } from "@/lib/types";
+import { Footnote } from "./Footnote";
 
 // Block rendering exactly per contract §3.1. Respect align + indent_level
 // everywhere; markers print before list/verse text.
@@ -318,7 +319,7 @@ export function Block({
       return (
         <p
           lang="hi"
-          className={`hi my-6 px-4 text-[1.1em] font-semibold leading-loose tracking-wide ${
+          className={`hi my-6 px-4 text-[1.1em] font-semibold ${
             para.align ? ALIGN[para.align] : "text-center"
           }`}
           style={indent}
@@ -427,15 +428,7 @@ export function Block({
         >
           <Marker marker={para.marker} />
           {text}
-          {para.footnote_text && (
-            <span
-              data-not-text
-              className="ms-1 align-super text-[max(0.7em,0.8125rem)] text-(--reader-ink-soft)"
-              title={para.footnote_text}
-            >
-              *
-            </span>
-          )}
+          {para.footnote_text && <Footnote text={para.footnote_text} />}
         </p>
       );
   }

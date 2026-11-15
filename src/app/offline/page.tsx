@@ -10,7 +10,7 @@ export default function OfflinePage() {
   return (
     <div className="flex min-h-[60dvh] flex-col items-center justify-center px-6 text-center">
       <p className="text-4xl">☁️</p>
-      <h1 className="mt-3 text-lg font-semibold">You&apos;re offline</h1>
+      <h1 className="mt-3 text-lg font-semibold">You’re offline</h1>
       <p className="mt-1 max-w-xs text-sm text-ink-soft">
         Downloaded books still open. Tap My downloads below to find them.
       </p>

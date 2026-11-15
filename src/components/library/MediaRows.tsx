@@ -1,5 +1,6 @@
 "use client";
 
+import { SrName } from "@/components/ui";
 import { ViewToggle, useCollectionView } from "@/components/library/CollectionLayout";
 import { RowMenu, type RowMenuItem } from "@/components/library/RowMenu";
 import { parseMediaTitle } from "@/components/library/folderActions";
@@ -83,7 +84,7 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
 
   return (
     <div className="group relative flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink/[.03] sm:gap-4 sm:px-4">
-      <span className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-black sm:w-32">
+      <span className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-cover bg-black sm:w-32">
         {item.art}
         {/* Desktop only: on a phone the picture is the picture, with its
             length on it — the comps draw no button over the face. */}
@@ -101,7 +102,7 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
         </span>
         {/* Phone: the length rides the picture, where the row has no column for it. */}
         {length && (
-          <span className="absolute bottom-1 end-1 rounded bg-black/80 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-white sm:hidden">
+          <span className="absolute bottom-1 end-1 rounded-md bg-black/75 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-white sm:hidden">
             {length}
           </span>
         )}
@@ -154,10 +155,10 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
       {item.download && (
         <a
           {...downloadProps(item.download.url, item.title)}
-          aria-label={`Download ${item.title}`}
           title={item.download.bytes ? `Download · ${formatBytes(item.download.bytes)}` : "Download"}
           className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
         >
+          <SrName verb="Download" name={item.title} />
           <DownloadIcon className="h-4 w-4" />
         </a>
       )}

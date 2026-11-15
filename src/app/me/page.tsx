@@ -49,7 +49,7 @@ function SignInGate() {
           className={`${ctaPrimary} min-h-12 w-full sm:w-auto sm:px-6 sm:text-base`}
           style={{ background: "var(--ws-color)" }}
         >
-          Sign In to begin
+          Sign in to begin
           <ArrowRightIcon className="h-4 w-4" />
         </Link>
         <p className="text-sm text-ink-soft">

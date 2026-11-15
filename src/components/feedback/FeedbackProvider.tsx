@@ -172,8 +172,8 @@ function FeedbackSheet({
       setPhase("form");
       setError(
         status === 429
-          ? "That's a lot of feedback today — thank you. Try again tomorrow."
-          : "Couldn't send that. Try once more."
+          ? "That’s a lot of feedback today — thank you. Try again tomorrow."
+          : "Couldn’t send that. Try once more."
       );
     }
   };
@@ -277,7 +277,7 @@ function FeedbackSheet({
         {!user ? (
           <div className="py-2">
             <p className="text-sm text-(--reader-ink-soft)">
-              Sign in to send feedback — it&apos;s how we can tell you what happened to it.
+              Sign in to send feedback — it’s how we can tell you what happened to it.
             </p>
             <Link
               href={signInHref(here)}
@@ -291,8 +291,8 @@ function FeedbackSheet({
         ) : phase === "sent" || phase === "queued" ? (
           <p className="pb-6 pt-3 text-center text-sm">
             {phase === "sent"
-              ? "Thank you — we've got it."
-              : "Saved. It'll send itself when you're back online."}
+              ? "Thank you — we’ve got it."
+              : "Saved. It’ll send itself when you’re back online."}
           </p>
         ) : (
           <>
@@ -436,7 +436,7 @@ function FeedbackDialog({
       {!signedIn ? (
         <div className="px-6 pb-6">
           <p className="text-sm text-ink-soft">
-            Sign in to send feedback — it&apos;s how we can tell you what happened to it.
+            Sign in to send feedback — it’s how we can tell you what happened to it.
           </p>
           <Link
             href={signInHref(here)}
@@ -449,7 +449,7 @@ function FeedbackDialog({
         </div>
       ) : done ? (
         <p className="px-6 pb-10 pt-4 text-center text-sm">
-          {phase === "sent" ? "Thank you — we've got it." : "Saved. It'll send itself when you're back online."}
+          {phase === "sent" ? "Thank you — we’ve got it." : "Saved. It’ll send itself when you’re back online."}
         </p>
       ) : (
         <>

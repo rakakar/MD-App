@@ -95,7 +95,7 @@ export function PhoneAuth({
     const res = await signupWithPhone(phone);
     const token = pendingToken(res);
     if (token) toCode("signup", token);
-    else setError(errorOf(res, "Couldn't create the account. Please try again."));
+    else setError(errorOf(res, "Couldn’t create the account. Please try again."));
   };
 
   const sendCode = async (e?: React.FormEvent) => {
@@ -113,9 +113,9 @@ export function PhoneAuth({
         // a mistyped digit should not quietly make a second account.
         if (mode === "signup") await create();
         else setUnknown(true);
-      } else setError(errorOf(res, "Couldn't send the code. Please try again."));
+      } else setError(errorOf(res, "Couldn’t send the code. Please try again."));
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      setError("Couldn’t reach the server. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -128,7 +128,7 @@ export function PhoneAuth({
     try {
       await create();
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      setError("Couldn’t reach the server. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -152,7 +152,7 @@ export function PhoneAuth({
         return;
       }
       if (res.errors?.[0]?.code === "incorrect_code") {
-        setError("That code doesn't match. Check WhatsApp and try again.");
+        setError("That code doesn’t match. Check WhatsApp and try again.");
         setCode("");
         codeInput.current?.focus();
       } else {
@@ -161,7 +161,7 @@ export function PhoneAuth({
         setError(errorOf(res, "That code has expired. Please ask for a new one."));
       }
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      setError("Couldn’t reach the server. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -181,9 +181,9 @@ export function PhoneAuth({
       } else if (res.status === 409) {
         setStep({ kind: "number" });
         setError("Please ask for a new code.");
-      } else setError(errorOf(res, "Couldn't send the code. Please try again."));
+      } else setError(errorOf(res, "Couldn’t send the code. Please try again."));
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      setError("Couldn’t reach the server. Please try again.");
     } finally {
       setBusy(false);
     }

@@ -91,7 +91,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         );
       }
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      setError("Couldn’t reach the server. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -106,9 +106,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         return null;
       }
       if (res.status === 429) return "Too many codes asked for. Please wait a few minutes and try again.";
-      return res.errors?.[0]?.message ?? "Couldn't send the code. Please try again.";
+      return res.errors?.[0]?.message ?? "Couldn’t send the code. Please try again.";
     } catch {
-      return "Couldn't reach the server. Please try again.";
+      return "Couldn’t reach the server. Please try again.";
     }
   };
 
@@ -122,11 +122,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         router.replace(next);
         return null;
       }
-      if (res.errors?.[0]?.code === "incorrect_code") return "That code doesn't match. Check your email and try again.";
+      if (res.errors?.[0]?.code === "incorrect_code") return "That code doesn’t match. Check your email and try again.";
       setCodeToken(null);
       return null;
     } catch {
-      return "Couldn't reach the server. Please try again.";
+      return "Couldn’t reach the server. Please try again.";
     }
   };
 

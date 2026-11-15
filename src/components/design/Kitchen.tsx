@@ -142,7 +142,7 @@ export function Kitchen() {
 
       <Block
         title="Kind accents"
-        hint="Five families for seven kinds. The tile is the designer's; the glyph is one step deeper so it clears 4.5:1 on its own tile."
+        hint="Five families for seven kinds. The tile is the designer’s; the glyph is one step deeper so it clears 4.5:1 on its own tile."
       >
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Swatch name="doc" css="--color-kind-doc" note="pdf · link · other" />

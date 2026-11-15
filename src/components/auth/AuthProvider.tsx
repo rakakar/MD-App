@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       !pushed &&
       hasUnsyncedPersonal() &&
       !window.confirm(
-        "Some of your highlights or notes haven't reached your account yet — you may be offline.\n\nSigning out now removes them from this device. Sign out anyway?"
+        "Some of your highlights or notes haven’t reached your account yet — you may be offline.\n\nSigning out now removes them from this device. Sign out anyway?"
       )
     ) {
       return false;

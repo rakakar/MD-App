@@ -174,8 +174,8 @@ function DefinitionSheet({
         <p lang="hi" className="hi-note text-xl font-semibold">
           {word?.hindi ?? headword}
         </p>
-        <p lang="hi" className="hi-note mt-1 text-sm text-ink-soft">
-          परिभाषा संहिता · A. Nagraj
+        <p className="mt-1 text-sm text-ink-soft">
+          <span lang="hi" className="hi-note">परिभाषा संहिता</span> · A. Nagraj
         </p>
         <div className="mt-4 rounded-card border border-rule bg-card p-4">
           {!word && !failed && <p className="text-sm text-ink-soft">Opening the definition…</p>}

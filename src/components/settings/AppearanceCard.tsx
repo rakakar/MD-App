@@ -24,7 +24,7 @@ export function AppearanceCard({ desktop }: { desktop: boolean }) {
         <RowTitle>Theme</RowTitle>
         {desktop && (
           <p className="mb-4 mt-0.5 text-sm text-ink-soft">
-            Auto follows your device&apos;s light and dark setting, and changes with it.
+            Auto follows your device’s light and dark setting, and changes with it.
           </p>
         )}
         <div className={desktop ? "" : "mt-4"}>
@@ -32,7 +32,7 @@ export function AppearanceCard({ desktop }: { desktop: boolean }) {
         </div>
         {!desktop && (
           <p className="mt-4 text-sm text-ink-soft">
-            Auto follows your device&apos;s light and dark setting.
+            Auto follows your device’s light and dark setting.
           </p>
         )}
       </section>
@@ -42,7 +42,7 @@ export function AppearanceCard({ desktop }: { desktop: boolean }) {
           <>
             <RowTitle>Text size</RowTitle>
             <p className="mb-4 mt-0.5 text-sm text-ink-soft">
-              Starts from your device&apos;s text size. The reader has its own size for book text.
+              Starts from your device’s text size. The reader has its own size for book text.
             </p>
             <RadioSegmented
               label="Text size"

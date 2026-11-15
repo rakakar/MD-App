@@ -177,7 +177,7 @@ function NameRow({ name, onSaved }: { name: string; onSaved: (m: string) => void
       setEditing(false);
       onSaved("Name saved");
     } catch {
-      setError("Couldn't save. Please try again.");
+      setError("Couldn’t save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -400,7 +400,7 @@ function NameSheet({
       await refresh();
       onSaved();
     } catch {
-      setError("Couldn't save. Please try again.");
+      setError("Couldn’t save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -527,7 +527,7 @@ function PasswordSheet({
           onChange={pw.setConfirm}
           invalid={mismatch}
         />
-        {mismatch && <ErrorLine>The two new passwords don&apos;t match.</ErrorLine>}
+        {mismatch && <ErrorLine>The two new passwords don’t match.</ErrorLine>}
         <Checks pw={pw.next} />
         {/* The sign-in screen's reset: a code to the account's email. */}
         {!setting && (
@@ -623,11 +623,11 @@ function usePasswordForm(onDone: () => void, setting = false) {
       } else {
         setError(
           res.errors?.[0]?.message ??
-            "Couldn't change it — check your current password, and pick a longer new one."
+            "Couldn’t change it — check your current password, and pick a longer new one."
         );
       }
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      setError("Couldn’t reach the server. Please try again.");
     } finally {
       setSaving(false);
     }

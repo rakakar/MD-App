@@ -1,5 +1,6 @@
 "use client";
 
+import { BellIcon, CloseIcon } from "@/components/shell/icons";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { track } from "@/lib/analytics";
@@ -122,12 +123,12 @@ export function PushProvider() {
       aria-live="polite"
       // Above the player bar and the bottom nav, clear of the home indicator —
       // the same band the service-worker update prompt uses.
-      className="fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 lg:bottom-6"
+      className="fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-55 flex justify-center px-4 lg:bottom-6"
     >
-      <div className="flex w-full max-w-sm items-start gap-3 rounded-2xl border border-rule bg-card p-3 shadow-raised">
-        <span aria-hidden className="text-lg leading-none">
-          🔔
-        </span>
+      <div className="flex w-full max-w-sm items-start gap-3 rounded-card border border-rule bg-card p-3 shadow-raised">
+        {/* The app's own bell, not the colour emoji, which drew in a
+            different style on every phone (15 Nov 2026). */}
+        <BellIcon className="mt-0.5 h-5 w-5 shrink-0 text-ink-soft" />
         <button type="button" onClick={open} className="min-w-0 flex-1 text-left">
           <span lang="hi" className="hi block truncate text-sm font-semibold text-ink">
             {message.title}
@@ -140,9 +141,9 @@ export function PushProvider() {
           type="button"
           onClick={() => setMessage(null)}
           aria-label="Dismiss notification"
-          className="shrink-0 rounded-full px-2 py-0.5 text-ink-soft"
+          className="-me-1 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-soft"
         >
-          ✕
+          <CloseIcon className="h-4 w-4" />
         </button>
       </div>
     </div>

@@ -86,7 +86,7 @@ export function PdfFallback({
           <div className="rounded-2xl border border-rule bg-card p-4">
             <p className="text-sm font-semibold">Opening this outside the app</p>
             <p className="mt-1 text-xs text-ink-soft">
-              Your browser can&apos;t show a PDF inside a page, so this one opens
+              Your browser can’t show a PDF inside a page, so this one opens
               in whichever app your phone uses for documents.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -112,8 +112,8 @@ export function PdfFallback({
         )}
 
         <p className="mt-2 text-xs text-ink-soft">
-          Read this way, your page isn&apos;t remembered and the app&apos;s theme
-          doesn&apos;t apply. Reload to try the in-app reader again.
+          Read this way, your page isn’t remembered and the app’s theme
+          doesn’t apply. Reload to try the in-app reader again.
           {textHref && (
             <>
               {" "}

@@ -24,7 +24,7 @@ export default function Loading() {
         {Array.from({ length: 8 }, (_, i) => (
           <li key={i} className="flex flex-col gap-1">
             {/* a cover, then its title — the shape of every card on this shelf */}
-            <Skeleton className="aspect-[3/4] w-full rounded-cover" />
+            <Skeleton className="aspect-[102/139] w-full rounded-cover" />
             <Skeleton className="mt-1.5 h-4 w-5/6 rounded-md" />
             <Skeleton className="h-4 w-1/2 rounded-md" />
           </li>

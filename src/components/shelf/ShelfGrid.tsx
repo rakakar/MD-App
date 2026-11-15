@@ -1,5 +1,6 @@
 "use client";
 
+import { count } from "@/lib/labels";
 import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -179,7 +180,7 @@ export function ShelfCard({ book }: { book: BookSummary }) {
             {book.language_label} ·{" "}
           </span>
         ) : null}
-        {book.page_count ? `${book.page_count} pages` : book.author}
+        {book.page_count ? count(book.page_count, "page") : book.author}
       </span>
       {book.translation_of && book.translator && (
         <span className="-mt-0.5 block truncate text-xs text-ink-soft">

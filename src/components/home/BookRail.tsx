@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { count } from "@/lib/labels";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import type { BookSummary } from "@/lib/types";
 
@@ -78,7 +79,7 @@ export function BookRail({
                 it, and the shelf is where a reader is comparing books rather
                 than glancing across them. */}
             {b.page_count ? (
-              <span className="mt-0.5 block text-xs text-ink-soft">{b.page_count} pages</span>
+              <span className="mt-0.5 block text-xs text-ink-soft">{count(b.page_count, "page")}</span>
             ) : null}
           </Link>
         </li>

@@ -1,5 +1,6 @@
 "use client";
 
+import { SrName } from "@/components/ui";
 import Link from "next/link";
 import { Fragment, useId, useMemo, useState } from "react";
 import { provenanceLabel } from "@/components/library/ProvenanceBadge";
@@ -179,7 +180,7 @@ export function FindTable({
             <span>{busy ? "Loading…" : "Show more"}</span>
             {!busy && <span className="ms-1 tabular-nums opacity-70">{remaining}</span>}
           </button>
-          {failed && <p className="pb-3 text-center text-xs text-ink-soft">Couldn&apos;t load more. Try again.</p>}
+          {failed && <p className="pb-3 text-center text-xs text-ink-soft">Couldn’t load more. Try again.</p>}
         </div>
       )}
     </div>
@@ -245,10 +246,10 @@ function Row({ row, shelves }: { row: LibrarySearchRow; shelves: ShelfMap }) {
       {file?.url ? (
         <a
           {...downloadProps(file.url, title)}
-          aria-label={`Download ${title}`}
           title="Download"
           className="relative z-10 flex h-8 w-8 items-center justify-center justify-self-end rounded-control text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
         >
+          <SrName verb="Download" name={title} />
           <DownloadIcon className="h-4 w-4" />
         </a>
       ) : (

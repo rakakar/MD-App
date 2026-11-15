@@ -112,7 +112,7 @@ function SignedUp({ at, onAgain }: { at: string; onAgain: () => void }) {
       >
         <CheckIcon className="h-5 w-5" />
       </span>
-      <h2 className="mt-3 text-title font-semibold tracking-[-0.015em]">You&apos;ve signed up</h2>
+      <h2 className="mt-3 text-title font-semibold tracking-[-0.015em]">You’ve signed up</h2>
       <p className="mt-2 text-ink-soft">
         Your response went to the volunteer group on {date}. Thank you for offering your time.
       </p>

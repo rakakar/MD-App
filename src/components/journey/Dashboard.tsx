@@ -1,5 +1,6 @@
 "use client";
 
+import { count } from "@/lib/labels";
 import Link from "next/link";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { ChevronRight, Icon } from "@/components/shell/icons";
@@ -331,7 +332,7 @@ export function NextStepCard({
             {resumable && Number.isFinite(page) && page > 0
               ? ` · page ${page}`
               : !resumable && target.page_count
-                ? ` · ${target.page_count} pages`
+                ? ` · ${count(target.page_count, "page")}`
                 : ""}
           </span>
           {percent !== null && (

@@ -133,7 +133,7 @@ export function ParibhashaTrailSheet({
       <p className="py-2 text-sm text-(--reader-ink-soft)">No definition is available for this word.</p>
     ) : state === "error" ? (
       <p className="py-2 text-sm text-(--reader-ink-soft)">
-        Couldn&apos;t load the definition — you may be offline.
+        Couldn’t load the definition — you may be offline.
       </p>
     ) : null;
 
@@ -258,7 +258,7 @@ export function ParibhashaTrailSheet({
           )}
           {state === "error" && (
             <p className="py-2 text-sm text-(--reader-ink-soft)">
-              Couldn&apos;t load the definition — you may be offline.
+              Couldn’t load the definition — you may be offline.
             </p>
           )}
           {state === "ready" && (

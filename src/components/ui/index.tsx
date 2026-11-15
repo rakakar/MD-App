@@ -27,6 +27,7 @@ export * from "./ShareButton";
 export * from "./Sheet";
 export * from "./Switch";
 
+import { contentLang } from "@/lib/script";
 import { Chip, ChipRow } from "./Segmented";
 
 /**
@@ -360,5 +361,23 @@ export function ErrorState({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * The accessible name of an icon-only control that acts on a titled thing —
+ * "Download" + the file's title (15 Nov 2026).
+ *
+ * As an `aria-label` the two were one English string, so a screen reader read
+ * the Hindi title with English phonetics. As content, the title can carry its
+ * own `lang`. Render it as the control's first child, in place of
+ * `aria-label`; the icon beside it stays `aria-hidden`.
+ */
+export function SrName({ verb, name }: { verb: string; name: string }) {
+  const l = contentLang(name);
+  return (
+    <span className="sr-only">
+      {verb} <span lang={l.lang}>{name}</span>
+    </span>
   );
 }

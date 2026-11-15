@@ -448,7 +448,7 @@ function CollectionLayout({
   return (
     <ProvidedView
       grid={
-        <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {collections.map((album) => (
             <li key={album.id} className="contents">
               <CollectionCard album={album} shelves={shelves} />
