@@ -87,7 +87,9 @@ export type GaEvent =
   // passage, the other is everything else — and only the ratio can tell us
   // whether the in-reader door is worth the tap it costs the toolbar.
   | "feedback_open"
-  | "feedback_submit";
+  | "feedback_submit"
+  /** a guest pressed "Sign in to send" with a report written */
+  | "feedback_sign_in";
 
 export function track(event: GaEvent, params: Record<string, string | number> = {}): void {
   if (typeof window === "undefined" || !window.gtag) return;

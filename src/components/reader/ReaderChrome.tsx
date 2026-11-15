@@ -282,6 +282,7 @@ export function ReaderBottomBar({
   bottom,
   position,
   onContents,
+  onMark,
   onPosition,
   onListen,
   canListen,
@@ -291,6 +292,12 @@ export function ReaderBottomBar({
 }: {
   hidden: boolean;
   bottom: string;
+  /**
+   * Select the passage at the top of the page and open the highlight / note /
+   * share bar — the button a press-and-hold otherwise stands in for. See the
+   * button below. Absent where the reader's own touch selection is off.
+   */
+  onMark?: () => void;
   /** "30 / 178" */
   position: string;
   onContents: () => void;
@@ -345,6 +352,18 @@ export function ReaderBottomBar({
             <TocIcon className="h-5 w-5" />
           </SquareBtn>
         </span>
+        {/* Mark a passage (15 Nov 2026, UX audit IN9). On a touch screen the
+            book's text is selected by a 450ms press and hold that nothing on
+            screen announced, and highlight, note, share, copy and report all
+            waited behind it. This is the visible way in: it takes the passage
+            on the reading line — the one Resume would return to — and opens
+            the same bar a press and hold does. Beside Contents, under the
+            thumb, because that is where its results are kept. */}
+        {onMark && (
+          <SquareBtn onClick={onMark} label="Mark a passage">
+            <Icon name="highlights" className="h-5 w-5" />
+          </SquareBtn>
+        )}
 
         {/* The comps put this in its own sunk field rather than loose on the
             bar — it is a readout, and a readout that looks like a label gets

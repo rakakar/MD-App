@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChapterNav } from "./PlayerProvider";
 import { getPlayhead } from "@/lib/storage";
 import { usePlayer } from "./PlayerProvider";
 
@@ -75,7 +76,7 @@ export function useAudioQueue(entries: QueueEntry[]) {
   // Memoized because handing the player a fresh object every render
   // re-registers the OS transport handlers, which is what loses the Android
   // notification (see the note in PlayerProvider).
-  const nav = useMemo(() => {
+  const nav = useMemo<ChapterNav | null>(() => {
     if (activeIndex < 0) return null;
     const prev = entries[activeIndex - 1];
     const next = entries[activeIndex + 1];
@@ -85,14 +86,39 @@ export function useAudioQueue(entries: QueueEntry[]) {
       // what the button says.
       prev: prev ? () => play(prev, true) : null,
       next: next ? () => play(next, true) : null,
+      forTrack: entries[activeIndex].id,
     };
   }, [activeIndex, entries, play]);
 
+  // No clean-up that clears it: `forTrack` makes the player drop this queue
+  // the moment something outside it plays, and a page that moves on to the
+  // next part sets the new position itself.
   useEffect(() => {
-    if (!nav) return;
-    setChapterNav(nav);
-    return () => setChapterNav(null);
+    if (nav) setChapterNav(nav);
   }, [nav, setChapterNav]);
+
+  /**
+   * Leaving the page while one of its parts plays: the queue goes on without
+   * the page (UX audit AV4). Each step hands the player the next position, so
+   * ⏭ disappears at the last part as it would on the page.
+   */
+  const latest = useRef({ activeIndex, entries, play });
+  useEffect(() => {
+    latest.current = { activeIndex, entries, play };
+  });
+  useEffect(
+    () => () => {
+      const { activeIndex: at, entries: list, play: start } = latest.current;
+      if (at < 0) return;
+      const carry = (i: number): ChapterNav => ({
+        prev: i > 0 ? () => (start(list[i - 1], true), setChapterNav(carry(i - 1))) : null,
+        next: i < list.length - 1 ? () => (start(list[i + 1], true), setChapterNav(carry(i + 1))) : null,
+        forTrack: list[i].id,
+      });
+      setChapterNav(carry(at));
+    },
+    [setChapterNav]
+  );
 
   return { play, resumes, activeId };
 }

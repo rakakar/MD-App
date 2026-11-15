@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -40,6 +40,54 @@ export interface FeedbackPrefill {
   quoted_text?: string;
   /** where the report was raised from — for the analytics event, not the row */
   source?: string;
+  /** what was already written — a guest's report, back from signing in */
+  message?: string;
+  suggested?: string;
+}
+
+/**
+ * A guest's report, held while they sign in (15 Nov 2026, UX audit TR5).
+ *
+ * Feedback stays a signed-in thing (docs/feedback.md §9) — the account is how
+ * a reader hears what happened to it. What changed is *when* they are asked:
+ * a guest who spotted a wrong word used to meet "Sign in to send feedback"
+ * with the passage hidden, and came back from signing in to a closed sheet
+ * and a lost selection. Now they write it first; Send takes them through
+ * sign-in and the sheet reopens on the same page, filled. Session storage,
+ * because the sign-in round trip happens in this tab, and an hour, so an
+ * abandoned sign-in does not resurface a report days later.
+ */
+const PENDING_KEY = "md.feedback.pending";
+const PENDING_MS = 60 * 60 * 1000;
+
+interface PendingReport extends FeedbackPrefill {
+  /** the page it was written on, which sign-in returns to */
+  here: string;
+  at: number;
+}
+
+function holdReport(r: PendingReport): void {
+  try {
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify(r));
+  } catch {
+    // blocked storage: the guest retypes after signing in, as before
+  }
+}
+
+function takeReport(here: string): PendingReport | null {
+  try {
+    const r = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null") as PendingReport | null;
+    if (!r) return null;
+    if (Date.now() - r.at > PENDING_MS) {
+      sessionStorage.removeItem(PENDING_KEY);
+      return null;
+    }
+    if (r.here !== here) return null;
+    sessionStorage.removeItem(PENDING_KEY);
+    return r;
+  } catch {
+    return null;
+  }
 }
 
 interface FeedbackApi {
@@ -73,6 +121,18 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const api = useMemo(() => ({ open }), [open]);
+
+  // Back from signing in with a report written as a guest: open it again.
+  const { user } = useAuth();
+  const path = useRoutePath();
+  useEffect(() => {
+    if (!user) return;
+    const r = takeReport(path);
+    if (!r) return;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { here, at, ...prefill } = r;
+    open({ ...prefill, source: prefill.source ?? "after-sign-in" });
+  }, [user, path, open]);
 
   // The error buffer has to be filling long before anyone opens the sheet —
   // by the time a reader decides to report a bug, the error that caused it has
@@ -108,6 +168,7 @@ function FeedbackSheet({
   // Back to where the reader was, not to My Journey: they were reporting
   // something on *this* page, and signing in must not cost them the place.
   const here = useRoutePath();
+  const router = useRouter();
   const { user } = useAuth();
   const [kind, setKind] = useState<FeedbackKind>("bug");
   const [message, setMessage] = useState("");
@@ -126,8 +187,8 @@ function FeedbackSheet({
   useEffect(() => {
     if (!prefill) return;
     setKind(prefill.kind ?? "bug");
-    setMessage("");
-    setSuggested("");
+    setMessage(prefill.message ?? "");
+    setSuggested(prefill.suggested ?? "");
     setScreenshot(null);
     setError("");
     setPhase("form");
@@ -146,6 +207,21 @@ function FeedbackSheet({
     const text = message.trim();
     if (text.length < 3) {
       setError("Tell us a little more — a few words is enough.");
+      return;
+    }
+    // A guest: keep what they wrote, sign in, and come back to it.
+    if (!user) {
+      holdReport({
+        ...prefill,
+        kind,
+        message: text,
+        suggested: suggested.trim() || undefined,
+        here,
+        at: Date.now(),
+      });
+      track("feedback_sign_in", { kind, source: openedFrom });
+      onClose();
+      router.push(signInHref(here));
       return;
     }
     setPhase("sending");
@@ -233,7 +309,7 @@ function FeedbackSheet({
          sheet has about 276px — so Send was below the fold of its own sheet,
          behind the keyboard. The footer stands on the keyboard. */
       footer={
-        user && phase !== "sent" && phase !== "queued" ? (
+        phase !== "sent" && phase !== "queued" ? (
       <div className="flex items-center justify-between gap-3">
         <div>
           <input
@@ -243,13 +319,17 @@ function FeedbackSheet({
             hidden
             onChange={(e) => pickScreenshot(e.target.files?.[0] ?? null)}
           />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="min-h-11 text-sm text-(--reader-ink-soft) underline underline-offset-4"
-          >
-            {screenshot ? `📎 ${screenshot.name.slice(0, 24)}` : "📎 Add screenshot"}
-          </button>
+          {/* A guest's screenshot cannot ride through sign-in, so it is
+              offered once they are signed in. */}
+          {user && (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="min-h-11 text-sm text-(--reader-ink-soft) underline underline-offset-4"
+            >
+              {screenshot ? `📎 ${screenshot.name.slice(0, 24)}` : "📎 Add screenshot"}
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -260,7 +340,7 @@ function FeedbackSheet({
           className={ctaPrimary}
           style={{ background: "var(--ws-color)" }}
         >
-          {phase === "sending" ? "Sending…" : "Send"}
+          {phase === "sending" ? "Sending…" : user ? "Send" : "Sign in to send"}
         </button>
       </div>
         ) : undefined
@@ -274,21 +354,7 @@ function FeedbackSheet({
           under a sheet header. (Display gets away with `pt-1` because it opens
           on a heading, and a heading brings its own leading with it.) */}
       <div className="px-5 pb-5 pt-3">
-        {!user ? (
-          <div className="py-2">
-            <p className="text-sm text-(--reader-ink-soft)">
-              Sign in to send feedback — it’s how we can tell you what happened to it.
-            </p>
-            <Link
-              href={signInHref(here)}
-              onClick={onClose}
-              className={`mt-3 ${ctaPrimary}`}
-              style={{ background: "var(--ws-color)" }}
-            >
-              Sign in
-            </Link>
-          </div>
-        ) : phase === "sent" || phase === "queued" ? (
+        {phase === "sent" || phase === "queued" ? (
           <p className="pb-6 pt-3 text-center text-sm">
             {phase === "sent"
               ? "Thank you — we’ve got it."
@@ -354,6 +420,8 @@ function FeedbackSheet({
             {error && <p className="mt-2 text-sm text-danger">{error}</p>}
 
 
+            {!user && <GuestNote />}
+
             <p className="mt-3 text-xs leading-relaxed text-(--reader-ink-soft)">
               We also attach the screen you were on, your app version and device — never your
               notes, bookmarks or reading history.
@@ -412,9 +480,6 @@ function FeedbackDialog({
   fileInput: ReactNode;
   onSubmit: () => void;
 }) {
-  // Back to where the reader was, not to My Journey: they were reporting
-  // something on *this* page, and signing in must not cost them the place.
-  const here = useRoutePath();
   const field =
     "w-full resize-y rounded-control border border-rule bg-card px-3.5 py-3 text-sm text-ink outline-none transition-[box-shadow,border-color] placeholder:text-ink-soft focus:border-(--ws-ink) focus:ring-3 focus:ring-(--ws-ink)/15";
   const done = phase === "sent" || phase === "queued";
@@ -433,21 +498,7 @@ function FeedbackDialog({
         </button>
       </div>
 
-      {!signedIn ? (
-        <div className="px-6 pb-6">
-          <p className="text-sm text-ink-soft">
-            Sign in to send feedback — it’s how we can tell you what happened to it.
-          </p>
-          <Link
-            href={signInHref(here)}
-            onClick={onClose}
-            className={`mt-4 ${ctaPrimary}`}
-            style={{ background: "var(--ws-color)" }}
-          >
-            Sign in
-          </Link>
-        </div>
-      ) : done ? (
+      {done ? (
         <p className="px-6 pb-10 pt-4 text-center text-sm">
           {phase === "sent" ? "Thank you — we’ve got it." : "Saved. It’ll send itself when you’re back online."}
         </p>
@@ -500,14 +551,18 @@ function FeedbackDialog({
             {error && <p className="mt-2 text-sm text-danger">{error}</p>}
 
             {fileInput}
-            <button
-              type="button"
-              onClick={onPickScreenshot}
-              className="mt-4 inline-flex min-h-11 max-w-full items-center gap-2 rounded-control border border-dashed border-rule px-3.5 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
-            >
-              <PaperclipIcon className="h-4 w-4 shrink-0 text-ink-soft" />
-              <span className="truncate">{screenshot ? screenshot.name : "Add screenshot"}</span>
-            </button>
+            {signedIn ? (
+              <button
+                type="button"
+                onClick={onPickScreenshot}
+                className="mt-4 inline-flex min-h-11 max-w-full items-center gap-2 rounded-control border border-dashed border-rule px-3.5 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
+              >
+                <PaperclipIcon className="h-4 w-4 shrink-0 text-ink-soft" />
+                <span className="truncate">{screenshot ? screenshot.name : "Add screenshot"}</span>
+              </button>
+            ) : (
+              <GuestNote />
+            )}
           </div>
 
           <div className="flex items-center gap-4 border-t border-rule bg-inset px-6 py-4">
@@ -530,7 +585,7 @@ function FeedbackDialog({
               className={ctaPrimary}
               style={{ background: "var(--ws-color)" }}
             >
-              {phase === "sending" ? "Sending…" : "Send"}
+              {phase === "sending" ? "Sending…" : signedIn ? "Send" : "Sign in to send"}
               {phase !== "sending" && (
                 <kbd className="rounded border border-current/40 px-1 py-px font-sans text-xs font-medium">⌘↵</kbd>
               )}
@@ -539,6 +594,16 @@ function FeedbackDialog({
         </>
       )}
     </Dialog>
+  );
+}
+
+/** What happens to a guest's report when they press Send. */
+function GuestNote() {
+  return (
+    <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+      Sending needs an account, so we can tell you what happened to it. You’ll sign in, then come
+      straight back here with this report ready to send.
+    </p>
   );
 }
 

@@ -57,6 +57,23 @@ function postChat(
 }
 
 /**
+ * A question asked in an earlier life of this page (15 Nov 2026, UX audit
+ * AS4). A stored turn with no answer is asked again when the conversation
+ * opens — and Android often reloads the page after a switch to WhatsApp, so a
+ * deep research left for a minute came back at 0:00 and spent a second deep
+ * question while the first answer sat on the server. Look for that answer
+ * first; ask only if it is not there.
+ */
+export async function resumeChat(
+  query: string,
+  opts: { mode?: "quick" | "deep"; continueFrom?: number; books?: string[] },
+  askedAt: number
+): Promise<{ answer: ChatAnswer; quota: ChatQuota }> {
+  const found = await recoverAnswer(query, opts.mode ?? "quick", askedAt);
+  return found ?? askChat(query, opts);
+}
+
+/**
  * The request died with no answer from the BE itself: a fetch that threw
  * ("Load failed" — no status), or a gateway giving up on a slow one (502/504).
  *

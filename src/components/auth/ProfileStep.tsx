@@ -16,7 +16,15 @@ import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { displayPhone } from "@/lib/me";
 import { LAUNCH } from "@/lib/onboarding";
-import { askForStage, lockedFields, profileDone, profileFor, storeProfile, type ProfileValues } from "@/lib/profile";
+import {
+  askForStage,
+  deferProfile,
+  lockedFields,
+  profileDone,
+  profileFor,
+  storeProfile,
+  type ProfileValues,
+} from "@/lib/profile";
 import { safeReturnPath, signInHref } from "@/lib/routes";
 import { getPrefs } from "@/lib/storage";
 
@@ -27,11 +35,13 @@ import { getPrefs } from "@/lib/storage";
  * Step 2 is the journey question, which opens over wherever the reader was
  * headed (`StagePrompt`).
  *
- * **Compulsory, once.** Creating an account lands here (`welcomeHref`), and
- * any signed-in reader whose details are unfinished is sent here from any
- * screen (`ProfileGate`). There is no skip — only "Sign out", which keeps
- * reading open to them. Once answered, the server remembers it on every
- * device; the details change later in Settings and on the Profile page.
+ * **Asked once, and it can wait.** Creating an account lands here
+ * (`welcomeHref`), and a signed-in reader whose details are unfinished is sent
+ * here from ordinary screens (`ProfileGate`). Until 15 Nov 2026 there was no
+ * skip, only "Sign out"; now "Not now" goes on to where the reader was headed
+ * and stops the step coming back on this device (`deferProfile`, UX audit
+ * FR8). Once answered, the server remembers it on every device; the details
+ * change later in Settings and on the Profile page.
  *
  * Same frame as the sign-in screen on a desktop: the launch artwork as the
  * left panel, the form on the right. A phone drops the band — the four fields
@@ -113,8 +123,13 @@ export function ProfileStep() {
     }
   };
 
-  // The only way out of a step that is not optional: not "skip", but
-  // "not now" — signed out, the reader can still read everything.
+  // "Not now": on to where they were going; the details wait on Profile.
+  const later = () => {
+    deferProfile(user);
+    if (show.stageNext) askForStage();
+    router.replace(next);
+  };
+  // For an account opened by mistake — signed out, everything still reads.
   const signOut = async () => {
     if (await logout()) router.replace("/");
   };
@@ -219,13 +234,20 @@ export function ProfileStep() {
               >
                 {busy ? "Please wait…" : "Continue"}
               </button>
-              <p className="mt-3 text-center text-sm text-ink-soft">
-                Not now?{" "}
+              <button
+                type="button"
+                onClick={later}
+                className="mt-2 min-h-12 w-full rounded-tile text-base font-semibold"
+                style={{ color: "var(--ws-ink)" }}
+              >
+                Not now
+              </button>
+              <p className="mt-1 text-center text-sm text-ink-soft">
+                You can add these later on your Profile page.{" "}
                 <button
                   type="button"
                   onClick={() => void signOut()}
-                  className="inline-flex min-h-11 items-center ps-1 font-bold"
-                  style={{ color: "var(--ws-ink)" }}
+                  className="inline-flex min-h-11 items-center ps-1 font-semibold underline-offset-2 hover:underline"
                 >
                   Sign out
                 </button>

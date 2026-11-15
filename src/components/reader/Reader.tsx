@@ -37,7 +37,9 @@ import { searchTermsInLocation, useSearchHitMarks, type SearchHit } from "@/lib/
 import { documentHref, documentTextHref, signInHref } from "@/lib/routes";
 import {
   getListeningPosition,
+  getNoteDraft,
   getPrefs,
+  setNoteDraft,
   nearestStep,
   rememberReadingHome,
   setPrefs,
@@ -225,9 +227,21 @@ const READ_LINE_SLACK = 8;
 interface ResumeHint {
   chapter: number;
   ref: string;
-  /** where it came from — worth saying, because one of them is surprising */
-  kind: "saved" | "other-device";
+  /**
+   * where it came from — worth saying, because one of them is surprising.
+   * `your-place`: the reader arrived by a link (a friend's passage, a search
+   * hit, a saved card) somewhere other than their own place in this book.
+   */
+  kind: "saved" | "other-device" | "your-place";
 }
+
+/**
+ * How much reading on turns a visit into the reader's new place: this many
+ * distinct paragraphs at the reading line (about two phone screens), or this
+ * long on the page. See `visit` in the reader.
+ */
+const VISIT_PARAS = 8;
+const VISIT_MS = 60_000;
 
 /**
  * The glossary is loaded once for the whole reading session and shared by the
@@ -275,6 +289,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [noteTarget, setNoteTarget] = useState<Selection | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
+  /** what the note box opened with, so a close can tell a draft from nothing typed */
+  const [noteBase, setNoteBase] = useState("");
   /**
    * A passage holds one note. Noting it again opens that note with the caret
    * after it, so the new words are added rather than written over it — which
@@ -569,10 +585,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     setReadingSide(p.readingSide === "original" ? "original" : "translated");
     if (p.readingMode) setMode(p.readingMode);
     setPrefsLoaded(true);
-    if (!p.immersiveHintShown) {
+    if (!p.immersiveHintShown || !p.holdHintShown) {
       setHint(true);
-      setPrefs({ immersiveHintShown: true });
-      setTimeout(() => setHint(false), 4200);
+      setPrefs({ immersiveHintShown: true, holdHintShown: true });
+      // Two lines now, so a little longer on screen.
+      setTimeout(() => setHint(false), 6500);
     }
   }, []);
 
@@ -800,6 +817,17 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // `restored` also gates the first progress write below, so opening at page 1
   // cannot overwrite the place we are about to jump to.
   const restored = useRef(false);
+  /**
+   * A passage opened by a link is a visit, not a move (15 Nov 2026, UX audit
+   * RD2). A friend's WhatsApp link to page 30 used to become this book's one
+   * saved place 1.5 seconds after it opened — on every synced device — so the
+   * reader who was on page 140 came back to "Resume · page 30" with nothing
+   * to say page 140 had gone. Now the saved place is left alone until the
+   * reader reads on from the link (`VISIT_PARAS` paragraphs or `VISIT_MS`),
+   * and the pill offers the way back meanwhile. Not set when the link *is*
+   * the saved place — Continue reading and Resume land there too.
+   */
+  const visit = useRef<{ since: number; seen: Set<string> } | null>(null);
   // The words a search result was opened for, marked in its paragraph until
   // the reader moves to another chapter.
   const [searchHit, setSearchHit] = useState<SearchHit | null>(null);
@@ -851,6 +879,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       const q = new URLSearchParams(window.location.search);
       const marked = q.has("hl") || q.has("w");
       jumpToPage(hash[1], Number(hash[2]) || undefined, marked ? "center" : "start");
+      const target = pages
+        .find((p) => p.key === hash[1])
+        ?.paragraphs.find((q) => q.para_number === Number(hash[2]))?.canonical_ref;
+      const own = localProgressFor(book.code)?.canonical_ref;
+      const ownChapter = Number(own?.match(/^\S+\s+([^.]+)\./)?.[1]);
+      if (target && own && own !== target && ownChapter) {
+        visit.current = { since: Date.now(), seen: new Set() };
+        setResumeHint({ chapter: ownChapter, ref: own, kind: "your-place" });
+      }
       // Searched words (`hl`), and the words a shared link was about (`w`),
       // marked in the paragraph it lands on.
       const id = `p-${hash[1]}-${hash[2]}`;
@@ -949,6 +986,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       setCurrentRef(ref);
       ownRefs.current.add(ref);
       if (!restored.current) return;
+      // Still visiting the passage a link opened: keep the reader's own place.
+      const v = visit.current;
+      if (v) {
+        v.seen.add(ref);
+        if (v.seen.size < VISIT_PARAS && Date.now() - v.since < VISIT_MS) return;
+        visit.current = null;
+      }
       pendingProgress.current = { ref, chapter: chapterNumber };
       if (progressTimer.current) clearTimeout(progressTimer.current);
       progressTimer.current = setTimeout(commitProgress, 1500);
@@ -1699,6 +1743,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       text_hi: noteTarget.para.text_hi,
     };
     saveNote(target, noteText.trim(), !!user);
+    setNoteDraft(noteTarget.para.canonical_ref, "");
     // The selected words, or the paragraph when there was no selection (an
     // edit opened from the note sheet). See `paintForNote`.
     if (paintForNote(target, !!user, noteTarget.text ? noteTarget.span : undefined)) refreshPainted();
@@ -2042,6 +2087,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const endOfBookText = home ? "You’ve reached the end of this text." : "You’ve reached the end of this book.";
   const prevLang = contentLang(chapter?.prev ? chapterName(chapter.prev) : "");
 
+  /** the Assistant, open on Book search within this book */
+  const bookSearchHref = `/assistant?${new URLSearchParams({ mode: "books", book: book.code })}`;
+
   return (
     <div
       className="reader-surface min-h-dvh"
@@ -2070,13 +2118,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         // Search is the assistant until there is an assistant. The designer put
         // this button here so the habit forms before the chat arrives; scoped
         // to this book, because a global search from page 19 of a chapter is
-        // almost never the question being asked.
-        assistantHref="/assistant"
+        // almost never the question being asked. The comment said so for
+        // months while the link was a bare /assistant (UX audit FD9).
+        assistantHref={bookSearchHref}
       />
 
       <ReaderDesktopBar
         hidden={!chrome.visible}
-        assistantHref="/assistant"
+        assistantHref={bookSearchHref}
         backHref={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
         backLabel={home?.backLabel ?? "Back to book"}
         book={book.title_hi}
@@ -2234,6 +2283,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
               <button
                 type="button"
                 onClick={() => {
+                  // Going back to their place ends the visit: from here on
+                  // where they read is where they are.
+                  visit.current = null;
                   const m = resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\.([^.]+)$/);
                   if (resumeHint.chapter === chapterNumber && !isFrontMatter) {
                     if (m) jumpToPage(m[1], Number(m[2]) || undefined, "start");
@@ -2263,8 +2315,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     other-device case keeps its own words because it is telling
                     the reader something they could not otherwise know. */}
                 <span className="truncate">
-                  {resumeHint.kind === "other-device" ? "Other device" : "Resume"}
-                  {resumeHint.chapter === chapterNumber && !isFrontMatter
+                  {resumeHint.kind === "other-device"
+                    ? "Other device"
+                    : resumeHint.kind === "your-place"
+                      ? "Your place"
+                      : "Resume"}
+                  {(resumeHint.chapter === chapterNumber || resumeHint.kind === "your-place") && !isFrontMatter
                     ? ` · page ${resumeHint.ref.match(/^\S+\s+[^.]+\.([^.]+)\./)?.[1] ?? ""}`
                     : ` · chapter ${resumeHint.chapter}`}
                 </span>
@@ -2478,6 +2534,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         bottom={dockOffset}
         position={positionLabel}
         onContents={() => setTocOpen(true)}
+        onMark={
+          touchSel.enabled
+            ? () => {
+                const at = noteHere ? paraByRef.get(noteHere.canonical_ref) : undefined;
+                if (at) setSelection({ para: at, text: "" });
+              }
+            : undefined
+        }
         // Only on a printed book: the sheet asks for a printed page number, and
         // a digital-first edition has none to ask for.
         onPosition={book.book_type === "print" ? () => setGotoOpen(true) : undefined}
@@ -2517,8 +2581,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {/* one-time coach mark */}
       {hint && !chrome.visible && !desktop && (
         <div className="pointer-events-none fixed inset-x-0 top-1/2 z-30 flex justify-center px-8">
-          <p className="rounded-full bg-black/75 px-4 py-2 text-center text-xs text-white">
-            Tap the middle of the page for controls
+          {/* The gesture every mark starts with, said once (15 Nov 2026, UX
+              audit IN9): until then the only place "press and hold" was
+              written was the empty Highlights list, met after failing. */}
+          <p className="rounded-tile bg-black/75 px-4 py-2 text-center text-xs leading-relaxed text-white">
+            Tap the middle of the page for controls.
+            <br />
+            Press and hold a line to highlight, note or share it.
           </p>
         </div>
       )}
@@ -2529,9 +2598,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           onHighlight={(colour) => doHighlight(selection, colour)}
           onNote={() => {
             const earlier = marks.get(selection.para.canonical_ref)?.note;
+            const start = earlier ? `${earlier}\n\n` : "";
+            const draft = getNoteDraft(selection.para.canonical_ref);
             setNoteTarget(selection);
-            setNoteText(earlier ? `${earlier}\n\n` : "");
-            noteCaretToEnd.current = !!earlier;
+            setNoteBase(start);
+            setNoteText(draft ?? start);
+            noteCaretToEnd.current = !!(draft ?? earlier);
             setNoteOpen(true);
           }}
           onShare={() => void doShare(selection)}
@@ -2656,7 +2728,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 
       <Sheet
         open={noteOpen && !!noteTarget}
+        // A tap above the sheet or its ✕ keeps what was written — see
+        // `setNoteDraft`. Cancel, below, is the deliberate way to drop it.
         onClose={() => {
+          if (noteTarget) {
+            const kept = noteText.trim() && noteText !== noteBase;
+            setNoteDraft(noteTarget.para.canonical_ref, kept ? noteText : "");
+            if (kept) showToast({ text: "Draft kept. It will be here when you note this passage again." });
+          }
           setNoteOpen(false);
           setNoteText("");
           setNoteTarget(null);
@@ -2678,6 +2757,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
               <button
                 type="button"
                 onClick={() => {
+                  if (noteTarget) setNoteDraft(noteTarget.para.canonical_ref, "");
                   setNoteOpen(false);
                   setNoteText("");
                   setNoteTarget(null);
@@ -2768,7 +2848,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     onClick={() => {
                       setNoteView(null);
                       setNoteTarget({ para, text: "" });
-                      setNoteText(note);
+                      setNoteBase(note);
+                      setNoteText(getNoteDraft(para.canonical_ref) ?? note);
                       noteCaretToEnd.current = true;
                       setNoteOpen(true);
                     }}

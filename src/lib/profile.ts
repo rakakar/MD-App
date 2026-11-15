@@ -180,6 +180,39 @@ export async function adoptLocalProfile(user: MeUser): Promise<MeUser | null> {
   }
 }
 
+/**
+ * "Not now" on "A little about you" (15 Nov 2026, UX audit FR8).
+ *
+ * The step was compulsory and its only way out was Sign out, so a reader who
+ * signed in to sync their notes was sent to it from every screen — a friend's
+ * passage link included — and asked for a state and a city to receive shivir
+ * updates they had not asked for. Now it can wait: the reader goes on to where
+ * they were headed, and the details stay one tap away on the Profile page.
+ * Remembered per account on this device, like the old device answers.
+ */
+const LATER_KEY = "md.profile.later";
+
+export function deferProfile(user: MeUser): void {
+  const key = accountKey(user);
+  if (!key) return;
+  try {
+    const later = JSON.parse(localStorage.getItem(LATER_KEY) || "[]") as string[];
+    if (!later.includes(key)) localStorage.setItem(LATER_KEY, JSON.stringify([...later, key]));
+  } catch {
+    // blocked storage: the step is offered again next time, no worse
+  }
+}
+
+export function profileDeferred(user: MeUser): boolean {
+  const key = accountKey(user);
+  if (!key) return false;
+  try {
+    return (JSON.parse(localStorage.getItem(LATER_KEY) || "[]") as string[]).includes(key);
+  } catch {
+    return false;
+  }
+}
+
 /** Step 1 is done: open the journey question on the next ordinary screen. */
 export function askForStage(): void {
   try {

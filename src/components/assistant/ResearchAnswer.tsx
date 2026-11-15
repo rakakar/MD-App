@@ -15,6 +15,7 @@ import {
   isAnswerServiceDown,
   isDeepQuotaExhausted,
   isQuotaExhausted,
+  resumeChat,
   shareChatAnswer,
 } from "@/lib/chat";
 import { parseRef } from "@/lib/refs";
@@ -68,6 +69,7 @@ export function ResearchAnswer({
   shelf,
   quota,
   onDeepen,
+  askedAt,
   shareUrl,
   readOnly = false,
   dictionary,
@@ -110,6 +112,8 @@ export function ResearchAnswer({
   onCancel?: () => void;
   /** how long a deep answer took, as recorded when it arrived */
   took?: number;
+  /** when the turn was asked (ISO) — an older one may already be answered */
+  askedAt?: string;
 }) {
   const { user, loading } = useAuth();
   const [answer, setAnswer] = useState<ChatAnswer | null>(stored ?? null);
@@ -133,9 +137,14 @@ export function ResearchAnswer({
     let entry = inflight.get(key);
     if (!entry) {
       const startedAt = Date.now();
+      const opts = { continueFrom, books, mode: deep ? ("deep" as const) : ("quick" as const) };
+      // Not in flight here, but asked a while ago: the page was reloaded under
+      // it. The server may have the answer already — see `resumeChat`.
+      const asked = askedAt ? Date.parse(askedAt) : NaN;
+      const earlier = attempt === 0 && Number.isFinite(asked) && startedAt - asked > 5_000;
       entry = {
-        job: askChat(query, { continueFrom, books, mode: deep ? "deep" : "quick" }),
-        startedAt,
+        job: earlier ? resumeChat(query, opts, asked) : askChat(query, opts),
+        startedAt: earlier ? asked : startedAt,
       };
       inflight.set(key, entry);
       // Kept even if the reader has gone to another conversation by the time

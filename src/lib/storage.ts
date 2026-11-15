@@ -183,6 +183,12 @@ export interface Prefs {
   /** one-time "your highlights and notes are kept here", after the first save */
   marksHintShown: boolean;
   /**
+   * one-time "press and hold a line to highlight, note or share it" — its own
+   * flag rather than `immersiveHintShown`, so readers who saw only the old
+   * "tap the middle" line are taught it once too (15 Nov 2026, UX audit IN9)
+   */
+  holdHintShown: boolean;
+  /**
    * Whether the six-card first-run deck has been through once.
    *
    * Set by finishing it *or* by skipping it — the deck is an explanation, not
@@ -303,6 +309,7 @@ export const DEFAULT_PREFS: Prefs = {
   syncNudgeShown: false,
   immersiveHintShown: false,
   marksHintShown: false,
+  holdHintShown: false,
   onboardingSeen: false,
   switcherHintShown: false,
   journeyStage: null,
@@ -948,6 +955,30 @@ export function clearPdfPlace(key: string): void {
   write(PDF_PAGE_KEY, store);
 }
 
+// ---- Note drafts ----
+//
+// What a reader was writing in the note box when the sheet closed without a
+// save — a tap above the sheet, the corner ✕, a phone call (15 Nov 2026, UX
+// audit TR2). Before this the box emptied on every close, and a note typed in
+// Hindi on a phone keyboard is slow to write twice. One draft per passage,
+// keyed by its canonical ref, given back the next time the box opens on it.
+// Device-local and cleared on sign-out with the rest of the reader's own words.
+
+const NOTE_DRAFT_KEY = "md.notedraft.v1";
+
+export function getNoteDraft(ref: string): string | null {
+  return read<Record<string, string>>(NOTE_DRAFT_KEY, {})[ref] ?? null;
+}
+
+/** an empty text removes the draft */
+export function setNoteDraft(ref: string, text: string): void {
+  if (!isBrowser) return;
+  const store = read<Record<string, string>>(NOTE_DRAFT_KEY, {});
+  if (text.trim()) store[ref] = text;
+  else delete store[ref];
+  write(NOTE_DRAFT_KEY, store);
+}
+
 // ---- Downloads ----
 //
 // Which library files this device has been asked to save, so a row can show
@@ -1026,6 +1057,7 @@ export function clearLocalStore(): void {
   window.localStorage.removeItem(PLAYHEAD_KEY);
   window.localStorage.removeItem(PDF_PAGE_KEY);
   window.localStorage.removeItem(PDF_VIEW_KEY);
+  window.localStorage.removeItem(NOTE_DRAFT_KEY);
 }
 
 // ---- Volunteer sign-up ----

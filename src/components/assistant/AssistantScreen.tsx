@@ -263,6 +263,23 @@ export function AssistantScreen() {
   // ?q= arrives already asked (or, for Research, typed in and waiting).
   const qParam = params.get("q");
   const modeParam = params.get("mode");
+
+  // ?book= — opened from inside a book (the reader's search button): Book
+  // search, scoped to that book, the scope shown in the box's pill where it
+  // can be widened. Before 15 Nov 2026 the reader linked to a bare
+  // /assistant, and finding the book again meant picking a mode, opening the
+  // picker and scrolling to its title (UX audit FD9, AS3). Only a book on the
+  // shelf the Assistant searches; a translation's code is simply ignored.
+  const bookParam = params.get("book");
+  const scoped = useRef(false);
+  useEffect(() => {
+    if (scoped.current || !bookParam || cParam || qParam || !books) return;
+    scoped.current = true;
+    // An empty shelf is one that failed to load, not a verdict on the book.
+    if (books.length > 0 && !books.some((b) => b.code === bookParam)) return;
+    setMode((INTENTS as string[]).includes(modeParam ?? "") ? (modeParam as Intent) : "books");
+    setScope([bookParam]);
+  }, [bookParam, cParam, qParam, modeParam, books]);
   const arrived = useRef(false);
   useEffect(() => {
     if (arrived.current || !qParam || cParam) return;
@@ -476,6 +493,7 @@ export function AssistantScreen() {
                         turnId={t.id}
                         query={t.query}
                         stored={t.answer}
+                        askedAt={t.at}
                         continueFrom={prevResearch}
                         books={t.books}
                         deep={!!t.deep}

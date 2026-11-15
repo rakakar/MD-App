@@ -69,6 +69,12 @@ export function DeepResearchProgress({
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-ink">Deep research in progress</span>
           <span className="block text-xs text-ink-soft">This usually takes about a minute</span>
+          {/* Said, because the wait is long enough to go and do something
+              else, and nothing told the reader it was safe (UX audit AS4).
+              It is: the answer is fetched back if the page was left. */}
+          <span className="mt-0.5 block text-xs text-ink-soft">
+            You can leave this screen. The answer will be here when you come back.
+          </span>
         </span>
         <span
           className="shrink-0 text-sm font-semibold tabular-nums"
@@ -128,6 +134,11 @@ export function DeepResearchProgress({
         >
           Cancel
         </button>
+      )}
+      {onCancel && (
+        <p className="mt-2 text-center text-xs text-ink-soft">
+          Cancelling stops the wait here. The question has already been asked, so it still counts.
+        </p>
       )}
     </div>
   );

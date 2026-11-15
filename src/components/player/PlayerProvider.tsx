@@ -85,6 +85,16 @@ export type PlayerSource = TtsSource | DeviceTtsSource | TrackSource;
 export interface ChapterNav {
   prev: (() => void) | null;
   next: (() => void) | null;
+  /**
+   * The track this queue is positioned on. Set by `useAudioQueue`, whose
+   * queue now outlives the page that built it (15 Nov 2026, UX audit AV4):
+   * leaving a series page used to drop the queue, so Part 7 ended in silence
+   * and ⏮/⏭ left the lock screen. A queue that carries on must also know when
+   * to stop — the moment anything else plays, it is dropped (see the effect
+   * beside `navRef`). Unset for the reader's chapter neighbours, which the
+   * reader manages itself.
+   */
+  forTrack?: string;
 }
 
 interface PlayerState {
@@ -211,6 +221,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     navRef.current = chapterNav;
   }, [chapterNav]);
+  // A carried queue ends when something outside it plays. A functional update,
+  // because a queue that just moved on sets its next position in the same
+  // commit, from a child effect that has already run by now.
+  const playingTrack = source?.kind === "track" ? source.id : null;
+  useEffect(() => {
+    setChapterNav((n) => (n?.forTrack && n.forTrack !== playingTrack ? null : n));
+  }, [playingTrack]);
 
   // Whether a playhead has an account to travel to. Through a ref because
   // `remember` is also called from a `pagehide` listener and an interval, both
