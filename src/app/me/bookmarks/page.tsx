@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
-import { EmptyState, PageContainer, useUndoToast } from "@/components/ui";
+import { EmptyState, PageContainer, RowListSkeleton, ctaSecondary, useUndoToast } from "@/components/ui";
 import { unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref, shareCitation } from "@/lib/refs";
 import type { HighlightColour, LocalBookmark } from "@/lib/storage";
@@ -85,10 +85,17 @@ export default function BookmarksPage() {
       />
 
       <div className="mt-5">
-        {highlights === null ? null : highlights.length === 0 ? (
+        {highlights === null ? (
+          <RowListSkeleton />
+        ) : highlights.length === 0 ? (
           <EmptyState
             title="Nothing highlighted yet"
-            hint="Press and hold any line while reading, then pick a colour."
+            hint="Press and hold a line while reading, then pick a colour."
+            action={
+              <Link href="/books" className={ctaSecondary}>
+                Open a book
+              </Link>
+            }
           />
         ) : (
           <ul className="flex flex-col gap-3">

@@ -13,6 +13,7 @@ import {
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { RATES, fmt } from "./audioChrome";
 import { ownsViewport } from "@/lib/routes";
+import { contentLang } from "@/lib/script";
 import {
   SKIP_SECONDS,
   activeRendition,
@@ -255,13 +256,24 @@ function PlayerBarInner({
         aria-label="Open audio mode"
         className="flex min-w-0 flex-1 flex-col text-left"
       >
-        <span className="hi hi-tight w-full truncate text-sm font-semibold">
+        {/* The language the words are in, not a blanket `.hi`: a recording's
+            title is often English, and a Hindi title with no `lang` is read
+            out by a screen reader with English phonetics (15 Nov 2026). */}
+        <span
+          lang={contentLang(pillTitle).lang}
+          className={`${contentLang(pillTitle).className} hi-tight w-full truncate text-sm font-semibold`}
+        >
           {pillTitle}
         </span>
         {/* "Play from here" starts the phone's voice without passing Audio
             Mode, where it is explained — so the pill says it too. */}
         <span className="flex w-full min-w-0 items-baseline text-xs text-white/70">
-          <span className="hi hi-tight min-w-0 truncate">{pillSubtitle}</span>
+          <span
+            lang={contentLang(pillSubtitle).lang}
+            className={`${contentLang(pillSubtitle).className} hi-tight min-w-0 truncate`}
+          >
+            {pillSubtitle}
+          </span>
           {device && <span className="shrink-0">{" · phone’s voice"}</span>}
         </span>
       </button>

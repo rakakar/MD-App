@@ -19,7 +19,7 @@ const DISMISSED_KEY = "md.push.banner_dismissed";
  * belongs in Settings where it can be explained, not in a banner they cannot
  * act on from here.
  */
-export function NotificationBanner() {
+export function NotificationBanner({ className = "" }: { className?: string }) {
   const { status, busy, enable } = usePush();
   const [dismissed, setDismissed] = useState(true); // assume hidden until read
 
@@ -44,7 +44,7 @@ export function NotificationBanner() {
   };
 
   return (
-    <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rule bg-card p-4">
+    <div className={`flex items-start gap-3 rounded-2xl border border-rule bg-card p-4 ${className}`}>
       <span aria-hidden className="text-lg leading-none">
         🔔
       </span>

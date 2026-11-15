@@ -100,7 +100,7 @@ export function ForgotPassword() {
             Back to sign in
           </Link>
 
-          <h1 className="mt-4 font-display text-[2rem] leading-tight text-ink">
+          <h1 className="mt-4 font-display text-display leading-tight text-ink">
             {step.kind === "done" ? "Password changed" : "Reset your password"}
           </h1>
 

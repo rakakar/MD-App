@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
-import { EmptyState, PageContainer, useUndoToast } from "@/components/ui";
+import { EmptyState, PageContainer, RowListSkeleton, ctaSecondary, useUndoToast } from "@/components/ui";
 import { unsaveNote } from "@/lib/personal";
 import { parseRef, refToHref, shareCitation } from "@/lib/refs";
 
@@ -50,10 +50,17 @@ export default function NotesPage() {
       />
 
       <div className="mt-5">
-        {notes === null ? null : notes.length === 0 ? (
+        {notes === null ? (
+          <RowListSkeleton />
+        ) : notes.length === 0 ? (
           <EmptyState
             title="No notes yet"
-            hint="Select any passage in the reader and choose Note."
+            hint="Press and hold a line while reading, then choose Note."
+            action={
+              <Link href="/books" className={ctaSecondary}>
+                Open a book
+              </Link>
+            }
           />
         ) : (
           <ul className="flex flex-col gap-3">
@@ -72,7 +79,7 @@ export default function NotesPage() {
                       <p
                         lang="hi"
                         className="hi line-clamp-2 border-s-2 ps-3 text-sm leading-relaxed text-ink-soft"
-                        style={{ borderColor: "var(--ws-color)" }}
+                        style={{ borderColor: "var(--ws-ink)" }}
                       >
                         {n.text_hi}
                       </p>

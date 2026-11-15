@@ -139,6 +139,11 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "MD Study",
     locale: "hi_IN",
+    // A link pasted into WhatsApp — how most of this audience shares — showed
+    // no picture at all. The 512 logo is the only brand image that is square
+    // and big enough for a preview; pages that set their own `openGraph`
+    // replace this whole object, so they bring their own (15 Nov 2026).
+    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: "MD Study" }],
   },
 };
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { savedDate } from "@/components/me/SavedCard";
 import { CloseIcon } from "@/components/shell/icons";
-import { EmptyState, PageContainer } from "@/components/ui";
+import { EmptyState, PageContainer, RowListSkeleton, ctaSecondary } from "@/components/ui";
 import { setSavedToJourney, type Conversation } from "@/lib/assistant/conversations";
 import { contentLang } from "@/lib/script";
 
@@ -39,10 +39,15 @@ export default function ResearchPage() {
       <PersonalHeader active="research" rows={rows} titles={titles} book={null} onBook={() => {}} />
 
       <div className="mt-5">
-        {saved === null ? null : saved.length === 0 ? (
+        {saved === null ? <RowListSkeleton /> : saved.length === 0 ? (
           <EmptyState
             title="No saved research yet"
             hint="Ask a question in the Assistant’s Research and choose Save to Journey — it will be kept here."
+            action={
+              <Link href="/assistant" className={ctaSecondary}>
+                Open the Assistant
+              </Link>
+            }
           />
         ) : (
           <>
@@ -89,7 +94,7 @@ function ResearchCard({
   const line = contentLang(summary);
 
   return (
-    <article className="relative rounded-card border border-rule bg-card p-4 shadow-card transition-shadow hover:shadow-md">
+    <article className="relative rounded-card border border-rule bg-card p-4 shadow-card transition-shadow hover:shadow-raised">
       <h2
         lang={title.lang}
         className={`${title.className} hi-tight text-title font-semibold`}

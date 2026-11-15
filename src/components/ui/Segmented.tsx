@@ -245,7 +245,8 @@ export function RadioSegmented<T extends string | number>({
   onChange,
 }: {
   label: string;
-  options: { value: T; label: string }[];
+  /** `hint` is the segment's tooltip — Feedback's "Bug: something's broken" */
+  options: { value: T; label: string; hint?: string }[];
   value: T;
   onChange: (v: T) => void;
 }) {
@@ -260,6 +261,7 @@ export function RadioSegmented<T extends string | number>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
+            title={o.hint}
             className={`${SEGMENT} flex-1 ${active ? SEGMENT_ON_RAISED : "text-ink hover:bg-ink/5"}`}
             style={active ? { color: "var(--ws-ink)" } : undefined}
           >

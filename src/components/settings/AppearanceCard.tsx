@@ -136,7 +136,7 @@ function SizeSlider({ value, onChange }: { value: number; onChange: (v: number) 
         </div>
         <span
           aria-hidden
-          className="pointer-events-none absolute -inset-1 rounded-control peer-focus-visible:ring-2 peer-focus-visible:ring-(--ws-color)"
+          className="pointer-events-none absolute -inset-1 rounded-control peer-focus-visible:ring-2 peer-focus-visible:ring-(--ws-ink)"
         />
       </div>
       <span aria-hidden className="text-2xl text-ink-soft">

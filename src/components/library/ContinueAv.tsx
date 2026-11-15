@@ -397,7 +397,7 @@ function AvRow({
         <span className="flex min-w-0 items-baseline gap-2.5">
           <span
             lang={title.lang}
-            className={`${title.className} hi-tight min-w-0 truncate text-title font-semibold`}
+            className={`${title.className} hi-tight min-w-0 line-clamp-2 text-title font-semibold`}
           >
             {row.title}
           </span>
@@ -448,7 +448,7 @@ function AvRow({
   );
 
   const shell =
-    "flex w-full items-center gap-4 px-4 py-4 text-start transition-colors hover:bg-ink/[0.02] sm:rounded-card sm:border sm:border-rule sm:bg-card sm:px-5 sm:transition-shadow sm:hover:bg-card sm:hover:shadow-md";
+    "flex w-full items-center gap-4 px-4 py-4 text-start transition-colors hover:bg-ink/[0.02] sm:rounded-card sm:border sm:border-rule sm:bg-card sm:px-5 sm:transition-shadow sm:hover:bg-card sm:hover:shadow-raised";
 
   if (onPlay) {
     return (
@@ -534,7 +534,7 @@ function ResumeCard({
         <span className="min-w-0 flex-1">
           <span
             {...contentLang(row.title)}
-            className={`${contentLang(row.title).className} hi-tight block truncate text-title font-semibold`}
+            className={`${contentLang(row.title).className} hi-tight line-clamp-2 text-title font-semibold`}
           >
             {row.title}
           </span>
@@ -596,7 +596,7 @@ function ResumeCard({
   // exactly — two cards doing the same job on two tabs, and any difference
   // between them is one a reader has to account for.
   const shell =
-    "flex h-full w-full flex-col rounded-card border border-rule bg-card px-4 py-3 text-left transition-shadow hover:shadow-md";
+    "flex h-full w-full flex-col rounded-card border border-rule bg-card px-4 py-3 text-left transition-shadow hover:shadow-raised";
 
   // Audio this page holds plays in place; everything else opens the folder it
   // lives in, where the same playhead is waiting. A row that can do neither —

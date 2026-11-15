@@ -76,3 +76,19 @@ export function ShelfGridSkeleton({ count = 6 }: { count?: number }) {
     </div>
   );
 }
+
+/**
+ * A short list of row cards — My Journey's notes, highlights and research,
+ * and the notifications list — while they load. Those screens rendered
+ * nothing until the data landed, so a slow fetch looked like an empty account
+ * (15 Nov 2026). Card height and corner, so the real rows land in place.
+ */
+export function RowListSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div role="status" aria-label="Loading" className="flex flex-col gap-2.5">
+      {Array.from({ length: rows }, (_, i) => (
+        <Skeleton key={i} className="h-20 w-full rounded-card" />
+      ))}
+    </div>
+  );
+}

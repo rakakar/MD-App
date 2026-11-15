@@ -345,7 +345,7 @@ export function DownloadsScreen() {
           className="fixed inset-x-0 z-30 mx-auto flex max-w-md items-center gap-3 px-4"
           style={{ bottom: "calc(var(--bottom-nav-h, 4.5rem) + 0.75rem + env(safe-area-inset-bottom))" }}
         >
-          <div className="flex w-full items-center gap-3 rounded-card bg-ink p-2 ps-4 text-sm text-card shadow-lg">
+          <div className="flex w-full items-center gap-3 rounded-card bg-ink p-2 ps-4 text-sm text-card shadow-raised">
             <span className="flex-1 tabular-nums">
               {picked.size} selected{pickedBytes ? ` · ${formatBytes(pickedBytes)}` : ""}
             </span>

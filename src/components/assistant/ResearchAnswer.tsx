@@ -19,6 +19,7 @@ import {
 } from "@/lib/chat";
 import { parseRef } from "@/lib/refs";
 import type { BookSummary, ChatAnswer, ChatCitation, ChatQuota, ParibhashaWord } from "@/lib/types";
+import { contentLang, scriptOf } from "@/lib/script";
 import { WORKSPACES } from "@/lib/workspaceConfig";
 import { CitationSheet } from "./CitationSheet";
 import { DeepResearchProgress, clock } from "./DeepResearchProgress";
@@ -268,14 +269,16 @@ export function ResearchAnswer({
     <div className="flex flex-col gap-5">
       {(answer.mode === "deep" || deep) && (
         <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-semibold" style={{ color: "var(--color-accent-ink)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--ws-ink)" }}>
             Deep research
           </p>
           {/* How long the progress card's clock ran. What was read is the
               "Read N passages" line just below — not repeated here. */}
           {took != null && (
             <p className="flex items-center gap-2 text-sm text-ink-soft">
-              <span aria-hidden className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-600 text-white">
+              {/* The state token, so the tick follows the theme — a fixed
+                  emerald was too bright on dark paper (15 Nov 2026). */}
+              <span aria-hidden className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-success text-card">
                 <CheckIcon className="h-3 w-3" />
               </span>
               Researched in <span className="tabular-nums">{clock(took / 1000)}</span>
@@ -321,8 +324,8 @@ export function ResearchAnswer({
             aria-hidden
             className="flex h-8 w-8 items-center justify-center rounded-lg"
             style={{
-              background: "color-mix(in srgb, var(--color-accent) 14%, var(--color-card))",
-              color: "var(--color-accent-ink)",
+              background: "color-mix(in srgb, var(--ws-color) 14%, var(--color-card))",
+              color: "var(--ws-ink)",
             }}
           >
             ✦
@@ -336,10 +339,13 @@ export function ResearchAnswer({
         </p>
       )}
 
+      {/* Each block says its own language (15 Nov 2026). Without it a Hindi
+          answer inherited the page's lang="en": read aloud in an English
+          voice, and set in whatever the sans stack fell back to. */}
       <div className="flex flex-col gap-4 text-lg leading-relaxed">
         {blocks.map((b, i) =>
           b.kind === "item" ? (
-            <p key={i} className={`flex gap-2 ${b.depth ? "pl-6" : ""}`}>
+            <p key={i} {...blockLang(b.runs, `flex gap-2 ${b.depth ? "pl-6" : ""}`)}>
               <span aria-hidden className="text-ink-soft">
                 {b.depth ? "◦" : "•"}
               </span>
@@ -348,7 +354,7 @@ export function ResearchAnswer({
               </span>
             </p>
           ) : b.kind === "heading" ? (
-            <h3 key={i} className="mt-2 text-title font-semibold leading-snug">
+            <h3 key={i} {...blockLang(b.runs, "mt-2 text-title font-semibold leading-snug", "hi-note")}>
               <Runs runs={b.runs} cites={cites} onOpen={setOpen} />
             </h3>
           ) : b.kind === "rule" ? (
@@ -362,7 +368,10 @@ export function ResearchAnswer({
                   <thead>
                     <tr>
                       {b.head.map((c, j) => (
-                        <th key={j} className="border border-rule bg-inset p-2 text-left align-top font-semibold">
+                        <th
+                          key={j}
+                          {...blockLang(c, "border border-rule bg-inset p-2 text-left align-top font-semibold", "hi-note")}
+                        >
                           <Runs runs={c} cites={cites} onOpen={setOpen} />
                         </th>
                       ))}
@@ -373,7 +382,7 @@ export function ResearchAnswer({
                   {b.rows.map((row, r) => (
                     <tr key={r}>
                       {row.map((c, j) => (
-                        <td key={j} className="whitespace-pre-line border border-rule p-2 align-top">
+                        <td key={j} {...blockLang(c, "whitespace-pre-line border border-rule p-2 align-top", "hi-note")}>
                           <Runs runs={c} cites={cites} onOpen={setOpen} />
                         </td>
                       ))}
@@ -383,7 +392,7 @@ export function ResearchAnswer({
               </table>
             </div>
           ) : (
-            <p key={i}>
+            <p key={i} {...blockLang(b.runs)}>
               <Runs runs={b.runs} cites={cites} onOpen={setOpen} />
             </p>
           )
@@ -428,9 +437,9 @@ export function ResearchAnswer({
             disabled={deepLeft === 0}
             className="flex min-h-12 items-center justify-center gap-2 rounded-control border px-4 text-title font-semibold disabled:opacity-50"
             style={{
-              borderColor: "color-mix(in srgb, var(--color-accent) 40%, transparent)",
-              background: "color-mix(in srgb, var(--color-accent) 10%, var(--color-card))",
-              color: "var(--color-accent-ink)",
+              borderColor: "color-mix(in srgb, var(--ws-color) 40%, transparent)",
+              background: "color-mix(in srgb, var(--ws-color) 10%, var(--color-card))",
+              color: "var(--ws-ink)",
             }}
           >
             <span aria-hidden>✦</span> {answer.status === "not_found" ? "Try Deep research" : "Deep research"}
@@ -584,10 +593,14 @@ export function ResearchAnswer({
 function CiteBadge({ n, onClick }: { n: number; onClick?: () => void }) {
   const cls =
     "inline-flex h-6 min-w-6 items-center justify-center rounded-md border px-1.5 text-xs font-bold align-[0.1em]";
+  // The answer's own hue, not the app's terracotta (15 Nov 2026): every
+  // accent in a Research answer used to be `--color-accent`, so a green
+  // answer drew orange badges and an orange Sign in. `IntentScope` sets
+  // `--ws-color` / `--ws-ink` around each answer, the shared page included.
   const style = {
-    borderColor: "color-mix(in srgb, var(--color-accent) 35%, transparent)",
-    background: "color-mix(in srgb, var(--color-accent) 12%, var(--color-card))",
-    color: "var(--color-accent-ink)",
+    borderColor: "color-mix(in srgb, var(--ws-color) 35%, transparent)",
+    background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+    color: "var(--ws-ink)",
   };
   if (!onClick)
     return (
@@ -611,6 +624,21 @@ function CiteBadge({ n, onClick }: { n: number; onClick?: () => void }) {
   );
 }
 
+/**
+ * `lang` and the face for one block of the answer, read from its own words —
+ * an answer can be Hindi prose with an English table, or the reverse.
+ *
+ * Body paragraphs take `.hi` (Mukta, 1.85, the app's Hindi reading measure);
+ * the size stays `text-lg`, since `.hi` sets no size. Headings and table cells
+ * pass `hi-note` (1.5) instead: they are set snug, and `.hi` is unlayered, so
+ * its 1.85 would beat their `leading-snug` and open every wrapped heading.
+ */
+function blockLang(runs: Run[], className = "", hiClass?: string) {
+  const l = contentLang(runs.map((r) => (r.kind === "text" ? r.text : "")).join(""));
+  const face = l.lang === "hi" ? (hiClass ?? l.className) : "";
+  return { lang: l.lang, className: `${face} ${className}`.trim() || undefined };
+}
+
 function Runs({
   runs,
   cites,
@@ -628,7 +656,13 @@ function Runs({
             <CiteBadge key={i} n={r.index + 1} onClick={() => onOpen(r.index)} />
           ) : null
         ) : r.bold ? (
-          <strong key={i} className={/[ऀ-ॿ]/.test(r.text) ? "hi-note font-bold" : "font-semibold"}>
+          // `hi-note` rather than `.hi`: inside an English line, 1.85 on one
+          // bold Hindi word would open that line alone.
+          <strong
+            key={i}
+            lang={scriptOf(r.text)}
+            className={scriptOf(r.text) === "hi" ? "hi-note font-bold" : "font-semibold"}
+          >
             {r.text}
           </strong>
         ) : (
@@ -666,7 +700,7 @@ function FailureCard({
           <Link
             href={`/login?next=${encodeURIComponent(here)}`}
             className={ctaPrimary}
-            style={{ background: "var(--color-accent-deep)" }}
+            style={{ background: "var(--ws-color)" }}
           >
             Sign in
           </Link>
@@ -702,7 +736,7 @@ function FailureCard({
             type="button"
             onClick={onRetry}
             className={ctaPrimary}
-            style={{ background: "var(--color-accent-deep)" }}
+            style={{ background: "var(--ws-color)" }}
           >
             Try again
           </button>

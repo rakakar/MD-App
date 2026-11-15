@@ -89,7 +89,7 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
             length on it — the comps draw no button over the face. */}
         <span className="absolute inset-0 hidden items-center justify-center sm:flex">
           <span
-            className="flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-transform group-hover:scale-110"
+            className="flex h-9 w-9 items-center justify-center rounded-full shadow-card transition-transform group-hover:scale-110"
             style={
               item.active
                 ? { background: "var(--ws-color)", color: "white" }

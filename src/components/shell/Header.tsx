@@ -203,12 +203,12 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
       <button
         type="button"
         aria-label="Close"
-        className="ws-sheet-backdrop absolute inset-0 bg-black/40"
+        className="ws-sheet-backdrop absolute inset-0"
         onClick={() => setOpen(false)}
       />
       {/* five rows fit any phone held upright; in landscape they do not, and a
           row you cannot reach is a row you cannot choose */}
-      <div className="ws-sheet absolute inset-x-0 bottom-0 max-h-[calc(100dvh-2.5rem)] overflow-y-auto overscroll-contain rounded-t-[26px] border-t border-rule bg-surface px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-20px_44px_-20px_rgba(26,22,19,.4)]">
+      <div className="ws-sheet absolute inset-x-0 bottom-0 max-h-[calc(100dvh-2.5rem)] overflow-y-auto overscroll-contain rounded-t-sheet border-t border-rule bg-surface px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 shadow-sheet">
         <div className="mx-auto h-1 w-10 rounded-full bg-rule" aria-hidden />
         <div className="mt-4 flex items-start justify-between gap-3">
           <p id="ws-sheet-title" className="text-title font-semibold tracking-[-0.01em]">
@@ -251,8 +251,8 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
         aria-haspopup={variant === "sheet" ? "dialog" : "listbox"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex min-h-12 items-center gap-2.5 rounded-control border bg-card pl-2 pr-3 text-left shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors ${
-          variant === "popover" ? "w-full" : "w-full max-w-full"
+        className={`flex items-center gap-2.5 rounded-control border bg-card pl-2 pr-3 text-left shadow-card transition-colors ${
+          variant === "popover" ? "min-h-12 w-full" : "min-h-11 w-full max-w-full"
         } ${open ? "" : "hover:bg-accent-tint"}`}
         style={
           open
@@ -315,7 +315,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
       </button>
 
       {open && variant === "popover" && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-56 rounded-[14px] border border-rule bg-card p-1.5 shadow-[0_20px_44px_-16px_rgba(26,22,19,.35)]">
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-56 rounded-tile border border-rule bg-card p-1.5 shadow-raised">
           {/* One fixed order, the current workspace highlighted where it
               stands. 10A pinned it to the top over a divider, but then every
               choice reshuffled the list under the reader's pointer, so the row
@@ -385,14 +385,14 @@ function AvatarMenu() {
   const pathname = useRoutePath();
 
   if (loading) {
-    return <div className="h-12 w-12 rounded-control bg-ink/5" aria-hidden />;
+    return <div className="h-11 w-11 rounded-control bg-ink/5 lg:h-12 lg:w-12" aria-hidden />;
   }
 
   if (!user) {
     return (
       <Link
         href={signInHref(pathname)}
-        className={ctaPrimaryBar}
+        className={`${ctaPrimaryBar} min-h-11! lg:min-h-12!`}
         style={{ background: "var(--ws-color)" }}
       >
         Sign in
@@ -421,11 +421,14 @@ function AvatarMenu() {
         aria-expanded={open}
         aria-label={unread > 0 ? `Account menu, ${unread} unread notifications` : "Account menu"}
         onClick={() => setOpen(true)}
-        /* 48px, squaring up with the switcher beside it — the two are the only
-           things in the bar and one standing 8px shorter than the other read as
-           a misalignment rather than a hierarchy. The glyph steps up with the
-           box so it keeps its proportion. */
-        className="relative flex h-12 w-12 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+        /* 44px on the phone, squaring up with the switcher beside it — the two
+           are the only things in the bar and one standing shorter than the
+           other read as a misalignment rather than a hierarchy. 44 is the touch
+           floor and makes the bar 57px (44 + 12 + the rule), which is what
+           `--app-header-h` assumes on first paint; at 48 it was 65 and every
+           sticky row overlapped the bar by 8px until the measure ran (15 Nov
+           2026). The sidebar's copy keeps 48 from `lg:`. */
+        className="relative flex h-11 w-11 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-card transition-colors hover:bg-accent-tint lg:h-12 lg:w-12"
       >
         <UserIcon className="h-5 w-5" />
         {/* Something unread: the menu holds Notifications, so the dot sits on
@@ -873,7 +876,7 @@ export function DisplayButton() {
         /* Matches the account button and the switcher — see the note there. It
            is the signed-out bar's second control and would otherwise be the one
            thing in the row standing short. */
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-[0_1px_2px_rgba(26,22,19,.04)] transition-colors hover:bg-accent-tint"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule bg-card text-ink-soft shadow-card transition-colors hover:bg-accent-tint lg:h-12 lg:w-12"
       >
         <PaletteIcon />
       </button>
@@ -1015,7 +1018,7 @@ export function Header() {
       style={{ background: "var(--ws-chrome)" }}
     >
       {/* Two or three items now, and they fit one row at every text size. */}
-      <div className="flex flex-wrap items-center gap-2.5 px-4 py-2">
+      <div className="flex flex-wrap items-center gap-2.5 px-4 py-1.5">
         {/* No brand mark. It was identity *and* a way home — "from four levels
             deep in a book list, the tab bar's Home is the only other route
             back" — and the second half of that is what made it worth its width.

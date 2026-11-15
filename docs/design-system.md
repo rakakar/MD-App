@@ -363,6 +363,36 @@ stack's `gap-5` was spacing it; the Read shelf had nothing else, and the heading
 against the summary line. The margin belongs on the `<section>`, where `first:` describes
 something real about where the component was placed.
 
+
+## The UI audit, 14–15 Nov 2026
+
+A read-only audit of 110 dimensions (the report lives outside the repo, beside `web/`) and
+three passes of fixes from it. Most were bugs against rules already written here — sizes
+under the floor, targets under 44px, the fill hue used as text, off-ladder shadows — and
+need no row. These are the ones that change what a screen looks like or does, and so
+depart from a comp or from what this file said before.
+
+| Before | Now | Reason |
+|---|---|---|
+| Phone app bar 65px, controls 48px | 57px, controls 44px (`h-11`), `py-1.5` | The CSS fallback `--app-header-h` already assumed 57, so sticky rows sat 8px under the bar until it was measured. 44 is still the floor; the page gets 8px back. Desktop keeps 48. |
+| Home on a phone: push ask first, Upcoming shivirs last | Push ask under Continue Reading; shivirs straight after Books | The ask arrived after hydration and pushed the Sutra ~140px down; the next shivir was the last thing on a six-screen page. Desktop placement is unchanged (explicit grid rows). |
+| Consent card over the tab bar, on first paint | Waits for the first-run deck to close (`FIRST_RUN_DONE`); stands on `--bottom-nav-h`; a plain Hindi line under the English; Allow / No thanks | Three asks before a first page; and the only first-visit question was English jargon. |
+| Reader selection bar a single scrolling pill | Two rows on a phone (colours and ✕, then actions) on the card radius; one pill from `sm`; dots in 44px targets | At 360px the pill needed 449–627px, so Report and ✕ were off-screen with no sign the bar scrolled. |
+| Phone chapter nav: two halves with truncated titles | The desktop card (अगला अध्याय + full title, 2 lines) on phones too; Previous as a text link under it. On the last chapter: "You've reached the end of this book" and Back to the book | The halves cut Devanagari mid-conjunct with no "next" label; the last chapter ended on a disabled button. |
+| Note and feedback buttons under the text box | In the sheet's pinned `footer` | With a phone keyboard up they were below the sheet's fold. |
+| Note sheet labelled with the internal ref ("MKD 2.40.7") | "पृष्ठ 42" | As the sutra card already decided. |
+| Book-text quote and inline `<i>` in italic | Upright; inline emphasis is Mukta 500 | Neither book face has an italic, so the slant was synthesised and smeared matras. |
+| Audio Mode: speed chip only; no offline save | A sleep-timer chip (moon) beside speed, in all three listening surfaces; "Save for offline · N MB" under the voice chip | Both existed in code with nowhere to press them once the foot row went. |
+| Audio Mode on a phone held sideways | Cover and text side by side (`short-landscape:` variant) | Stacked, Play fell off a screen that cannot scroll. |
+| Folder hero "Play all" always from part 1 | "Resume · 7 of 14" when a part is in progress, and it opens that part | Every row already knew its progress. |
+| Delete a note or highlight: instant and final | Instant, with a 7s "Note deleted · Undo" toast (`ui/useUndoToast`; the reader's own toast in the book) | Undo restores the row exactly — place, date, spans, server id (`restoreLocalNote`). |
+| Three scrim strengths (30% + blur, 40%, 50%) | One `--color-scrim`, 45% black, on `.ws-sheet-backdrop` | Same job, one value. `Dialog` lost its blur. |
+| Disabled CTA at 60% of the accent (~2:1) | The idle look Sign in had: `canvas` fill, `ink-soft` words (`.cta:disabled`) | Read as broken, not "not yet". `aria-busy` keeps the fill on a button disabled while it works. |
+| Assistant answers: app terracotta on CTAs and citations | Each answer's own hue (`--ws-color` / `--ws-ink`) | A green Research answer carried terracotta numbers and a terracotta Sign in. Hindi answer paragraphs now take `.hi` (Mukta, 1.85). |
+| Voice input: a hand-built sheet | `ui/Sheet`: status as the sheet title, language choice centred under it, the standard close as well as the comp's round ✕ | It had no close, no focus handling and no scroll lock. |
+| Feedback status pills in Tailwind amber/emerald at 11px | `--color-warning` / `--color-warning-tint` (new, per theme) and the success pair, at 13px | They did not follow the theme. |
+| Two page-title literals | `--text-display` (2rem, auth) and `--text-hero` (1.3125rem) | Repeated literals drift. |
+
 ---
 
 ## Tokens — `src/app/globals.css`

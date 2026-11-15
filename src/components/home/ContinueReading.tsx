@@ -251,7 +251,7 @@ export function ContinueReading({
               // and the text column beside it is shorter, so 16px top and
               // bottom was 16px plus the slack the centred text already left —
               // it read as a card with a hole in it.
-              className="flex h-full items-center gap-4 rounded-card border border-rule bg-card px-4 py-3 transition-shadow hover:shadow-md"
+              className="flex h-full items-center gap-4 rounded-card border border-rule bg-card px-4 py-3 transition-shadow hover:shadow-raised"
             >
               <CoverTile
                 book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}
@@ -266,7 +266,10 @@ export function ContinueReading({
                   out 101.5 against an 86px cover, so it overhung the artwork by
                   7.5 at the head and the foot. Tight, it is 86.5: the title
                   starts at the top of the cover and the page figures end at its
-                  foot. Change either leading and that alignment goes.
+                  foot. Change either leading and that alignment goes. (A
+                  title too long for one line now wraps to two rather than
+                  being cut mid-word, 15 Nov 2026, and that card stands taller
+                  than its cover — the scroller's cards all take its height.)
 
                   `hi-tight` stays on regardless of script — it is the leading
                   fix, not the font. `lang`/`.hi` are decided per line instead:
@@ -276,7 +279,7 @@ export function ContinueReading({
               <span className="min-w-0 flex-1">
                 <span
                   {...titleLang}
-                  className={`${titleLang.className} hi-tight block truncate text-title font-semibold`}
+                  className={`${titleLang.className} hi-tight line-clamp-2 text-title font-semibold`}
                 >
                   {c.title}
                 </span>

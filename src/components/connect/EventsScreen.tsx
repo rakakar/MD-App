@@ -250,7 +250,7 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
                 setQuery("");
                 setAsked("");
               }}
-              placeholder="Name, prabodhak, year"
+              placeholder="Search by name, prabodhak, year…"
               label="Search events"
               unasked={query.trim() !== asked.trim()}
               pending={pending}
@@ -330,11 +330,13 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
           />
         ) : (
           <EmptyState
-            title={`No ${BUCKET_LABEL[bucket].toLowerCase()} events`}
+            // "shivirs", as the cards and the detail page say; the tab keeps its
+            // name "Events" (15 Nov 2026).
+            title={`No ${BUCKET_LABEL[bucket].toLowerCase()} shivirs`}
             hint={
               bucket === "past"
                 ? "Shivirs appear here once they have finished."
-                : "New shivirs and gatherings will appear here."
+                : "New shivirs and gatherings will be listed here."
             }
           />
         )}

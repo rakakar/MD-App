@@ -85,6 +85,18 @@ export function AppShell({ children }: { children: ReactNode }) {
               sidebar is mounted once here and a page's facets are fetched per
               request — so the slot that joins them has to be above both. */}
           <RailProvider>
+            {/* First focusable thing on every screen, so a keyboard or
+                switch reader is not made to tab through the app bar and the
+                sidebar on each page (15 Nov 2026). Invisible until focused.
+                A plain anchor rather than a `Link`: it jumps within the page,
+                and `main` takes focus via its tabIndex so the next Tab starts
+                inside the content. */}
+            <a
+              href="#main"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-100 focus:flex focus:min-h-11 focus:items-center focus:rounded-control focus:border focus:border-rule focus:bg-card focus:px-4 focus:text-sm focus:font-semibold focus:text-ink focus:shadow-raised"
+            >
+              Skip to content
+            </a>
             {!bare && !ownHeader && <Header />}
             {!bare && <Sidebar />}
             <CommandK />
@@ -93,11 +105,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             <NavProgress />
             <ServiceWorker />
             <main
+              id="main"
+              tabIndex={-1}
               className={
                 bare
-                  ? "min-h-dvh"
+                  ? "min-h-dvh outline-none"
                   : // clears the bottom nav plus the home-indicator inset
-                    "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-64"
+                    "min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none lg:pb-8 lg:pl-64"
               }
             >
               {/* The offline notice lives in the app bar (phone) and the

@@ -107,7 +107,10 @@ function Runs({ runs }: { runs: FormattedSegment[] }) {
  */
 function Styled({ b, i, children }: { b?: boolean; i?: boolean; children: React.ReactNode }) {
   let out = children;
-  if (i) out = <i className="italic">{out}</i>;
+  // Upright, 15 Nov 2026: neither DPS Shree nor Mukta has an italic, so
+  // `italic` got a browser-faked slant. Emphasis is Mukta at 500 instead — a
+  // weight step in the default (Mukta) face, a change of face under the serif.
+  if (i) out = <i className="not-italic font-devanagari-sans font-medium">{out}</i>;
   if (b) out = <b className="font-bold">{out}</b>;
   return <>{out}</>;
 }
@@ -328,7 +331,9 @@ export function Block({
       return (
         <blockquote
           lang="hi"
-          className={`hi my-4 border-s-2 ps-4 italic text-(--reader-ink-soft) ${align}`}
+          // Upright (15 Nov 2026): no Devanagari face here has an italic, so
+          // the slant was synthesised. The ruled edge and softer ink carry it.
+          className={`hi my-4 border-s-2 ps-4 not-italic text-(--reader-ink-soft) ${align}`}
           style={{ ...indent, borderColor: "var(--ws-ink)" }}
         >
           <Marker marker={para.marker} />

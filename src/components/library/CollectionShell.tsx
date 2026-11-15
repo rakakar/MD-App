@@ -57,7 +57,7 @@ export function CollectionGridCard({
   return (
     <Link
       href={href}
-      className="group flex h-full flex-col rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-md"
+      className="group flex h-full flex-col rounded-2xl border border-rule bg-card p-3.5 transition-shadow hover:shadow-raised"
     >
       <span className="mb-2.5">{tile}</span>
       <span
@@ -124,7 +124,7 @@ export function CollectionListRow({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3.5 rounded-card border border-rule bg-card p-2.5 transition-shadow hover:shadow-md"
+      className="group flex items-center gap-3.5 rounded-card border border-rule bg-card p-2.5 transition-shadow hover:shadow-raised"
     >
       {tile}
       <span className="min-w-0 flex-1">

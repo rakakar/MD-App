@@ -228,10 +228,15 @@ export function HighlightsPanel({
                 // Chapters with nothing in them are shown greyed rather than
                 // hidden: "no highlights here" is an answer to "where are my
                 // highlights", not an absence.
+                // In the sheet's own language (15 Nov 2026): the rows were the
+                // one Hindi line in an English sheet with English Clear and
+                // Apply, and "Highlights" / "Notes" everywhere else.
                 meta={
                   count
-                    ? `${count.highlights} हाइलाइट${count.notes ? ` · ${count.notes} नोट` : ""}`
-                    : "कोई हाइलाइट नहीं"
+                    ? `${count.highlights} ${count.highlights === 1 ? "highlight" : "highlights"}${
+                        count.notes ? ` · ${count.notes} ${count.notes === 1 ? "note" : "notes"}` : ""
+                      }`
+                    : "None"
                 }
                 checked={draft.includes(n)}
                 disabled={!count}

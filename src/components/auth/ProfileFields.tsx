@@ -110,12 +110,26 @@ export function ProfileFields({
       You sign in with this {field === "mobile" ? "number" : "email"}, so it can&rsquo;t be changed here.
     </p>
   );
+  /* A refused field says so three ways (15 Nov 2026): a 2px danger edge, a ⚠
+     before the words so red is not the only signal, and `aria-invalid` with
+     the message in `aria-describedby`, so a screen reader hears it on focus
+     rather than only once when it lands. */
+  const errorId = (field: keyof FieldErrors) => `${idPrefix}-${field}-error`;
   const errorLine = (field: keyof FieldErrors) =>
     errors[field] ? (
-      <p id={`${idPrefix}-${field}-error`} role="alert" className="mt-2 text-sm text-danger">
+      <p id={errorId(field)} role="alert" className="mt-2 text-sm text-danger">
+        <span aria-hidden>{"\u26A0\uFE0E "}</span>
         {errors[field]}
       </p>
     ) : null;
+  /** the field's own class, edged in danger while the server refuses it */
+  const fieldClass = (field: keyof FieldErrors, base = FIELD) =>
+    errors[field] ? base.replace("border border-rule", "border-2 border-danger") : base;
+  /** `aria-invalid` and `aria-describedby` for a field, beside any note it has */
+  const a11y = (field: keyof FieldErrors, note?: string | false) => {
+    const ids = [note || "", errors[field] ? errorId(field) : ""].filter(Boolean).join(" ");
+    return { "aria-invalid": !!errors[field], "aria-describedby": ids || undefined };
+  };
 
   const state = has("state") && (
     <div>
@@ -128,7 +142,8 @@ export function ProfileFields({
           autoComplete="address-level1"
           value={value.state}
           onChange={(e) => set({ state: e.target.value })}
-          className={`${FIELD} appearance-none pe-12`}
+          {...a11y("state")}
+          className={`${fieldClass("state")} appearance-none pe-12`}
           // the unchosen state reads as a placeholder, as drawn
           style={value.state ? undefined : { color: "var(--color-ink-soft)" }}
         >
@@ -144,39 +159,48 @@ export function ProfileFields({
         </select>
         <ChevronDownIcon className="pointer-events-none absolute end-5 top-[calc(50%+0.25rem)] h-4 w-4 -translate-y-1/2 text-ink-soft" />
       </div>
+      {errorLine("state")}
     </div>
   );
 
   const city = has("city") && (
-    <label className={LABEL}>
-      City
-      <input
-        type="text"
-        autoComplete="address-level2"
-        enterKeyHint="done"
-        placeholder="e.g. Raipur"
-        value={value.city}
-        onChange={(e) => set({ city: e.target.value })}
-        className={`${FIELD} normal-case tracking-normal font-normal`}
-      />
-    </label>
+    <div>
+      <label className={LABEL}>
+        City
+        <input
+          type="text"
+          autoComplete="address-level2"
+          enterKeyHint="done"
+          placeholder="e.g. Raipur"
+          value={value.city}
+          onChange={(e) => set({ city: e.target.value })}
+          {...a11y("city")}
+          className={`${fieldClass("city")} normal-case tracking-normal font-normal`}
+        />
+      </label>
+      {errorLine("city")}
+    </div>
   );
 
   return (
     <div className="flex flex-col gap-5">
       {has("name") && (
-        <label className={LABEL}>
-          Full name
-          <input
-            type="text"
-            autoComplete="name"
-            enterKeyHint="next"
-            placeholder="Your name"
-            value={value.name}
-            onChange={(e) => set({ name: e.target.value })}
-            className={`${FIELD} normal-case tracking-normal font-normal`}
-          />
-        </label>
+        <div>
+          <label className={LABEL}>
+            Full name
+            <input
+              type="text"
+              autoComplete="name"
+              enterKeyHint="next"
+              placeholder="Your name"
+              value={value.name}
+              onChange={(e) => set({ name: e.target.value })}
+              {...a11y("name")}
+              className={`${fieldClass("name")} normal-case tracking-normal font-normal`}
+            />
+          </label>
+          {errorLine("name")}
+        </div>
       )}
 
       {has("mobile") && (
@@ -204,8 +228,8 @@ export function ProfileFields({
               value={value.mobile}
               onChange={(e) => set({ mobile: tenDigits(e.target.value) })}
               readOnly={mobileLocked}
-              aria-describedby={mobileLocked ? `${idPrefix}-mobile-note` : undefined}
-              className={`${mobileLocked ? LOCKED_FIELD : FIELD} ps-14`}
+              {...a11y("mobile", mobileLocked && `${idPrefix}-mobile-note`)}
+              className={`${fieldClass("mobile", mobileLocked ? LOCKED_FIELD : FIELD)} ps-14`}
             />
           </div>
           {mobileLocked && lockedNote("mobile")}
@@ -227,8 +251,8 @@ export function ProfileFields({
               value={email}
               onChange={(e) => set({ email: e.target.value })}
               readOnly={emailLocked}
-              aria-describedby={emailLocked ? `${idPrefix}-email-note` : undefined}
-              className={`${emailLocked ? LOCKED_FIELD : FIELD} normal-case tracking-normal font-normal`}
+              {...a11y("email", emailLocked && `${idPrefix}-email-note`)}
+              className={`${fieldClass("email", emailLocked ? LOCKED_FIELD : FIELD)} normal-case tracking-normal font-normal`}
             />
           </label>
           {emailLocked && lockedNote("email")}

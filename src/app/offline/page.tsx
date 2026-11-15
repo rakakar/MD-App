@@ -12,7 +12,7 @@ export default function OfflinePage() {
       <p className="text-4xl">☁️</p>
       <h1 className="mt-3 text-lg font-semibold">You&apos;re offline</h1>
       <p className="mt-1 max-w-xs text-sm text-ink-soft">
-        Downloaded books still open — find them under Downloads in Settings.
+        Downloaded books still open. Tap My downloads below to find them.
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
         <Link

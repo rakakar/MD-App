@@ -184,7 +184,7 @@ export function ReadingCard({
           src={cover}
           title={file.title}
           id={file.id}
-          className="h-16 w-12 shrink-0 rounded-md shadow-[0_1px_3px_rgba(0,0,0,.18)]"
+          className="h-16 w-12 shrink-0 rounded-md shadow-card"
         />
         <div className="min-w-0 flex-1">
           <span
@@ -196,7 +196,7 @@ export function ReadingCard({
           <Link href={href} className="mt-1 block after:absolute after:inset-0 after:content-['']">
             <span
               {...contentLang(file.title)}
-              className={`${contentLang(file.title).className} hi-tight line-clamp-2 block text-[0.9375rem] font-semibold leading-snug`}
+              className={`${contentLang(file.title).className} hi-tight line-clamp-2 block text-sm font-semibold leading-snug`}
             >
               {file.title}
             </span>
@@ -252,13 +252,13 @@ export function ReadingCard({
       The whole card is the text's link — stretched from the title — and the
       buttons sit above it with their own targets.
     */}
-    <div className="group relative hidden gap-4 rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-md sm:flex sm:flex-row sm:items-center">
+    <div className="group relative hidden gap-4 rounded-2xl border border-rule bg-card p-4 transition-shadow hover:shadow-raised sm:flex sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3.5">
         <FileCover
           src={cover}
           title={file.title}
           id={file.id}
-          className="h-[5.5rem] w-[4.125rem] shrink-0 rounded-lg shadow-[0_1px_3px_rgba(0,0,0,.18)]"
+          className="h-[5.5rem] w-[4.125rem] shrink-0 rounded-lg shadow-card"
         />
         <div className="min-w-0 flex-1">
           {"breadcrumb" in file && file.breadcrumb.length > 0 && (
@@ -268,7 +268,7 @@ export function ReadingCard({
             <Link href={href} className="min-w-0 after:absolute after:inset-0 after:content-['']">
               <span
                 {...contentLang(file.title)}
-                className={`${contentLang(file.title).className} block truncate text-[0.9375rem] font-semibold leading-snug group-hover:underline`}
+                className={`${contentLang(file.title).className} block truncate text-sm font-semibold leading-snug group-hover:underline`}
               >
                 {file.title}
               </span>

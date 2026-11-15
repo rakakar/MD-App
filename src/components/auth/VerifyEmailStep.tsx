@@ -85,7 +85,7 @@ export function VerifyEmailStep() {
     <AppAccent>
       <div className="min-h-dvh bg-surface lg:flex lg:items-center lg:justify-center lg:px-8 lg:py-10">
         <div className="mx-auto w-full max-w-md px-6 pb-10 pt-[calc(max(env(safe-area-inset-top),1rem)+2.5rem)] lg:rounded-hero lg:border lg:border-rule lg:bg-card lg:px-12 lg:py-14 lg:shadow-card">
-          <h1 className="mt-4 font-display text-[2rem] leading-tight text-ink">Verify your email</h1>
+          <h1 className="mt-4 font-display text-display leading-tight text-ink">Verify your email</h1>
           <p className="mt-2 mb-6 text-sm leading-relaxed text-ink-soft">
             One quick step, so shivir updates and password resets reach you and nobody else.
           </p>

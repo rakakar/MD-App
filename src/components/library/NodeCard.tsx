@@ -99,7 +99,7 @@ export function NodeCardView({
     return (
       <Link
         href={nodeHref(card.id, shelves)}
-        className="group flex h-full items-start gap-3 rounded-2xl border border-rule bg-card p-5 transition-shadow hover:shadow-md"
+        className="group flex h-full items-start gap-3 rounded-2xl border border-rule bg-card p-5 transition-shadow hover:shadow-raised"
       >
         <span className="min-w-0 flex-1">
           <span

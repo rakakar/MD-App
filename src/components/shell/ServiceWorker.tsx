@@ -89,7 +89,7 @@ export function ServiceWorker() {
       role="status"
       className="fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 lg:bottom-6"
     >
-      <div className="flex items-center gap-3 rounded-full bg-ink px-4 py-2 text-sm text-surface shadow-lg">
+      <div className="flex items-center gap-3 rounded-full bg-ink px-4 py-2 text-sm text-surface shadow-raised">
         A new version is ready.
         <button
           type="button"

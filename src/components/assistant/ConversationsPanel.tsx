@@ -138,7 +138,8 @@ export function ConversationsPanel({
       {all !== null && all.length > 0 && (
         <>
           <div className="shrink-0 px-4">
-            <label className="flex min-h-11 items-center gap-2.5 rounded-control border border-rule bg-card px-3">
+            {/* focus shown on the bordered label — the input is outline-none */}
+            <label className="flex min-h-11 items-center gap-2.5 rounded-control border border-rule bg-card px-3 transition-[border-color,box-shadow] focus-within:border-(--ws-ink) focus-within:ring-3 focus-within:ring-(--ws-ink)/15">
               <SearchGlyph className="h-4 w-4 shrink-0 text-ink-soft" />
               <input
                 value={q}
@@ -218,7 +219,7 @@ function Row({ c, on, now }: { c: Conversation; on: boolean; now: number }) {
       <Link
         href={`/assistant?c=${c.id}`}
         aria-current={on ? "page" : undefined}
-        className={`flex gap-2.5 rounded-control px-2.5 py-2.5 pe-9 transition-colors ${
+        className={`flex gap-2.5 rounded-control px-2.5 py-2.5 pe-12 transition-colors ${
           on ? "bg-rule/60" : "hover:bg-card/70"
         }`}
       >
@@ -243,7 +244,10 @@ function Row({ c, on, now }: { c: Conversation; on: boolean; now: number }) {
           if (window.confirm(`Delete “${c.title}”? This can’t be undone.`)) deleteConversation(c.id);
         }}
         aria-label={`Delete “${c.title}”`}
-        className="absolute right-1 top-1/2 flex h-9 w-8 -translate-y-1/2 items-center justify-center rounded-control text-ink-soft opacity-0 hover:text-danger focus:opacity-100 group-hover:opacity-100"
+        // 44px, and hidden only where a pointer can hover — a touch tablet
+        // wide enough for this panel never saw the ✕ (15 Nov 2026). The row's
+        // `pe-12` keeps the title clear of it.
+        className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-control text-ink-soft hover:text-danger [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
       >
         <CloseIcon className="h-3.5 w-3.5" />
       </button>

@@ -35,7 +35,7 @@ function passwordChecks(pw: string) {
 
 const FIELD =
   "h-11 w-full rounded-control border border-rule bg-inset px-4 text-base text-ink outline-none " +
-  "placeholder:text-ink-soft focus:border-(--ws-color) focus:bg-card focus:ring-3 focus:ring-(--ws-color)/15";
+  "placeholder:text-ink-soft focus:border-(--ws-ink) focus:bg-card focus:ring-3 focus:ring-(--ws-ink)/15";
 
 /** The quiet bordered button at the end of a row — Edit, Change. */
 const ROW_BUTTON =
@@ -216,6 +216,7 @@ function NameRow({ name, onSaved }: { name: string; onSaved: (m: string) => void
         <button
           type="submit"
           disabled={saving || !value.trim()}
+          aria-busy={saving}
           className={ctaPrimary}
           style={{ background: "var(--ws-color)" }}
         >
@@ -295,6 +296,7 @@ function PasswordRow({ setting = false, onSaved }: { setting?: boolean; onSaved:
             <button
               type="submit"
               disabled={!pw.valid || pw.saving}
+              aria-busy={pw.saving}
               className={ctaPrimary}
               style={{ background: "var(--ws-color)" }}
             >
@@ -370,7 +372,7 @@ function PhoneAccount({
 const SHEET_LABEL = "mb-2 block text-sm font-semibold text-ink-soft";
 const SHEET_FIELD =
   "h-14 w-full rounded-tile border border-rule bg-card px-4 text-base text-ink outline-none " +
-  "focus:border-(--ws-color) focus:ring-3 focus:ring-(--ws-color)/15";
+  "focus:border-(--ws-ink) focus:ring-3 focus:ring-(--ws-ink)/15";
 
 function NameSheet({
   name,
@@ -415,6 +417,7 @@ function NameSheet({
           type="button"
           onClick={() => void save()}
           disabled={!changed || saving}
+          aria-busy={saving}
           className={`${ctaPrimary} min-h-14 w-full text-title`}
           style={{ background: "var(--ws-color)" }}
         >
@@ -486,6 +489,7 @@ function PasswordSheet({
           type="submit"
           form="sheet-password"
           disabled={!pw.valid || !matches || pw.saving}
+          aria-busy={pw.saving}
           className={`${ctaPrimary} min-h-14 w-full text-title`}
           style={{ background: "var(--ws-color)" }}
         >

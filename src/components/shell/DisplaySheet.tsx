@@ -161,12 +161,26 @@ export function ThemeSwatches({
   );
 }
 
+/** The book's paper, named as the reader's own sheet names it — only the ones
+ *  that paint a colour; "original" and "bold" follow the app. */
+const BOOK_PAPER: Record<string, string> = { quiet: "Dark", paper: "Grey", calm: "Warm", focus: "Cream" };
+
+function BookPaperNote({ surface }: { surface: string }) {
+  const name = BOOK_PAPER[surface];
+  return (
+    <p className="mt-1 text-xs text-ink-soft">
+      {name ? `Books keep their own page colour (${name}). ` : "Books keep their own page colour. "}
+      Change it inside a book, from its palette button.
+    </p>
+  );
+}
+
 /**
  * The controls without the sheet around them, so the Settings screen can show
  * the same three rows inline instead of hiding them behind another tap.
  */
 export function DisplayControls({ variant = "sheet" }: { variant?: "sheet" | "dialog" }) {
-  const { appTextScale, setAppTextScale, boldText, setBoldText } = useDisplay();
+  const { appTextScale, setAppTextScale, boldText, setBoldText, readerTheme } = useDisplay();
   if (variant === "dialog") return <DialogControls />;
 
   return (
@@ -177,6 +191,11 @@ export function DisplayControls({ variant = "sheet" }: { variant?: "sheet" | "di
         <p className="mt-2 text-xs text-ink-soft">
           Auto follows your device&apos;s light and dark setting, and changes with it.
         </p>
+        {/* Why a book can stay cream in a dark app (15 Nov 2026). The two are
+            separate on purpose — see "Six themes in the reader sheet" in the
+            design doc — but nothing here said so, and a reader who chose Dark
+            and opened a book met paper they thought they had just turned off. */}
+        <BookPaperNote surface={readerTheme} />
       </section>
 
       <section>
@@ -274,7 +293,7 @@ export function ThemePages({ tile = "h-18" }: { tile?: string } = {}) {
             <span
               aria-hidden
               className={`relative block ${tile} w-full overflow-hidden rounded-control border transition-shadow ${
-                active ? "border-transparent ring-2 ring-(--ws-color) ring-offset-3 ring-offset-card" : "border-rule group-hover:border-ink-soft"
+                active ? "border-transparent ring-2 ring-(--ws-ink) ring-offset-3 ring-offset-card" : "border-rule group-hover:border-ink-soft"
               }`}
               style={{ background: t.bg }}
             >
@@ -303,7 +322,7 @@ export function ThemePages({ tile = "h-18" }: { tile?: string } = {}) {
 
 /** The dialog's three settings, divided by rules, as the comp lays them out. */
 function DialogControls() {
-  const { appTextScale, setAppTextScale, boldText, setBoldText } = useDisplay();
+  const { appTextScale, setAppTextScale, boldText, setBoldText, readerTheme } = useDisplay();
   return (
     <div className="divide-y divide-rule">
       <section className="pb-6 pt-3">
@@ -312,6 +331,11 @@ function DialogControls() {
         <p className="mt-4 text-xs text-ink-soft">
           Auto follows your device&apos;s light and dark setting, and changes with it.
         </p>
+        {/* Why a book can stay cream in a dark app (15 Nov 2026). The two are
+            separate on purpose — see "Six themes in the reader sheet" in the
+            design doc — but nothing here said so, and a reader who chose Dark
+            and opened a book met paper they thought they had just turned off. */}
+        <BookPaperNote surface={readerTheme} />
       </section>
 
       <section className="py-6">
@@ -336,7 +360,7 @@ function DialogControls() {
                 aria-checked={active}
                 onClick={() => setAppTextScale(sc)}
                 className={`min-h-9 flex-1 rounded-md border text-sm transition-colors ${
-                  active ? "border-rule bg-card font-semibold shadow-sm" : "border-transparent text-ink hover:bg-ink/5"
+                  active ? "border-rule bg-card font-semibold shadow-card" : "border-transparent text-ink hover:bg-ink/5"
                 }`}
                 style={active ? { color: "var(--ws-ink)" } : undefined}
               >

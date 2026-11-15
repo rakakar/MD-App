@@ -10,7 +10,7 @@ import {
   FeedbackIcon,
   PathIcon,
 } from "@/components/shell/icons";
-import { Chip, EmptyState } from "@/components/ui";
+import { Chip, EmptyState, RowListSkeleton } from "@/components/ui";
 import { timeAgo } from "@/lib/dates";
 import type { InboxItem, InboxKind } from "@/lib/inbox";
 import { contentLang } from "@/lib/script";
@@ -73,7 +73,7 @@ export function NotificationList({
       </div>
 
       <div className="mt-3">
-        {shown === null ? null : shown.length > 0 ? (
+        {shown === null ? <RowListSkeleton /> : shown.length > 0 ? (
           <ul className="flex flex-col gap-1">
             {shown.map((item) => (
               <li key={item.id}>
@@ -136,7 +136,7 @@ function Row({ item, dense, onOpen }: { item: InboxItem; dense: boolean; onOpen:
             {item.body}
           </span>
         )}
-        <span className="mt-1 block text-xs text-ink-soft/80">{timeAgo(item.receivedAt)}</span>
+        <span className="mt-1 block text-xs text-ink-soft">{timeAgo(item.receivedAt)}</span>
       </span>
       {!item.read && (
         <span aria-label="Unread" className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-danger" />

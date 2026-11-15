@@ -172,7 +172,7 @@ export function ProfileStep() {
                 </div>
               )}
 
-              <h1 className="mt-4 font-display text-[2rem] leading-tight text-ink">
+              <h1 className="mt-4 font-display text-display leading-tight text-ink">
                 A little about you
               </h1>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft sm:text-base">

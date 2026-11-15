@@ -271,7 +271,7 @@ function About({
   const resources = stageResources(stage);
   return (
     <div>
-      <p className="text-base leading-relaxed sm:text-[1.0625rem]">{stage.note}</p>
+      <p className="text-base leading-relaxed sm:text-title">{stage.note}</p>
       <p className="mt-2 text-sm text-ink-soft">
         {stage.duration.charAt(0).toUpperCase() + stage.duration.slice(1)}
       </p>
@@ -571,7 +571,7 @@ function Subfolders({ cards }: { cards: NodeCard[] }) {
           <li key={c.id}>
             <Link
               href={journeyFolderHref(c.id)}
-              className="flex min-h-11 items-center gap-3 rounded-card border border-rule bg-card p-3 transition-shadow hover:shadow-md"
+              className="flex min-h-11 items-center gap-3 rounded-card border border-rule bg-card p-3 transition-shadow hover:shadow-raised"
             >
               <KindTile kind={c.kinds.length === 1 ? c.kinds[0] : "folder"} size="md" />
               <span className="min-w-0 flex-1">

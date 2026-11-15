@@ -121,9 +121,11 @@ export function ReaderTopBar({
             title carried 31px of line box and pushed the chapter away from
             it. */}
         <div className="min-w-0 flex-1">
-          <p lang="hi" className="hi hi-tight truncate text-title font-semibold">
+          {/* The page's h1 (15 Nov 2026) — the reader had none. Same look as
+              the <p> it replaces; the desktop bar carries its own, sr-only. */}
+          <h1 lang="hi" className="hi hi-tight truncate text-title font-semibold">
             {title}
-          </p>
+          </h1>
           <p className="hi-tight truncate text-xs text-(--reader-ink-soft)">{meta}</p>
         </div>
 
@@ -674,6 +676,12 @@ export function ReaderDesktopBar({
         </div>
 
         <div className="relative min-w-0">
+          {/* The page's h1 at desktop width (15 Nov 2026). The phone bar's h1
+              is display:none here, and the visible book name sits inside the
+              "Go to a page" button, where a heading cannot go. */}
+          <h1 lang="hi" className="sr-only">
+            {book}
+          </h1>
           <button
             type="button"
             onClick={goto?.open ? goto.onClose : onWhere}

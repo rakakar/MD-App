@@ -26,8 +26,10 @@ import { refToHref } from "@/lib/refs";
 const TONE: Record<string, string> = {
   new: "bg-ink/5 text-ink-soft",
   triaged: "bg-ink/5 text-ink-soft",
-  in_progress: "bg-amber-100 text-amber-900",
-  resolved: "bg-emerald-100 text-emerald-900",
+  // Tokens rather than Tailwind's amber/emerald, which are one colour in every
+  // theme: a pale pill lit up on the dark page (15 Nov 2026).
+  in_progress: "bg-warning-tint text-warning",
+  resolved: "bg-success-tint text-success",
   declined: "bg-ink/5 text-ink-soft",
   duplicate: "bg-ink/5 text-ink-soft",
 };

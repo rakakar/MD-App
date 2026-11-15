@@ -34,9 +34,12 @@ export function SharedAnswerView({ answer }: { answer: SharedAnswer }) {
   return (
     <AppAccent>
       <div className="print-page mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:px-6">
-        <p className="text-sm text-ink-soft print:hidden">
+        {/* The page's h1 (15 Nov 2026), styled as the line it was. The question
+            itself would be the better title, but it is drawn by QueryBubble as
+            a chat bubble, and a heading that is also a bubble reads as neither. */}
+        <h1 className="text-sm text-ink-soft print:hidden">
           Shared from the Assistant · answered from the books of Madhyasth Darshan
-        </p>
+        </h1>
         <p className="hidden text-sm print:block">
           MD Study · Assistant — {answer.mode === "deep" ? "Deep research" : "Research"}
         </p>

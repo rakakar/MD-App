@@ -307,10 +307,12 @@ function TabButton({
       style={selected ? { background: "var(--ws-color)" } : undefined}
     >
       <span className="truncate">{label}</span>
+      {/* The count at the label's own soft ink, not `opacity-70` over it —
+          faded, it fell below 4.5:1 in sepia (15 Nov 2026). */}
       {count !== undefined && (
         <span
           className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
-            selected ? "bg-white/20" : "opacity-70"
+            selected ? "bg-white/20" : "text-(--reader-ink-soft)"
           }`}
         >
           {count}

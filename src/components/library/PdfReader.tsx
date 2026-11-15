@@ -1420,7 +1420,7 @@ export function PdfReader({
         <button
           type="button"
           onClick={() => setHint(false)}
-          className="absolute inset-x-0 bottom-0 z-30 mx-auto mb-6 flex w-max max-w-[92%] items-center gap-2 rounded-full border border-rule bg-card/95 px-4 py-2 text-xs font-medium shadow-lg backdrop-blur"
+          className="absolute inset-x-0 bottom-0 z-30 mx-auto mb-6 flex w-max max-w-[92%] items-center gap-2 rounded-full border border-rule bg-card/95 px-4 py-2 text-xs font-medium shadow-raised backdrop-blur"
           style={{ color: "var(--ws-ink)", marginBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
         >
           Turn the phone sideways to read this page full width

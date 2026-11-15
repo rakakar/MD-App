@@ -15,7 +15,8 @@ import { withSearchTerms } from "@/lib/searchHit";
 import { LibraryLane } from "@/components/library/LibraryLane";
 import type { BookSummary, LibrarySearchRow, SearchResponse, SearchResult } from "@/lib/types";
 import { ctaPrimary } from "@/components/ui";
-import { AnswerEyebrow } from "./parts";
+import { AnswerEyebrow, SuggestionChip } from "./parts";
+import type { Ask } from "./types";
 
 /** cards before "N more passages" — enough to judge the list by */
 const FIRST = 5;
@@ -47,6 +48,7 @@ export function BookSearchAnswer({
   exact: exactMode = false,
   books: scope,
   shelf,
+  onAsk,
   onSettle,
 }: {
   query: string;
@@ -58,6 +60,8 @@ export function BookSearchAnswer({
   books?: string[];
   /** the shelf, to name the chosen books */
   shelf?: BookSummary[] | null;
+  /** the recovery chips under an empty search ask through this */
+  onAsk: Ask;
   onSettle: (summary: string, count: number) => void;
 }) {
   const { user, loading: authLoading } = useAuth();
@@ -190,8 +194,25 @@ export function BookSearchAnswer({
         </p>
       )}
 
+      {/* An empty search is not the end of the road (15 Nov 2026): one grey
+          line left the reader to work out the next move alone. Each chip asks
+          again as a new turn, so the empty one stays above as the record.
+          "All books" only when the search was narrowed, and it keeps the
+          phrase a phrase. `SuggestionChip` rather than ui's `Chip`: these are
+          actions, and `Chip` is a toggle that announces "not pressed". */}
       {pool.length === 0 && !library?.length && (
-        <p className="text-sm text-ink-soft">Nothing in the books matches “{phrase ?? query}”.</p>
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-ink-soft">Nothing in the books matches “{phrase ?? query}”.</p>
+          <div className="flex flex-wrap gap-2">
+            {scopeNames.length > 0 && (
+              <SuggestionChip onClick={() => onAsk(query, "books", { exact: exactMode })}>
+                All books
+              </SuggestionChip>
+            )}
+            <SuggestionChip onClick={() => onAsk(query, "research")}>Ask Research</SuggestionChip>
+            <SuggestionChip onClick={() => onAsk(phrase ?? query, "paribhasha")}>Paribhasha</SuggestionChip>
+          </div>
+        </div>
       )}
 
       {locked && pool.length > 0 && (
@@ -271,10 +292,13 @@ function SignInCard({ total, books }: { total: number; books: number }) {
         Paribhasha and Navigate work without signing in.
       </p>
       <div className="mt-4">
+        {/* The answer's teal, like every accent in this file: it sits in the
+            answer's IntentScope, and the app's terracotta here was the one
+            orange thing in a teal answer (15 Nov 2026). */}
         <Link
           href={`/login?next=${encodeURIComponent(here)}`}
           className={ctaPrimary}
-          style={{ background: "var(--color-accent-deep)" }}
+          style={{ background: "var(--ws-color)" }}
         >
           Sign in
         </Link>
@@ -424,7 +448,7 @@ function Highlight({ text, terms }: { text: string; terms: string[] }) {
           <mark
             key={i}
             className="rounded px-0.5 text-ink"
-            style={{ background: "color-mix(in srgb, var(--color-accent) 18%, var(--color-card))" }}
+            style={{ background: "color-mix(in srgb, var(--ws-color) 18%, var(--color-card))" }}
           >
             {part}
           </mark>
@@ -460,7 +484,7 @@ function PassageCard({ result, terms }: { result: SearchResult; terms: string[] 
     <li className="rounded-card border border-rule bg-card p-5 shadow-card">
       <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
         {result.book_title && (
-          <span lang="hi" className="hi-note font-semibold" style={{ color: "var(--color-accent-ink)" }}>
+          <span lang="hi" className="hi-note font-semibold" style={{ color: "var(--ws-ink)" }}>
             {result.book_title}
           </span>
         )}
@@ -475,7 +499,7 @@ function PassageCard({ result, terms }: { result: SearchResult; terms: string[] 
             href={withSearchTerms(refToHref(ref), terms)}
             onClick={() => track("search_result_click", { type: result.type })}
             className="inline-flex min-h-11 flex-1 items-center gap-1 text-sm font-semibold"
-            style={{ color: "var(--color-accent-ink)" }}
+            style={{ color: "var(--ws-ink)" }}
           >
             Open in reader
             <ChevronRight className="h-4 w-4" />
@@ -504,7 +528,7 @@ function PassageCard({ result, terms }: { result: SearchResult; terms: string[] 
               setSaved(!saved);
             }}
             className="flex h-11 w-11 items-center justify-center rounded-control border border-rule"
-            style={saved ? { color: "var(--color-accent-ink)" } : undefined}
+            style={saved ? { color: "var(--ws-ink)" } : undefined}
           >
             <BookmarkIcon filled={saved} className={`h-5 w-5 ${saved ? "" : "text-ink-soft"}`} />
           </button>

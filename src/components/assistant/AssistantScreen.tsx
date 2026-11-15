@@ -189,7 +189,7 @@ export function AssistantScreen() {
 
   // ---- asking ----
   const ask = useCallback(
-    (query: string, forced?: Intent) => {
+    (query: string, forced?: Intent, opts?: { exact?: boolean }) => {
       const q = query.trim();
       if (!q) return;
       // The chip decides the question that starts a conversation. Follow-ups
@@ -218,7 +218,9 @@ export function AssistantScreen() {
         at: new Date().toISOString(),
         ...(intent === "books" && chosen === "books"
           ? { exact: true, ...(scope.length ? { books: scope } : {}) }
-          : {}),
+          : intent === "books" && opts?.exact
+            ? { exact: true }
+            : {}),
         // Research keeps to the chosen books for the whole conversation — a
         // follow-up about "these books" must not quietly widen to all of them.
         ...(intent === "research" && scope.length ? { books: scope } : {}),
@@ -456,6 +458,7 @@ export function AssistantScreen() {
                         exact={!!t.exact}
                         books={t.books}
                         shelf={books}
+                        onAsk={ask}
                         onSettle={(summary, count) => settle(t.id, { summary, count })}
                       />
                     )}

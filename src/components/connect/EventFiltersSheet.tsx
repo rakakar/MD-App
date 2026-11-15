@@ -283,7 +283,10 @@ function FilterAxes({
           dense={dense}
           onClear={value.city ? clear({ city: "" }) : undefined}
         >
-          <div className="relative flex items-center rounded-control border border-rule bg-card ps-3.5 pe-3">
+          {/* The select draws no outline of its own (`outline-none`), so the
+              box shows focus for it: the field recipe the account forms use
+              (15 Nov 2026). */}
+          <div className="relative flex items-center rounded-control border border-rule bg-card ps-3.5 pe-3 transition-[box-shadow,border-color] focus-within:border-(--ws-ink) focus-within:ring-3 focus-within:ring-(--ws-ink)/15">
             <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
               <PinIcon />
             </span>
@@ -292,7 +295,7 @@ function FilterAxes({
               value={value.city}
               onChange={(e) => onChange({ ...value, city: e.target.value })}
               className={`ui-hi w-full appearance-none bg-transparent ps-2.5 pe-2 text-ink outline-none ${
-                dense ? "min-h-10 text-sm" : "min-h-12 text-base"
+                dense ? "min-h-11 text-sm" : "min-h-12 text-base"
               }`}
             >
               <option value="">All locations</option>

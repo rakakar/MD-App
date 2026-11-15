@@ -158,7 +158,7 @@ export function Sheet({
         aria-label="Close"
         onClick={onClose}
         tabIndex={-1}
-        className="ws-sheet-backdrop absolute inset-0 bg-black/50"
+        className="ws-sheet-backdrop absolute inset-0"
       />
       <div
         ref={panelRef}
@@ -241,7 +241,8 @@ export function SheetAction({
     <button
       type="button"
       {...rest}
-      className="flex min-h-12 w-full items-center justify-center rounded-control px-4 text-title font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+      // Pressed and disabled as `ctaPrimary` — `.cta` is the idle look.
+      className="cta flex min-h-12 w-full items-center justify-center rounded-control px-4 text-title font-semibold text-white transition-[opacity,transform] duration-100 not-disabled:hover:opacity-90 not-disabled:active:scale-[0.98] not-disabled:active:opacity-80"
       style={{ background: "var(--ws-color)" }}
     >
       {children}

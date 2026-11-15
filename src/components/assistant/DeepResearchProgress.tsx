@@ -93,7 +93,8 @@ export function DeepResearchProgress({
             <li key={s.label} className="flex items-center gap-3 text-sm">
               <span aria-hidden className="flex h-4.5 w-4.5 shrink-0 items-center justify-center">
                 {state === "done" ? (
-                  <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-600 text-white">
+                  // the state token, not a fixed emerald: it follows the theme
+                  <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-success text-card">
                     <CheckIcon className="h-3 w-3" />
                   </span>
                 ) : state === "now" ? (
@@ -102,11 +103,9 @@ export function DeepResearchProgress({
                   <span className="block h-2.5 w-2.5 rounded-full border border-ink-soft/50" />
                 )}
               </span>
-              <span
-                className={
-                  state === "now" ? "font-semibold text-ink" : state === "done" ? "text-ink-soft" : "text-ink-soft/70"
-                }
-              >
+              {/* Pending is plain ink-soft: the hollow dot already says "not
+                  yet", and ink-soft at 70% fell to 2.9:1 on sepia (15 Nov 2026). */}
+              <span className={state === "now" ? "font-semibold text-ink" : "text-ink-soft"}>
                 {s.label}
                 {state === "now" && <span className="sr-only"> (in progress)</span>}
               </span>

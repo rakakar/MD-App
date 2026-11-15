@@ -284,12 +284,12 @@ export function SutraCard({
             {/* `hi-tight`, not `leading-*`: `.hi` is unlayered and outranks
                 any leading utility, so the title was set at the body's 1.85
                 and stood a line's worth of air above the page. */}
-            <span className="hi hi-tight text-[0.9375rem] font-medium underline-offset-2 group-hover:underline">
+            <span lang="hi" className="hi hi-tight text-sm font-medium underline-offset-2 group-hover:underline">
               {sutra.book_title}
             </span>
             {page && (
               <span
-                className="text-[0.8125rem] leading-tight"
+                className="text-xs leading-tight"
                 style={{ fontFamily: "var(--font-devanagari-sans)" }}
               >
                 पृष्ठ क्र. {page}

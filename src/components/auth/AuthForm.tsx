@@ -227,7 +227,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             <BrandMark className="relative h-full w-full" />
           </div>
 
-          <h1 className={`font-display text-[2rem] leading-tight text-ink transition-[margin] duration-300 ${keyboard ? "mt-3" : "mt-5"}`}>
+          <h1 className={`font-display text-display leading-tight text-ink transition-[margin] duration-300 ${keyboard ? "mt-3" : "mt-5"}`}>
             {login_ ? "Sign in" : "Create account"}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-ink-soft">

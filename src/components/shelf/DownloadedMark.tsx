@@ -14,7 +14,7 @@ export function DownloadedMark({ code }: { code: string }) {
   const downloaded = useDownloadedBooks();
   if (!downloaded.has(code)) return null;
   return (
-    <span className="absolute right-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-control border border-success bg-success-tint shadow-sm">
+    <span className="absolute right-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-control border border-success bg-success-tint shadow-card">
       <CheckIcon className="h-4 w-4 text-success" />
       <span className="sr-only">Downloaded</span>
     </span>

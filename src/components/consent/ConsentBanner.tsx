@@ -1,10 +1,11 @@
 "use client";
 
+import { FIRST_RUN_DONE } from "@/components/journey/StagePrompt";
 import Script from "next/script";
 import { useEffect, useState } from "react";
 import { GA_ID, applyConsent } from "@/lib/analytics";
 import { getPrefs, setPrefs } from "@/lib/storage";
-import { ctaPrimary } from "@/components/ui";
+import { ctaPrimary, ctaSecondary } from "@/components/ui";
 
 /**
  * GA4 with consent mode (PRD §1): gtag boots with analytics_storage denied,
@@ -36,11 +37,21 @@ export function ConsentBanner() {
 
   useEffect(() => {
     const consent = getPrefs().consent;
-    if (consent === null) {
-      setVisible(true);
-    } else {
+    if (consent !== null) {
       applyConsent(consent === "granted");
+      return;
     }
+    // Not over the first-run deck (15 Nov 2026). A new reader met the launch
+    // screen, six cards, then this card over the tab bar and a notification
+    // ask on Home — three asks before reading a line. It waits for the deck
+    // to close; nothing is collected meanwhile, since consent is still unset.
+    if (getPrefs().onboardingSeen) {
+      setVisible(true);
+      return;
+    }
+    const show = () => setVisible(getPrefs().consent === null);
+    window.addEventListener(FIRST_RUN_DONE, show);
+    return () => window.removeEventListener(FIRST_RUN_DONE, show);
   }, []);
 
   if (!visible) return null;
@@ -55,11 +66,20 @@ export function ConsentBanner() {
     <div
       role="region"
       aria-label="Cookie consent"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-rule bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-sm lg:rounded-2xl lg:border lg:pb-4"
+      // Above the phone's tab bar, not over it: `--bottom-nav-h` is the bar's
+      // measured height (Nav publishes it, safe area included), 0 where there
+      // is no bar. Covering it hid the five ways into the app on first visit.
+      className="fixed inset-x-0 bottom-[var(--bottom-nav-h,0px)] z-50 border-t border-rule bg-card p-4 pb-[max(1rem,calc(env(safe-area-inset-bottom)-var(--bottom-nav-h,0px)))] shadow-raised lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-sm lg:rounded-card lg:border lg:pb-4"
     >
       <p className="text-sm text-ink">
         We use Google Analytics to understand how the app is used. No analytics
         cookies are set unless you agree.
+      </p>
+      {/* The same in plain Hindi, for the reader this app is mostly for —
+          asked before they have seen a page, in English jargon, it was the
+          one question on first visit most of them could not read. */}
+      <p lang="hi" className="hi-note mt-1.5 text-sm text-ink-soft">
+        ऐप कैसे उपयोग हो रहा है, यह समझने के लिए हम Google Analytics का उपयोग करते हैं। आपकी अनुमति के बिना कुछ भी नहीं लिया जाता।
       </p>
       <div className="mt-3 flex gap-2">
         <button
@@ -68,12 +88,12 @@ export function ConsentBanner() {
           className={ctaPrimary}
           style={{ background: "var(--ws-color)" }}
         >
-          Allow analytics
+          Allow
         </button>
         <button
           type="button"
           onClick={() => choose(false)}
-          className="inline-flex min-h-11 items-center rounded-full border border-rule px-5 text-sm font-semibold text-ink"
+          className={ctaSecondary}
         >
           No thanks
         </button>

@@ -92,7 +92,10 @@ export function ConversationsScreen() {
             ground behind them, so cards slide under rather than through. */}
         {all !== null && all.length > 0 && (
           <div className="assistant-fade-in sticky top-0 z-20 -mx-4 border-b border-rule bg-surface px-4 pb-3 pt-5 sm:-mx-6 sm:px-6">
-            <label className="flex min-h-14 items-center gap-3 rounded-card border border-rule bg-card px-4">
+            {/* The ring is on the label, which carries the border: the input
+                itself is outline-none, and a keyboard user saw no focus at
+                all (15 Nov 2026). */}
+            <label className="flex min-h-14 items-center gap-3 rounded-card border border-rule bg-card px-4 transition-[border-color,box-shadow] focus-within:border-(--ws-ink) focus-within:ring-3 focus-within:ring-(--ws-ink)/15">
               <SearchGlyph className="h-5 w-5 shrink-0 text-ink-soft" />
               <input
                 value={q}
@@ -273,7 +276,10 @@ function Card({ c, now, delay }: { c: Conversation; now: number; delay: number }
           if (window.confirm(`Delete “${c.title}”? This can’t be undone.`)) deleteConversation(c.id);
         }}
         aria-label={`Delete “${c.title}”`}
-        className="absolute bottom-3 right-3 inline-flex min-h-11 items-center rounded-control px-3 text-sm text-ink-soft opacity-100 hover:text-danger sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+        // Hidden until hover only where there is hover. It used to be keyed on
+        // width (`sm:`), so a touch tablet never saw it at all (15 Nov 2026).
+        // Shown, too, while the card or the button has keyboard focus.
+        className="absolute bottom-3 right-3 inline-flex min-h-11 items-center rounded-control px-3 text-sm text-ink-soft hover:text-danger [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
       >
         Delete
       </button>

@@ -28,7 +28,7 @@ const FILL: Record<HighlightColour, string> = {
 };
 
 const CARD =
-  "relative rounded-card border border-(--reader-rule) bg-(--reader-bg) p-4 shadow-sm transition-colors hover:border-(--reader-ink-soft)";
+  "relative rounded-card border border-(--reader-rule) bg-(--reader-bg) p-4 shadow-card transition-colors hover:border-(--reader-ink-soft)";
 
 /**
  * The whole card is the tap target, drawn as a button stretched behind the

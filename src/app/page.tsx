@@ -68,11 +68,6 @@ export default async function OriginalsHome() {
     <PageContainer size="shelf">
       <h1 className="sr-only">Originals</h1>
 
-      {/* Above today's Sutra only because it is dismissible and, once
-          dismissed, gone for good — below the fold it would never be seen at
-          all, and the offer would exist without ever being made. */}
-      <NotificationBanner />
-
       {/*
         The Nagraj-ji's-own-voice door used to sit here, under today's Sutra.
         It is reachable from the resources section, and a second entrance on
@@ -92,15 +87,20 @@ export default async function OriginalsHome() {
           ─────────────────────────────────────────────
           Explore workspaces, four across
 
-        The shivirs are last in the DOM, where the phone has always had them,
-        and are lifted into the top-right cell by placement. Every child is a
+        The shivirs follow Books in the DOM, so a phone reads Sutra, Continue
+        Reading, Books, Shivirs, ... (15 Nov 2026 — they were last, below
+        Explore workspaces, and a phone never reached them). From lg they are
+        lifted into the top-right cell by placement, which does not depend on
+        where they sit in the source: only the auto-placed items below care
+        about their own relative order, and that is unchanged. Every child is a
         grid cell directly — a wrapper left empty becomes an empty cell.
 
         On a phone the gap is 20px, everywhere: `mt-5` is what a SectionHeading
         puts above itself between two sections, so the stack repeats it. No
         margin above the stack itself — the page's own top padding is that
-        20px, and the banner, when it shows, carries its 20px below it; a
-        `mt-5` here put 40px between the app bar and the Sutra. Change
+        20px; a `mt-5` here put 40px between the app bar and the Sutra. The
+        notification banner has no margin of its own and takes the gap like
+        everything else. Change
         the number in two places (here and SectionHeading) or the phone loses
         its rhythm. The desktop rows take 40px, as drawn.
       */}
@@ -117,10 +117,29 @@ export default async function OriginalsHome() {
           books={books.length > 0 ? books : undefined}
         />
 
+        {/* Below the Sutra and the resume row, never above. It appears after
+            hydration (it reads storage and the push state), and at the top it
+            shoved the whole page ~140px down under the reader's thumb. Down
+            here it only pushes what is below it, which they have not reached.
+            Dismissible, and gone for good once dismissed, so it still gets
+            seen by anyone who scrolls at all. */}
+        <NotificationBanner className="lg:col-span-3" />
+
         <section className="lg:col-span-3">
           <SectionHeading
             tier="title"
-            action={books.length > 0 ? <SeeAll href="/books">All books</SeeAll> : undefined}
+            action={
+              books.length > 0 ? (
+                // The visible words are the same on all three Home sections;
+                // the sr-only copy says which one. `SeeAll` takes no label, and
+                // the aria-hidden span carries its own gap because the
+                // arrow's leading space is lost once a sibling is an element.
+                <SeeAll href="/books">
+                  <span aria-hidden className="me-1">See all</span>
+                  <span className="sr-only">See all books</span>
+                </SeeAll>
+              ) : undefined
+            }
           >
             Books
           </SectionHeading>
@@ -130,6 +149,16 @@ export default async function OriginalsHome() {
             <EmptyState title="No books available yet" hint="Published books will appear here." />
           )}
         </section>
+
+        {/* Three: enough that the next one is visibly not the only one, few
+            enough that Home does not turn into the Connect list. Beside the
+            Sutra on desktop; with no Sutra to sit beside, a full row. */}
+        <UpcomingShivirs
+          shivirs={shivirs}
+          className={
+            sutra ? "lg:col-start-3 lg:row-start-1" : "lg:col-span-3 lg:row-start-1"
+          }
+        />
 
         {/* Draws nothing until there is something; see lib/shorts, which is
             where the fact that there is not yet is kept. */}
@@ -150,10 +179,10 @@ export default async function OriginalsHome() {
           still earns its place.
         */}
         <section className="lg:hidden">
-          <SectionHeading tier="title">Audio &amp; Video</SectionHeading>
+          <SectionHeading tier="title">Media</SectionHeading>
           <PromoBand
             href="/av"
-            title="Audio & Video"
+            title="Media"
             subtitle="Samvaad, talks & shivir — listen or watch"
           />
         </section>
@@ -173,17 +202,7 @@ export default async function OriginalsHome() {
           <ExploreWorkspaces current="originals" />
         </section>
 
-        {/* Three: enough that the next one is visibly not the only one, few
-            enough that Home does not turn into the Connect list. Beside the
-            Sutra on desktop; with no Sutra to sit beside, a full row. */}
-        <UpcomingShivirs
-          shivirs={shivirs}
-          className={
-            sutra ? "lg:col-start-3 lg:row-start-1" : "lg:col-span-3 lg:row-start-1"
-          }
-        />
       </div>
     </PageContainer>
   );
 }
-

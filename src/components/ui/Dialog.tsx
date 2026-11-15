@@ -13,7 +13,9 @@ import { AccentScope } from "@/components/shell/WorkspaceProvider";
  * far corner from the pointer. From lg a screen that has a desktop layout of
  * its own opens this instead (Share sutra, desktop revision 29 Sep 2026).
  *
- * It is only the frame — portal, blurred backdrop, Escape, focus, scroll lock.
+ * It is only the frame — portal, backdrop, Escape, focus, scroll lock. The
+ * backdrop is `--color-scrim`, the same dim as every sheet; it lost its blur
+ * on 15 Nov 2026 so the two modals read as one family.
  * The layout inside belongs to the caller, because the whole reason a desktop
  * modal exists is that it can be laid out differently from the sheet.
  */
@@ -75,7 +77,7 @@ export function Dialog({
         aria-label="Close"
         onClick={onClose}
         tabIndex={-1}
-        className="ws-sheet-backdrop absolute inset-0 bg-black/30 backdrop-blur-sm"
+        className="ws-sheet-backdrop absolute inset-0"
       />
       <div
         ref={panelRef}

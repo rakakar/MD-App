@@ -77,7 +77,7 @@ export function ChapterTable({
                 <span className="min-w-0 flex-1">
                   <span
                     {...t}
-                    className={`${t.className} hi-tight block truncate text-title font-semibold group-hover:underline`}
+                    className={`${t.className} hi-tight line-clamp-2 text-title font-semibold group-hover:underline`}
                   >
                     {name}
                   </span>

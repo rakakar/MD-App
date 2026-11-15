@@ -155,7 +155,7 @@ export function CollectionHero({
               )}
               <h1
                 {...t}
-                className={`${t.className} hi-tight text-[1.3125rem] font-semibold ${kicker ? "lg:text-3xl" : ""}`}
+                className={`${t.className} hi-tight text-hero font-semibold ${kicker ? "lg:text-3xl" : ""}`}
               >
                 {title}
               </h1>

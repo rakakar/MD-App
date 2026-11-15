@@ -7,11 +7,24 @@ import { BackIcon, ChevronRight } from "@/components/shell/icons";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
 import { KindTile, PageContainer } from "@/components/ui";
 import { ApiError, getNode } from "@/lib/api";
+import { albumName } from "@/lib/albumName";
+import { resourceFolderId, stageResources, STAGES } from "@/lib/journey";
 import { journeyDocumentHref, journeyFolderHref } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
 
 export const revalidate = 900;
 export const dynamicParams = true;
+
+/**
+ * The folders the full path opens directly — every stage's own resources, and
+ * the study guide's folder that /me/path links to (144). A folder at or under
+ * one of these is "inside this tree"; the library folders *above* them are
+ * not, and a back pill into one would leave the stage for a filing cabinet.
+ */
+const ENTRY_FOLDERS = new Set<number>([
+  144,
+  ...STAGES.flatMap((s) => stageResources(s)).flatMap((r) => resourceFolderId(r) ?? []),
+]);
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -76,21 +89,58 @@ export default async function JourneyFolderPage({
   const folders = node.children.filter((c) => c.child_count + c.item_count > 0);
   const name = contentLang(node.name);
 
+  // Back goes up a step where there is a step inside this tree to go to, and
+  // to the full path where this folder is the top of it (it used to say "The
+  // full path" on every folder, four levels down included). Same shape as
+  // `NodeView`'s pill and trail. 15 Nov 2026.
+  const start = node.breadcrumb.findIndex((step) => ENTRY_FOLDERS.has(step.id));
+  const parent = start >= 0 ? node.breadcrumb.at(-1) : undefined;
+  const parentLang = parent ? contentLang(albumName(parent.name)) : null;
+  const trail = start >= 0 ? node.breadcrumb.slice(start, -1) : [];
+
   return (
     <PageContainer>
       {/* Reached from the full path, so the Dashboard tab stays lit. */}
       <NavScope href="/me" />
       <Link
-        href="/me/path"
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-rule bg-card pe-3.5 ps-2.5 text-sm font-semibold text-ink transition-colors active:bg-ink/[.04]"
+        href={parent ? journeyFolderHref(parent.id) : "/me/path"}
+        className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-control border border-rule bg-card pe-3.5 ps-2.5 text-sm font-semibold text-ink transition-colors active:bg-ink/[.04]"
       >
         <BackIcon className="h-4 w-4 shrink-0" />
-        The full path
+        {parent ? (
+          <span lang={parentLang?.lang} className={`${parentLang?.className ?? ""} truncate`}>
+            {albumName(parent.name)}
+          </span>
+        ) : (
+          "The full path"
+        )}
       </Link>
+
+      {/* The rest of the way down to here, as a folder's own page draws it
+          (`NodeView`): the pill above is the last step, this is the others. */}
+      {trail.length > 0 && (
+        <nav
+          aria-label="Breadcrumb"
+          lang="hi"
+          className="hi mt-1 flex flex-wrap gap-x-1 text-xs font-semibold text-ink-soft"
+        >
+          {trail.map((step, i) => (
+            <span key={step.id} className="flex items-center gap-x-1">
+              {i > 0 && <span aria-hidden>/</span>}
+              <Link
+                href={journeyFolderHref(step.id)}
+                className="inline-flex min-h-11 items-center hover:underline"
+              >
+                {albumName(step.name)}
+              </Link>
+            </span>
+          ))}
+        </nav>
+      )}
 
       <h1
         lang={name.lang}
-        className={`${name.className} mt-4 font-display text-2xl font-medium`}
+        className={`${name.className} ${trail.length > 0 ? "" : "mt-4 "}font-display text-2xl font-medium`}
       >
         {node.name}
       </h1>
@@ -108,7 +158,7 @@ export default async function JourneyFolderPage({
               <li key={c.id}>
                 <Link
                   href={journeyFolderHref(c.id)}
-                  className="flex min-h-11 items-center gap-3 rounded-card border border-rule bg-card p-2.5 transition-shadow hover:shadow-md"
+                  className="flex min-h-11 items-center gap-3 rounded-card border border-rule bg-card p-2.5 transition-shadow hover:shadow-raised"
                 >
                   {/* A folder of one kind of recording wears that kind's tile,
                       so a reader can tell the audio from the PDFs before

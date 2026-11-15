@@ -127,7 +127,7 @@ export function PdfScreen({
           className="fixed inset-x-0 z-30 mx-auto max-w-md px-4"
           style={{ bottom: "calc(1rem + env(safe-area-inset-bottom))" }}
         >
-          <div className="rounded-2xl border border-rule bg-card p-3 shadow-lg">
+          <div className="rounded-2xl border border-rule bg-card p-3 shadow-raised">
             <p className="text-xs text-ink-soft">
               Taking a while — this is a large document, and the first PDF you
               open also loads the reader itself.

@@ -189,7 +189,7 @@ function FullPath() {
               drawn like the stage resources above. */}
           <Link
             href={journeyFolderHref(STUDY_GUIDE_FOLDER)}
-            className="mt-4 flex items-center gap-4 rounded-card border border-rule bg-card p-4 transition-shadow hover:shadow-md"
+            className="mt-4 flex items-center gap-4 rounded-card border border-rule bg-card p-4 transition-shadow hover:shadow-raised"
           >
             <KindTile kind="pdf" size="lg" />
             <span className="min-w-0 flex-1">

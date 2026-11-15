@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { track } from "@/lib/analytics";
+import { recordClientError } from "@/lib/clientErrors";
 import {
   disablePush,
   enablePush,
@@ -99,11 +100,13 @@ export function usePush() {
           : "This browser can't show notifications."
       );
     } else {
-      // The raw reason, not a shrug. "Please try again" on a failure that will
-      // fail again every time is the least useful sentence in software, and
-      // the person reading it is usually the one who can fix the cause.
+      // A reader gets a plain sentence; the raw reason (a service-worker or
+      // FCM exception) goes to the client error buffer, which the feedback
+      // report carries — so it is still there when someone writes to us, and
+      // it is not shown to people who cannot act on it (15 Nov 2026).
       const detail = result.error instanceof Error ? result.error.message : String(result.error);
-      setError(`Couldn't turn notifications on — ${detail}`);
+      recordClientError(`push enable failed: ${detail}`);
+      setError("Couldn’t turn notifications on. Please try again.");
     }
     void read();
   }, [read, native]);

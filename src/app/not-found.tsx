@@ -21,32 +21,26 @@ export default function NotFound() {
   return (
     <PageContainer size="shelf">
       <div className="mx-auto max-w-md py-16 text-center">
-        <h1 className="text-[1.375rem] font-semibold">This page was not found</h1>
+        <h1 className="text-[1.375rem] font-semibold">We can’t find that page</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          The page you followed is not here.
+          It may have moved, or it isn’t published yet.
         </p>
 
         <MovedNote />
 
+        {/* One way home, and one way to ask. It listed Resources first, which
+            was a guess about where a stranger to this URL wanted to be; a
+            lost reader needs the front door, and the Assistant is the one
+            screen that can find a thing by describing it (15 Nov 2026). */}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <Link
-            href="/resources"
-            className={ctaPrimary}
-            style={{ background: "var(--ws-color)" }}
-          >
-            Resources
+          <Link href="/" className={ctaPrimary} style={{ background: "var(--ws-color)" }}>
+            Go home
           </Link>
           <Link
             href="/assistant"
-            className="rounded-full border border-rule bg-card px-4 py-2 text-sm font-semibold"
+            className="inline-flex min-h-11 items-center justify-center rounded-control border border-rule bg-card px-5 text-sm font-semibold"
           >
-            Assistant
-          </Link>
-          <Link
-            href="/"
-            className="rounded-full border border-rule bg-card px-4 py-2 text-sm font-semibold"
-          >
-            Home
+            Ask the Assistant
           </Link>
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
   FilterButton,
   FilterSection,
   RadioList,
+  RadioSegmented,
   Sheet,
   SheetAction,
   SheetTextAction,
@@ -460,25 +461,14 @@ function FilterPopover({
 
             <section className="px-4 py-3.5">
               <h3 className={`${heading} mb-2.5`}>Sort by</h3>
-              <div role="radiogroup" aria-label="Sort by" className="flex gap-1 rounded-control border border-rule bg-inset p-1">
-                {sorts.map((o) => {
-                  const active = current === o.value;
-                  return (
-                    <button
-                      key={o.label}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => router.push(findHref(basePath, setOrdering(state, o.value)))}
-                      className={`min-h-9 flex-1 rounded-md border text-sm transition-colors ${
-                        active ? "border-rule bg-card font-semibold shadow-sm" : "border-transparent text-ink hover:bg-ink/5"
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* The shared raised segment (15 Nov 2026): this was a copy at 36px
+                  with a grey hairline, the look Settings retired. */}
+              <RadioSegmented
+                label="Sort by"
+                options={sorts}
+                value={current}
+                onChange={(v) => router.push(findHref(basePath, setOrdering(state, v)))}
+              />
             </section>
           </div>
 

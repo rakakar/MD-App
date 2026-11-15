@@ -46,7 +46,14 @@ export function UpcomingShivirs({
     <section className={`${empty ? "hidden lg:flex" : "flex"} flex-col ${className}`}>
       <SectionHeading
         tier="title"
-        action={empty ? undefined : <SeeAll href="/connect">See all</SeeAll>}
+        action={
+          empty ? undefined : (
+            <SeeAll href="/connect">
+              <span aria-hidden className="me-1">See all</span>
+              <span className="sr-only">{`See all upcoming ${plural}`}</span>
+            </SeeAll>
+          )
+        }
       >
         {`Upcoming ${plural}`}
       </SectionHeading>

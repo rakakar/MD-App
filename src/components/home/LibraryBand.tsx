@@ -83,7 +83,12 @@ export async function LibraryBand({ className = "" }: { className?: string }) {
   // wrapper left behind as an empty grid cell on Home.
   return (
     <section className={className}>
-      <SectionHeading tier="title" action={<SeeAll href="/originals">Open</SeeAll>}>
+      <SectionHeading tier="title" action={
+        <SeeAll href="/originals">
+          <span aria-hidden className="me-1">See all</span>
+          <span className="sr-only">See all library folders</span>
+        </SeeAll>
+      }>
         Library
       </SectionHeading>
       {/*

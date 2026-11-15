@@ -84,7 +84,7 @@ export function StageResources({
               )}
             </>
           );
-          const row = `flex h-full min-h-11 items-center gap-3 rounded-card border border-rule bg-card transition-shadow hover:shadow-md ${
+          const row = `flex h-full min-h-11 items-center gap-3 rounded-card border border-rule bg-card transition-shadow hover:shadow-raised ${
             layout === "grid" ? "p-3.5" : "p-2.5"
           }`;
           return (

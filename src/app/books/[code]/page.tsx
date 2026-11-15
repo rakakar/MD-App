@@ -6,7 +6,7 @@ import { ChapterTable } from "@/components/books/ChapterTable";
 import { BookTabs } from "@/components/books/BookTabs";
 import { PdfView } from "@/components/library/PdfView";
 import { CoverTile } from "@/components/shelf/CoverTile";
-import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
+import { NavScope, WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import {
   CollectionHero,
   HeroAction,
@@ -202,6 +202,12 @@ export default async function BookDetailPage({
     />
     <PageContainer size="shelf">
       <WorkspaceScope ws={ws} />
+      {/* Translations and Resources have no `/books` tab, so the path alone
+          lights nothing there. Their back pill already points at the
+          workspace's own home, which is exactly the tab to keep lit. Originals
+          is lit by its path (`/books` is its Books tab), so it claims nothing.
+          15 Nov 2026. */}
+      {ws !== "originals" && <NavScope href={backLink(ws).href} />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}

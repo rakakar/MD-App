@@ -234,10 +234,12 @@ function PanelTabButton({
       style={selected ? { background: "var(--ws-color)" } : undefined}
     >
       <span className="truncate">{label}</span>
+      {/* No `opacity-70` (15 Nov 2026): faded, the count fell below 4.5:1 in
+          sepia. It inherits the label's soft ink, and its hover with it. */}
       {count !== undefined && (
         <span
           className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
-            selected ? "bg-white/20" : "opacity-70"
+            selected ? "bg-white/20" : ""
           }`}
         >
           {count}
@@ -297,7 +299,7 @@ function ContentsTab({
                 aria-current={active ? "true" : undefined}
                 onClick={() => onChapter(ch.number)}
                 className={`w-full rounded-card px-3 text-start transition-colors ${
-                  active ? "border bg-(--reader-bg) py-3 shadow-sm" : "py-2.5 hover:bg-current/[0.04]"
+                  active ? "border bg-(--reader-bg) py-3 shadow-card" : "py-2.5 hover:bg-current/[0.04]"
                 }`}
                 style={active ? { borderColor: "color-mix(in srgb, var(--ws-color) 35%, var(--reader-rule))" } : undefined}
               >
@@ -582,7 +584,7 @@ function NotesTab({
             onSaveNote(target, text.trim());
             cancel();
           }}
-          className="rounded-card border border-(--reader-rule) bg-(--reader-bg) p-4 shadow-sm"
+          className="rounded-card border border-(--reader-rule) bg-(--reader-bg) p-4 shadow-card"
         >
           <p className="flex gap-2.5 text-xs text-(--reader-ink-soft)">
             <span aria-hidden className="w-0.5 shrink-0 rounded-full bg-(--reader-rule)" />

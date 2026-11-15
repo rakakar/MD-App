@@ -15,7 +15,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 // The shell's sheet. Feedback can be sent from a chapter, but it is the app
 // being written to rather than the book being read — and the reader's own
 // paper on a form nobody is reading is a colour with no argument for it.
-import { ctaPrimary } from "@/components/ui";
+import { RadioSegmented, ctaPrimary } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
 import { Dialog, useIsDesktop } from "@/components/ui/Dialog";
 import { useWorkspace } from "@/components/shell/WorkspaceProvider";
@@ -256,6 +256,7 @@ function FeedbackSheet({
           onClick={() => void submit()}
           // Greyed out until there is something to send, as on desktop.
           disabled={phase === "sending" || message.trim().length === 0}
+          aria-busy={phase === "sending"}
           className={ctaPrimary}
           style={{ background: "var(--ws-color)" }}
         >
@@ -305,10 +306,12 @@ function FeedbackSheet({
                     onClick={() => setKind(k.value)}
                     aria-pressed={active}
                     title={k.hint}
-                    className="min-h-9 rounded-full border px-3.5 text-sm font-medium transition-colors"
+                    className={`min-h-11 rounded-full border px-3.5 text-sm font-medium transition-colors ${
+                      active ? "text-white" : ""
+                    }`}
                     style={
                       active
-                        ? { background: "var(--ws-color)", borderColor: "var(--ws-color)", color: "#fff" }
+                        ? { background: "var(--ws-color)", borderColor: "var(--ws-color)" }
                         : { borderColor: "var(--reader-rule)" }
                     }
                   >
@@ -334,7 +337,7 @@ function FeedbackSheet({
               maxLength={2000}
               rows={4}
               placeholder={placeholder}
-              className="mt-3 w-full rounded-xl border border-(--reader-rule) bg-transparent px-3 py-2 text-sm outline-none focus:border-(--ws-color)"
+              className="mt-3 w-full rounded-xl border border-(--reader-rule) bg-transparent px-3 py-2 text-sm outline-none focus:border-(--ws-ink)"
             />
 
             {kind === "content" && (
@@ -344,7 +347,7 @@ function FeedbackSheet({
                 maxLength={4000}
                 rows={2}
                 placeholder="What should it say? (optional)"
-                className="mt-2 w-full rounded-xl border border-(--reader-rule) bg-transparent px-3 py-2 text-sm outline-none focus:border-(--ws-color)"
+                className="mt-2 w-full rounded-xl border border-(--reader-rule) bg-transparent px-3 py-2 text-sm outline-none focus:border-(--ws-ink)"
               />
             )}
 
@@ -413,7 +416,7 @@ function FeedbackDialog({
   // something on *this* page, and signing in must not cost them the place.
   const here = useRoutePath();
   const field =
-    "w-full resize-y rounded-control border border-rule bg-card px-3.5 py-3 text-sm text-ink outline-none transition-[box-shadow,border-color] placeholder:text-ink-soft focus:border-(--ws-color) focus:ring-3 focus:ring-(--ws-color)/15";
+    "w-full resize-y rounded-control border border-rule bg-card px-3.5 py-3 text-sm text-ink outline-none transition-[box-shadow,border-color] placeholder:text-ink-soft focus:border-(--ws-ink) focus:ring-3 focus:ring-(--ws-ink)/15";
   const done = phase === "sent" || phase === "queued";
 
   return (
@@ -451,27 +454,14 @@ function FeedbackDialog({
       ) : (
         <>
           <div className="px-6 pb-5">
-            <div role="radiogroup" aria-label="Kind of feedback" className="flex gap-1 rounded-control border border-rule bg-inset p-1">
-              {FEEDBACK_KINDS.map((k) => {
-                const active = k.value === kind;
-                return (
-                  <button
-                    key={k.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => onKind(k.value)}
-                    title={k.hint}
-                    className={`min-h-9 flex-1 rounded-md border text-sm transition-colors ${
-                      active ? "border-rule bg-card font-semibold shadow-sm" : "border-transparent text-ink hover:bg-ink/5"
-                    }`}
-                    style={active ? { color: "var(--ws-ink)" } : undefined}
-                  >
-                    {k.label}
-                  </button>
-                );
-              })}
-            </div>
+            {/* The shared raised segment (15 Nov 2026) — this was its own copy
+                at 36px with a grey hairline, the look Settings retired. */}
+            <RadioSegmented
+              label="Kind of feedback"
+              options={FEEDBACK_KINDS}
+              value={kind}
+              onChange={onKind}
+            />
 
             {quoted && (
               <div className="mt-4 rounded-control border border-rule px-3.5 py-2.5">
@@ -513,7 +503,7 @@ function FeedbackDialog({
             <button
               type="button"
               onClick={onPickScreenshot}
-              className="mt-4 inline-flex min-h-9 max-w-full items-center gap-2 rounded-control border border-dashed border-rule px-3.5 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
+              className="mt-4 inline-flex min-h-11 max-w-full items-center gap-2 rounded-control border border-dashed border-rule px-3.5 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
             >
               <PaperclipIcon className="h-4 w-4 shrink-0 text-ink-soft" />
               <span className="truncate">{screenshot ? screenshot.name : "Add screenshot"}</span>
@@ -528,7 +518,7 @@ function FeedbackDialog({
             <button
               type="button"
               onClick={onClose}
-              className="h-10 shrink-0 rounded-control border border-rule bg-card px-4 text-sm font-semibold transition-colors hover:bg-ink/5"
+              className="min-h-11 shrink-0 rounded-control border border-rule bg-card px-4 text-sm font-semibold transition-colors hover:bg-ink/5"
             >
               Cancel
             </button>
@@ -536,12 +526,13 @@ function FeedbackDialog({
               type="button"
               onClick={onSubmit}
               disabled={phase === "sending" || message.trim().length === 0}
-              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-control px-4 text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+              aria-busy={phase === "sending"}
+              className={ctaPrimary}
               style={{ background: "var(--ws-color)" }}
             >
               {phase === "sending" ? "Sending…" : "Send"}
               {phase !== "sending" && (
-                <kbd className="rounded border border-white/40 px-1 py-px font-sans text-xs font-medium">⌘↵</kbd>
+                <kbd className="rounded border border-current/40 px-1 py-px font-sans text-xs font-medium">⌘↵</kbd>
               )}
             </button>
           </div>

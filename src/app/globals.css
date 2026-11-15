@@ -94,6 +94,20 @@
   --color-success: #3d6b4a;
   --color-success-tint: #edf4ee;
 
+  /* The one "take care" colour — Connect's caution note and a feedback report
+     that is In progress. Seeded from the comps' amber #B7791F, which is 3.3:1
+     as text on white, so the ink is taken deeper and the amber lives on in the
+     tint (15 Nov 2026). Text on its own tint: 5.2:1 light, 5.5:1 sepia, 7.8:1
+     dark; on the plain card 5.9 / 6.4 / 9.0. */
+  --color-warning: #8a5a14;
+  --color-warning-tint: #fbefd9;
+
+  /* The dim behind every modal — sheet, dialog, the workspace picker. It was
+     three strengths (30% + blur, 40%, 50%) for one job, so a sheet opened from
+     the header looked lighter than the same sheet opened from a page. One value
+     in every theme: it darkens whatever is under it, so it needs no restating. */
+  --color-scrim: rgb(0 0 0 / 0.45);
+
   /* A sunk panel *inside* a card — the note block under a highlight, the track
      a segmented control's pill slides along, the counter strip on a filter
      sheet. `canvas` cannot do this job: canvas is the ground a card sits on,
@@ -246,6 +260,15 @@
      cannot be confused with Tailwind's own sm/base/lg ladder. */
   --text-title: 1.0625rem;
   --text-title--line-height: calc(1.4 / 1.0625);
+
+  /* 21px — the title on a coloured hero (book, album, folder). And 32px — the
+     display h1 on the sign-in, sign-up, verify and reset screens. Both were
+     arbitrary literals repeated across files, which is how a page title drifts
+     a pixel at a time (15 Nov 2026). */
+  --text-hero: 1.3125rem;
+  --text-hero--line-height: calc(1.75 / 1.3125);
+  --text-display: 2rem;
+  --text-display--line-height: 1.25;
 
   /* ---- radius & elevation ----
 
@@ -451,8 +474,15 @@
   --color-danger: #a83027;
   --color-success: #3a6645;
   --color-success-tint: #e6eedd;
+  /* ink-soft clears 4.57:1 on this tint too, for a line set under a caution */
+  --color-warning: #7d5112;
+  --color-warning-tint: #f6e4c4;
 
   --color-inset: #f2eadb;
+  /* Light's #FDF3EA is within a shade of this card (#FCF6EC), so folder count
+     chips, unread rows and Settings' "you are here" wash vanished on sepia.
+     Sepia's own audio tile: 1.11:1 off the card, accent-ink 4.74:1 on it. */
+  --color-accent-tint: #f8e9d8;
 
   /* The same four pairs, warmed onto sepia paper. Glyphs measure 5.35 / 5.22 /
      5.55 / 4.97 on their own tiles. */
@@ -485,6 +515,8 @@
   --color-danger: #f08a80;
   --color-success: #8cc29a;
   --color-success-tint: #1f2a22;
+  --color-warning: #e3b363;
+  --color-warning-tint: #2e2515;
 
   --color-inset: #262220;
 
@@ -555,6 +587,8 @@
   --color-danger: #b3261e;
   --color-success: #3d6b4a;
   --color-success-tint: #edf4ee;
+  --color-warning: #8a5a14;
+  --color-warning-tint: #fbefd9;
 
   --color-inset: #f7f3ec;
   --color-accent-ink: #a64e12;
@@ -1259,7 +1293,23 @@ html[data-reading="1"] body {
   animation: sheet-up 0.22s cubic-bezier(0.22, 1, 0.36, 1) 1;
 }
 .ws-sheet-backdrop {
+  background: var(--color-scrim);
   animation: fade-in 0.22s ease-out 1;
+}
+
+/* A CTA that cannot be pressed yet looks idle, not faded. It used to drop to
+   60% of the accent — about 2:1, which read as "broken" rather than "not yet"
+   to a reader over forty. Now it is the look Sign in already had: canvas with
+   ink-soft words (8.3:1 light, 7.0:1 dark, 4.3:1 sepia — a disabled control is
+   outside AA, but it still has to be legible).
+
+   In the stylesheet with `!important` because every caller paints the fill
+   inline (`style={{ background: "var(--ws-color)" }}`) and an inline style
+   beats any class. `aria-busy` opts out: a button disabled *because* it is
+   working keeps its fill, since the press was valid (15 Nov 2026). */
+.cta:disabled:not([aria-busy="true"]) {
+  background: var(--color-canvas) !important;
+  color: var(--color-ink-soft) !important;
 }
 /* The photo viewer (`Lightbox`): the next photograph slides in from the side
    the reader is moving towards, and fades up as it comes, so stepping through

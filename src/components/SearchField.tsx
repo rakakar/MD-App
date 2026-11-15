@@ -71,7 +71,7 @@ export function SearchField({
       }}
       // No vertical padding of its own: the button carries the height, and
       // `min-h-11` there is the 44px this row has always been.
-      className={`flex items-center gap-1 rounded-control border border-rule bg-card pe-3 focus-within:border-(--ws-color) ${
+      className={`flex items-center gap-1 rounded-control border border-rule bg-card pe-3 focus-within:border-(--ws-ink) ${
         roomy ? "min-h-12 ps-2" : "ps-1"
       }`}
     >
@@ -87,7 +87,7 @@ export function SearchField({
         className={`flex min-h-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
           roomy ? "px-2" : "px-2.5"
         } ${
-          unasked ? "text-(--ws-color)" : "text-ink-soft"
+          unasked ? "text-(--ws-ink)" : "text-ink-soft"
         }`}
       >
         <Icon name="search" className={`h-4.5 w-4.5 ${pending ? "animate-pulse motion-reduce:animate-none" : ""}`} />

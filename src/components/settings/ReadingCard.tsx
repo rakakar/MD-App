@@ -51,14 +51,14 @@ export function ReadingCard({
               aria-checked={active}
               onClick={() => onChange(m.value)}
               className={`flex flex-col rounded-tile border px-5 py-4 text-start transition-colors ${
-                active ? "border-2 border-(--ws-color) bg-accent-tint/40" : "border-rule m-px hover:border-ink-soft"
+                active ? "border-2 border-(--ws-ink) bg-accent-tint/40" : "border-rule m-px hover:border-ink-soft"
               }`}
             >
               <span className="flex items-center gap-3">
                 <span
                   aria-hidden
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                    active ? "border-(--ws-color)" : "border-muted"
+                    active ? "border-(--ws-ink)" : "border-muted"
                   }`}
                 >
                   {active && <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--ws-color)" }} />}

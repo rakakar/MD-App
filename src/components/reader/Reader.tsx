@@ -53,6 +53,7 @@ import {
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import type { Matcher } from "@/lib/paribhasha";
 import { chapterName } from "@/lib/labels";
+import { contentLang } from "@/lib/script";
 import { Block } from "./blocks";
 import {
   ReaderBottomBar,
@@ -304,6 +305,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const pendingBlock = useRef<ScrollLogicalPosition>("center");
   const pageTurns = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** the toast's time still to run, and when that run began — so a pause can resume it */
+  const toastRun = useRef({ left: 0, since: 0 });
+  /** pointer over the toast / focus inside it: either holds it on screen */
+  const toastHold = useRef({ hover: false, focus: false });
 
   const desktop = useIsDesktop();
   /**
@@ -500,12 +505,52 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     return () => window.removeEventListener(PERSONAL_SYNCED, refreshPainted);
   }, [refreshPainted]);
 
-  const showToast = useCallback((t: Toast) => {
-    setToast(t);
+  const runToast = useCallback(() => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    // A toast with something to press stays long enough to be pressed.
-    toastTimer.current = setTimeout(() => setToast(null), t.undo ? 7000 : 4000);
+    toastRun.current.since = Date.now();
+    toastTimer.current = setTimeout(() => setToast(null), toastRun.current.left);
   }, []);
+
+  const showToast = useCallback(
+    (t: Toast) => {
+      setToast(t);
+      // A toast with something to press stays long enough to be pressed — any
+      // action, not only Undo (15 Nov 2026): "Sign in to sync" and Retry went
+      // at 4s, which is less than it takes some of these readers to read the
+      // line and find the link.
+      toastRun.current.left = t.undo || t.href || t.retry ? 8000 : 4000;
+      // A new toast starts unheld: the last one may have gone (Undo pressed)
+      // with the pointer or focus still on it, and no leave or blur followed.
+      toastHold.current = { hover: false, focus: false };
+      runToast();
+    },
+    [runToast],
+  );
+
+  /**
+   * Pause while the pointer is over the toast or focus is inside it, and
+   * resume on leave — a reader reaching for Undo should not have it vanish
+   * under the finger (WCAG 2.2.1). Resumes with at least 2s left, so moving
+   * off does not make it blink out on the spot.
+   */
+  const holdToast = useCallback(
+    (kind: "hover" | "focus", on: boolean) => {
+      const h = toastHold.current;
+      const was = h.hover || h.focus;
+      h[kind] = on;
+      const now = h.hover || h.focus;
+      if (!was && now) {
+        if (toastTimer.current) clearTimeout(toastTimer.current);
+        toastTimer.current = null;
+        const run = toastRun.current;
+        run.left = Math.max(0, run.left - (Date.now() - run.since));
+      } else if (was && !now) {
+        toastRun.current.left = Math.max(2000, toastRun.current.left);
+        runToast();
+      }
+    },
+    [runToast],
+  );
 
   // ---- prefs bootstrap ----
   useEffect(() => {
@@ -1578,6 +1623,49 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     [showToast, clearSelection, book.title_hi]
   );
 
+  /**
+   * ⌘C, Ctrl+C and the browser's own Copy carry the citation too
+   * (15 Nov 2026). The bar's Copy always did; copying with the keyboard pasted
+   * bare Devanagari with no book and no way back to the passage — the form in
+   * which a sentence ends up attributed to the wrong book. Book text only:
+   * a margin note, the note box or any field copies as the browser would.
+   */
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const onCopy = (e: ClipboardEvent) => {
+      const sel = document.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !e.clipboardData) return;
+      const node = sel.anchorNode;
+      const at = node?.nodeType === Node.TEXT_NODE ? node.parentElement : (node as HTMLElement | null);
+      if (!at || at.closest("input, textarea, [contenteditable='true'], [data-margin]")) return;
+      const host = at.closest<HTMLElement>("[data-ref]");
+      const ref = host?.getAttribute("data-ref");
+      if (!host || !ref || !el.contains(host)) return;
+      const words = sel.toString().trim();
+      if (!words) return;
+      // A selection inside one paragraph links to its exact words; one that
+      // runs on cites the paragraph it started in.
+      const one = sel.focusNode && host.contains(sel.focusNode) ? selectionFrom(host, sel.getRangeAt(0)) : null;
+      const cite = {
+        bookTitle: book.title_hi,
+        ref,
+        origin: window.location.origin,
+        spans: one?.text ? [one.span] : undefined,
+      };
+      e.clipboardData.setData("text/plain", shareCitation({ ...cite, passage: words }));
+      e.clipboardData.setData(
+        "text/html",
+        `<blockquote>${esc(words)}</blockquote><p>${esc(shareCitation(cite)).replace(/\n/g, "<br>")}</p>`
+      );
+      e.preventDefault();
+    };
+    el.addEventListener("copy", onCopy);
+    return () => el.removeEventListener("copy", onCopy);
+  }, [selectionFrom, book.title_hi, chapter]);
+
   const doReport = useCallback(
     (s: Selection) => {
       // The selected words, or the whole paragraph when the reader tapped
@@ -1940,6 +2028,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    */
   const dockOffset = "var(--player-h, 0px)";
 
+  // Where the end of the book leads: the book's page, or — for a library text
+  // edition — the folder it came from, which is that reader's "book".
+  const bookHref = home?.backHref ?? `/books/${encodeURIComponent(book.code)}`;
+  const bookBackText = home ? home.backLabel : "Back to the book";
+  const endOfBookText = home ? "You’ve reached the end of this text." : "You’ve reached the end of this book.";
+  const prevLang = contentLang(chapter?.prev ? chapterName(chapter.prev) : "");
+
   return (
     <div
       className="reader-surface min-h-dvh"
@@ -2242,20 +2337,36 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     the two disagreed by design and a reader had to work out
                     which was which. */}
                 <span className="min-w-0 shrink">
-                  <button
-                    type="button"
-                    onClick={() => advance(1)}
-                    disabled={pageIndex === pages.length - 1 && !chapter.next}
-                    className={`w-full ${ctaPrimary}`}
-                    style={{ background: "var(--ws-color)" }}
-                  >
-                    <span className="truncate">
-                      {pageIndex === pages.length - 1 && chapter.next ? "Next chapter" : "Next"}
-                    </span>
-                    <span aria-hidden>→</span>
-                  </button>
+                  {/* The book's last page had a disabled Next — a dead end
+                      that looked broken. It is the way out instead (15 Nov
+                      2026), with the line under the row saying why. */}
+                  {pageIndex === pages.length - 1 && !chapter.next ? (
+                    <Link
+                      href={bookHref}
+                      className={`w-full ${ctaPrimary}`}
+                      style={{ background: "var(--ws-color)" }}
+                    >
+                      <span className="truncate">{bookBackText}</span>
+                      <span aria-hidden>→</span>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => advance(1)}
+                      className={`w-full ${ctaPrimary}`}
+                      style={{ background: "var(--ws-color)" }}
+                    >
+                      <span className="truncate">
+                        {pageIndex === pages.length - 1 ? "Next chapter" : "Next"}
+                      </span>
+                      <span aria-hidden>→</span>
+                    </button>
+                  )}
                 </span>
               </nav>
+              {pageIndex === pages.length - 1 && !chapter.next && (
+                <p className="mt-3 text-center text-sm text-(--reader-ink-soft)">{endOfBookText}</p>
+              )}
             </section>
           )}
 
@@ -2290,22 +2401,22 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                   />
                 </section>
               ))}
-              {/* Equal halves, and each label on one line. These carry chapter
-                  names in Devanagari — "अध्याय 3 : सहअस्तित्ववादी विज्ञान" — and
-                  as bare flex items beside a `shrink-0` call to action the back
-                  button took all the shrinking there was and broke its title a
-                  character to a line. `flex-1` on the wrappers splits the row;
-                  `truncate` ends the name rather than stacking it. */}
-              {/* Desktop: the way on as a card under a rule, named in the
-                  book's words. Back is the contents, one click away in the
-                  bar. */}
-              {chapter.next && (
-                <div className="mt-12 hidden border-t border-(--reader-rule) pt-6 lg:block">
+              {/* The way on, one card at every width (15 Nov 2026). Phones had
+                  two flex-1 halves — Previous outlined, Next filled — with the
+                  Devanagari titles cut mid-word and no word saying which was
+                  the next chapter; desktop already had this card. So the card
+                  is the design now: labelled अगला अध्याय, the full title on up
+                  to two lines, the arrow at the end. Back is a quieter text
+                  link under it — going on is the common act, going back the
+                  rare one. On the last chapter the card becomes the way out
+                  to the book, saying why there is no next. */}
+              <nav aria-label="Chapter navigation" className="mt-12 border-t border-(--reader-rule) pt-6">
+                {chapter.next ? (
                   <button
                     type="button"
                     onClick={() => void goToChapter(chapter.next!.number)}
-                    className="group flex w-full items-center gap-4 rounded-card border border-(--reader-rule) px-5 py-4 text-left transition-colors hover:bg-current/[0.03]"
-                    style={{ borderColor: "color-mix(in srgb, var(--ws-color) 30%, var(--reader-rule))" }}
+                    className={chapterCard}
+                    style={chapterCardStyle}
                   >
                     <span className="min-w-0 flex-1">
                       <span
@@ -2315,52 +2426,40 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                       >
                         अगला अध्याय
                       </span>
-                      <span lang="hi" className="hi hi-tight mt-1 block truncate font-semibold">
+                      <span lang="hi" className="hi hi-tight mt-1 line-clamp-2 font-semibold">
                         अध्याय {chapter.next.number} : {chapter.next.title_hi}
                       </span>
                     </span>
-                    <span
-                      aria-hidden
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) transition-transform group-hover:translate-x-0.5"
-                    >
-                      →
-                    </span>
+                    <CardArrow />
                   </button>
-                </div>
-              )}
-              <nav
-                aria-label="Chapter navigation"
-                className="mt-12 flex items-stretch justify-between gap-3 text-sm lg:hidden"
-              >
-                <span className="min-w-0 flex-1">
-                  {chapter.prev && (
-                    <button
-                      type="button"
-                      onClick={() => void goToChapter(chapter.prev!.number)}
-                      className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-control border border-(--reader-rule) px-4 font-semibold"
-                    >
-                      <span aria-hidden>←</span>
-                      <span lang="hi" className="hi hi-tight min-w-0 truncate">
+                ) : (
+                  <Link href={bookHref} className={chapterCard} style={chapterCardStyle}>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-semibold" style={{ color: "var(--ws-ink)" }}>
+                        {endOfBookText}
+                      </span>
+                      <span className="mt-1 block font-semibold">{bookBackText}</span>
+                    </span>
+                    <CardArrow />
+                  </Link>
+                )}
+                {chapter.prev && (
+                  <button
+                    type="button"
+                    onClick={() => void goToChapter(chapter.prev!.number)}
+                    className="mt-2 flex min-h-11 w-full items-baseline gap-1.5 py-2 text-left text-sm text-(--reader-ink-soft) transition-colors hover:text-(--reader-ink)"
+                  >
+                    <span aria-hidden>←</span>
+                    <span className="min-w-0">
+                      <span lang="hi" className="hi hi-tight">
+                        पिछला अध्याय:
+                      </span>{" "}
+                      <span {...prevLang} className={`${prevLang.className} hi-tight`}>
                         {chapterName(chapter.prev)}
                       </span>
-                    </button>
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  {chapter.next && (
-                    <button
-                      type="button"
-                      onClick={() => void goToChapter(chapter.next!.number)}
-                      className={`w-full ${ctaPrimary}`}
-                      style={{ background: "var(--ws-color)" }}
-                    >
-                      <span lang="hi" className="hi hi-tight min-w-0 truncate">
-                        {chapter.next.title_hi}
-                      </span>
-                      <span aria-hidden>→</span>
-                    </button>
-                  )}
-                </span>
+                    </span>
+                  </button>
+                )}
               </nav>
             </div>
           )}
@@ -2728,14 +2827,24 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           always stands off whatever is behind it — white on the app's ink
           was unreadable in dark mode, and a fixed dark pill vanished into a
           dark page (the designer, 13 Oct 2026). */}
-      {toast && (
-        <div
-          className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
-          style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
-        >
+      {/* The live region is always mounted and only its contents change
+          (15 Nov 2026): a role="status" that arrives already holding its text
+          is often not announced at all, because there was no region yet to
+          watch for the change. */}
+      <div
+        className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
+        style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
+      >
+        <div role="status">
+          {toast && (
           <div
-            role="status"
-            className="pointer-events-auto flex items-center gap-3 rounded-full bg-(--reader-ink) px-4 py-2 text-sm text-(--reader-bg) shadow-lg"
+            onPointerEnter={() => holdToast("hover", true)}
+            onPointerLeave={() => holdToast("hover", false)}
+            onFocus={() => holdToast("focus", true)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) holdToast("focus", false);
+            }}
+            className="pointer-events-auto flex items-center gap-3 rounded-full bg-(--reader-ink) px-4 py-2 text-sm text-(--reader-bg) shadow-raised"
           >
             {toast.text}
             {toast.href && (
@@ -2771,9 +2880,26 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
               </button>
             )}
           </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+/** The chapter-end card — the next chapter, or the way back to the book. */
+const chapterCard =
+  "group flex min-h-11 w-full items-center gap-4 rounded-card border px-5 py-4 text-left transition-colors hover:bg-current/[0.03]";
+const chapterCardStyle = { borderColor: "color-mix(in srgb, var(--ws-color) 30%, var(--reader-rule))" };
+
+function CardArrow() {
+  return (
+    <span
+      aria-hidden
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) transition-transform group-hover:translate-x-0.5"
+    >
+      →
+    </span>
   );
 }
 

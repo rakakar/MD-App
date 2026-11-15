@@ -48,10 +48,16 @@ import { Chip, ChipRow } from "./Segmented";
  * `compact` is the same button at the metadata size, for the CTA that sits
  * inside a card rather than under a paragraph — the sutra's Share, the push
  * banner's Turn on. Same height, same radius; only the type steps down.
+ *
+ * Pressed is a dip and a slight give, so a tap on glass answers before the
+ * page does. Disabled is `.cta` in globals.css — the idle canvas look Sign in
+ * uses, not a faded accent; set `aria-busy` on a button disabled while it
+ * works to keep its fill. Hover and press are off while disabled.
  */
 const CTA_BASE =
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control " +
-  "font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60";
+  "cta inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control " +
+  "font-semibold text-white transition-[opacity,transform] duration-100 " +
+  "not-disabled:hover:opacity-90 not-disabled:active:scale-[0.98] not-disabled:active:opacity-80";
 export const ctaPrimary = `${CTA_BASE} min-h-11 px-5 text-sm`;
 export const ctaPrimaryCompact = `${CTA_BASE} min-h-11 px-3.5 text-xs`;
 /**
@@ -283,9 +289,21 @@ export function SegmentedNav({
   );
 }
 
+/**
+ * The quiet button beside or instead of a CTA — Try again, Open a book. Same
+ * height, radius and type as `ctaPrimary`; a card with a hairline rather than
+ * a fill, so a screen can carry one of each and still have one primary.
+ */
+export const ctaSecondary =
+  "inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-control " +
+  "border border-rule bg-card px-5 text-sm font-semibold text-ink " +
+  "transition-[background-color,transform] duration-100 hover:bg-ink/5 active:scale-[0.98]";
+
 export function EmptyState({
   title,
   hint,
+  icon,
+  action,
 }: {
   title: string;
   /**
@@ -294,24 +312,53 @@ export function EmptyState({
    * on it is the one screen in the app a reader can arrive at and be stuck on.
    */
   hint?: React.ReactNode;
+  /** a glyph above the title, in ink-soft — say what would live here */
+  icon?: React.ReactNode;
+  /** the way forward, under the hint — usually a `ctaSecondary` link */
+  action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-rule bg-card/50 p-8 text-center">
+    // `rounded-card`, not `rounded-2xl` (15 Nov 2026): it stands where the
+    // cards it is standing in for would be, so it takes their corner.
+    <div className="rounded-card border border-dashed border-rule bg-card/50 p-8 text-center">
+      {icon && (
+        <div aria-hidden className="mb-3 flex justify-center text-ink-soft">
+          {icon}
+        </div>
+      )}
       <p className="text-base font-medium text-ink">{title}</p>
       {/* An empty state is a whole sentence addressed to the reader, not a
           caption — it gets body size, not the metadata floor. */}
       {hint && <p className="mt-1 text-sm text-ink-soft">{hint}</p>}
+      {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>
   );
 }
 
-export function ErrorState({ message }: { message?: string }) {
+/**
+ * A fetch that failed. It used to blame the reader's connection and offer
+ * nothing to press; most failures here are ours, and the one thing a reader
+ * can do is try again, so a caller that can retry passes `onRetry` (15 Nov
+ * 2026).
+ */
+export function ErrorState({
+  message,
+  onRetry,
+}: {
+  message?: string;
+  onRetry?: () => void;
+}) {
   return (
-    <div className="rounded-2xl border border-rule bg-card p-8 text-center">
-      <p className="text-base font-medium text-ink">Couldn&apos;t load this right now.</p>
+    <div className="rounded-card border border-rule bg-card p-8 text-center">
+      <p className="text-base font-medium text-ink">Couldn’t load this right now.</p>
       <p className="mt-1 text-sm text-ink-soft">
-        {message ?? "Check your connection and try again."}
+        {message ?? "It may be a problem on our side. Try again in a moment."}
       </p>
+      {onRetry && (
+        <button type="button" onClick={onRetry} className={`mt-4 ${ctaSecondary}`}>
+          Try again
+        </button>
+      )}
     </div>
   );
 }

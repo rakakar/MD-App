@@ -287,7 +287,7 @@ function ResumeCard({ row }: { row: ResumeRow }) {
          rather than `p-4` for the reason that card gives: the cover is the
          tallest thing in the row and 16px top and bottom left the card looking
          like it had a hole in it. */
-      className="flex h-full items-center gap-4 rounded-card border border-rule bg-card px-4 py-3 transition-shadow hover:shadow-md"
+      className="flex h-full items-center gap-4 rounded-card border border-rule bg-card px-4 py-3 transition-shadow hover:shadow-raised"
     >
       {/* `FileCover`, not `CoverTile` — a document's face is its own first page
          where a manager has given it none — but at the resume cover's size, so
@@ -307,7 +307,7 @@ function ResumeCard({ row }: { row: ResumeRow }) {
             asked yet. */}
         <span
           {...contentLang(row.title)}
-          className={`${contentLang(row.title).className} hi-tight block truncate text-title font-semibold`}
+          className={`${contentLang(row.title).className} hi-tight line-clamp-2 text-title font-semibold`}
         >
           {row.title}
         </span>

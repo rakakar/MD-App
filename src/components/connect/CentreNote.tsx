@@ -7,25 +7,29 @@ import { contentLang } from "@/lib/script";
 /**
  * The two tones these notes come in, and the one place they are defined.
  *
- * Amber for the caution and the app's own teal for the important one, taken
+ * Amber for the caution and Connect's own teal for the important one, taken
  * from the comps. Not the workspace accent for either: Connect's teal is what
  * every ordinary control on this screen already wears, and a caution that
  * looked like a button would be the one thing on the page a reader skims past.
+ *
+ * Caution is `--color-warning` now, which is themed and measured (5.2–7.8:1
+ * on its tint); the amber literal mixed toward ink was 3.9:1 at the callout's
+ * old 85% (15 Nov 2026). The info tone keeps its mix, on the token.
  */
 const TONE: Record<
   NoteTone,
   { tint: string; ink: string; edge: string; Icon: typeof ImportantNoteIcon }
 > = {
   caution: {
-    tint: "color-mix(in srgb, #b7791f 12%, var(--color-card))",
-    ink: "color-mix(in srgb, #b7791f 62%, var(--color-ink))",
-    edge: "#b7791f",
+    tint: "var(--color-warning-tint)",
+    ink: "var(--color-warning)",
+    edge: "var(--color-warning)",
     Icon: WarningIcon,
   },
   info: {
-    tint: "color-mix(in srgb, #2f6e86 10%, var(--color-card))",
-    ink: "color-mix(in srgb, #2f6e86 62%, var(--color-ink))",
-    edge: "#2f6e86",
+    tint: "color-mix(in srgb, var(--color-ws-connect) 10%, var(--color-card))",
+    ink: "color-mix(in srgb, var(--color-ws-connect) 62%, var(--color-ink))",
+    edge: "var(--color-ws-connect)",
     Icon: ImportantNoteIcon,
   },
 };
@@ -47,7 +51,7 @@ export function CentreNoteCard({ note }: { note: CentreNote }) {
   return (
     <Link
       href={`/connect/centres/notes/${note.slug}`}
-      className="relative block overflow-hidden rounded-card border border-rule p-4 ps-5 shadow-card transition-shadow hover:shadow-md"
+      className="relative block overflow-hidden rounded-card border border-rule p-4 ps-5 shadow-card transition-shadow hover:shadow-raised"
       style={{ background: tone.tint }}
     >
       <span
@@ -143,7 +147,7 @@ export function CentreNoteBody({ note }: { note: CentreNote }) {
                   {b.text}
                 </p>
                 {b.sub && (
-                  <p className="mt-2 text-title leading-relaxed" style={{ color: tone.ink, opacity: 0.85 }}>
+                  <p className="mt-2 text-title leading-relaxed" style={{ color: tone.ink }}>
                     {b.sub}
                   </p>
                 )}
@@ -203,7 +207,7 @@ export function CentreNoteNext({ note }: { note: CentreNote }) {
   return (
     <Link
       href={`/connect/centres/notes/${note.slug}`}
-      className="mt-6 flex items-center gap-3 rounded-card border border-rule bg-card p-4 shadow-card transition-shadow hover:shadow-md"
+      className="mt-6 flex items-center gap-3 rounded-card border border-rule bg-card p-4 shadow-card transition-shadow hover:shadow-raised"
     >
       <span className="min-w-0 flex-1">
         <span {...l} className={`${l.className} block text-sm font-semibold leading-snug`}>

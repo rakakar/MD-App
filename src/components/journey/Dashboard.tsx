@@ -232,7 +232,7 @@ export function PathCard({
           {stage.hi}
         </h2>
         {stage.en && <p className="mt-1.5 text-base text-ink-soft">{stage.en}</p>}
-        <p className="mt-4 max-w-3xl text-base leading-relaxed sm:text-[1.0625rem]">
+        <p className="mt-4 max-w-3xl text-base leading-relaxed sm:text-title">
           {stage.note}
         </p>
         <p className="mt-3 flex items-center gap-2 text-sm text-ink-soft">
@@ -403,7 +403,7 @@ export function NextOnPath({ stage }: { stage: Stage }) {
       </h2>
 
       {/* Phone: the whole card opens the stage. */}
-      <Link href={href} className={`${shell} relative block transition-shadow hover:shadow-md lg:hidden`}>
+      <Link href={href} className={`${shell} relative block transition-shadow hover:shadow-raised lg:hidden`}>
         <ChevronRight className="absolute end-5 top-6 h-4 w-4 text-ink-soft" />
         {head}
         {resources.length > 0 && (
