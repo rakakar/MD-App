@@ -1302,13 +1302,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     setDefineWord(word);
   }, [justSelected]);
 
-  /** the selection bar's Paribhasha action — shown only for an exact headword */
-  const selectedHeadword = useMemo(() => {
-    const text = selection?.text.trim();
-    if (!text || !matcher) return null;
-    return matcher.headwordFor(text);
-  }, [selection, matcher]);
-
   // prefetch next chapter near the end of this one (PRD §0.4)
   useEffect(() => {
     if (!chapter?.next || pages.length === 0) return;
@@ -2865,24 +2858,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           onCopy={() => void doCopy(selection)}
           onReport={() => doReport(selection)}
           onDismiss={clearSelection}
-          // The way a definition is reached with underlining off: press and
-          // hold selects the word, and this appears only when the glossary
-          // actually has it — so it never offers a meaning it cannot give.
-          onParibhasha={
-            selectedHeadword
-              ? () => {
-                  track("paribhasha_lookup", { source: "selection" });
-                  const r = (
-                    touchSel.range() ?? window.getSelection()?.getRangeAt(0)
-                  )?.getBoundingClientRect();
-                  setDefineAnchor(
-                    r ? { left: r.left, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY } : null
-                  );
-                  setDefineWord(selectedHeadword);
-                  clearSelection();
-                }
-              : undefined
-          }
           onPlayHere={canListen ? () => playFromPara(selection.para) : undefined}
         />
       )}

@@ -482,9 +482,9 @@ const SWATCH: Record<HighlightColour, string> = {
  * The three colours come first because painting is now what saving is: the
  * bookmark button is gone from the bottom bar, and a highlight is a bookmark
  * with a colour in the store. Note · Share · Copy are the comps' three. What
- * follows them is ours and conditional — Paribhasha only when the glossary
- * actually has the word, ▶ Listen only when there is audio — so the common case
- * is the four the comps draw.
+ * follows them is ours — ▶ Listen only when there is audio — then Report.
+ * Paribhasha is not here: a tap on an underlined word opens it (designer's
+ * call, 16 Nov 2026).
  */
 export function SelectionBar({
   bottom,
@@ -494,7 +494,6 @@ export function SelectionBar({
   onCopy,
   onReport,
   onDismiss,
-  onParibhasha,
   onPlayHere,
   onRemove,
 }: {
@@ -507,8 +506,6 @@ export function SelectionBar({
   onCopy: () => void;
   onReport: () => void;
   onDismiss: () => void;
-  /** only when the glossary can define the selected word */
-  onParibhasha?: () => void;
   /** only when this chapter can be listened to */
   onPlayHere?: () => void;
 }) {
@@ -521,7 +518,7 @@ export function SelectionBar({
       // Its own dark surface, fixed in every theme — see above.
       //
       // Two rows on a phone, one from `sm` up (14 Nov 2026). As a single
-      // scrolling pill it needed 449px — 627 with Paribhasha and Listen — so on
+      // scrolling pill it needed 449px — so on
       // a 360px phone Report and the ✕ were off the right edge with nothing to
       // say the bar scrolled. Now the colours and the ✕ hold the first row,
       // the actions wrap under them, and nothing is ever out of sight. A pill
@@ -572,7 +569,6 @@ export function SelectionBar({
         <SelectionAction onClick={onCopy}>Copy</SelectionAction>
         {onRemove && <SelectionAction onClick={onRemove}>Remove</SelectionAction>}
 
-        {onParibhasha && <SelectionAction onClick={onParibhasha}>Paribhasha</SelectionAction>}
         {onPlayHere && <SelectionAction onClick={onPlayHere}>▶ Listen</SelectionAction>}
         <SelectionAction onClick={onReport} ariaLabel="Report a problem with this passage">
           Report

@@ -367,11 +367,33 @@ export function useTouchSelection({
       return;
     }
     const o = root.getBoundingClientRect();
+    /*
+     * One band per line. A range's client rects include the box of every
+     * element it wholly contains (each underlined Paribhasha word) as well as
+     * the text inside it, so painted as they come those words took the tint
+     * twice and only the partly-selected ends looked right — lighter than the
+     * middle. Merging the rects of a line into one span paints each spot once.
+     */
+    const lines: { left: number; right: number; top: number; bottom: number }[] = [];
+    for (const c of partsOf(root, s).flatMap((p) => [...p.range.getClientRects()])) {
+      if (c.width <= 1) continue;
+      const mid = (c.top + c.bottom) / 2;
+      const line = lines.find((l) => mid > l.top && mid < l.bottom);
+      if (line) {
+        line.left = Math.min(line.left, c.left);
+        line.right = Math.max(line.right, c.right);
+        line.top = Math.min(line.top, c.top);
+        line.bottom = Math.max(line.bottom, c.bottom);
+      } else lines.push({ left: c.left, right: c.right, top: c.top, bottom: c.bottom });
+    }
+    lines.sort((a, b) => a.top - b.top || a.left - b.left);
     setRects(
-      partsOf(root, s)
-        .flatMap((p) => [...p.range.getClientRects()])
-        .filter((c) => c.width > 1)
-        .map((c) => ({ left: c.left - o.left, top: c.top - o.top, width: c.width, height: c.height }))
+      lines.map((l) => ({
+        left: l.left - o.left,
+        top: l.top - o.top,
+        width: l.right - l.left,
+        height: l.bottom - l.top,
+      }))
     );
   }, [contentRef]);
 

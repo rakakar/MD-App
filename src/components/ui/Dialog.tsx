@@ -53,7 +53,12 @@ export function Dialog({
     document.body.style.overflow = "hidden";
     const id = requestAnimationFrame(() => {
       if (!panelRef.current?.contains(document.activeElement)) {
-        panelRef.current?.focus();
+        // Never scroll to it. The panel is still sliding up from below the
+        // window at this point, and a plain focus() asks the browser to
+        // bring it into view — on iOS that scrolls the page behind the
+        // fixed panel, sometimes to the very top, depending on how far
+        // the slide has got (tapping a Paribhasha word, Nov 2026).
+        panelRef.current?.focus({ preventScroll: true });
       }
     });
     return () => {

@@ -40,7 +40,7 @@ export function useModalFocus(open: boolean, panelRef: RefObject<HTMLElement | n
       );
       if (stops.length === 0) {
         e.preventDefault();
-        panel.focus();
+        panel.focus({ preventScroll: true });
         return;
       }
       const first = stops[0];
