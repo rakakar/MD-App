@@ -6,7 +6,7 @@ import { useRoutePath } from "@/components/shell/useRoutePath";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
-import { ctaPrimary } from "@/components/ui";
+import { ctaPrimary, ctaSecondary } from "@/components/ui";
 import { answerAsText, firstSentence, parseAnswer, type Run } from "@/lib/assistant/answer";
 import { settleStoredTurn } from "@/lib/assistant/conversations";
 import { glossaryWordsIn } from "@/lib/assistant/related";
@@ -47,7 +47,9 @@ type Failure =
   | { kind: "quota"; detail: string }
   | { kind: "deep_quota"; detail: string }
   | { kind: "down" }
-  | { kind: "error" };
+  | { kind: "error" }
+  /** a deep answer the server failed to write — not counted, see the card */
+  | { kind: "deep_error" };
 
 /**
  * 5 & 7 · Research — an answer written from cited passages.
@@ -182,6 +184,12 @@ export function ResearchAnswer({
           const detail = (e as { data?: { detail?: string } }).data?.detail;
           setFailure({ kind: "quota", detail: detail ?? "You have asked all of today’s questions." });
         } else if (isAnswerServiceDown(e)) setFailure({ kind: "down" });
+        // A deep answer the server could not finish (16 Nov 2026: every deep
+        // question was coming back as a bare 500 after 50–60 s). Said as
+        // what it is — the server failed, nothing was counted, the Research
+        // answer it deepens is still there — rather than "may not have been
+        // answered", which sent readers to Try again into the same failure.
+        else if (deep && typeof status === "number" && status >= 500) setFailure({ kind: "deep_error" });
         else setFailure({ kind: "error" });
       });
     return () => {
@@ -737,6 +745,19 @@ function FailureCard({
         <p className="font-semibold">Today’s deep research is used up</p>
         <p className="mt-1 text-sm text-ink-soft">{failure.detail}</p>
         <p className="mt-1 text-sm text-ink-soft">The answer above still stands, and you can keep asking.</p>
+      </>
+    ) : failure.kind === "deep_error" ? (
+      <>
+        <p className="font-semibold">Deep research couldn’t finish</p>
+        <p className="mt-1 text-sm text-ink-soft">
+          It failed on our side while writing the answer. Your question was not counted, and the
+          answer above still stands.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" onClick={onRetry} className={ctaSecondary}>
+            Try deep research again
+          </button>
+        </div>
       </>
     ) : failure.kind === "quota" ? (
       <>
