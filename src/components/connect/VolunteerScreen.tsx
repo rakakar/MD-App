@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon, ExternalLinkIcon } from "@/components/shell/icons";
+import { ctaPrimary } from "@/components/ui";
 import { getVolunteerSignup, markVolunteerSignup } from "@/lib/storage";
 import { VOLUNTEER_FORM_EMBED, VOLUNTEER_FORM_URL } from "@/lib/volunteer";
 
@@ -76,18 +77,37 @@ export function VolunteerScreen({ intro }: { intro: React.ReactNode }) {
   );
 }
 
+/**
+ * The full form in Google's own page. On a phone it is the main way in — a
+ * full-width button (UX audit CN8): the embedded form scrolls inside a box
+ * shorter than the screen, which is hard work with a thumb. A desktop has the
+ * room for the embed, so there it stays a link.
+ */
 function FormsLink() {
   return (
+    <>
       <a
         href={VOLUNTEER_FORM_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold lg:mt-4 lg:text-base"
+        className={`${ctaPrimary} mt-4 w-full lg:hidden`}
+        style={{ background: "var(--ws-color)" }}
+      >
+        Open the form
+        <ExternalLinkIcon className="h-4 w-4 shrink-0" />
+      </a>
+      <p className="mt-2 text-center text-sm text-ink-soft lg:hidden">or fill it in below</p>
+      <a
+        href={VOLUNTEER_FORM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-4 hidden min-h-11 items-center gap-1.5 text-base font-semibold lg:inline-flex"
         style={{ color: "var(--ws-ink)" }}
       >
         Open in Google Forms
         <ExternalLinkIcon className="h-4 w-4 shrink-0" />
       </a>
+    </>
   );
 }
 

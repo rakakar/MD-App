@@ -88,13 +88,11 @@ export default async function OriginalsHome() {
           ─────────────────────────────────────────────
           Explore workspaces, four across
 
-        The shivirs follow Books in the DOM, so a phone reads Sutra, Continue
-        Reading, Books, Shivirs, ... (15 Nov 2026 — they were last, below
-        Explore workspaces, and a phone never reached them). From lg they are
-        lifted into the top-right cell by placement, which does not depend on
-        where they sit in the source: only the auto-placed items below care
-        about their own relative order, and that is unchanged. Every child is a
-        grid cell directly — a wrapper left empty becomes an empty cell.
+        The shivirs are last in the DOM, where the phone has always had them,
+        and are lifted into the top-right cell by placement. (Moved up under
+        Books on 15 Nov 2026 and put back on 16 Nov, designer's call.) Every
+        child is a grid cell directly — a wrapper left empty becomes an empty
+        cell.
 
         On a phone the gap is 20px, everywhere: `mt-5` is what a SectionHeading
         puts above itself between two sections, so the stack repeats it. No
@@ -158,16 +156,6 @@ export default async function OriginalsHome() {
           )}
         </section>
 
-        {/* Three: enough that the next one is visibly not the only one, few
-            enough that Home does not turn into the Connect list. Beside the
-            Sutra on desktop; with no Sutra to sit beside, a full row. */}
-        <UpcomingShivirs
-          shivirs={shivirs}
-          className={
-            sutra ? "lg:col-start-3 lg:row-start-1" : "lg:col-span-3 lg:row-start-1"
-          }
-        />
-
         {/* Draws nothing until there is something; see lib/shorts, which is
             where the fact that there is not yet is kept. */}
         {shorts.length > 0 && (
@@ -209,6 +197,16 @@ export default async function OriginalsHome() {
           <SectionHeading tier="title">Explore workspaces</SectionHeading>
           <ExploreWorkspaces current="originals" />
         </section>
+
+        {/* Three: enough that the next one is visibly not the only one, few
+            enough that Home does not turn into the Connect list. Beside the
+            Sutra on desktop; with no Sutra to sit beside, a full row. */}
+        <UpcomingShivirs
+          shivirs={shivirs}
+          className={
+            sutra ? "lg:col-start-3 lg:row-start-1" : "lg:col-span-3 lg:row-start-1"
+          }
+        />
 
       </div>
     </PageContainer>

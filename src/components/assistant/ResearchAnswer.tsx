@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useRoutePath } from "@/components/shell/useRoutePath";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { CheckIcon, ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
+import { ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
 import { ctaPrimary } from "@/components/ui";
 import { answerAsText, firstSentence, parseAnswer, type Run } from "@/lib/assistant/answer";
 import { settleStoredTurn } from "@/lib/assistant/conversations";
@@ -118,6 +118,8 @@ export function ResearchAnswer({
   const { user, loading } = useAuth();
   const [answer, setAnswer] = useState<ChatAnswer | null>(stored ?? null);
   const [failure, setFailure] = useState<Failure | null>(null);
+  /** the folded "how it was searched" lines — see the answer's header */
+  const [howOpen, setHowOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [open, setOpenSheet] = useState<number | null>(null);
   /** on desktop a source opens in the Assistant's side panel, not a sheet */
@@ -273,45 +275,16 @@ export function ResearchAnswer({
     (code) => shelf?.find((b) => b.code === code)?.title_hi ?? code
   );
   const deepLeft = quota?.capped ? (quota.deep_remaining ?? null) : null;
+  const isDeep = answer.mode === "deep" || deep;
+  const hasHow = !!readAs || parts.length > 0 || !!answer.rewritten_query;
 
   return (
     <div className="flex flex-col gap-5">
-      {(answer.mode === "deep" || deep) && (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-semibold" style={{ color: "var(--ws-ink)" }}>
-            Deep research
-          </p>
-          {/* How long the progress card's clock ran. What was read is the
-              "Read N passages" line just below — not repeated here. */}
-          {took != null && (
-            <p className="flex items-center gap-2 text-sm text-ink-soft">
-              {/* The state token, so the tick follows the theme — a fixed
-                  emerald was too bright on dark paper (15 Nov 2026). */}
-              <span aria-hidden className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-success text-card">
-                <CheckIcon className="h-3 w-3" />
-              </span>
-              Researched in <span className="tabular-nums">{clock(took / 1000)}</span>
-            </p>
-          )}
-          {readAs && (
-            <p className="text-sm text-ink-soft">
-              Read as{" "}
-              <span lang="hi" className="hi-note text-ink">
-                {readAs}
-              </span>
-            </p>
-          )}
-          {parts.length > 0 && (
-            <p className="text-sm text-ink-soft">
-              Searched in {parts.length} parts:{" "}
-              <span lang="hi" className="hi-note text-ink">
-                {parts.join(" · ")}
-              </span>
-            </p>
-          )}
-        </div>
-      )}
-
+      {/* How it was made, folded into one line (16 Nov 2026, UX audit AS5).
+          A deep answer opened with up to six lines — Deep research, the
+          time, Read as, Searched in, Answered as, Read N passages — so on a
+          phone the answer itself began below the fold. Now one line says
+          what was read and how long it took, and the process is a tap away. */}
       {scopeNames.length > 0 && (
         <p className="text-sm text-ink-soft">
           Answered only from{" "}
@@ -321,31 +294,74 @@ export function ResearchAnswer({
         </p>
       )}
 
-      {answer.rewritten_query && (
-        <p className="text-sm text-ink-soft">
-          Answered as: <span className="text-ink">{answer.rewritten_query}</span>
-        </p>
-      )}
 
-      {cites.length > 0 && (
-        <p className="flex items-center gap-2 text-sm text-ink-soft">
-          <span
-            aria-hidden
-            className="flex h-8 w-8 items-center justify-center rounded-lg"
-            style={{
-              background: "color-mix(in srgb, var(--ws-color) 14%, var(--color-card))",
-              color: "var(--ws-ink)",
-            }}
-          >
-            ✦
-          </span>
-          {passages.length > 0 &&
-            `Read ${passages.length} ${passages.length === 1 ? "passage" : "passages"}${
-              citedBooks > 1 ? ` from ${citedBooks} books` : ""
-            }`}
-          {passages.length > 0 && definitions > 0 && " · "}
-          {definitions > 0 && `${definitions} ${definitions === 1 ? "definition" : "definitions"}`}
-        </p>
+      {(cites.length > 0 || isDeep) && (
+        <div className="flex flex-col gap-1.5">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-soft">
+            <span
+              aria-hidden
+              className="flex h-8 w-8 items-center justify-center rounded-lg"
+              style={{
+                background: "color-mix(in srgb, var(--ws-color) 14%, var(--color-card))",
+                color: "var(--ws-ink)",
+              }}
+            >
+              ✦
+            </span>
+            <span>
+              {isDeep && <span className="font-semibold" style={{ color: "var(--ws-ink)" }}>Deep research · </span>}
+              {passages.length > 0 &&
+                `${passages.length} ${passages.length === 1 ? "passage" : "passages"}${
+                  citedBooks > 1 ? ` from ${citedBooks} books` : ""
+                }`}
+              {passages.length > 0 && definitions > 0 && " · "}
+              {definitions > 0 && `${definitions} ${definitions === 1 ? "definition" : "definitions"}`}
+              {isDeep && took != null && (
+                <>
+                  {" · "}
+                  <span className="tabular-nums">{clock(took / 1000)}</span>
+                </>
+              )}
+            </span>
+            {hasHow && (
+              <button
+                type="button"
+                aria-expanded={howOpen}
+                onClick={() => setHowOpen((o) => !o)}
+                className="inline-flex min-h-11 items-center gap-1 font-semibold"
+                style={{ color: "var(--ws-ink)" }}
+              >
+                How it was searched
+                <span aria-hidden className={`transition-transform ${howOpen ? "rotate-180" : ""}`}>⌄</span>
+              </button>
+            )}
+          </p>
+          {howOpen && (
+            <div className="flex flex-col gap-1.5 border-s-2 border-rule ps-3">
+              {readAs && (
+                <p className="text-sm text-ink-soft">
+                  Read as{" "}
+                  <span lang="hi" className="hi-note text-ink">
+                    {readAs}
+                  </span>
+                </p>
+              )}
+              {parts.length > 0 && (
+                <p className="text-sm text-ink-soft">
+                  Searched in {parts.length} parts:{" "}
+                  <span lang="hi" className="hi-note text-ink">
+                    {parts.join(" · ")}
+                  </span>
+                </p>
+              )}
+              {answer.rewritten_query && (
+                <p className="text-sm text-ink-soft">
+                  Answered as: <span className="text-ink">{answer.rewritten_query}</span>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Each block says its own language (15 Nov 2026). Without it a Hindi

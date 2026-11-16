@@ -237,9 +237,10 @@ export function SettingsSheet(p: SettingsSheetProps) {
 /**
  * Text size: a sample line set at the size it will be, then A− · one dot per
  * step · A+. Shared by the sheet and the docked panel — the designer asked for
- * the phone's dots on the desktop too (3 Oct 2026).
+ * the phone's dots on the desktop too (3 Oct 2026). Also Settings › Reading's,
+ * so the book's text size has a second door outside the book (16 Nov 2026).
  */
-function FontSize({
+export function FontSize({
   fontScale,
   face,
   onFontScale,

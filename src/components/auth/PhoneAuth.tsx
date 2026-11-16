@@ -59,7 +59,8 @@ export function PhoneAuth({
   mode: "login" | "signup";
   /** where to go once signed in */
   next: string;
-  onUseEmail: () => void;
+  /** a link back to email under the form; the auth screens show a switch instead */
+  onUseEmail?: () => void;
 }) {
   const router = useRouter();
   const { onAuthenticated } = useAuth();
@@ -375,12 +376,14 @@ export function PhoneAuth({
         </button>
       )}
 
-      <p className="text-center text-sm text-ink-soft">
-        Have an email?{" "}
-        <button type="button" onClick={onUseEmail} className={`${textLink} ps-1`} style={{ color: "var(--ws-ink)" }}>
-          {mode === "login" ? "Sign in with email" : "Sign up with email"}
-        </button>
-      </p>
+      {onUseEmail && (
+        <p className="text-center text-sm text-ink-soft">
+          Have an email?{" "}
+          <button type="button" onClick={onUseEmail} className={`${textLink} ps-1`} style={{ color: "var(--ws-ink)" }}>
+            {mode === "login" ? "Sign in with email" : "Sign up with email"}
+          </button>
+        </p>
+      )}
     </form>
   );
 }

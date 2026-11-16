@@ -1,8 +1,8 @@
 "use client";
 
 import { RadioSegmented } from "@/components/ui";
-import { MODES } from "@/components/reader/SettingsSheet";
-import type { ReadingMode } from "@/lib/storage";
+import { FontSize, MODES } from "@/components/reader/SettingsSheet";
+import type { ReaderFace, ReadingMode } from "@/lib/storage";
 import { CARD, RowTitle } from "./parts";
 
 /**
@@ -19,14 +19,32 @@ export function ReadingCard({
   desktop,
   value,
   onChange,
+  fontScale,
+  face,
+  onFontScale,
 }: {
   desktop: boolean;
   value: ReadingMode;
   onChange: (m: ReadingMode) => void;
+  /** the books' own text size — the reader's Aa sheet sets the same value */
+  fontScale: number;
+  face: ReaderFace;
+  onFontScale: (v: number) => void;
 }) {
+  // Book text size, here as well as in the book (16 Nov 2026, UX audit RD3):
+  // a reader who wants bigger letters looks in Settings first.
+  const size = (
+    <div className="mb-6 border-b border-rule pb-6">
+      <RowTitle>Book text size</RowTitle>
+      <div className="mt-4">
+        <FontSize fontScale={fontScale} face={face} onFontScale={onFontScale} />
+      </div>
+    </div>
+  );
   if (!desktop) {
     return (
       <div className={`${CARD} px-5 py-6`}>
+        {size}
         <RowTitle>Reading style</RowTitle>
         <div className="mt-4">
           <RadioSegmented label="Reading style" options={MODES} value={value} onChange={onChange} />
@@ -39,6 +57,7 @@ export function ReadingCard({
   // At a desk there is room to say what each one does before it is chosen.
   return (
     <div className={`${CARD} px-7 py-6`}>
+      {size}
       <RowTitle>Reading style</RowTitle>
       <div role="radiogroup" aria-label="Reading style" className="mt-4 grid grid-cols-2 gap-4">
         {MODES.map((m) => {

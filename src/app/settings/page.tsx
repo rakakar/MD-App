@@ -21,7 +21,7 @@ import { applyConsent } from "@/lib/analytics";
 import { formatBytes } from "@/lib/audioCache";
 import { APP_VERSION } from "@/lib/feedback";
 import { downloadsSummary, useDownloads } from "@/lib/useDownloads";
-import { getPrefs, setPrefs, type Prefs } from "@/lib/storage";
+import { FONT_SCALES, getPrefs, nearestStep, setPrefs, type Prefs } from "@/lib/storage";
 
 /**
  * Settings — the designer's comps of 19 Oct 2026.
@@ -113,6 +113,9 @@ export default function SettingsPage() {
           desktop={desktop}
           value={prefs.readingMode ?? "scroll"}
           onChange={(m) => update({ readingMode: m })}
+          fontScale={nearestStep(FONT_SCALES, prefs.fontScale)}
+          face={prefs.face}
+          onFontScale={(v) => update({ fontScale: v })}
         />
       </SettingsSection>
 

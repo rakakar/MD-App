@@ -7,7 +7,6 @@ import {
   ChevronDown,
   HeadphonesIcon,
   Icon,
-  PaletteIcon,
   CloseIcon,
   ShareIcon,
   TocIcon,
@@ -31,6 +30,15 @@ import { HIGHLIGHT_COLOURS, type HighlightColour } from "@/lib/storage";
  */
 
 /** shared: a bordered square button — the comps' Aa and back */
+/** "Aa": the reader's type button, drawn in the UI face rather than as an icon. */
+function AaGlyph() {
+  return (
+    <span aria-hidden className="text-base font-semibold leading-none tracking-tight">
+      A<span className="text-sm">a</span>
+    </span>
+  );
+}
+
 function SquareBtn({
   onClick,
   href,
@@ -146,8 +154,12 @@ export function ReaderTopBar({
             for a while: behind it are the six reading surfaces, the typeface,
             the layout and the margins as well as the size. One glyph for
             "how this looks", in the book and in the shell. */}
-        <SquareBtn onClick={onType} label="Reading settings">
-          <PaletteIcon className="h-5 w-5" />
+        {/* "Aa" again, in letters (16 Nov 2026, UX audit RD3). The palette
+            said "colours" to a reader looking for bigger letters, and the
+            commonest wish of this audience is exactly that; the sheet it opens
+            starts with Text size. The paper and the rest are still in it. */}
+        <SquareBtn onClick={onType} label="Text size and reading settings">
+          <AaGlyph />
         </SquareBtn>
 
         <Link
@@ -735,13 +747,13 @@ export function ReaderDesktopBar({
           <button
             type="button"
             onClick={onSettings}
-            aria-label="Reading settings"
+            aria-label="Text size and reading settings"
             aria-pressed={settingsOpen}
-            title="Reading settings"
+            title="Text size and reading settings"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-(--reader-rule) transition-colors hover:bg-current/5"
             style={settingsOpen ? lit : undefined}
           >
-            <PaletteIcon className="h-5 w-5" />
+            <AaGlyph />
           </button>
           {canListen && (
             <button

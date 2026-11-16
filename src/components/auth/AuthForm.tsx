@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { FIELD, LABEL } from "@/components/auth/fields";
 import { CodeEntry } from "@/components/auth/CodeEntry";
 import { PhoneAuth } from "@/components/auth/PhoneAuth";
+import { RadioSegmented } from "@/components/ui";
 import { ArrowLeftIcon, BrandMark, InfoIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { track } from "@/lib/analytics";
@@ -38,6 +39,9 @@ const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
  * `useKeyboardInset` rather than `:focus-within`: a desktop has focus and no
  * keyboard, and collapsing the band there would be motion for no reason.
  */
+/** The sign-in method the reader last chose here — "phone" or "email". */
+const METHOD_KEY = "md.auth.method";
+
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const search = useSearchParams();
@@ -47,9 +51,32 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [reveal, setReveal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  // Mobile number + WhatsApp code instead of email. `?via=whatsapp` keeps the
-  // choice across the Sign in ↔ Create account link.
-  const [byPhone, setByPhone] = useState(search.get("via") === "whatsapp");
+  // Mobile number + WhatsApp code, or email. Two equal choices at the top
+  // since 16 Nov 2026 (UX audit FR6): email used to be the front door and the
+  // number sat behind "No email?", though most readers here have a WhatsApp
+  // number and no email they use. Creating an account starts on the number;
+  // both screens then remember the reader's last choice. `?via=` carries it
+  // across the Sign in ↔ Create account link.
+  const via = search.get("via");
+  const [byPhone, setByPhone] = useState(via ? via === "whatsapp" : mode === "signup");
+  useEffect(() => {
+    if (via) return;
+    try {
+      const last = localStorage.getItem(METHOD_KEY);
+      if (last === "phone" || last === "email") setByPhone(last === "phone");
+    } catch {
+      // no storage: the screen's own default stands
+    }
+  }, [via]);
+  const chooseMethod = (phone: boolean) => {
+    setError(null);
+    setByPhone(phone);
+    try {
+      localStorage.setItem(METHOD_KEY, phone ? "phone" : "email");
+    } catch {
+      // not remembered, no worse
+    }
+  };
   // Signing in with a code to the email instead of the password: the flow's
   // token while the code is out (not a session).
   const [codeToken, setCodeToken] = useState<string | null>(null);
@@ -236,6 +263,20 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               : "Free account to sync bookmarks, notes and progress."}
           </p>
 
+          {!codeToken && (
+            <div className="mt-5">
+              <RadioSegmented
+                label={login_ ? "Sign in with" : "Sign up with"}
+                options={[
+                  { value: "phone", label: "Mobile number" },
+                  { value: "email", label: "Email" },
+                ]}
+                value={byPhone ? "phone" : "email"}
+                onChange={(v) => chooseMethod(v === "phone")}
+              />
+            </div>
+          )}
+
           {codeToken ? (
             <div className="mt-6">
               <CodeEntry
@@ -255,7 +296,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               />
             </div>
           ) : byPhone ? (
-            <PhoneAuth mode={mode} next={next} onUseEmail={() => setByPhone(false)} />
+            <PhoneAuth mode={mode} next={next} />
           ) : (
             <>
               <form onSubmit={submit} className="mt-6 flex flex-col gap-5" noValidate>
@@ -342,22 +383,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                 </button>
               )}
 
-              {/* The way round email, for readers who have none or cannot
-                  remember it — quiet on purpose: email is the front door. */}
-              <p className="mt-4 text-center text-sm text-ink-soft">
-                No email?{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null);
-                    setByPhone(true);
-                  }}
-                  className="inline-flex min-h-11 items-center ps-1 font-bold"
-                  style={{ color: "var(--ws-ink)" }}
-                >
-                  {login_ ? "Sign in with mobile number" : "Sign up with mobile number"}
-                </button>
-              </p>
 
               {/* Google sign-in is built but dark for the alpha — there is no Google
                   API project behind it yet, so the button would only ever produce an
@@ -384,7 +409,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <p className="mt-5 text-center text-sm text-ink-soft">
             {login_ ? "New here?" : "Already have an account?"}{" "}
             <Link
-              href={`${login_ ? "/signup" : "/login"}?next=${encodeURIComponent(next)}${byPhone ? "&via=whatsapp" : ""}`}
+              href={`${login_ ? "/signup" : "/login"}?next=${encodeURIComponent(next)}&via=${byPhone ? "whatsapp" : "email"}`}
               className="inline-flex min-h-11 items-center ps-1 font-bold"
               style={{ color: "var(--ws-ink)" }}
             >
