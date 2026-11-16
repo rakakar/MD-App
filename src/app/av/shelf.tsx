@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AV_KINDS, AV_PAGE, AvShelf, avAsked } from "@/components/library/AvShelf";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
+import { OtherShelves } from "@/components/library/OtherShelves";
 import { findLibrary, getTopics } from "@/lib/api";
 import { lockAxis, readFind, type RawParams } from "@/lib/find";
 import { shelfMap } from "@/lib/library";
@@ -89,6 +90,7 @@ export async function AvShelfPage({ params }: { params: RawParams }) {
         shelves={shelves}
         basePath="/av"
         offset={offset}
+        also={<OtherShelves q={state.q} here="av" />}
       />
     </PageContainer>
   );

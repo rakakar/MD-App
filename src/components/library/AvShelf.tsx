@@ -91,7 +91,10 @@ export function AvShelf({
   shelves,
   basePath,
   offset,
+  also,
 }: {
+  /** the same words counted on the other shelves — see `OtherShelves` */
+  also?: React.ReactNode;
   title: string;
   /** what the page holds — behind the title's `i`, not printed under it */
   description: string;
@@ -271,13 +274,29 @@ export function AvShelf({
           <EmptyState
             title={asked ? "Nothing matches that" : "Nothing published yet"}
             hint={
-              asked
-                ? "Try a different word, or clear a filter."
-                : "Recordings appear here as they are published into the library."
+              asked ? (
+                state.q ? (
+                  <>
+                    {"Try a different word, or look for it "}
+                    <Link
+                      href={`/assistant?mode=books&q=${encodeURIComponent(state.q)}`}
+                      className="font-semibold underline underline-offset-2"
+                      style={{ color: "var(--ws-ink)" }}
+                    >
+                      inside the books&rsquo; text
+                    </Link>
+                  </>
+                ) : (
+                  "Try a different word, or clear a filter."
+                )
+              ) : (
+                "Recordings appear here as they are published into the library."
+              )
             }
           />
         </div>
       )}
+      {asked && also}
 
       {/* Browsing has every album on one page — except on a BE too old to send
           `albums`, where the cards are page-bound. A search pages itself, with

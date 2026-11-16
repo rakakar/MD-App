@@ -28,7 +28,10 @@ export function FindResults({
   shelves,
   activeFilters,
   asked,
+  also,
 }: {
+  /** the same words counted on the other shelves — see `OtherShelves` */
+  also?: React.ReactNode;
   /**
    * Desktop: the filters that are on, as removable chips beside the count —
    * the designer's comp, 8 Oct 2026. They then carry the Clear, so the
@@ -99,6 +102,7 @@ export function FindResults({
       ) : (
         <NothingHere state={state} basePath={basePath} />
       )}
+      {also}
     </div>
   );
 }
@@ -123,15 +127,18 @@ function NothingHere({ state, basePath }: { state: FindState; basePath: string }
         title="Nothing matched this search"
         hint={
           state.q ? (
+            // The other shelves are counted just below (`OtherShelves`), for
+            // everyone. This is the second step, and it says what it is: the
+            // passages inside the books, which signed out shows only a few of.
             <>
+              {"Or look for it "}
               <Link
                 href={`/assistant?mode=books&q=${encodeURIComponent(state.q)}`}
                 className="font-semibold underline underline-offset-2"
                 style={{ color: "var(--ws-ink)" }}
               >
-                Search the whole library
+                inside the books&rsquo; text
               </Link>
-              {" — including inside the books"}
             </>
           ) : (
             <Link

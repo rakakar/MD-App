@@ -3,6 +3,7 @@ import { count } from "@/lib/labels";
 import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { FindResults } from "./FindResults";
+import { OtherShelves } from "./OtherShelves";
 import { CollectionViewProvider, ProvidedView, ProvidedViewToggle } from "./CollectionLayout";
 import { DoorCard, DoorRow } from "./CollectionShell";
 import { KIND_ORDER, KIND_PLURAL } from "./format";
@@ -365,6 +366,11 @@ export async function WorkspaceShelf({
           basePath={basePath}
           scope={scope}
           shelves={shelves}
+          also={
+            basePath === "/originals" || basePath === "/resources" ? (
+              <OtherShelves q={state.q} here={basePath === "/originals" ? "originals" : "resources"} />
+            ) : undefined
+          }
           activeFilters={
             <ActiveFindFilters
               topics={topics}
