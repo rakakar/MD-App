@@ -12,7 +12,8 @@ import {
   type Conversation,
 } from "@/lib/assistant/conversations";
 import { PERSONAL_SYNCED, localBookmarks, localNotes, localProgressFor, syncPersonal } from "@/lib/personal";
-import type { LocalBookmark, LocalNote } from "@/lib/storage";
+import { HIGHLIGHT_COLOURS, type HighlightColour, type LocalBookmark, type LocalNote } from "@/lib/storage";
+import { coloursOf, useHighlightNames } from "@/lib/highlightNames";
 import type { BookSummary } from "@/lib/types";
 
 /**
@@ -175,6 +176,8 @@ export function PersonalHeader({
   onBook,
   query,
   onQuery,
+  colour = null,
+  onColour,
 }: {
   active: PersonalTab;
   rows: PersonalRows | null;
@@ -185,6 +188,9 @@ export function PersonalHeader({
   /** words to find in the passages and notes — see `matchesQuery` */
   query?: string;
   onQuery?: (q: string) => void;
+  /** the highlight colour being filtered to — Highlights only (UX audit ST4) */
+  colour?: HighlightColour | null;
+  onColour?: (c: HighlightColour | null) => void;
 }) {
   const { user, loading } = useAuth();
   const anything = rows !== null && rows.bookmarks.length + rows.notes.length > 0;
@@ -264,6 +270,9 @@ export function PersonalHeader({
           book={book}
           onBook={onBook}
         />
+        {active === "highlights" && onColour && (
+          <ColourFilter rows={rows?.bookmarks} colour={colour} onColour={onColour} />
+        )}
         {/* A box to find a word in what was kept (15 Nov 2026, UX audit
             ST5): revising, a reader remembers a word they wrote and not the
             day. Offered once the list is long enough to need it. */}
@@ -316,6 +325,44 @@ export function matchesQuery(
  * absent entirely below two books: a filter that can only say "all" or "the
  * only one there is" is furniture.
  */
+/**
+ * **Which colour** (16 Nov 2026, UX audit ST4). Each colour now has a name —
+ * प्रश्न, समझ आया, दोबारा पढ़ें by default — so the colour a passage was
+ * painted is a way to find it again: every question to take to the next
+ * goshthi, across every book. Offered only once two colours are in use, by
+ * the same rule as the book chips.
+ */
+function ColourFilter({
+  rows,
+  colour,
+  onColour,
+}: {
+  rows: LocalBookmark[] | undefined;
+  colour: HighlightColour | null;
+  onColour: (c: HighlightColour | null) => void;
+}) {
+  const names = useHighlightNames();
+  const used = HIGHLIGHT_COLOURS.filter((c) => (rows ?? []).some((r) => coloursOf(r).includes(c)));
+  if (used.length < 2) return null;
+  return (
+    <div className="mt-2">
+      <ChipRow label="Filter by colour">
+        <Chip label="All colours" selected={colour === null} variant="tint" onClick={() => onColour(null)} />
+        {used.map((c) => (
+          <Chip
+            key={c}
+            label={names[c]}
+            swatch={`var(--color-hl-${c}-mark)`}
+            selected={colour === c}
+            variant="tint"
+            onClick={() => onColour(colour === c ? null : c)}
+          />
+        ))}
+      </ChipRow>
+    </div>
+  );
+}
+
 function BookFilter({
   rows,
   titles,

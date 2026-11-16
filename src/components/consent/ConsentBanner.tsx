@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FIRST_RUN_DONE } from "@/components/journey/StagePrompt";
 import Script from "next/script";
 import { useEffect, useState } from "react";
@@ -81,6 +82,13 @@ export function ConsentBanner() {
       <p lang="hi" className="hi-note mt-1.5 text-sm text-ink-soft">
         ऐप कैसे उपयोग हो रहा है, यह समझने के लिए हम Google Analytics का उपयोग करते हैं। आपकी अनुमति के बिना कुछ भी नहीं लिया जाता।
       </p>
+      <Link
+        href="/privacy"
+        className="mt-1.5 inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-2"
+        style={{ color: "var(--ws-ink)" }}
+      >
+        What we keep
+      </Link>
       <div className="mt-3 flex gap-2">
         <button
           type="button"

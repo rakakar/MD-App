@@ -1,5 +1,6 @@
 "use client";
 
+import { coloursOf } from "@/lib/highlightNames";
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -58,9 +59,16 @@ export default function BookmarksPage() {
   const [book, setBook] = useState<string | null>(null);
   const all = rows?.bookmarks ?? null;
   const [query, setQuery] = useState("");
+  /** the colour the list is narrowed to (UX audit ST4), or null for all */
+  const [colour, setColour] = useState<HighlightColour | null>(null);
   const highlights =
     all &&
-    all.filter((b) => (!book || b.book_code === book) && matchesQuery(b, query, titles));
+    all.filter(
+      (b) =>
+        (!book || b.book_code === book) &&
+        (!colour || coloursOf(b).includes(colour)) &&
+        matchesQuery(b, query, titles)
+    );
 
   const [undoToast, offerUndo] = useUndoToast();
 
@@ -87,6 +95,8 @@ export default function BookmarksPage() {
         onBook={setBook}
         query={query}
         onQuery={setQuery}
+        colour={colour}
+        onColour={setColour}
       />
 
       <div className="mt-5">
@@ -99,6 +109,16 @@ export default function BookmarksPage() {
             action={
               <button type="button" onClick={() => setQuery("")} className={ctaSecondary}>
                 Clear the search
+              </button>
+            }
+          />
+        ) : highlights.length === 0 && (colour || book) ? (
+          <EmptyState
+            title="Nothing here with both filters"
+            hint="This book has no highlights in that colour."
+            action={
+              <button type="button" onClick={() => setColour(null)} className={ctaSecondary}>
+                Show all colours
               </button>
             }
           />

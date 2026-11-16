@@ -295,7 +295,10 @@ export function Chip({
   onRemove,
   count,
   compact = false,
+  swatch,
 }: {
+  /** a colour dot before the label — a highlight colour's chip */
+  swatch?: string;
   /** a 32px chip for a desktop line of text — the active filters beside a count */
   compact?: boolean;
   label: string;
@@ -354,6 +357,7 @@ export function Chip({
       {selected && variant === "solid" && count == null && (
         <CheckIcon className="h-3.5 w-3.5 shrink-0" />
       )}
+      {swatch && <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: swatch }} />}
       <span {...l} className={`${l.className} ${selected ? "font-semibold" : "font-medium"}`}>
         {label}
       </span>

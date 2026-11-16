@@ -19,6 +19,7 @@ import type { HighlightColour, LocalNote } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
 import { chapterName } from "@/lib/labels";
 import { HighlightCard, NoteCard } from "./SavedPassageCard";
+import { useHighlightNames } from "@/lib/highlightNames";
 
 /**
  * The desktop reader's left panel: Contents, Highlights, Notes.
@@ -38,12 +39,6 @@ export type PanelTab = "contents" | "highlights" | "notes";
 
 /** a highlight's colour as a mark rather than a fill — see `--color-hl-*-mark` */
 const deep = (c: HighlightColour) => `var(--color-hl-${c}-mark)`;
-/** what the chips call them — sage reads as green to everyone but a painter */
-const COLOUR_NAME: Record<HighlightColour, string> = {
-  amber: "Amber",
-  sage: "Green",
-  sky: "Blue",
-};
 
 /** where a passage is to be found, for Go to */
 export interface PanelTarget {
@@ -430,6 +425,7 @@ function HighlightsTab({
   onDelete: (h: Highlight) => void;
 }) {
   const [filter, setFilter] = useState<HighlightColour | null>(null);
+  const names = useHighlightNames();
   const colours = useMemo(
     () => (["amber", "sage", "sky"] as const).filter((c) => rows.some((r) => r.colour === c)),
     [rows]
@@ -481,7 +477,7 @@ function HighlightsTab({
             className={chip(active === c)}
           >
             <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: deep(c) }} />
-            {COLOUR_NAME[c]}
+            <span lang="hi" className="hi">{names[c]}</span>
           </button>
         ))}
       </div>

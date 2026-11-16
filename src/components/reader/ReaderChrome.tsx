@@ -13,6 +13,7 @@ import {
 } from "@/components/shell/icons";
 import type { ReadingSide } from "@/lib/bookLanguage";
 import { HIGHLIGHT_COLOURS, type HighlightColour } from "@/lib/storage";
+import { HIGHLIGHT_COLOUR_WORD, useHighlightNames } from "@/lib/highlightNames";
 
 /**
  * **The reader's chrome, drawn from the finished comps.**
@@ -463,13 +464,12 @@ const SWATCH: Record<HighlightColour, string> = {
   sky: "bg-hl-sky",
 };
 
-/** the colours carry no meaning — the designer was explicit — so they are
- *  announced by the only thing true about them */
-const SWATCH_LABEL: Record<HighlightColour, string> = {
-  amber: "Highlight in amber",
-  sage: "Highlight in green",
-  sky: "Highlight in blue",
-};
+/**
+ * Each swatch says what it means (16 Nov 2026, UX audit ST4). The colours
+ * once carried no meaning by the designer's choice; now each has a name the
+ * reader can change — see `lib/highlightNames.ts` — and the name rides under
+ * the dot, so painting a passage is also filing it.
+ */
 
 /**
  * The bar that appears over a selection.
@@ -512,6 +512,7 @@ export function SelectionBar({
   /** only when this chapter can be listened to */
   onPlayHere?: () => void;
 }) {
+  const names = useHighlightNames();
   return (
     <div
       data-reader-chrome
@@ -538,17 +539,19 @@ export function SelectionBar({
             key={c}
             type="button"
             onClick={() => onHighlight(c)}
-            aria-label={SWATCH_LABEL[c]}
-            title={SWATCH_LABEL[c]}
-            /* A 44px target around a 32px dot: painting a passage is the most
-               repeated act in the reader, and the dot alone was under the
-               floor. The dot keeps its size, so the bar reads as it did. */
-            className="group flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+            aria-label={`Highlight as ${names[c]} (${HIGHLIGHT_COLOUR_WORD[c].toLowerCase()})`}
+            /* A 44px-wide target around a 28px dot, with the colour's name
+               under it: painting a passage is the most repeated act in the
+               reader, and the dot alone was under the floor. */
+            className="group flex min-h-11 min-w-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-control px-1 pt-1"
           >
             <span
               aria-hidden
-              className={`h-8 w-8 rounded-full ring-1 ring-white/25 transition-transform group-active:scale-90 ${SWATCH[c]}`}
+              className={`h-7 w-7 rounded-full ring-1 ring-white/25 transition-transform group-active:scale-90 ${SWATCH[c]}`}
             />
+            <span aria-hidden lang="hi" className="hi whitespace-nowrap text-xs leading-tight text-white/85">
+              {names[c]}
+            </span>
           </button>
         ))}
         <span className="ms-auto sm:hidden">

@@ -191,7 +191,17 @@ export function ProfileStep() {
                 A little about you
               </h1>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft sm:text-base">
-                We use this to share shivir and centre updates near you.
+                We use this to share shivir and centre updates near you.{" "}
+                {/* A new tab, so the form keeps what was typed (UX audit TR7). */}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline underline-offset-2"
+                  style={{ color: "var(--ws-ink)" }}
+                >
+                  What we keep
+                </a>
               </p>
 
               {signedInAs && (

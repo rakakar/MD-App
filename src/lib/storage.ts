@@ -189,6 +189,12 @@ export interface Prefs {
    */
   holdHintShown: boolean;
   /**
+   * The reader's own names for the three highlight colours, where they have
+   * renamed one (16 Nov 2026, UX audit ST4). Absent means the default — see
+   * `lib/highlightNames.ts`.
+   */
+  highlightNames: Partial<Record<HighlightColour, string>>;
+  /**
    * Whether the six-card first-run deck has been through once.
    *
    * Set by finishing it *or* by skipping it — the deck is an explanation, not
@@ -310,6 +316,7 @@ export const DEFAULT_PREFS: Prefs = {
   immersiveHintShown: false,
   marksHintShown: false,
   holdHintShown: false,
+  highlightNames: {},
   onboardingSeen: false,
   switcherHintShown: false,
   journeyStage: null,

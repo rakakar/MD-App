@@ -9,6 +9,7 @@ import { AccountCard } from "@/components/settings/AccountCard";
 import { AppearanceCard } from "@/components/settings/AppearanceCard";
 import { InstallCard, useInstallSteps } from "@/components/settings/InstallCard";
 import { ReadingCard } from "@/components/settings/ReadingCard";
+import { HighlightNamesCard } from "@/components/settings/HighlightNamesCard";
 import { CARD, SettingsSection, SwitchRow, useToast } from "@/components/settings/parts";
 import { ChevronRight, DownloadIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
@@ -135,6 +136,10 @@ export default function SettingsPage() {
         />
       </SettingsSection>
 
+      <SettingsSection id="highlights" title="Highlight colours">
+        <HighlightNamesCard desktop={desktop} onSaved={showToast} />
+      </SettingsSection>
+
       {/* Renders its own section, or nothing at all — this browser may have no
           push to offer, and a heading over an empty space explains nothing. */}
       <NotificationSetting desktop={desktop} />
@@ -178,6 +183,17 @@ export default function SettingsPage() {
             onChange={(on) => update({ consent: on ? "granted" : "denied" })}
           />
         </div>
+        {/* What the app keeps, in plain words (16 Nov 2026, UX audit TR7). */}
+        <Link
+          href="/privacy"
+          className={`${CARD} mt-3 flex min-h-16 items-center gap-4 ${desktop ? "px-7" : "px-5"} py-4 transition-colors hover:bg-inset`}
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block text-title text-ink">What we keep</span>
+            <span className="block text-sm text-ink-soft">What is stored, who sees it, how to turn it off</span>
+          </span>
+          <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
+        </Link>
       </SettingsSection>
 
       <footer
