@@ -108,7 +108,6 @@ const TEAM: [string, string][] = [
   ["Hirendra Chauhan", "coord"],
   ["Testing team", ""],
   ["Shriram Narasimhan", "content"],
-  ["Achal Agrawal", "Phase 1 design, dev"],
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

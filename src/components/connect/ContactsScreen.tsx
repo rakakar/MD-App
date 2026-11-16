@@ -29,6 +29,20 @@ import { StateSheet } from "./StateSheet";
  * The page hands over the prerendered "all states" list, so arriving costs no
  * request; the first refetch is the reader's first choice.
  */
+/**
+ * Alphabetical by city, then by name within a city (designer, 16 Nov 2026).
+ * Sorted here rather than trusted from the API, whose order is the panel's.
+ * A contact with no city falls back to its printed location.
+ */
+function byCity(rows: DirectoryContact[]): DirectoryContact[] {
+  const key = (c: DirectoryContact) => (c.city || c.location || "").trim();
+  return [...rows].sort(
+    (a, b) =>
+      key(a).localeCompare(key(b), undefined, { sensitivity: "base" }) ||
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+  );
+}
+
 export function ContactsScreen({
   initial,
   states,
@@ -122,7 +136,7 @@ export function ContactsScreen({
           <ErrorState />
         ) : rows.length > 0 ? (
           <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-6">
-            {rows.map((c) => (
+            {byCity(rows).map((c) => (
               <li key={c.id} className="lg:[&>article]:h-full">
                 <ContactCard contact={c} />
               </li>
