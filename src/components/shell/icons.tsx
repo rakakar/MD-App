@@ -768,6 +768,17 @@ export function WarningIcon({ className }: { className?: string }) {
   );
 }
 
+/** Help: a question mark in a circle, the account menu's "How to use MD Study". */
+export function HelpIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className ?? "h-5 w-5"}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9.5a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8" />
+      <path d="M12 16.5h.01" />
+    </Svg>
+  );
+}
+
 export function InfoIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>

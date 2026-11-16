@@ -51,6 +51,13 @@ export default function ResearchPage() {
           />
         ) : (
           <>
+            {/* Said once, above the list (16 Nov 2026, UX audit ST7): these are
+                not in the account the way highlights and notes are, signed in
+                or not, and signing out clears them from this device. */}
+            <p className="mb-4 text-xs text-ink-soft">
+              Saved research is kept on this device only — it does not sync to your account yet, and
+              it is cleared when you sign out.
+            </p>
             <ul className="flex flex-col gap-3">
               {saved.map((c) => (
                 <li key={c.id}>
@@ -58,11 +65,6 @@ export default function ResearchPage() {
                 </li>
               ))}
             </ul>
-            {/* Said once, under the list: these are not in the account the way
-                highlights and notes are, signed in or not. */}
-            <p className="mt-4 text-xs text-ink-soft">
-              Saved research is kept on this device — it does not sync to your account yet.
-            </p>
           </>
         )}
       </div>

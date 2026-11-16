@@ -105,7 +105,7 @@ export function FirstRunFlow({ onDone }: { onDone: () => void }) {
             either side of a photograph. The study is drawn at 1440; past that
             the pair holds its shape and the window grows around it. */}
         <div className="relative mx-auto flex h-full w-full max-w-[90rem] items-center lg:gap-10 lg:ps-10 lg:pe-8 xl:gap-14 xl:ps-22 xl:pe-18">
-          <LaunchPane started={started} onStart={() => setStarted(true)} />
+          <LaunchPane started={started} onStart={() => setStarted(true)} onSkip={onDone} />
 
           {/* Mounted on the press rather than hidden until it, so the entrance
               is a CSS *animation* — which plays on mount — instead of a

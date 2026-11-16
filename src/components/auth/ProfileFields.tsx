@@ -107,7 +107,12 @@ export function ProfileFields({
   const emailLocked = locked.includes("email");
   const lockedNote = (field: LockedField) => (
     <p id={`${idPrefix}-${field}-note`} className="mt-2 text-xs leading-relaxed text-ink-soft">
-      You sign in with this {field === "mobile" ? "number" : "email"}, so it can&rsquo;t be changed here.
+      You sign in with this {field === "mobile" ? "number" : "email"}, so it can&rsquo;t be changed here. To
+      change it or remove your account, write to{" "}
+      <a href="mailto:app@madhyasth.org" className="font-semibold underline underline-offset-2">
+        app@madhyasth.org
+      </a>
+      .
     </p>
   );
   /* A refused field says so three ways (15 Nov 2026): a 2px danger edge, a ⚠

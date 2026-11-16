@@ -115,5 +115,6 @@ export const LAUNCH = {
   founderLine: "मध्यस्थ दर्शन सह-अस्तित्ववाद",
   founderSub: "प्रणेता: श्री ए. नागराज, अमरकंटक, म.प्र.",
   cta: "Start Your Journey",
+  skip: "Skip the tour",
   tour: "A quick tour of the five workspaces",
 } as const;

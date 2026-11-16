@@ -5,6 +5,7 @@ import { BookHeroActions } from "@/components/books/BookHeroActions";
 import { BookHeroDesktop } from "@/components/books/BookHeroDesktop";
 import { ChapterTable } from "@/components/books/ChapterTable";
 import { BookTabs } from "@/components/books/BookTabs";
+import { StudyThisBook } from "@/components/books/StudyThisBook";
 import { PdfView } from "@/components/library/PdfView";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { NavScope, WorkspaceScope } from "@/components/shell/WorkspaceProvider";
@@ -18,7 +19,9 @@ import {
   RowNumber,
   ShareButton,
 } from "@/components/ui";
-import { ApiError, bookPdfUrl, getBook, getBookGenres, getBooks } from "@/lib/api";
+import { ApiError, bookPdfUrl, findLibrary, getBook, getBookGenres, getBooks } from "@/lib/api";
+import { EMPTY_FIND, findHref, type FindState } from "@/lib/find";
+import { stageForBook } from "@/lib/journey";
 import { offShelfHref } from "@/lib/routes";
 import { bookHue } from "@/lib/bookHue";
 import { jsonLdHtml } from "@/lib/jsonLd";
@@ -123,6 +126,17 @@ export default async function BookDetailPage({
   }
 
   const ws = contentWorkspace(book.workspace);
+  // "Discourses on this book": Media searched for the title, asked alongside
+  // the genre name below. One request, and only its count — the row is drawn
+  // only when the search would find something (see `StudyThisBook`).
+  const mediaFind: FindState = { ...EMPTY_FIND, q: book.title_hi };
+  const media = findLibrary({
+    workspace: "originals",
+    state: { ...mediaFind, selection: { kind: ["audio", "video"] } },
+    limit: 1,
+  })
+    .then((r) => (r.count > 0 ? { href: findHref("/av", mediaFind), count: r.count } : null))
+    .catch(() => null);
   // the same hue the cover carries everywhere else, so the hero reads as this
   // book's surface rather than as a second colour it happens to be sitting on
   const hue = bookHue(book.code);
@@ -321,6 +335,7 @@ export default async function BookDetailPage({
           {book.description}
         </p>
       )}
+      <StudyThisBook stage={stageForBook(book)} media={await media} />
 
       {/*
         The whole reading experience for a PDF-only book (contract §13.9).

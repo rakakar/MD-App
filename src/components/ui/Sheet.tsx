@@ -1,7 +1,7 @@
 "use client";
 
 import { useModalFocus } from "./useModalFocus";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/shell/icons";
 import { AccentScope } from "@/components/shell/WorkspaceProvider";
@@ -36,6 +36,7 @@ export function Sheet({
   footer,
   surface = "app",
   accent,
+  peek = false,
   children,
 }: {
   open: boolean;
@@ -75,9 +76,25 @@ export function Sheet({
    * the accent in a place nobody asked for it to move.
    */
   accent?: string;
+  /**
+   * Open at half height, so what it was opened from stays in view above it —
+   * the Paribhasha sheet over the word's own line (UX audit RD5). Pulling the
+   * header up, tapping the grabber or scrolling the body takes it to full
+   * height; pulling down from there brings it back, and from half closes it.
+   */
+  peek?: boolean;
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [tall, setTall] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    // Every opening starts at half height again.
+    setWasOpen(open);
+    if (open) setTall(false);
+  }
+  const half = peek && !tall;
+  const dragFrom = useRef<number | null>(null);
   useModalFocus(open, panelRef);
   /**
    * A phone keyboard covers the bottom of the screen without shrinking the
@@ -163,23 +180,57 @@ export function Sheet({
         aria-label="Close"
         onClick={onClose}
         tabIndex={-1}
+        // Half as dark at half height: the line above the sheet is still
+        // being read, not set aside.
         className="ws-sheet-backdrop absolute inset-0"
+        style={half ? { background: "color-mix(in srgb, var(--color-scrim) 50%, transparent)" } : undefined}
       />
       <div
         ref={panelRef}
         tabIndex={-1}
         // A sheet that ends in a decision must not scroll its own decision off
         // screen, so the footer sits outside the scroller and the body flexes.
-        className={`ws-sheet absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-sheet shadow-sheet outline-none ${paint}`}
+        className={`ws-sheet absolute inset-x-0 bottom-0 flex ${half ? "max-h-[50dvh]" : "max-h-[85dvh]"} flex-col rounded-t-sheet shadow-sheet outline-none motion-safe:transition-[max-height] motion-safe:duration-200 ${paint}`}
         style={
           keyboard > 0
             ? { bottom: keyboard, maxHeight: `calc(85dvh - ${keyboard}px)` }
             : undefined
         }
       >
-        <div className="shrink-0 pt-2.5">
-          <div className="mx-auto h-1 w-9 rounded-full bg-current opacity-20" aria-hidden />
-          <div className={`flex items-center gap-2 border-b px-5 pb-3 pt-3.5 ${rule}`}>
+        <div
+          className={`shrink-0 pt-2.5 ${peek ? "touch-none" : ""}`}
+          onPointerDown={peek ? (e) => void (dragFrom.current = e.clientY) : undefined}
+          onPointerUp={
+            peek
+              ? (e) => {
+                  const from = dragFrom.current;
+                  dragFrom.current = null;
+                  if (from === null) return;
+                  const dy = e.clientY - from;
+                  if (dy < -24) setTall(true);
+                  else if (dy > 48) {
+                    if (tall) setTall(false);
+                    else onClose();
+                  }
+                }
+              : undefined
+          }
+          onPointerCancel={peek ? () => void (dragFrom.current = null) : undefined}
+        >
+          {peek ? (
+            <button
+              type="button"
+              onClick={() => setTall(!tall)}
+              aria-label={tall ? "Show less" : "Show more"}
+              aria-expanded={tall}
+              className="-mt-2.5 flex h-11 w-full items-center justify-center"
+            >
+              <span className="h-1 w-9 rounded-full bg-current opacity-20" aria-hidden />
+            </button>
+          ) : (
+            <div className="mx-auto h-1 w-9 rounded-full bg-current opacity-20" aria-hidden />
+          )}
+          <div className={`flex items-center gap-2 border-b px-5 pb-3 ${peek ? "" : "pt-3.5"} ${rule}`}>
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-title font-semibold tracking-[-0.01em]">{heading ?? title}</h2>
               {subtitle && (
@@ -215,6 +266,8 @@ export function Sheet({
           className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${
             footer ? "" : floor
           }`}
+          // Reading on past the half is asking for more of it.
+          onScroll={half ? () => setTall(true) : undefined}
         >
           {children}
         </div>

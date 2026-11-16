@@ -392,9 +392,13 @@ export function ReaderBottomBar({
             the same bar a press and hold does. Beside Contents, under the
             thumb, because that is where its results are kept. */}
         {onMark && (
-          <SquareBtn onClick={onMark} label="Mark a passage">
-            <Icon name="highlights" className="h-5 w-5" />
-          </SquareBtn>
+          /* `data-hold-anchor`: the first chapter's press-and-hold coach
+             card points here (UX audit FR9). */
+          <span data-hold-anchor className="flex shrink-0 rounded-control">
+            <SquareBtn onClick={onMark} label="Mark a passage">
+              <Icon name="highlights" className="h-5 w-5" />
+            </SquareBtn>
+          </span>
         )}
 
         {/* The comps put this in its own sunk field rather than loose on the
@@ -481,10 +485,14 @@ const SWATCH: Record<HighlightColour, string> = {
  *
  * The three colours come first because painting is now what saving is: the
  * bookmark button is gone from the bottom bar, and a highlight is a bookmark
- * with a colour in the store. Note · Share · Copy are the comps' three. What
- * follows them is ours — ▶ Listen only when there is audio — then Report.
- * Paribhasha is not here: a tap on an underlined word opens it (designer's
- * call, 16 Nov 2026).
+ * with a colour in the store. Paribhasha is not here: a tap on an underlined
+ * word opens it (designer's call, 16 Nov 2026).
+ *
+ * **Fewer choices up front** (16 Nov 2026, UX audit IN8). Ten at once, three
+ * of them bare dots, for someone who only meant to send a line on WhatsApp.
+ * The dots now sit after a visible "Highlight", the bar keeps Note, Share and
+ * ▶ Listen, and Copy and Report wait behind More, opening in the same row so
+ * nothing floats off the bar's edge on a 360px phone.
  */
 export function SelectionBar({
   bottom,
@@ -510,6 +518,7 @@ export function SelectionBar({
   onPlayHere?: () => void;
 }) {
   const names = useHighlightNames();
+  const [more, setMore] = useState(false);
   return (
     <div
       data-reader-chrome
@@ -531,6 +540,9 @@ export function SelectionBar({
       style={{ bottom: `calc(${bottom} + 3.75rem + var(--player-float-h, 0px))` }}
     >
       <div className="flex items-center gap-1">
+        <span aria-hidden className="ps-1.5 pe-0.5 text-xs font-semibold text-white/85">
+          Highlight
+        </span>
         {HIGHLIGHT_COLOURS.map((c) => (
           <button
             key={c}
@@ -566,13 +578,24 @@ export function SelectionBar({
           <ShareIcon className="h-4 w-4" />
           Share
         </SelectionAction>
-        <SelectionAction onClick={onCopy}>Copy</SelectionAction>
         {onRemove && <SelectionAction onClick={onRemove}>Remove</SelectionAction>}
 
         {onPlayHere && <SelectionAction onClick={onPlayHere}>▶ Listen</SelectionAction>}
-        <SelectionAction onClick={onReport} ariaLabel="Report a problem with this passage">
-          Report
-        </SelectionAction>
+        {more ? (
+          <>
+            {/* Focus moves on to Copy: the More button it was on is gone. */}
+            <SelectionAction onClick={onCopy} autoFocus>
+              Copy
+            </SelectionAction>
+            <SelectionAction onClick={onReport} ariaLabel="Report a problem with this passage">
+              Report
+            </SelectionAction>
+          </>
+        ) : (
+          <SelectionAction onClick={() => setMore(true)} ariaLabel="More: Copy, Report">
+            More
+          </SelectionAction>
+        )}
         <span className="hidden sm:inline-flex">
           <SelectionAction onClick={onDismiss} ariaLabel="Dismiss">
             <CloseIcon className="h-4 w-4" />
@@ -587,16 +610,19 @@ function SelectionAction({
   onClick,
   children,
   ariaLabel,
+  autoFocus,
 }: {
   onClick: () => void;
   children: React.ReactNode;
   ariaLabel?: string;
+  autoFocus?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
+      autoFocus={autoFocus}
       className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2 text-sm font-medium transition-colors active:bg-white/15 sm:px-3"
     >
       {children}

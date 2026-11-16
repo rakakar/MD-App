@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useRoutePath } from "@/components/shell/useRoutePath";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ChevronRight, InfoIcon, ShareIcon } from "@/components/shell/icons";
+import { useFeedback } from "@/components/feedback/FeedbackProvider";
+import { ChevronRight, HeadphonesIcon, InfoIcon, PauseIcon, ShareIcon } from "@/components/shell/icons";
 import { ctaPrimary, ctaSecondary } from "@/components/ui";
 import { answerAsText, firstSentence, parseAnswer, type Run } from "@/lib/assistant/answer";
 import { settleStoredTurn } from "@/lib/assistant/conversations";
@@ -15,6 +16,7 @@ import {
   isAnswerServiceDown,
   isDeepQuotaExhausted,
   isQuotaExhausted,
+  rateChatAnswer,
   resumeChat,
   shareChatAnswer,
 } from "@/lib/chat";
@@ -28,6 +30,7 @@ import { useSourcePanel } from "./SourcePanel";
 import { CopyIcon, NoteIcon } from "./icons";
 import { Eyebrow, SuggestionChip, Thinking } from "./parts";
 import type { Ask } from "./types";
+import { useAnswerSpeech } from "./useAnswerSpeech";
 
 /**
  * One question per turn, ever.
@@ -209,6 +212,10 @@ export function ResearchAnswer({
     return glossaryWordsIn(dictionary, [answer.answer], [], 2);
   }, [answer, dictionary]);
 
+  const speech = useAnswerSpeech(blocks);
+  /** the block the device voice is reading, marked as the reader marks a paragraph */
+  const lit = (i: number) => (speech.speaking === i ? SPOKEN : undefined);
+
   if (failure) return <FailureCard failure={failure} onRetry={() => setAttempt((n) => n + 1)} onAsk={onAsk} query={query} />;
 
   if (!answer && deep) {
@@ -285,6 +292,12 @@ export function ResearchAnswer({
   const deepLeft = quota?.capped ? (quota.deep_remaining ?? null) : null;
   const isDeep = answer.mode === "deep" || deep;
   const hasHow = !!readAs || parts.length > 0 || !!answer.rewritten_query;
+  const followUps =
+    !readOnly && answer.status === "ok" && !answer.off_topic
+      ? contentLang(answer.answer).lang === "hi"
+        ? { simpler: "इसे और सरल शब्दों में समझाइए", example: "इसका एक उदाहरण दीजिए" }
+        : { simpler: "Explain this more simply", example: "Give an example of this" }
+      : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -343,6 +356,24 @@ export function ResearchAnswer({
                 <span aria-hidden className={`transition-transform ${howOpen ? "rotate-180" : ""}`}>⌄</span>
               </button>
             )}
+            {/* Listen (16 Nov 2026, UX audit IN10): the device voice, as the
+                reader uses for chapters with no recording — Hindi blocks in
+                the Hindi voice. Up here rather than in the action row the
+                audit named: that row is already full on a 360px phone, and
+                a reader who wants the answer read out wants it before
+                reading, not after scrolling past it. */}
+            {answer.status === "ok" && speech.available && (
+              <button
+                type="button"
+                aria-pressed={speech.playing}
+                onClick={speech.toggle}
+                className="ms-auto inline-flex min-h-11 items-center gap-1.5 font-semibold"
+                style={{ color: "var(--ws-ink)" }}
+              >
+                {speech.playing ? <PauseIcon className="h-4 w-4" /> : <HeadphonesIcon className="h-4 w-4" />}
+                {speech.playing ? "Stop" : "Listen"}
+              </button>
+            )}
           </p>
           {howOpen && (
             <div className="flex flex-col gap-1.5 border-s-2 border-rule ps-3">
@@ -378,7 +409,7 @@ export function ResearchAnswer({
       <div className="flex flex-col gap-4 text-lg leading-relaxed">
         {blocks.map((b, i) =>
           b.kind === "item" ? (
-            <p key={i} {...blockLang(b.runs, `flex gap-2 ${b.depth ? "pl-6" : ""}`)}>
+            <p key={i} {...blockLang(b.runs, `flex gap-2 ${b.depth ? "pl-6" : ""}`)} style={lit(i)}>
               <span aria-hidden className="text-ink-soft">
                 {b.depth ? "◦" : "•"}
               </span>
@@ -387,7 +418,7 @@ export function ResearchAnswer({
               </span>
             </p>
           ) : b.kind === "heading" ? (
-            <h3 key={i} {...blockLang(b.runs, "mt-2 text-title font-semibold leading-snug", "hi-note")}>
+            <h3 key={i} {...blockLang(b.runs, "mt-2 text-title font-semibold leading-snug", "hi-note")} style={lit(i)}>
               <Runs runs={b.runs} cites={cites} onOpen={setOpen} />
             </h3>
           ) : b.kind === "rule" ? (
@@ -425,7 +456,7 @@ export function ResearchAnswer({
               </table>
             </div>
           ) : (
-            <p key={i} {...blockLang(b.runs)}>
+            <p key={i} {...blockLang(b.runs)} style={lit(i)}>
               <Runs runs={b.runs} cites={cites} onOpen={setOpen} />
             </p>
           )
@@ -555,6 +586,17 @@ export function ResearchAnswer({
       )}
       </div>
 
+      {!readOnly && answer.status === "ok" && (
+        <Faithful
+          answer={answer}
+          text={text}
+          onRated={(a) => {
+            setAnswer(a);
+            onSettle(a);
+          }}
+        />
+      )}
+
       {cites.length > 0 && (
         <section className="flex flex-col gap-3">
           <Eyebrow>{cites.length === 1 ? "Source" : `All ${cites.length} sources`}</Eyebrow>
@@ -591,10 +633,25 @@ export function ResearchAnswer({
         </section>
       )}
 
-      {next.length > 0 && (
+      {(next.length > 0 || followUps) && (
         <section className="flex flex-col gap-3 print:hidden">
           <Eyebrow>Ask next</Eyebrow>
           <div className="flex flex-wrap gap-2">
+            {/* Asked as Research, carrying on from this answer (UX audit AS7):
+                typed, "उदाहरण दीजिए" reads as a phrase and went to Book search.
+                In the answer's own language, so a Hindi answer is not followed
+                by an English one. */}
+            {followUps && (
+              <>
+                <SuggestionChip tone="tint" onClick={() => onAsk(followUps.simpler, "research")}>
+                  Explain simply
+                </SuggestionChip>
+                <SuggestionChip tone="tint" onClick={() => onAsk(followUps.example, "research")}>
+                  Give an example
+                </SuggestionChip>
+              </>
+            )}
+            {next[0] && (
             <SuggestionChip tone="tint" onClick={() => onAsk(next[0].hindi, "books")}>
               Where does&nbsp;
               <span lang="hi" className="hi font-semibold">
@@ -602,6 +659,7 @@ export function ResearchAnswer({
               </span>
               &nbsp;appear?
             </SuggestionChip>
+            )}
             {next[1] && (
               <SuggestionChip tone="tint" onClick={() => onAsk(next[1].hindi, "paribhasha")}>
                 Paribhasha:&nbsp;
@@ -619,6 +677,87 @@ export function ResearchAnswer({
         number={(open ?? 0) + 1}
         onClose={() => setOpen(null)}
       />
+    </div>
+  );
+}
+
+/** the block being read aloud — a tint that grows outward, so nothing reflows */
+const SPOKEN = {
+  background: "color-mix(in srgb, var(--ws-color) 12%, transparent)",
+  boxShadow: "0 0 0 6px color-mix(in srgb, var(--ws-color) 12%, transparent)",
+  borderRadius: "var(--radius-control)",
+};
+
+/**
+ * "Was this faithful to the books?" (16 Nov 2026, UX audit AS9). An answer
+ * that misreads the darshan had no way to be flagged from where it is read.
+ * The verdict goes to the chat API (`rateChatAnswer`, an upsert, so it can be
+ * changed); a No also opens the feedback sheet with the question, the answer
+ * and its sources already in it, for what was wrong.
+ */
+function Faithful({
+  answer,
+  text,
+  onRated,
+}: {
+  answer: ChatAnswer;
+  /** the answer as plain text with its sources — what the report quotes */
+  text: string;
+  onRated: (a: ChatAnswer) => void;
+}) {
+  const { open } = useFeedback();
+  const verdict = answer.feedback?.is_positive ?? null;
+  const [failed, setFailed] = useState(false);
+  /** asking again after "Change" */
+  const [asking, setAsking] = useState(false);
+
+  const rate = (yes: boolean) => {
+    setFailed(false);
+    setAsking(false);
+    const before = answer.feedback;
+    onRated({ ...answer, feedback: { is_positive: yes } });
+    rateChatAnswer(answer.id, { is_positive: yes }).catch(() => {
+      onRated({ ...answer, feedback: before });
+      setFailed(true);
+    });
+    if (!yes) report();
+  };
+  const report = () =>
+    open({ kind: "content", quoted_text: text, quoted_label: "Assistant answer", source: "assistant" });
+
+  const pill = "inline-flex min-h-11 items-center rounded-full border border-rule bg-card px-4 font-semibold text-ink";
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-soft print:hidden" aria-live="polite">
+      {verdict === null || asking ? (
+        <>
+          <span>Was this faithful to the books?</span>
+          <span className="flex gap-2">
+            <button type="button" onClick={() => rate(true)} className={pill}>
+              Yes
+            </button>
+            <button type="button" onClick={() => rate(false)} className={pill}>
+              No
+            </button>
+          </span>
+        </>
+      ) : (
+        <>
+          <span>{verdict ? "Thank you — marked as faithful to the books." : "Thank you — marked as not faithful."}</span>
+          {!verdict && (
+            <button type="button" onClick={report} className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2">
+              Say what was wrong
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setAsking(true)}
+            className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2"
+          >
+            Change
+          </button>
+        </>
+      )}
+      {failed && <span className="basis-full">Couldn’t save that. Check your connection and try again.</span>}
     </div>
   );
 }

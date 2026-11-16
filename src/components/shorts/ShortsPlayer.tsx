@@ -3,7 +3,7 @@
 import { scrollBehavior } from "@/lib/motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CloseIcon, PlayIcon } from "@/components/shell/icons";
+import { ChatIcon, CloseIcon, PlayIcon } from "@/components/shell/icons";
 import { track } from "@/lib/analytics";
 import { contentLang } from "@/lib/script";
 import type { Short } from "@/lib/shorts";
@@ -505,8 +505,38 @@ export function ShortsPlayer({ clips, startIndex }: { clips: Short[]; startIndex
                 >
                   {c.title}
                 </p>
+                {/* The source line (16 Nov 2026, UX audit AV9). A clip says
+                    nothing about the talk it was cut from, and the API has no
+                    source field yet, so what can be offered is the clip's own
+                    YouTube page, where the channel and the full recording are
+                    one tap away, and the same link to send on. When a source
+                    recording and time exist, they replace the first link.
+                    `pointer-events-auto`: the block around it is inert so
+                    swipes pass through to the feed, but these are the two
+                    things on this screen that are meant to be pressed. */}
+                <div className="pointer-events-auto mt-1 flex flex-wrap items-center gap-x-5">
+                  <a
+                    href={c.watchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => track("short_share", { via: "youtube" })}
+                    className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-white/90 underline underline-offset-4"
+                  >
+                    Watch on YouTube <span aria-hidden>↗</span>
+                  </a>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`${c.title} ${c.watchUrl}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => track("short_share", { via: "whatsapp" })}
+                    className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-white/90 underline underline-offset-4"
+                  >
+                    <ChatIcon className="h-4 w-4" />
+                    Share on WhatsApp
+                  </a>
+                </div>
                 <p
-                  className={`mt-1.5 text-xs text-white/55 transition-opacity ${
+                  className={`text-xs text-white/55 transition-opacity ${
                     showHint ? "opacity-100" : "opacity-0"
                   }`}
                 >

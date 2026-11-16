@@ -8,6 +8,7 @@ import { Sheet } from "@/components/ui";
 import { getParibhashaWord, resolvePara } from "@/lib/api";
 import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
+import { withAnswerReturn } from "@/components/reader/answerReturn";
 import type { ChatCitation, ParaResolution, ParibhashaWord } from "@/lib/types";
 import { WORKSPACES } from "@/lib/workspaceConfig";
 import { BookGlyph } from "./icons";
@@ -244,7 +245,7 @@ function PassageSheet({
         ref ? (
           <div className="flex gap-3">
             <Link
-              href={refToHref(ref)}
+              href={withAnswerReturn(refToHref(ref))}
               className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-control px-4 text-title font-semibold text-white"
               style={{ background: "var(--ws-color)" }}
             >

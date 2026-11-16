@@ -172,6 +172,9 @@ export function ParibhashaTrailSheet({
       accent={WORKSPACES.originals.color}
       open={current !== null}
       onClose={onClose}
+      // Opened from a word on the page: half height, the line kept in view
+      // above it (UX audit RD5). The glossary's own list opens it full.
+      peek={!!anchor}
       title={`Paribhasha: ${entry?.hindi ?? current ?? ""}`}
       heading={
         <span lang="hi" className="hi paribhasha-title text-2xl">

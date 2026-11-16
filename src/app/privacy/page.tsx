@@ -51,6 +51,8 @@ export default function PrivacyPage() {
             />
             <p className="mt-2">
               Nobody else can see these. Clearing the browser&apos;s data for this site removes them.
+              Assistant conversations stay on this phone even when you sign in, and signing out
+              removes them.
             </p>
           </Section>
 

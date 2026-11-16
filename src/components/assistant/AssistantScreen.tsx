@@ -105,6 +105,8 @@ export function AssistantScreen() {
   const [listening, setListening] = useState(false);
   const [voice, setVoice] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  /** the reader cleared the "Research" pill on a follow-up — see `followResearch` */
+  const [followCleared, setFollowCleared] = useState(false);
   const desktop = useIsDesktop();
   /**
    * Desktop: the conversations panel, open unless the reader has hidden it —
@@ -188,6 +190,16 @@ export function AssistantScreen() {
     if (conv && conv.turns.length > 0) putConversation(conv);
   }, [conv]);
 
+  /**
+   * After a Research answer the next line is a Research follow-up (16 Nov
+   * 2026, UX audit AS7), shown as a pill in the box that clears with one tap.
+   * Read from its words alone, "उदाहरण दीजिए" or "in simple words" is no
+   * question and went to Book search — a list of passages using those words,
+   * not the next step of the answer being read.
+   */
+  const lastTurn = conv?.turns[conv.turns.length - 1];
+  const followResearch = !!lastTurn && lastTurn.intent === "research" && !!lastTurn.answer && !followCleared;
+
   // ---- asking ----
   const ask = useCallback(
     (query: string, forced?: Intent, opts?: { exact?: boolean }) => {
@@ -197,7 +209,7 @@ export function AssistantScreen() {
       // are read from what is typed: the chips are not on screen by then, so a
       // choice made there must not silently turn "explain simply" into a
       // dictionary look-up three turns later.
-      const chosen = conv ? null : mode;
+      const chosen = conv ? (followResearch ? "research" : null) : mode;
       const intent = forced ?? chosen ?? detectIntent(q, dictionary, books);
       // Navigate, chosen, "opens it instead of answering": straight to the
       // best place, no conversation. Only when nothing matches does it become
@@ -243,9 +255,10 @@ export function AssistantScreen() {
       setText("");
       setPicking(false);
       setDraftScope(null);
+      setFollowCleared(false);
       track("assistant_ask", { intent, chosen: forced || chosen ? "chip" : "auto", length: q.length });
     },
-    [conv, mode, scope, dictionary, router, books]
+    [conv, mode, followResearch, scope, dictionary, router, books]
   );
 
   // A new turn scrolls its question to the top, so the answer reads downward
@@ -371,6 +384,7 @@ export function AssistantScreen() {
     setSourcesOf(convId);
     setSource(null);
     setLastSource(null);
+    setFollowCleared(false);
   }
   /** the newest answer's sources — what the header's panel button opens */
   const latestCites = [...turns].reverse().find((t) => t.answer?.citations.length)?.answer?.citations ?? [];
@@ -394,6 +408,8 @@ export function AssistantScreen() {
   const placeholder = conv
     ? last?.deep && !last.answer
       ? "Researching…"
+      : followResearch
+      ? "Ask a follow-up question"
       : last?.intent === "books"
       ? "Narrow this, or ask about it"
       : "Ask a follow-up"
@@ -433,7 +449,8 @@ export function AssistantScreen() {
 
       <div className={conv ? "lg:min-h-0 lg:flex-1 lg:overflow-y-auto" : ""}>
       {conv && (
-        <div className="mx-auto w-full max-w-3xl px-4 pb-40 sm:px-6 lg:pb-10">
+        // Taller foot room while the box carries the Research pill's row.
+        <div className={`mx-auto w-full max-w-3xl px-4 sm:px-6 lg:pb-10 ${followResearch ? "pb-56" : "pb-40"}`}>
           <div className="flex flex-col gap-8 pt-6">
             {turns.map((t, i) => {
               // A deeper answer is the same question asked again, so its
@@ -562,7 +579,15 @@ export function AssistantScreen() {
                       }
                     : undefined,
               }
-            : null
+            : conv && followResearch
+              ? {
+                  label: INTENT_LABEL.research,
+                  onClear: () => {
+                    setFollowCleared(true);
+                    inputRef.current?.focus();
+                  },
+                }
+              : null
         }
         tray={
           picking && desktop && books ? (
@@ -596,6 +621,7 @@ export function AssistantScreen() {
               text={text}
               dictionary={dictionary}
               onPick={(word) => ask(word, "paribhasha")}
+              onAsk={ask}
             />
             </div>
           )

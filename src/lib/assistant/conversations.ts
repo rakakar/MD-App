@@ -137,6 +137,27 @@ export function settleStoredTurn(turnId: string, patch: Partial<Turn>): void {
   if (hit) write(list);
 }
 
+/** Whether this device holds any conversation at all — the sign-out warning asks. */
+export function hasConversations(): boolean {
+  return read().length > 0;
+}
+
+/**
+ * Sign-out: drop every conversation, saved ones included (16 Nov 2026, UX
+ * audit ST7). They never reach the account, so on a shared phone the next
+ * reader would open My Journey → Research on the last one's questions.
+ * Announces the change so an open list empties without a reload.
+ */
+export function clearConversations(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(KEY);
+    window.dispatchEvent(new Event(CONVERSATIONS_CHANGED));
+  } catch {
+    // storage refused; nothing was there to clear that we could reach
+  }
+}
+
 export function deleteConversation(id: string): void {
   write(read().filter((c) => c.id !== id));
 }

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { bookTitle, matchesQuery, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
+import { ShareAllButton } from "@/components/me/ShareAll";
 import { EmptyState, PageContainer, RowListSkeleton, ctaSecondary, useUndoToast } from "@/components/ui";
 import { unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref, shareCitation } from "@/lib/refs";
@@ -133,6 +134,24 @@ export default function BookmarksPage() {
             }
           />
         ) : (
+          <>
+          {/* One book's highlights, to a study group in one message (UX
+              audit ST6), each with its note when it has one. */}
+          {book && (
+            <div className="mb-3 flex justify-end">
+              <ShareAllButton
+                label="Share these highlights"
+                bookTitle={bookTitle(book, titles)}
+                items={highlights.map((b) => ({
+                  ref: b.canonical_ref,
+                  passage: saved(b).text,
+                  note: rows?.notes.find((n) => n.canonical_ref === b.canonical_ref)?.text,
+                  spans: b.ranges,
+                }))}
+                className={ctaSecondary}
+              />
+            </div>
+          )}
           <ul className="flex flex-col gap-3">
             {highlights.map((b) => {
               const painted = saved(b);
@@ -197,6 +216,7 @@ export default function BookmarksPage() {
               );
             })}
           </ul>
+          </>
         )}
       </div>
       </div>

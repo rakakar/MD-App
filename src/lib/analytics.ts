@@ -38,6 +38,8 @@ export type GaEvent =
   // per screen opened, because "how far down the feed do people get" is the one
   // question this rail exists to answer.
   | "short_play"
+  // A clip sent on from the feed (`via`: whatsapp) or opened on YouTube (`via`: youtube).
+  | "short_share"
   | "search"
   // One per question put to the Assistant: which of the four answers it got,
   // and whether the reader chose that (a chip, a command) or the Assistant

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CodeEntry } from "@/components/auth/CodeEntry";
+import { PREFILL_EMAIL_KEY } from "@/components/auth/fields";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { confirmVerify, requestVerify, verifyErrorOf } from "@/lib/me";
 import { safeReturnPath, signInHref } from "@/lib/routes";
@@ -15,7 +16,9 @@ import { safeReturnPath, signInHref } from "@/lib/routes";
  *
  * `ProfileGate` sends a signed-in reader here from any screen while their
  * sign-in email is unproved, and the profile step follows. The only way out
- * is Sign out: reading stays open to them signed out.
+ * is Sign out: reading stays open to them signed out. And "Wrong email?" —
+ * the server has no call to change a sign-in email, so it signs out and opens
+ * Create account with the address filled in to correct (UX audit FR7).
  */
 export function VerifyEmailStep() {
   const router = useRouter();
@@ -81,6 +84,18 @@ export function VerifyEmailStep() {
     if (await logout()) router.replace("/");
   };
 
+  // A mistyped address leaves a code that can never arrive and an account
+  // that cannot get past this screen. The address goes through session
+  // storage rather than the URL, so it is not left in history or logs.
+  const changeEmail = async () => {
+    try {
+      sessionStorage.setItem(PREFILL_EMAIL_KEY, user.email ?? "");
+    } catch {
+      // no storage: they retype it
+    }
+    if (await logout()) router.replace("/signup?via=email");
+  };
+
   return (
     <AppAccent>
       <div className="min-h-dvh bg-surface lg:flex lg:items-center lg:justify-center lg:px-8 lg:py-10">
@@ -99,13 +114,23 @@ export function VerifyEmailStep() {
             via="email"
             onSubmit={confirm}
             onResend={send}
+            belowField={
+              <button
+                type="button"
+                onClick={() => void changeEmail()}
+                className="inline-flex min-h-11 items-center text-sm font-bold underline underline-offset-4"
+                style={{ color: "var(--ws-ink)" }}
+              >
+                Wrong email? Change it
+              </button>
+            }
             footer={
               <button
                 type="button"
                 onClick={() => void signOut()}
                 className="inline-flex min-h-11 items-center font-semibold text-ink-soft"
               >
-                Not now? Sign out
+                Sign out
               </button>
             }
           />

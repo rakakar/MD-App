@@ -77,6 +77,7 @@ import { MarginNote } from "./MarginNote";
 import { ReaderSidePanel, chapterLabelOf, pageOf, when, type PanelTab } from "./ReaderSidePanel";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
 import { useReaderChrome } from "./useReaderChrome";
+import { answerReturnHref } from "./answerReturn";
 import { useTouchSelection } from "./useTouchSelection";
 import { groupPages, useChapterLoader, useSeedCache, type ReaderPage } from "./useChapter";
 import {
@@ -284,6 +285,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [defineWord, setDefineWord] = useState<string | null>(null);
   /** desktop: where that word is on the page, so its card can open beside it */
   const [defineAnchor, setDefineAnchor] = useState<WordAnchor | null>(null);
+  /** the underlined word whose meaning is open, tinted until the sheet closes */
+  const definingEl = useRef<HTMLElement | null>(null);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [readingSide, setReadingSide] = useState<ReadingSide>("translated");
@@ -322,6 +325,14 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
   const [hint, setHint] = useState(false);
+  /**
+   * The press-and-hold coach card, on a finger's first chapter (16 Nov 2026,
+   * UX audit FR9). It replaced a hint that faded after a few seconds and could
+   * not be tapped; this one waits for Got it and is never shown again.
+   */
+  const [holdCoach, setHoldCoach] = useState(false);
+  /** opened from an Assistant citation: the back arrow returns to the answer (AS6) */
+  const [answerHref, setAnswerHref] = useState<string | null>(null);
   /** the one-time "your highlights and notes are kept here", on the bar */
   const [marksHint, setMarksHint] = useState(false);
   const [currentRef, setCurrentRef] = useState<string | null>(null);
@@ -384,7 +395,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // up for as long as it is showing.
   const chrome = useReaderChrome(
     mode,
-    modalOpen || showPanel || showSettings || gotoPop || marksHint
+    modalOpen || showPanel || showSettings || gotoPop || marksHint || (holdCoach && !desktop)
   );
   /** the bar's two doors: open on that tab, or close it if it is already showing */
   const togglePanel = (t: PanelTab) => {
@@ -593,12 +604,17 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     setReadingSide(p.readingSide === "original" ? "original" : "translated");
     if (p.readingMode) setMode(p.readingMode);
     setPrefsLoaded(true);
-    if (!p.immersiveHintShown || !p.holdHintShown) {
+    // Press and hold first, as a card that waits for Got it — it is how every
+    // mark begins, and a finger is the only pointer that needs telling. The
+    // tap-for-controls line follows on a later open, as the old timed hint.
+    if (!p.holdHintShown && window.matchMedia("(pointer: coarse)").matches) {
+      setHoldCoach(true);
+    } else if (!p.immersiveHintShown) {
       setHint(true);
-      setPrefs({ immersiveHintShown: true, holdHintShown: true });
-      // Two lines now, so a little longer on screen.
+      setPrefs({ immersiveHintShown: true });
       setTimeout(() => setHint(false), 6500);
     }
+    setAnswerHref(answerReturnHref(window.location.search));
   }, []);
 
   // ---- type applied to <html> ----
@@ -1300,7 +1316,21 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const r = mark.getBoundingClientRect();
     setDefineAnchor({ left: r.left, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY });
     setDefineWord(word);
-  }, [justSelected]);
+    // **The word stays in sight under its meaning** (16 Nov 2026, UX audit
+    // RD5). The phone's sheet opens at half height (`peek`), the word is
+    // tinted while it is open, and a line the sheet would cover is scrolled
+    // up to sit just above it — the reader closed the sheet and found the
+    // line again by eye. Scroll mode only: a paged chapter does not move.
+    definingEl.current?.removeAttribute("data-defining");
+    mark.setAttribute("data-defining", "");
+    definingEl.current = mark as HTMLElement;
+    if (!desktop && mode === "scroll") {
+      const limit = window.innerHeight * 0.5 - 16;
+      // Instant: the sheet locks the page's scrolling as it opens, which can
+      // stop a smooth scroll halfway, and its own slide covers the jump.
+      if (r.bottom > limit) window.scrollBy({ top: r.bottom - limit, behavior: "instant" });
+    }
+  }, [justSelected, desktop, mode]);
 
   // prefetch next chapter near the end of this one (PRD §0.4)
   useEffect(() => {
@@ -2306,8 +2336,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     >
       <ReaderTopBar
         hidden={!chrome.visible}
-        backHref={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
-        backLabel={home?.backLabel ?? "Back to book"}
+        backHref={answerHref ?? home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
+        backLabel={answerHref ? "Back to answer" : (home?.backLabel ?? "Back to book")}
         // The book on the first line, the chapter on the second. It was the
         // chapter on top with "Chapter 2 · Page 30 : 1 / 21" under it — which
         // named the one thing a reader in a chapter cannot forget and never
@@ -2335,8 +2365,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       <ReaderDesktopBar
         hidden={!chrome.visible}
         assistantHref={bookSearchHref}
-        backHref={home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
-        backLabel={home?.backLabel ?? "Back to book"}
+        backHref={answerHref ?? home?.backHref ?? `/books/${encodeURIComponent(book.code)}`}
+        backLabel={answerHref ? "Back to answer" : (home?.backLabel ?? "Back to book")}
         book={book.title_hi}
         where={desktopWhere}
         progress={progress}
@@ -2803,6 +2833,23 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         </CoachMark>
       )}
 
+      {/* Press and hold, once, pointing at the Mark button the bar carries
+          for the same thing (FR9). After the marks hint, never over it. */}
+      {holdCoach && !desktop && !modalOpen && !marksHint && (
+        <CoachMark
+          anchor="[data-hold-anchor]"
+          icon={<Icon name="highlights" className="h-5 w-5" />}
+          title="Press and hold any line"
+          onDone={() => {
+            setHoldCoach(false);
+            setPrefs({ holdHintShown: true });
+          }}
+        >
+          Then pick a colour to highlight it, or Note to write about it. This button does the same for the
+          passage you are reading.
+        </CoachMark>
+      )}
+
       {/* one-time coach mark */}
       {hint && !chrome.visible && !desktop && (
         <div className="pointer-events-none fixed inset-x-0 top-1/2 z-30 flex justify-center px-8">
@@ -2813,8 +2860,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             Tap the page for controls; with them showing,
             <br />
             tap an underlined word for its meaning.
-            <br />
-            Press and hold a line to highlight, note or share it.
           </p>
         </div>
       )}
@@ -2837,6 +2882,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
 
       {selection && !noteOpen && (
         <SelectionBar
+          // A new passage starts with More folded again.
+          key={selection.para.canonical_ref}
           bottom={bottomOffset}
           onRemove={
             selectedPaint
@@ -2888,6 +2935,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           onClose={() => {
             setDefineWord(null);
             setDefineAnchor(null);
+            definingEl.current?.removeAttribute("data-defining");
+            definingEl.current = null;
           }}
         />
       )}

@@ -12,6 +12,7 @@ import { quotedPhrase } from "@/lib/assistant/intent";
 import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import { withSearchTerms } from "@/lib/searchHit";
+import { foldSpelling } from "@/lib/spellingFold";
 import { LibraryLane } from "@/components/library/LibraryLane";
 import type { BookSummary, LibrarySearchRow, SearchResponse, SearchResult } from "@/lib/types";
 import { ctaPrimary } from "@/components/ui";
@@ -377,8 +378,9 @@ async function searchIn(q: string, codes: string[], raw: boolean): Promise<Searc
   return search(q, { raw, books: codes, limit: MULTI_BOOK_LIMIT });
 }
 
+/** either spelling of a word compares the same — see `spellingFold` */
 function normalise(s: string): string {
-  return s.normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase();
+  return foldSpelling(s);
 }
 
 function bookKey(r: SearchResult): string {

@@ -21,6 +21,7 @@ export function CodeEntry({
   onSubmit,
   onResend,
   footer,
+  belowField,
   idPrefix = "code",
 }: {
   /** the address or number the code went to, as the reader knows it */
@@ -29,6 +30,8 @@ export function CodeEntry({
   onSubmit: (code: string) => Promise<string | null>;
   onResend: () => Promise<string | null>;
   footer?: ReactNode;
+  /** a line directly under the code field — "Wrong email? Change it" */
+  belowField?: ReactNode;
   idPrefix?: string;
 }) {
   const [code, setCode] = useState("");
@@ -86,11 +89,17 @@ export function CodeEntry({
       }}
       className="flex flex-col gap-5"
     >
-      <p className="text-sm leading-relaxed text-ink-soft">
-        {via === "email" ? "We’ve emailed a 6-digit code to " : "We’ve sent a 6-digit code on WhatsApp to "}
-        <strong className="font-bold text-ink">{sentTo}</strong>.
-        {via === "email" && " It can take a minute — check Spam if it doesn’t arrive."}
-      </p>
+      <div className="text-sm leading-relaxed text-ink-soft">
+        <p>
+          {via === "email" ? "We’ve emailed a 6-digit code to" : "We’ve sent a 6-digit code on WhatsApp to"}
+        </p>
+        {/* The address read back large and on its own line (UX audit FR7): a
+            typo in it is the one mistake that leaves a reader waiting for a
+            code that will never come, and at 14px inline it is easy to read
+            past. `break-all` because a long address has no spaces to wrap at. */}
+        <p className="my-1 break-all text-hero font-bold text-ink">{sentTo}</p>
+        {via === "email" && <p>It can take a minute — check Spam if it doesn’t arrive.</p>}
+      </div>
 
       <label htmlFor={`${idPrefix}-input`} className={LABEL}>
         Code
@@ -111,6 +120,8 @@ export function CodeEntry({
           className={`${FIELD} ${code ? "tracking-[0.3em]" : ""}`}
         />
       </label>
+
+      {belowField && <div className="-mt-3">{belowField}</div>}
 
       {error && (
         <p role="alert" className="rounded-tile border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger">

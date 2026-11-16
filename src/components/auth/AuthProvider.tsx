@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { clearConversations, hasConversations } from "@/lib/assistant/conversations";
 import { getMe, logout as apiLogout } from "@/lib/me";
 import {
   announceSync,
@@ -97,14 +98,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const pushed = await flushPersonal().catch(() => false);
     // The store is about to be wiped. If something on it never reached the
     // account (offline, usually), wiping it loses it for good, so ask.
-    if (
-      !pushed &&
-      hasUnsyncedPersonal() &&
-      !window.confirm(
-        "Some of your highlights or notes haven’t reached your account yet — you may be offline.\n\nSigning out now removes them from this device. Sign out anyway?"
-      )
-    ) {
-      return false;
+    //
+    // The Assistant's conversations go with it (UX audit ST7), and they never
+    // reach an account at all — there is nowhere on the server to put them — so
+    // they are always "not there yet", and one message covers both.
+    const unsynced = !pushed && hasUnsyncedPersonal();
+    const conversations = hasConversations();
+    if (unsynced || conversations) {
+      const lines = [
+        unsynced
+          ? "Some of your highlights or notes haven’t reached your account yet — you may be offline."
+          : null,
+        conversations
+          ? "Your Assistant conversations and saved research are kept on this device only, not on your account."
+          : null,
+      ].filter(Boolean);
+      if (
+        !window.confirm(
+          `${lines.join(" ")}\n\nSigning out now removes them from this device. Sign out anyway?`
+        )
+      ) {
+        return false;
+      }
     }
     try {
       await apiLogout();
@@ -114,6 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // would show one person's bookmarks to whoever reads next on a shared
       // phone — and they are safe on the server either way.
       clearLocalStore();
+      // Device-only, so not the account's to keep: see the warning above.
+      clearConversations();
       // Anything already on screen — the reader's painted lines, an open
       // list — re-reads the now-empty store instead of showing the last
       // reader's highlights until a reload.

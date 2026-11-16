@@ -19,6 +19,7 @@ import type { HighlightColour, LocalNote } from "@/lib/storage";
 import type { ChapterTocEntry } from "@/lib/types";
 import { chapterName } from "@/lib/labels";
 import { HighlightCard, NoteCard } from "./SavedPassageCard";
+import { ShareAllButton } from "@/components/me/ShareAll";
 import { useHighlightNames } from "@/lib/highlightNames";
 
 /**
@@ -187,9 +188,7 @@ export function ReaderSidePanel({
           <NotesTab
             notes={notes}
             chapters={chapters}
-            bookCode={bookCode}
             bookTitle={bookTitle}
-            bookType={bookType}
             noteHere={noteHere}
             onSaveNote={onSaveNote}
             onGoToRef={onGoToRef}
@@ -516,9 +515,7 @@ function HighlightsTab({
 function NotesTab({
   notes,
   chapters,
-  bookCode,
   bookTitle,
-  bookType,
   noteHere,
   onSaveNote,
   onGoToRef,
@@ -526,9 +523,7 @@ function NotesTab({
 }: {
   notes: LocalNote[];
   chapters: ChapterTocEntry[];
-  bookCode: string;
   bookTitle: string;
-  bookType: "print" | "digital";
   noteHere: { canonical_ref: string; text_hi: string } | null;
   onSaveNote: (target: { canonical_ref: string; text_hi: string }, text: string) => void;
   onGoToRef: (ref: string) => void;
@@ -550,26 +545,6 @@ function NotesTab({
     setText("");
   };
 
-  const exportNotes = () => {
-    const ordered = [...notes].sort((a, b) => byPosition(position(a.canonical_ref), position(b.canonical_ref)));
-    const body = [
-      `# ${bookTitle}`,
-      "",
-      ...ordered.flatMap((n) => [
-        `## ${pageOf(n.canonical_ref, bookType) || n.canonical_ref}`,
-        "",
-        ...(n.text_hi ? [`> ${n.text_hi.replace(/\n+/g, " ")}`, ""] : []),
-        n.text,
-        "",
-      ]),
-    ].join("\n");
-    const url = URL.createObjectURL(new Blob([body], { type: "text/markdown;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${bookCode}-notes.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <>
@@ -649,13 +624,15 @@ function NotesTab({
               </li>
             ))}
           </ul>
-          <button
-            type="button"
-            onClick={exportNotes}
-            className="mt-4 px-1 text-sm font-semibold text-(--reader-ink-soft) transition-colors hover:text-(--reader-ink)"
-          >
-            Export notes
-          </button>
+          {/* The notes as one plain-text message, copied on a desktop (UX
+              audit ST6). It downloaded a Markdown file, which held no
+              highlights and which nobody could forward usefully. */}
+          <ShareAllButton
+            label="Share these notes"
+            bookTitle={bookTitle}
+            items={notes.map((n) => ({ ref: n.canonical_ref, passage: n.text_hi, note: n.text }))}
+            className="mt-4 inline-flex min-h-11 items-center gap-1.5 px-1 text-sm font-semibold text-(--reader-ink-soft) transition-colors hover:text-(--reader-ink)"
+          />
         </>
       )}
     </>

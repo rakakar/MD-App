@@ -13,6 +13,8 @@ import { nodeHref, type ShelfMap } from "@/lib/library";
 import { contentLang } from "@/lib/script";
 import type { BreadcrumbStep, LibrarySearchRow } from "@/lib/types";
 import { downloadProps } from "@/lib/download";
+import { formatYear, splitAlbumName } from "@/lib/albumName";
+import { includesFolded, splitMarked } from "@/lib/spellingFold";
 
 /**
  * **A find's results, grouped by folder** (designer's comps, 8 Oct 2026).
@@ -38,6 +40,13 @@ import { downloadProps } from "@/lib/download";
  * from, and the first one is left open so a reader can see that a header
  * holds rows and opens. A tap on any header opens or folds it. The folder
  * itself is still a tap away, on the arrow at the header's end.
+ *
+ * **Every row says why it is here** (UX audit FD3, 16 Nov 2026). The typed
+ * word is marked wherever it shows — title, folder name, the folder's year ·
+ * type · people line — and a row that matched on something it does not
+ * print, a topic or a tag, says so in a small tag ("Topic: अनुभव"). Without
+ * that, a row found through its topic looked like a mistake, and six rows
+ * called सत्र 1 looked the same.
  */
 export function FindTable({
   first,
@@ -45,13 +54,26 @@ export function FindTable({
   state,
   total,
   shelves,
+  searchedAs = "",
+  topicNames = {},
 }: {
   first: LibrarySearchRow[];
   scope: { workspace?: string; under?: number };
   state: FindState;
   total: number;
   shelves: ShelfMap;
+  /** the Devanagari the endpoint actually searched, when it rewrote the box */
+  searchedAs?: string;
+  /** topic code → its name, for the "Topic:" tag — the facets carry both */
+  topicNames?: Record<string, string>;
 }) {
+  // The words to mark: what was typed and what it was searched as, word by
+  // word, since the endpoint matches words rather than the whole phrase.
+  const terms = useMemo(
+    () =>
+      [...new Set(`${state.q} ${searchedAs}`.split(/\s+/))].filter((t) => t.length >= 2),
+    [state.q, searchedAs]
+  );
   const [more, setMore] = useState<LibrarySearchRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -129,7 +151,7 @@ export function FindTable({
                   {...contentLang(g.folder.name)}
                   className={`${contentLang(g.folder.name).className} block max-w-full truncate text-start text-sm font-semibold after:absolute after:inset-0 lg:shrink-0`}
                 >
-                  {g.folder.name}
+                  <Marked text={g.folder.name} terms={terms} />
                 </button>
                 {g.path.length > 0 && (
                   <span lang="hi" className="hi block min-w-0 truncate text-xs text-ink-soft">
@@ -161,7 +183,7 @@ export function FindTable({
           >
             {g.rows.map((r) => (
               <li key={`${r.type}-${r.id}`}>
-                <Row row={r} shelves={shelves} />
+                <Row row={r} shelves={shelves} terms={terms} topicNames={topicNames} />
               </li>
             ))}
           </ul>
@@ -187,8 +209,81 @@ export function FindTable({
   );
 }
 
+/** the searched words marked in a piece of text, either spelling */
+function Marked({ text, terms }: { text: string; terms: string[] }) {
+  const parts = useMemo(() => splitMarked(text, terms), [text, terms]);
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.hit ? (
+          <mark
+            key={i}
+            className="rounded-sm text-ink"
+            style={{ background: "color-mix(in srgb, var(--ws-color) 18%, var(--color-card))" }}
+          >
+            {p.text}
+          </mark>
+        ) : (
+          p.text
+        )
+      )}
+    </>
+  );
+}
+
+const DEVANAGARI = /[\u0900-\u097F]/;
+const LATIN = /[a-z]/i;
+
+/**
+ * What a row matched on, when the row does not show it — or null.
+ *
+ * Only what the row cannot mark for itself: the title and the facts line are
+ * marked in place, so a match there needs no tag. A file carries no topics or
+ * people of its own (search reaches it through its folder's), so a file whose
+ * title and description both miss was found by its folder, and says so.
+ */
+function matchTag(
+  row: LibrarySearchRow,
+  terms: string[],
+  facts: string,
+  topicNames: Record<string, string>
+): { label: string; value?: string } | null {
+  if (!terms.length) return null;
+  const has = (text: string) => terms.some((t) => includesFolded(text, t));
+  // The endpoint matches across scripts — अनुभव finds "Anubhav Shivir" — and
+  // nothing here can. A title holding a script the terms are not written in
+  // may well be what matched, so it gets no tag rather than a wrong one.
+  const title = row.type === "file" ? row.title : row.name;
+  const otherScript = (t: string) => (DEVANAGARI.test(t) ? LATIN : DEVANAGARI).test(title);
+  if (terms.every(otherScript)) return null;
+  if (row.type === "file") {
+    if (has(row.title)) return null;
+    if (row.description && has(row.description)) return { label: "In the description" };
+    return { label: "Found by its folder" };
+  }
+  if (has(row.name) || (facts && has(facts))) return null;
+  for (const code of row.topics) {
+    const name = topicNames[code] ?? code;
+    if (has(name) || has(code)) return { label: "Topic", value: name };
+  }
+  const tag = row.tags.find(has);
+  if (tag) return { label: "Tag", value: tag };
+  if (row.description && has(row.description)) return { label: "In the description" };
+  return null;
+}
+
 /** one line: kind · title · provenance · length · size · download */
-function Row({ row, shelves }: { row: LibrarySearchRow; shelves: ShelfMap }) {
+function Row({
+  row,
+  shelves,
+  terms,
+  topicNames,
+}: {
+  row: LibrarySearchRow;
+  shelves: ShelfMap;
+  terms: string[];
+  topicNames: Record<string, string>;
+}) {
   const file = row.type === "file" ? row : null;
   const title = file ? file.title : row.type === "folder" ? row.name : "";
   const href = file ? nodeHref(file.node, shelves) : nodeHref(row.id, shelves);
@@ -201,6 +296,17 @@ function Row({ row, shelves }: { row: LibrarySearchRow; shelves: ShelfMap }) {
         : "—"
     : "—";
   const size = file ? formatBytes(file.file_size) || "—" : "—";
+  // A folder's second line: year · type · people — what tells one सत्र 1 from
+  // the next. Not language, which is the same on nearly every row. A file has
+  // none of these; its folder, in the header above it, does.
+  const facts =
+    row.type === "folder"
+      ? [formatYear(row.year) || splitAlbumName(row.name).date, row.session_type_label, row.people]
+          .filter(Boolean)
+          .join(" · ")
+      : "";
+  const tag = matchTag(row, terms, facts, topicNames);
+  const phoneBits = [length, size].filter((v) => v !== "—");
 
   return (
     // The whole row opens the item — the title's link is stretched over it —
@@ -213,24 +319,46 @@ function Row({ row, shelves }: { row: LibrarySearchRow; shelves: ShelfMap }) {
           {...contentLang(title)}
           className={`${contentLang(title).className} line-clamp-2 text-sm font-medium after:absolute after:inset-0 lg:line-clamp-none lg:block lg:truncate`}
         >
-          {title}
+          <Marked text={title} terms={terms} />
         </Link>
-        {/* Phone: the columns, as one line under the title. */}
-        <span className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-soft lg:hidden">
-          {badge && (
-            <>
-              <span aria-hidden className="h-2 w-2 shrink-0 rounded-full" style={{ background: badge.color }} />
-              {badge.label}
-            </>
-          )}
-          {[length, size]
-            .filter((v) => v !== "—")
-            .map((v, i) => (
+        {/* The second line. Phone: the columns first, then the folder's facts
+            and the match tag. Desktop: the columns stand to the right, so the
+            line is only the facts and the tag, and is not drawn without them. */}
+        <span
+          className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-ink-soft ${
+            facts || tag ? "" : "lg:hidden"
+          }`}
+        >
+          <span className="contents lg:hidden">
+            {badge && (
+              <>
+                <span aria-hidden className="h-2 w-2 shrink-0 rounded-full" style={{ background: badge.color }} />
+                {badge.label}
+              </>
+            )}
+            {phoneBits.map((v, i) => (
               <Fragment key={v}>
                 {(badge || i > 0) && <span aria-hidden>·</span>}
                 <span className="tabular-nums">{v}</span>
               </Fragment>
             ))}
+            {facts && (badge || phoneBits.length > 0) && <span aria-hidden>·</span>}
+          </span>
+          {facts && (
+            <span {...contentLang(facts)} className={`${contentLang(facts).className} min-w-0`}>
+              <Marked text={facts} terms={terms} />
+            </span>
+          )}
+          {tag && (
+            <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-canvas px-2 py-0.5 font-semibold">
+              <span className="shrink-0">{tag.value ? `${tag.label}:` : tag.label}</span>
+              {tag.value && (
+                <span {...contentLang(tag.value)} className={`${contentLang(tag.value).className} truncate font-semibold`}>
+                  {tag.value}
+                </span>
+              )}
+            </span>
+          )}
         </span>
       </span>
       <span className="hidden items-center gap-1.5 text-xs text-ink-soft lg:flex">

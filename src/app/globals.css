@@ -1274,6 +1274,14 @@ html[data-reading="1"] body {
   background: color-mix(in srgb, var(--ws-color) 16%, transparent);
   border-radius: 0.25rem;
 }
+/* The word whose meaning is open, so the eye finds it again above the
+   half-height sheet (UX audit RD5). Set and cleared by the reader. */
+.paribhasha-word[data-defining] {
+  background: color-mix(in srgb, var(--ws-color) 30%, transparent);
+  border-radius: 0.25rem;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
 
 /* flash for #p-{page}-{para} deep links */
 :target {

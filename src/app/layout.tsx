@@ -57,17 +57,28 @@ const dpsShree = localFont({
   declarations: [{ prop: "size-adjust", value: "126%" }],
   adjustFontFallback: false,
   display: "swap",
-  preload: true,
+  // Only the reader preloads it (see `app/books/[code]/[chapter]/layout.tsx`).
+  // Everywhere else it is the sutra verse on Home and the reader's Classic
+  // typeface, which a late swap costs nothing: the book text is Mukta by default.
+  preload: false,
 });
 
-// Devanagari UI labels (chapter rows, tabs) and the alternate reading face
-// (settings → Typeface), which is now the reader's default. Preloaded since
-// then: without it a chapter paints in the fallback and reflows when Mukta
-// lands, which on a justified page moves every line. Tiro stays preloaded too —
-// it is still the book face everywhere outside the reader.
+// Devanagari UI labels (chapter rows, tabs) and the reader's default face
+// (settings → Typeface). Preloaded: without it a chapter paints in the fallback
+// and reflows when Mukta lands, which on a justified page moves every line.
+//
+// Devanagari only. The Latin cut is a second copy of letters Instrument Sans
+// already sets (`.ui-hi` puts it first), and it was four more files on every
+// first visit. A Latin word inside a `.hi` line still resolves — the Latin
+// @font-face is declared, just not preloaded.
+//
+// All four weights stay: 400 is body, 600/700 are labels and bold, and 500 earns
+// its file because Display → Bold text, the reader's Bold paper and the
+// `font-medium` Hindi labels all ask for it. Without it each of those would
+// fall back to 400 and the Bold text setting would do nothing to Hindi.
 const mukta = Mukta({
   variable: "--font-mukta",
-  subsets: ["devanagari", "latin"],
+  subsets: ["devanagari"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
   preload: true,

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { bookTitle, matchesQuery, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
+import { ShareAllButton } from "@/components/me/ShareAll";
 import { EmptyState, PageContainer, RowListSkeleton, ctaSecondary, useUndoToast } from "@/components/ui";
 import { unsaveNote } from "@/lib/personal";
 import { parseRef, refToHref, shareCitation } from "@/lib/refs";
@@ -78,6 +79,20 @@ export default function NotesPage() {
             }
           />
         ) : (
+          <>
+          {/* One book's notes, to a study group in one message (UX audit
+              ST6) — only once the list is narrowed to a book, because a
+              message holding every book is not one anybody would send. */}
+          {book && (
+            <div className="mb-3 flex justify-end">
+              <ShareAllButton
+                label="Share these notes"
+                bookTitle={bookTitle(book, titles)}
+                items={notes.map((n) => ({ ref: n.canonical_ref, passage: n.text_hi, note: n.text }))}
+                className={ctaSecondary}
+              />
+            </div>
+          )}
           <ul className="flex flex-col gap-3">
             {notes.map((n) => {
               const ref = parseRef(n.canonical_ref);
@@ -132,6 +147,7 @@ export default function NotesPage() {
               );
             })}
           </ul>
+          </>
         )}
       </div>
       </div>

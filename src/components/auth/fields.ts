@@ -4,3 +4,8 @@ export const FIELD =
   "placeholder:text-ink-soft auth-field";
 
 export const LABEL = "block text-xs font-semibold uppercase tracking-[0.08em] text-ink-soft";
+
+/** Session-storage key carrying an email to Create account to correct — set by
+ *  the verify step's "Wrong email? Change it". Not a URL parameter: an address
+ *  does not belong in history or logs. */
+export const PREFILL_EMAIL_KEY = "md.auth.prefillEmail";

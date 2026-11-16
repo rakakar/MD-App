@@ -29,6 +29,7 @@ import {
   PaletteIcon,
   SettingsIcon,
   BellIcon,
+  HelpIcon,
   InfoIcon,
   UserIcon,
   WorkspaceIcon,
@@ -572,6 +573,20 @@ function AvatarMenu() {
           </span>
           My feedback
         </Link>
+        {/* How-to answers and the welcome again (16 Nov 2026, UX audit IN7). */}
+        <Link
+          href="/help"
+          onClick={() => {
+            keepWorkspace();
+            setOpen(false);
+          }}
+          className={row}
+        >
+          <span aria-hidden className={glyph}>
+            <HelpIcon className="h-5 w-5" />
+          </span>
+          How to use MD Study
+        </Link>
         {/* Last: the app's version, purpose and contact — read once, rarely
             looked for, so it does not stand between a reader and Settings. */}
         <Link
@@ -791,6 +806,20 @@ export function SidebarAccount() {
               <FeedbackListIcon className="h-4.5 w-4.5" />
             </span>
             My feedback
+          </Link>
+          <Link
+            href="/help"
+            role="menuitem"
+            onClick={() => {
+              keepWorkspace();
+              setOpen(false);
+            }}
+            className={row}
+          >
+            <span aria-hidden className={glyph}>
+              <HelpIcon className="h-4.5 w-4.5" />
+            </span>
+            How to use MD Study
           </Link>
           <Link
             href="/about"

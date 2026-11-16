@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ContinueAv } from "./ContinueAv";
 import { FindTable } from "./FindTable";
+import { NewestFirst, topicNamesOf } from "./FindResults";
 import { ActiveFindFilters, FindFilters } from "./FindFilters";
 import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
@@ -257,13 +258,24 @@ export function AvShelf({
 
       {shown > 0 ? (
         asked ? (
-          <FindTable
-            first={find.results}
-            scope={{ workspace: "originals" }}
-            state={linkState}
-            total={find.count}
-            shelves={shelves}
-          />
+          <>
+            {/* Newest first beside the results rather than only in the sheet
+                — see `NewestFirst`. */}
+            {find.count > 1 && (
+              <div className="mt-2 flex justify-end">
+                <NewestFirst state={linkState} basePath={basePath} />
+              </div>
+            )}
+            <FindTable
+              first={find.results}
+              scope={{ workspace: "originals" }}
+              state={linkState}
+              total={find.count}
+              shelves={shelves}
+              searchedAs={find.searched_as}
+              topicNames={topicNamesOf(find.facets)}
+            />
+          </>
         ) : (
           <div className="mt-3">
             <CollectionLayout collections={collections} shelves={shelves} />

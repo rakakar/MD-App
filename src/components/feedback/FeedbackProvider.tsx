@@ -39,6 +39,8 @@ export interface FeedbackPrefill {
   kind?: FeedbackKind;
   canonical_ref?: string;
   quoted_text?: string;
+  /** what the quote is called when it has no ref — an Assistant answer is not a "Selected passage" */
+  quoted_label?: string;
   /** where the report was raised from — for the analytics event, not the row */
   source?: string;
   /** what was already written — a guest's report, back from signing in */
@@ -314,7 +316,7 @@ function FeedbackSheet({
         phase={phase}
         kind={kind}
         onKind={setKind}
-        quoted={prefill.quoted_text ? { ref: prefill.canonical_ref, text: prefill.quoted_text } : null}
+        quoted={prefill.quoted_text ? { ref: prefill.canonical_ref || prefill.quoted_label, text: prefill.quoted_text } : null}
         message={message}
         onMessage={setMessage}
         placeholder={placeholder}
@@ -426,7 +428,7 @@ function FeedbackSheet({
             {prefill.quoted_text && (
               <div className="mt-3 rounded-xl border border-(--reader-rule) px-3 py-2">
                 <p className="text-xs text-(--reader-ink-soft)">
-                  {prefill.canonical_ref || "Selected passage"}
+                  {prefill.canonical_ref || prefill.quoted_label || "Selected passage"}
                 </p>
                 <p className="mt-0.5 line-clamp-3 text-sm">{prefill.quoted_text}</p>
               </div>

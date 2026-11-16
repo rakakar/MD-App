@@ -217,6 +217,27 @@ export const INTENT_LABEL: Record<Intent, string> = {
   navigate: "Navigate",
 };
 
+/**
+ * A few Hindi words beside each chip's English name (16 Nov 2026, UX audit
+ * AS2): the names say how an answer is made, and a reader who came with a
+ * question should not have to translate it into one of them.
+ */
+export const INTENT_GLOSS: Record<Intent, string> = {
+  paribhasha: "शब्द का अर्थ",
+  books: "ग्रंथों में खोजें",
+  research: "प्रश्न पूछें",
+  navigate: "कहीं भी जाएँ",
+};
+
+/**
+ * Example questions under the chips (UX audit AS2), one per kind of answer,
+ * each asked on a tap. Paribhasha's word is the first of these the dictionary
+ * has an entry for, so the example never lands on "no entry".
+ */
+export const EXAMPLE_WORDS = ["अनुभव", "जागृति", "समाधान", "व्यवस्था"];
+export const EXAMPLE_PHRASE = "मानवीयतापूर्ण आचरण";
+export const EXAMPLE_QUESTION = "जानना और मानना में क्या अंतर है?";
+
 export const INTENT_PLACEHOLDER: Record<Intent | "auto", string> = {
   auto: "Ask anything from the books",
   paribhasha: "Look up a word",

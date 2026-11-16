@@ -196,6 +196,20 @@ export default function SettingsPage() {
         </Link>
       </SettingsSection>
 
+      {/* How-to answers, and the welcome cards again (16 Nov 2026, UX audit IN7). */}
+      <SettingsSection id="help" title="Help">
+        <Link
+          href="/help"
+          className={`${CARD} flex min-h-16 items-center gap-4 ${desktop ? "px-7" : "px-5"} py-4 transition-colors hover:bg-inset`}
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block text-title text-ink">How to use MD Study</span>
+            <span className="block text-sm text-ink-soft">Short answers, and the welcome again</span>
+          </span>
+          <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
+        </Link>
+      </SettingsSection>
+
       <footer
         className={
           desktop

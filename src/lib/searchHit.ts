@@ -15,9 +15,9 @@
 
 import { useEffect } from "react";
 import { textNodes } from "./highlights";
+import { spellingPattern } from "./spellingFold";
 
 const NAME = "search-hit";
-const RE_SPECIAL = /[.*+?^${}()|[\]\\]/g;
 
 export interface SearchHit {
   /** the paragraph's element id, `p-{page}-{para}` */
@@ -87,8 +87,10 @@ function rangesFor(host: HTMLElement, pattern: RegExp): StaticRange[] {
 export function useSearchHitMarks(hit: SearchHit | null) {
   useEffect(() => {
     if (!hit || typeof CSS === "undefined" || !("highlights" in CSS)) return;
-    const terms = [...hit.terms].sort((a, b) => b.length - a.length);
-    const pattern = new RegExp(terms.map((t) => t.replace(RE_SPECIAL, "\\$&")).join("|"), "gi");
+    // Either spelling — a search for संबंध lands on a paragraph that may say
+    // सम्बन्ध, and the mark should find it there too (see `spellingFold`).
+    const pattern = spellingPattern(hit.terms);
+    if (!pattern) return;
 
     let ranges: StaticRange[] = [];
     let frame = 0;

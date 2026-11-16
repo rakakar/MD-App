@@ -1,10 +1,34 @@
 import Link from "next/link";
 import { FindTable } from "@/components/library/FindTable";
 import { ClearFind } from "@/components/library/Sieve";
-import { EmptyState } from "@/components/ui";
-import { findHref, type FindState } from "@/lib/find";
+import { Chip, EmptyState } from "@/components/ui";
+import { effectiveOrdering, findHref, setOrdering, type FindState } from "@/lib/find";
 import type { ShelfMap } from "@/lib/library";
-import type { LibraryFindResponse } from "@/lib/types";
+import type { LibraryFacets, LibraryFindResponse } from "@/lib/types";
+
+/** topic code → name, off the facets — what a result row's "Topic:" tag prints */
+export function topicNamesOf(facets: LibraryFacets): Record<string, string> {
+  return Object.fromEntries((facets.topic ?? []).map((t) => [t.value, t.label]));
+}
+
+/**
+ * **Newest first, one tap from the results** (UX audit FD10, 16 Nov 2026).
+ *
+ * "What has come in lately?" is the question a returning reader brings, and the
+ * sort that answers it lived only inside the Filters sheet — which the Library
+ * on a phone does not even draw. A chip beside the count, on or off: off goes
+ * back to the default order (best match with words, oldest first without).
+ */
+export function NewestFirst({ state, basePath }: { state: FindState; basePath: string }) {
+  const on = effectiveOrdering(state) === "-added";
+  return (
+    <Chip
+      label="Newest first"
+      selected={on}
+      href={findHref(basePath, setOrdering(state, on ? "" : "-added"))}
+    />
+  );
+}
 
 /**
  * What the find found — one ranked list, folders and files together
@@ -70,8 +94,11 @@ export function FindResults({
             the far edge of the same eyeful, saying a different number because
             it counts the query too. The rail's copy of the filters has no such
             row, so on a desktop this is still the only one. */}
-        <span className={chipsCarryClear ? "hidden" : "hidden lg:inline"}>
-          <ClearFind basePath={basePath} state={state} />
+        <span className="ms-auto flex items-center gap-3">
+          <span className={chipsCarryClear ? "hidden" : "hidden lg:inline"}>
+            <ClearFind basePath={basePath} state={state} />
+          </span>
+          {count > 1 && <NewestFirst state={state} basePath={basePath} />}
         </span>
       </div>
 
@@ -98,7 +125,15 @@ export function FindResults({
       )}
 
       {results.length > 0 ? (
-        <FindTable first={results} scope={scope} state={asked ?? state} total={count} shelves={shelves} />
+        <FindTable
+          first={results}
+          scope={scope}
+          state={asked ?? state}
+          total={count}
+          shelves={shelves}
+          searchedAs={find.searched_as}
+          topicNames={topicNamesOf(find.facets)}
+        />
       ) : (
         <NothingHere state={state} basePath={basePath} />
       )}

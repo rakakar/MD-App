@@ -28,9 +28,12 @@ import { LAUNCH } from "@/lib/onboarding";
 export function LaunchPane({
   started,
   onStart,
+  onSkip,
 }: {
   started: boolean;
   onStart: () => void;
+  /** straight into the app, as the deck's own Skip does */
+  onSkip: () => void;
 }) {
   return (
     <div
@@ -192,6 +195,25 @@ export function LaunchPane({
             {LAUNCH.tour}
           </p>
         </div>
+
+        {/* **Skip the tour** (UX audit FR2). The button says "Journey" and a
+            six-card deck follows; a reader who came for the books should not
+            have to press it to find that out. Quiet on purpose — ink-soft, no
+            border — but a full 44px target. Leaves with the button when the
+            deck opens (the deck has its own Skip), the same way: dropping
+            `launch-in` hands opacity back to the transition. */}
+        <button
+          type="button"
+          onClick={onSkip}
+          aria-hidden={started || undefined}
+          tabIndex={started ? -1 : undefined}
+          className={`inline-flex min-h-11 items-center justify-center self-center text-sm font-semibold text-ink-soft underline-offset-4 hover:underline lg:self-start ${
+            started ? "pointer-events-none opacity-0 transition-opacity duration-300" : "launch-in"
+          }`}
+          style={{ "--launch-at": "1.6s", "--launch-dur": "0.85s" } as React.CSSProperties}
+        >
+          {LAUNCH.skip}
+        </button>
       </div>
     </div>
   );

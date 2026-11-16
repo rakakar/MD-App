@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useKeyboardInset } from "@/components/assistant/useKeyboardInset";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { FIELD, LABEL } from "@/components/auth/fields";
+import { FIELD, LABEL, PREFILL_EMAIL_KEY } from "@/components/auth/fields";
 import { CodeEntry } from "@/components/auth/CodeEntry";
 import { PhoneAuth } from "@/components/auth/PhoneAuth";
 import { RadioSegmented } from "@/components/ui";
@@ -68,6 +68,19 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       // no storage: the screen's own default stands
     }
   }, [via]);
+  // "Wrong email? Change it" on the verify step lands here with the address it
+  // had, to correct. Read once and cleared.
+  useEffect(() => {
+    try {
+      const prefill = sessionStorage.getItem(PREFILL_EMAIL_KEY);
+      if (prefill) {
+        sessionStorage.removeItem(PREFILL_EMAIL_KEY);
+        setEmail(prefill);
+      }
+    } catch {
+      // no storage: they retype it
+    }
+  }, []);
   const chooseMethod = (phone: boolean) => {
     setError(null);
     setByPhone(phone);

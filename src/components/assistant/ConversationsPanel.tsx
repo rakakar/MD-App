@@ -163,7 +163,19 @@ export function ConversationsPanel({
             </div>
           </div>
 
-          <ul className="mt-3 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+          {/* Above the list, not under it (16 Nov 2026, UX audit ST7): a note at
+              the foot of a long list is below the fold, and this one is the
+              reason a reader should not expect these on another phone. */}
+          <div className="mt-3 shrink-0 px-4">
+            <p className="text-xs leading-relaxed text-ink-soft">
+              Kept on this device only
+              {user ? " — not on your account, and cleared when you sign out." : "."}
+              {!loading && !user && " Sign in to keep your bookmarks, notes and reading place on every device."}
+            </p>
+            {!loading && !user && <SignIn href={signInHref(pathname)} />}
+          </div>
+
+          <ul className="mt-2 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
             {shown.length === 0 && (
               <li className="px-2 py-4 text-sm text-ink-soft">Nothing matches.</li>
             )}
@@ -172,13 +184,6 @@ export function ConversationsPanel({
             ))}
           </ul>
 
-          <div className="shrink-0 border-t border-rule px-4 py-3">
-            <p className="text-xs leading-relaxed text-ink-soft">
-              Kept in this browser only.
-              {!loading && !user && " Sign in to keep your bookmarks, notes and reading place on every device."}
-            </p>
-            {!loading && !user && <SignIn href={signInHref(pathname)} />}
-          </div>
         </>
       )}
     </div>

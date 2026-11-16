@@ -9,7 +9,7 @@ import { NextOnPath, NextStepCard, PathCard } from "@/components/journey/Dashboa
 import { PathOverview } from "@/components/journey/PathOverview";
 import { StagePicker } from "@/components/journey/StagePicker";
 import { ArrowRightIcon } from "@/components/shell/icons";
-import { EmptyState, PageContainer, ctaPrimary } from "@/components/ui";
+import { EmptyState, PageContainer } from "@/components/ui";
 import { getBooks } from "@/lib/api";
 import { stageById } from "@/lib/journey";
 import { localProgress, syncPersonal } from "@/lib/personal";
@@ -19,53 +19,36 @@ import type { BookSummary } from "@/lib/types";
 const NO_SOURCES: never[] = [];
 
 /**
- * **My Journey is the one workspace behind sign-in.**
+ * **A guest's quiet strip** (UX audit FR5, 16 Nov 2026).
  *
- * Every other shelf is the corpus — open to anyone, and deliberately readable
- * without an account. This one is not a shelf: it is the reader themselves,
- * where they say they are on the path and everything they have marked.
- *
- * **The gate shows the path, not a picture** (desktop revision 19 Oct 2026).
- * It was an illustration over a button, which told a stranger this workspace
- * exists and nothing about what is in it. Now the four levels sit under the
- * one action — the honest preview of what signing in is for — and the full
- * path stays open from here without an account, as everything else does.
+ * My Journey used to be the one workspace behind sign-in: a stranger got a
+ * "Sign in to begin" page with the four levels under it. But everything on the
+ * dashboard — stage, Continue shelves, next step — is read from this device's
+ * own storage, so the gate was asking for an account to show a reader what
+ * their own phone already held. Now a guest sees the dashboard, and signing in
+ * is for syncing, not for seeing. The wording is the one Highlights & Notes
+ * already uses for the same state.
  */
-function SignInGate() {
+function GuestStrip() {
   return (
-    <>
-      <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
-        Start your journey
-      </h1>
-      <p className="mt-1.5 max-w-2xl text-sm text-ink-soft">
-        Where you are on the path, what you are reading and listening to, and
-        everything you have marked — kept together and synced to your account.
-      </p>
-
-      {/* The reassurance beside the action it qualifies rather than under a
-          rule — the two belong together. It wraps under the button on a
-          phone. */}
-      <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-        <Link
-          href="/login?next=/me"
-          className={`${ctaPrimary} min-h-12 w-full sm:w-auto sm:px-6 sm:text-base`}
-          style={{ background: "var(--ws-color)" }}
-        >
-          Sign in to begin
-          <ArrowRightIcon className="h-4 w-4" />
-        </Link>
-        <p className="text-sm text-ink-soft">
-          Every book, recording and folder stays open without an account.
-        </p>
-      </div>
-
-      <PathOverview />
-    </>
+    <p className="mt-1 text-sm text-ink-soft">
+      Saved on this device.{" "}
+      <Link
+        href="/login?next=/me"
+        className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
+        style={{ color: "var(--ws-ink)" }}
+      >
+        Sign in to sync
+      </Link>
+      .
+    </p>
   );
 }
 
 /**
  * **My Journey — the dashboard** (19A screens 1 and 2).
+ *
+ * Open to a guest as well, with a strip saying it is kept on this device.
  *
  * Two screens behind one address, and which one shows turns on a single
  * question: has the reader said where they are? Until they have, it is the
@@ -107,16 +90,8 @@ export default function MyJourneyPage() {
 
   // Nothing until both answers are in: `undefined` is "prefs not read yet" and
   // `loading` is "auth not resolved yet". Rendering through either would flash
-  // the gate at a signed-in reader, or the dashboard at a stranger.
+  // the guest strip at a signed-in reader.
   if (loading || stageId === undefined) return null;
-
-  if (!user) {
-    return (
-      <PageContainer size="shelf">
-        <SignInGate />
-      </PageContainer>
-    );
-  }
 
   const stage = stageById(stageId);
 
@@ -134,6 +109,7 @@ export default function MyJourneyPage() {
         <h1 className="font-display text-2xl font-medium leading-tight tracking-[-0.015em] lg:text-4xl">
           My Journey
         </h1>
+        {!user && <GuestStrip />}
         <PathOverview />
         <StagePicker onDone={declare} />
       </PageContainer>
@@ -156,6 +132,8 @@ export default function MyJourneyPage() {
           Change my stage
         </button>
       </div>
+
+      {!user && <GuestStrip />}
 
       <div className="mt-5 sm:mt-6">
         <PathCard stage={stage} onChangeStage={() => setChanging(true)} />
