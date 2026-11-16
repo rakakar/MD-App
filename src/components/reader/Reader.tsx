@@ -4,7 +4,7 @@ import { scrollBehavior } from "@/lib/motion";
 import type { Deleted } from "./TocSheet";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { CoachMark } from "@/components/onboarding/CoachMark";
@@ -847,6 +847,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
    * when the chapter changes — because that is the marking every browser
    * shows; the CSS highlight mark tried first never appeared in Safari.
    */
+  /** The paragraph a shared passage link (`?w=`) landed on — see `sharedCard`. */
+  const [sharedAt, setSharedAt] = useState<string | null>(null);
   const [sharedPaint, setSharedPaint] = useState<{
     chapter: number;
     ref: string;
@@ -902,6 +904,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       const terms = searchTermsInLocation();
       if (terms.length) setSearchHit({ id, terms, chapter: chapterNumber });
       const w = sharedWordsParam(new URLSearchParams(window.location.search).get("w") ?? undefined);
+      const landed = pages
+        .find((p) => p.key === hash[1])
+        ?.paragraphs.find((q) => q.para_number === Number(hash[2]))?.canonical_ref;
+      if (w && landed) {
+        setSharedAt(landed);
+        // The card is this visitor's welcome (UX audit IA9): the six-card
+        // tour would otherwise meet them on the book page they tap back to.
+        if (!getPrefs().onboardingSeen) setPrefs({ onboardingSeen: true });
+      }
       const para = w
         ? pages.find((p) => p.key === hash[1])?.paragraphs.find((q) => q.para_number === Number(hash[2]))
         : undefined;
@@ -2208,6 +2219,70 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   // edition — the folder it came from, which is that reader's "book".
   const bookHref = home?.backHref ?? `/books/${encodeURIComponent(book.code)}`;
   const bookBackText = home ? home.backLabel : "Back to the book";
+  /**
+   * **Shared passage** (16 Nov 2026, UX audit IA9). A link from a friend
+   * opened mid-chapter, its words painted amber, with nothing to say what this
+   * app is or why those words were marked — and the welcome tour then met the
+   * visitor on the book page they tapped back to. This card is that welcome
+   * instead, once per arrival, directly above the shared paragraph where the
+   * link lands: what this is, and the two ways on from a passage.
+   *
+   * Outside the paragraph's box (`PageParas`' `before`), so its words are
+   * never counted into a highlight's offsets.
+   */
+  const sharedCard = useMemo(
+    () =>
+      sharedAt ? (
+        <div data-reader-chrome data-not-text className="mb-4">
+    <div className={`${chapterCard} items-start`} style={chapterCardStyle}>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold" style={{ color: "var(--ws-ink)" }}>
+          Shared passage
+        </p>
+        <p lang="hi" className="hi hi-tight mt-1 font-semibold text-(--reader-ink)">
+          {book.title_hi}
+          {!isFrontMatter && <span className="font-normal text-(--reader-ink-soft)"> · अध्याय {chapterNumber}</span>}
+        </p>
+        <p className="mt-1 text-sm text-(--reader-ink-soft)">
+          From the books of Madhyasth Darshan, in MD Study. The marked words are what was shared.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {pages[0] && (
+            <button
+              type="button"
+              onClick={() => {
+                setSharedAt(null);
+                jumpToPage(pages[0].key, undefined, "start");
+              }}
+              className="inline-flex min-h-11 items-center rounded-control px-4 text-sm font-semibold text-on-accent"
+              style={{ background: "var(--ws-color)" }}
+            >
+              Read from the start
+            </button>
+          )}
+          <Link
+            href={`/books/${encodeURIComponent(book.code)}`}
+            className="inline-flex min-h-11 items-center rounded-control border border-(--reader-rule) px-4 text-sm font-semibold text-(--reader-ink)"
+          >
+            About this book
+          </Link>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => setSharedAt(null)}
+        aria-label="Dismiss"
+        className="-mr-3 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-(--reader-ink-soft)"
+      >
+        <CloseIcon className="h-4 w-4" />
+      </button>
+    </div>
+        </div>
+      ) : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sharedAt, book.code, book.title_hi, chapterNumber, isFrontMatter, pages]
+  );
+
   const endOfBookText = home ? "You’ve reached the end of this text." : "You’ve reached the end of this book.";
   const prevLang = contentLang(chapter?.prev ? chapterName(chapter.prev) : "");
 
@@ -2492,6 +2567,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 selectedRefs={selectedRefs}
                 painted={shownPaint}
                 margin={marginFor}
+                before={sharedAt}
+                beforeNode={sharedCard}
               />
               {/* Forward is the filled one, back is the outline — the same pair
                   as the chapter nav below, so "the accent is the way on" holds
@@ -2590,6 +2667,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     selectedRefs={selectedRefs}
                     painted={shownPaint}
                     margin={marginFor}
+                    before={sharedAt}
+                    beforeNode={sharedCard}
                     chapterLabel={pi === 0 && !isFrontMatter ? `अध्याय ${chapterNumber}` : undefined}
                     pageLabel={
                       book.book_type === "print" && pg.label === String(Number(pg.label))
@@ -3186,7 +3265,12 @@ const PageParas = memo(function PageParas({
   chapterLabel,
   pageLabel,
   margin,
+  before,
+  beforeNode,
 }: {
+  /** the paragraph `beforeNode` goes directly above (the shared-passage card) */
+  before?: string | null;
+  beforeNode?: React.ReactNode;
   /** desktop: what the right margin carries beside a paragraph, if anything */
   margin?: (p: Paragraph) => React.ReactNode;
   /** desktop margin: the chapter's number, beside the chapter's first line */
@@ -3239,6 +3323,8 @@ const PageParas = memo(function PageParas({
   return (
     <>
       {page.paragraphs.map((p, i) => (
+        <Fragment key={p.canonical_ref}>
+        {before === p.canonical_ref && beforeNode}
         <ParaWrap
           gutter={
             (i === 0 && chapterLabel) || (i === bodyAt && pageLabel) ? (
@@ -3258,6 +3344,7 @@ const PageParas = memo(function PageParas({
           dot={painted.get(p.canonical_ref)?.[0]?.colour}
           aside={margin?.(p)}
         />
+        </Fragment>
       ))}
     </>
   );
