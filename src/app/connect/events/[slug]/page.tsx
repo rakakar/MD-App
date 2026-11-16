@@ -17,9 +17,9 @@ import {
   LanguageIcon,
   PinIcon,
 } from "@/components/shell/icons";
-import { ctaPrimary, ctaPrimaryBar, PageContainer } from "@/components/ui";
+import { ctaPrimary, ctaPrimaryBar, ctaSecondary, PageContainer } from "@/components/ui";
 import { ApiError, getEvent } from "@/lib/api";
-import { fullDateRange, type EventDetail } from "@/lib/events";
+import { calendarHref, fullDateRange, type EventDetail } from "@/lib/events";
 import { jsonLdHtml } from "@/lib/jsonLd";
 import { contentLang } from "@/lib/script";
 
@@ -71,6 +71,10 @@ export default async function EventDetailPage({
    * screens. Now the recording comes first and the bar goes.
    */
   const past = event.bucket === "past";
+  const calendar = calendarHref(
+    event,
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://welfareinfo.net"}/connect/events/${event.slug}`
+  );
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -216,6 +220,28 @@ export default async function EventDetailPage({
             directly above it. It stays a filter, which is where it answers a
             question nobody can read off the page. */}
       </div>
+
+      {/* The two things a reader does next with a shivir they mean to attend
+          (16 Nov 2026, UX audit CN2 and CN4): keep the dates, and find the way
+          there. The address above was already the map link, but nothing said
+          so, and there was no way to keep the dates at all. Not on a past
+          shivir, where neither means anything. */}
+      {!past && (calendar || event.map_url) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {calendar && (
+            <a href={calendar} target="_blank" rel="noopener noreferrer" className={ctaSecondary}>
+              <CalendarChipIcon className="h-4 w-4" />
+              Add to calendar
+            </a>
+          )}
+          {event.map_url && event.mode_code !== "online" && (
+            <a href={event.map_url} target="_blank" rel="noopener noreferrer" className={ctaSecondary}>
+              <PinIcon className="h-4 w-4" />
+              Directions
+            </a>
+          )}
+        </div>
+      )}
 
       <div className="mt-5 flex flex-col gap-4">
         {(event.invitation_note || event.contacts.length > 0) && (

@@ -234,6 +234,36 @@ export function fullDateRange(e: Pick<EventCard, "start_date" | "end_date">): st
   return range(e.start_date, e.end_date, fullDay);
 }
 
+/**
+ * "Add to calendar" for a shivir (16 Nov 2026, UX audit CN4) — Google
+ * Calendar's own add-event page, filled in. Google's rather than an `.ics`
+ * file because the readers here are mostly on Android, where that is the
+ * calendar already on the phone, and a downloaded file is one more thing to
+ * find and open. All-day, because the events carry dates and no times; the end
+ * is the day *after* the last, as the calendar format counts it. The shivir's
+ * own page goes in the description, so the entry leads back to it.
+ */
+export function calendarHref(
+  e: Pick<EventDetail, "title" | "start_date" | "end_date" | "address" | "location">,
+  pageUrl: string
+): string | null {
+  const start = parseDay(e.start_date);
+  if (!start) return null;
+  const last = parseDay(e.end_date) ?? start;
+  const after = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1);
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  const p = new URLSearchParams({
+    action: "TEMPLATE",
+    text: e.title,
+    dates: `${ymd(start)}/${ymd(after)}`,
+    details: pageUrl,
+  });
+  const where = e.address || e.location;
+  if (where) p.set("location", where);
+  return `https://calendar.google.com/calendar/render?${p.toString()}`;
+}
+
 // ---- the category's colour ----
 
 /**

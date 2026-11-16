@@ -9,7 +9,7 @@ import { chapterLine } from "@/lib/chapter";
 import { localProgress, syncPersonal } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import { contentLang } from "@/lib/script";
-import { readingHomeFor, rememberReadingHome } from "@/lib/storage";
+import { finishedChapter, readingHomeFor, rememberReadingHome } from "@/lib/storage";
 import type { BookSummary } from "@/lib/types";
 
 interface ResumeCard {
@@ -119,7 +119,10 @@ export function ContinueReading({
     // from the row's `source_item`. The detail pass below is the backstop for
     // the third case, and it teaches this device the answer for next time.
     const notLibraryDocs = localProgress().filter(
-      (p) => readingHomeFor(p.book_code) === null
+      (p) =>
+        readingHomeFor(p.book_code) === null &&
+        // Read to the end and not started over — see `markBookFinished`.
+        finishedChapter(p.book_code) !== p.chapter_number
     );
     if (notLibraryDocs.length === 0) {
       setCards([]);

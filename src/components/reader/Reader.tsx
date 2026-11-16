@@ -39,6 +39,7 @@ import {
   getListeningPosition,
   getNoteDraft,
   getPrefs,
+  markBookFinished,
   setNoteDraft,
   nearestStep,
   rememberReadingHome,
@@ -54,7 +55,7 @@ import {
 } from "@/lib/storage";
 import type { ChapterPayload, ChapterTocEntry, Paragraph } from "@/lib/types";
 import type { Matcher } from "@/lib/paribhasha";
-import { chapterName } from "@/lib/labels";
+import { chapterName, FRONT_MATTER } from "@/lib/labels";
 import { contentLang } from "@/lib/script";
 import { Block } from "./blocks";
 import {
@@ -1317,6 +1318,20 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     };
   }, [mode, chapter, loadChapter, pages]);
 
+  // ---- the end of the book ----
+  // Reaching the last printed page of the last chapter marks the book read, so
+  // the resume rails stop offering it (UX audit RD7) — see `markBookFinished`.
+  // Front matter is never the end, and a chapter still loading is not either.
+  useEffect(() => {
+    if (!chapter || chapter.next || isFrontMatter || pages.length === 0) return;
+    const last = pages[pages.length - 1];
+    const atEnd =
+      mode === "page"
+        ? pageIndex === pages.length - 1
+        : !!currentRef && last.paragraphs.some((p) => p.canonical_ref === currentRef);
+    if (atEnd) markBookFinished(book.code, chapterNumber);
+  }, [chapter, isFrontMatter, pages, mode, pageIndex, currentRef, book.code, chapterNumber]);
+
   // ---- TTS follow-along (PRD §5) ----
   const isThisChapter =
     (player.source?.kind === "tts" || player.source?.kind === "device") &&
@@ -1945,13 +1960,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   )?.title_hi;
   const desktopWhere = (
     <span className="flex min-w-0 items-baseline justify-center gap-1.5">
-      <span lang="hi" className="hi hi-tight min-w-0 truncate">
-        {isFrontMatter
-          ? chapterTitle ?? "प्रस्तावना"
-          : chapterTitle
-            ? `अध्याय ${chapterNumber} : ${chapterTitle}`
-            : `अध्याय ${chapterNumber}`}
-      </span>
+      {isFrontMatter ? (
+        <span className="min-w-0 truncate">{FRONT_MATTER}</span>
+      ) : (
+        <span lang="hi" className="hi hi-tight min-w-0 truncate">
+          {chapterTitle ? `अध्याय ${chapterNumber} : ${chapterTitle}` : `अध्याय ${chapterNumber}`}
+        </span>
+      )}
       {deskPage && (
         <span className="shrink-0 tabular-nums">
           {"· Page "}
@@ -1974,7 +1989,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           {chapter.title_hi}
         </span>
       ) : (
-        <>{isFrontMatter ? "Front matter" : `Chapter ${chapterNumber}`}</>
+        // One name for the opening pages everywhere — Contents, both bars
+        // (16 Nov 2026, UX audit RD1). This bar said "Front matter" and the
+        // desktop one printed the raw "Front-matters".
+        <>{isFrontMatter ? FRONT_MATTER : `Chapter ${chapterNumber}`}</>
       )}
       {/* What this text is, on the line that is already about what the reader
           is in — not a badge somewhere they have to go looking. A compilation

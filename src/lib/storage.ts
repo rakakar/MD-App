@@ -955,6 +955,29 @@ export function clearPdfPlace(key: string): void {
   write(PDF_PAGE_KEY, store);
 }
 
+// ---- Finished books ----
+//
+// A book read to its last page (16 Nov 2026, UX audit RD7). The saved place is
+// then the last page, so the resume rails kept offering it — "Resume · 98%" on
+// Home for a book the reader had finished. The reader notes which chapter the
+// end was in; the rails leave the book out while the saved place is still in
+// that chapter, and bring it back the moment the reader starts it over.
+
+const FINISHED_KEY = "md.finished.v1";
+
+export function markBookFinished(bookCode: string, chapter: number): void {
+  if (!isBrowser) return;
+  const store = read<Record<string, number>>(FINISHED_KEY, {});
+  if (store[bookCode] === chapter) return;
+  store[bookCode] = chapter;
+  write(FINISHED_KEY, store);
+}
+
+/** The chapter a finished book ended in, or null for a book not finished here. */
+export function finishedChapter(bookCode: string): number | null {
+  return read<Record<string, number>>(FINISHED_KEY, {})[bookCode] ?? null;
+}
+
 // ---- Note drafts ----
 //
 // What a reader was writing in the note box when the sheet closed without a
@@ -1058,6 +1081,7 @@ export function clearLocalStore(): void {
   window.localStorage.removeItem(PDF_PAGE_KEY);
   window.localStorage.removeItem(PDF_VIEW_KEY);
   window.localStorage.removeItem(NOTE_DRAFT_KEY);
+  window.localStorage.removeItem(FINISHED_KEY);
 }
 
 // ---- Volunteer sign-up ----

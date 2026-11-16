@@ -114,7 +114,9 @@ export function EventPanel({
  */
 export function ContactChip({ contact }: { contact: EventContact }) {
   const l = contentLang(contact.name);
+  const wa = whatsappHref(contact.phone);
   return (
+    <span className="inline-flex items-center gap-1">
     <a
       href={`tel:${contact.phone.replace(/\s+/g, "")}`}
       className="inline-flex min-h-11 items-center gap-2 rounded-full bg-inset px-4 text-sm transition-colors active:bg-ink/[.06]"
@@ -132,7 +134,33 @@ export function ContactChip({ contact }: { contact: EventContact }) {
         {contact.phone}
       </span>
     </a>
+    {wa && (
+      <a
+        href={wa}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`WhatsApp ${contact.name}`}
+        className="inline-flex min-h-11 items-center rounded-full bg-inset px-4 text-sm font-semibold transition-colors active:bg-ink/[.06]"
+        style={{ color: "var(--ws-ink)" }}
+      >
+        WhatsApp
+      </a>
+    )}
+    </span>
   );
+}
+
+/**
+ * A WhatsApp chat with a number (16 Nov 2026, UX audit CN7) — how most people
+ * here actually reach an organiser, where a call was the only way offered.
+ * Indian mobiles only: ten digits, with or without +91 or a leading 0. A
+ * landline or anything else gets no button, since WhatsApp would refuse it.
+ */
+export function whatsappHref(phone: string): string | null {
+  let d = phone.replace(/\D/g, "");
+  if (d.length === 12 && d.startsWith("91")) d = d.slice(2);
+  else if (d.length === 11 && d.startsWith("0")) d = d.slice(1);
+  return /^[6-9]\d{9}$/.test(d) ? `https://wa.me/91${d}` : null;
 }
 
 /**

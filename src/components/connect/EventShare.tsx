@@ -135,8 +135,16 @@ export function EventShare({
     setTimeout(() => setCopied(false), 1600);
   };
 
-  const send = async ({ text, file }: Ready) => {
+  const send = async ({ text: note, file }: Ready) => {
     const url = new URL(path, window.location.origin).toString();
+    // The shivir's own page under the invitation (16 Nov 2026, UX audit CN5):
+    // a forward carried the poster and the letter and nothing to tap, so
+    // whoever received it could not get back to the dates, the map or the
+    // recording later. Labelled in the note's own language.
+    const text =
+      note && !note.includes(url)
+        ? `${note}\n\n${contentLang(note).lang === "hi" ? "पूरी जानकारी:" : "Details:"}\n${url}`
+        : note;
     const files = file ? [file] : null;
     if (files && navigator.canShare?.({ files, text })) {
       await navigator.share({ files, text });
