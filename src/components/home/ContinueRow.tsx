@@ -9,6 +9,22 @@ import { ContinueReading } from "./ContinueReading";
 const SHOWN = 3;
 
 /**
+ * The listening rail's `sources`, as one constant. **Never an inline `[]`.**
+ * The rail redoes its library look-ups whenever `sources` changes, and this
+ * row re-renders whenever the rail reports its cards — so a fresh `[]` on
+ * every render was a loop: report, re-render, new `[]`, look up again, report.
+ * With one saved recording it sent the library search out several times a
+ * second, until the API rate-limited the reader and every other page stuck
+ * loading (16 Nov 2026).
+ */
+const NO_SOURCES: never[] = [];
+
+/** Same times as before → the same array, so a report changes nothing. */
+function keep(prev: string[], next: string[]): string[] {
+  return prev.length === next.length && prev.every((s, i) => s === next[i]) ? prev : next;
+}
+
+/**
  * **Continue** — Home's one resume row (16 Nov 2026, designer's call).
  *
  * Home had two: Continue Reading, and Continue Listening under it (added the
@@ -36,8 +52,8 @@ export function ContinueRow({
 }) {
   const [reading, setReading] = useState<string[]>([]);
   const [listening, setListening] = useState<string[]>([]);
-  const onReading = useCallback((s: string[]) => setReading(s), []);
-  const onListening = useCallback((s: string[]) => setListening(s), []);
+  const onReading = useCallback((s: string[]) => setReading((p) => keep(p, s)), []);
+  const onListening = useCallback((s: string[]) => setListening((p) => keep(p, s)), []);
 
   const all = useMemo(
     () => [...reading, ...listening].sort((a, b) => b.localeCompare(a)),
@@ -53,7 +69,7 @@ export function ContinueRow({
       {/* ContinueReading's rail: bleeding, snapping, the next card peeking. */}
       <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0">
         <ContinueReading bare books={books} limit={SHOWN} onStamps={onReading} minStamp={minStamp} />
-        <ContinueAv bare sources={[]} limit={SHOWN} onStamps={onListening} minStamp={minStamp} />
+        <ContinueAv bare sources={NO_SOURCES} limit={SHOWN} onStamps={onListening} minStamp={minStamp} />
       </ul>
     </section>
   );

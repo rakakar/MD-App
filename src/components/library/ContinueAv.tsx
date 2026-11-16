@@ -136,6 +136,13 @@ export function ContinueAv({
   /** bumped when it closes, to re-read the playheads it just moved */
   const [afterWatching, setAfterWatching] = useState(0);
 
+  // Keyed on what the sources *hold*, not on the array: a caller passing a
+  // fresh `[]` each render would otherwise rebuild this, rebuild `render`, and
+  // send the library look-ups out again on every render — which Home's
+  // Continue row did, in a loop, on 16 Nov 2026 (see `ContinueRow`).
+  const sourceKey = sources
+    .map((source) => `${source.name}:${source.files.map((f) => f.id).join(",")}`)
+    .join("|");
   const onPage = useMemo(
     () =>
       new Map(
@@ -143,7 +150,8 @@ export function ContinueAv({
           source.files.map((file) => [file.id, { file, folder: source.name }] as const)
         )
       ),
-    [sources]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sourceKey]
   );
 
   const render = useCallback(
