@@ -19,6 +19,7 @@ import { AUDIO_POSTER } from "@/lib/media";
 import { contentLang } from "@/lib/script";
 import { getPlayheads } from "@/lib/storage";
 import type { FileKind, LibraryFile } from "@/lib/types";
+import { orderOf } from "@/components/home/ContinueReading";
 
 /**
  * Under this, nobody left off — they tapped the wrong row, or changed their
@@ -86,7 +87,20 @@ export function ContinueAv({
   variant = "rail",
   note,
   className,
+  bare = false,
+  onStamps,
+  minStamp = null,
 }: {
+  /**
+   * Rail cards only, as `<li>`s, for Home's mixed Continue row
+   * (`ContinueRow`), ordered by time alongside the books — see the same prop
+   * on `ContinueReading`.
+   */
+  bare?: boolean;
+  /** bare: the cards' times, reported up so the row can keep the newest */
+  onStamps?: (stamps: string[]) => void;
+  /** bare: nothing older than this — the row's cut-off */
+  minStamp?: string | null;
   /**
    * The page's collections — every A/V file on screen, still under the folder
    * it came from. Both halves are needed to name a playhead: the file for its
@@ -259,7 +273,12 @@ export function ContinueAv({
     void render(Boolean(user));
   }, [afterWatching, loading, user, render]);
 
+  useEffect(() => {
+    onStamps?.(rows.map((r) => r.updatedAt));
+  }, [rows, onStamps]);
+
   if (rows.length === 0) return null;
+
 
   // The verb names what the reader was actually doing. A rail of nothing but
   // "Resume", as the designer titles it, rather than "Continue listening" /
@@ -308,6 +327,29 @@ export function ContinueAv({
       }}
     />
   );
+
+  if (bare) {
+    const shown = minStamp ? rows.filter((r) => r.updatedAt >= minStamp) : rows;
+    return (
+      <>
+        {shown.map((row) => (
+          <li
+            key={row.itemId}
+            style={{ order: orderOf(row.updatedAt) }}
+            // The book cards' width, so the mixed row reads as one rail.
+            className="w-[17.5rem] shrink-0 snap-start sm:w-[340px]"
+          >
+            <ResumeCard
+              row={row}
+              onPlay={row.file ? (row.kind === "audio" ? play : watch) : null}
+            />
+          </li>
+        ))}
+        {/* The full-screen player, inside the list but out of its flow. */}
+        {stage && <li className="contents">{stage}</li>}
+      </>
+    );
+  }
 
   if (variant === "list") {
     return (

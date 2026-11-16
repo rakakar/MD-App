@@ -23,6 +23,8 @@ interface ResumeCard {
   page: number | null;
   pageCount: number | null;
   percent: number | null;
+  /** when this place was saved — Home's mixed row orders by it */
+  updatedAt: string;
 }
 
 /**
@@ -48,7 +50,20 @@ export function ContinueReading({
   workspace = "originals",
   className = "mt-5 first:mt-0",
   books,
+  bare = false,
+  onStamps,
+  minStamp = null,
 }: {
+  /**
+   * Cards only, as `<li>`s, for Home's mixed Continue row (`ContinueRow`):
+   * no section, no heading, no list of its own. Each card carries a flex
+   * `order` from its time, so books and recordings interleave newest first.
+   */
+  bare?: boolean;
+  /** bare: the cards' times, reported up so the row can keep the newest */
+  onStamps?: (stamps: string[]) => void;
+  /** bare: nothing older than this — the row's cut-off */
+  minStamp?: string | null;
   /**
    * The workspace's shelf, when the page already fetched it on the server
    * (Home does, for its Books rail). Passed in, the cards draw from it at
@@ -148,6 +163,7 @@ export function ContinueReading({
         pageCount,
         percent:
           usable && pageCount ? Math.min(100, (usable / pageCount) * 100) : null,
+        updatedAt: p.updated_at,
       };
     };
 
@@ -195,7 +211,30 @@ export function ContinueReading({
     void syncPersonal().then(render);
   }, [user, loading, render]);
 
+  useEffect(() => {
+    onStamps?.(cards.map((c) => c.updatedAt));
+  }, [cards, onStamps]);
+
   if (cards.length === 0) return null;
+
+  const shown = minStamp ? cards.filter((c) => c.updatedAt >= minStamp) : cards;
+  const list = shown.map((c) => {
+          const chapterText = chapterLine(c.chapter, c.chapterTitle);
+          const titleLang = contentLang(c.title);
+          const chapterLang = contentLang(chapterText);
+          return (
+          <li
+            key={c.key}
+            style={bare ? { order: orderOf(c.updatedAt) } : undefined}
+            className={`w-[17.5rem] shrink-0 snap-start sm:w-[340px] ${
+              layout === "stack" || layout === "pair" ? "lg:w-full lg:shrink" : ""
+            }`}
+          >
+            <ReadingCardLink c={c} chapterText={chapterText} titleLang={titleLang} chapterLang={chapterLang} />
+          </li>
+          );
+        });
+  if (bare) return <>{list}</>;
 
   return (
     // The section gap belongs on the section, not on its heading. On the
@@ -234,96 +273,105 @@ export function ContinueReading({
               : ""
         }`}
       >
-        {cards.map((c) => {
-          const chapterText = chapterLine(c.chapter, c.chapterTitle);
-          const titleLang = contentLang(c.title);
-          const chapterLang = contentLang(chapterText);
-          return (
-          <li
-            key={c.key}
-            className={`w-[17.5rem] shrink-0 snap-start sm:w-[340px] ${
-              layout === "stack" || layout === "pair" ? "lg:w-full lg:shrink" : ""
-            }`}
-          >
-            <Link
-              href={c.href}
-              // px-4 py-3, not p-4. The cover is the tallest thing in the row
-              // and the text column beside it is shorter, so 16px top and
-              // bottom was 16px plus the slack the centred text already left —
-              // it read as a card with a hole in it.
-              className="flex h-full items-center gap-4 rounded-card border border-rule bg-card px-4 py-3 transition-shadow hover:shadow-raised"
-            >
-              <CoverTile
-                book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}
-                size="resume"
-                eager
-              />
-              {/* Both lines are `hi-tight`, and between them that is what
-                  squares this column with the cover beside it. At the `.hi`
-                  body leading of 1.85 a Devanagari title and chapter line were
-                  31 and 24 tall — 15px of half-leading nobody asked for, on two
-                  single lines that are truncated anyway — and the column came
-                  out 101.5 against an 86px cover, so it overhung the artwork by
-                  7.5 at the head and the foot. Tight, it is 86.5: the title
-                  starts at the top of the cover and the page figures end at its
-                  foot. Change either leading and that alignment goes. (A
-                  title too long for one line now wraps to two rather than
-                  being cut mid-word, 15 Nov 2026, and that card stands taller
-                  than its cover — the scroller's cards all take its height.)
-
-                  `hi-tight` stays on regardless of script — it is the leading
-                  fix, not the font. `lang`/`.hi` are decided per line instead:
-                  a translation's title is English, and setting "Jeevan Vidya —
-                  An Introduction" in the Devanagari face announced it to a
-                  screen reader as Hindi and rendered it in the wrong type. */}
-              <span className="min-w-0 flex-1">
-                <span
-                  {...titleLang}
-                  className={`${titleLang.className} hi-tight line-clamp-2 text-title font-semibold`}
-                >
-                  {c.title}
-                </span>
-                <span
-                  {...chapterLang}
-                  className={`${chapterLang.className} hi-tight mt-1 block truncate text-xs font-medium text-ink-soft`}
-                >
-                  {chapterText}
-                </span>
-                {c.percent !== null ? (
-                  <>
-                    {/* The bar runs the full width of the card and the two
-                        figures sit under it — printed page on the left, where
-                        a reader looks to check they are where they think they
-                        are, and the percentage on the right. */}
-                    <ProgressBar percent={c.percent} showValue={false} className="mt-3" />
-                    <span className="mt-1.5 flex items-baseline justify-between gap-2">
-                      <span className="truncate text-xs font-medium text-ink-soft">
-                        {c.page !== null && c.pageCount !== null
-                          ? `Page ${c.page} of ${c.pageCount}`
-                          : ""}
-                      </span>
-                      <span
-                        className="shrink-0 text-xs font-bold tabular-nums"
-                        style={{ color: "var(--ws-ink)" }}
-                      >
-                        {Math.round(c.percent)}%
-                      </span>
-                    </span>
-                  </>
-                ) : (
-                  <span
-                    className="mt-2.5 block text-xs font-semibold"
-                    style={{ color: "var(--ws-ink)" }}
-                  >
-                    Resume →
-                  </span>
-                )}
-              </span>
-            </Link>
-          </li>
-          );
-        })}
+        {list}
       </ul>
     </section>
+  );
+}
+
+/** A book's position in a whole-number flex order: newer is further left. */
+export function orderOf(iso: string): number {
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? -Math.floor(t / 1000) : 0;
+}
+
+/** One book's resume card — the link inside the rail's `<li>`. */
+function ReadingCardLink({
+  c,
+  chapterText,
+  titleLang,
+  chapterLang,
+}: {
+  c: ResumeCard;
+  chapterText: string;
+  titleLang: ReturnType<typeof contentLang>;
+  chapterLang: ReturnType<typeof contentLang>;
+}) {
+  return (
+    <Link
+      href={c.href}
+      // px-4 py-3, not p-4. The cover is the tallest thing in the row
+      // and the text column beside it is shorter, so 16px top and
+      // bottom was 16px plus the slack the centred text already left —
+      // it read as a card with a hole in it.
+      className="flex h-full items-center gap-4 rounded-card border border-rule bg-card px-4 py-3 transition-shadow hover:shadow-raised"
+    >
+      <CoverTile
+        book={{ code: c.key, title_hi: c.title, cover_image: c.cover }}
+        size="resume"
+        eager
+      />
+      {/* Both lines are `hi-tight`, and between them that is what
+          squares this column with the cover beside it. At the `.hi`
+          body leading of 1.85 a Devanagari title and chapter line were
+          31 and 24 tall — 15px of half-leading nobody asked for, on two
+          single lines that are truncated anyway — and the column came
+          out 101.5 against an 86px cover, so it overhung the artwork by
+          7.5 at the head and the foot. Tight, it is 86.5: the title
+          starts at the top of the cover and the page figures end at its
+          foot. Change either leading and that alignment goes. (A
+          title too long for one line now wraps to two rather than
+          being cut mid-word, 15 Nov 2026, and that card stands taller
+          than its cover — the scroller's cards all take its height.)
+
+          `hi-tight` stays on regardless of script — it is the leading
+          fix, not the font. `lang`/`.hi` are decided per line instead:
+          a translation's title is English, and setting "Jeevan Vidya —
+          An Introduction" in the Devanagari face announced it to a
+          screen reader as Hindi and rendered it in the wrong type. */}
+      <span className="min-w-0 flex-1">
+        <span
+          {...titleLang}
+          className={`${titleLang.className} hi-tight line-clamp-2 text-title font-semibold`}
+        >
+          {c.title}
+        </span>
+        <span
+          {...chapterLang}
+          className={`${chapterLang.className} hi-tight mt-1 block truncate text-xs font-medium text-ink-soft`}
+        >
+          {chapterText}
+        </span>
+        {c.percent !== null ? (
+          <>
+            {/* The bar runs the full width of the card and the two
+                figures sit under it — printed page on the left, where
+                a reader looks to check they are where they think they
+                are, and the percentage on the right. */}
+            <ProgressBar percent={c.percent} showValue={false} className="mt-3" />
+            <span className="mt-1.5 flex items-baseline justify-between gap-2">
+              <span className="truncate text-xs font-medium text-ink-soft">
+                {c.page !== null && c.pageCount !== null
+                  ? `Page ${c.page} of ${c.pageCount}`
+                  : ""}
+              </span>
+              <span
+                className="shrink-0 text-xs font-bold tabular-nums"
+                style={{ color: "var(--ws-ink)" }}
+              >
+                {Math.round(c.percent)}%
+              </span>
+            </span>
+          </>
+        ) : (
+          <span
+            className="mt-2.5 block text-xs font-semibold"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            Resume →
+          </span>
+        )}
+      </span>
+    </Link>
   );
 }

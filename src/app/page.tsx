@@ -1,6 +1,5 @@
 import { BookRail } from "@/components/home/BookRail";
-import { ContinueReading } from "@/components/home/ContinueReading";
-import { ContinueAv } from "@/components/library/ContinueAv";
+import { ContinueRow } from "@/components/home/ContinueRow";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
 import { LibraryBand } from "@/components/home/LibraryBand";
 import { ShortsRail } from "@/components/home/ShortsRail";
@@ -82,7 +81,7 @@ export default async function OriginalsHome() {
         books two covers wide:
 
           Sutra (2/3)            | Upcoming shivirs (1/3)
-          Continue Reading, full width — when there is something to resume
+          Continue (books and recordings), full width — when there is something to resume
           Books, one row of covers across the page
           Shorts (2/3)           | Library (1/3)
           ─────────────────────────────────────────────
@@ -106,22 +105,11 @@ export default async function OriginalsHome() {
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-10">
         {sutra && <SutraCard sutra={sutra} className="lg:col-span-2 lg:row-start-1" />}
 
-        {/* Rails at every width, now that it has the page's full width on
-            desktop. `className` replaces the section's own top margin, which
-            doubled the grid's gap. */}
-        <ContinueReading
-          className="lg:col-span-3"
-          // The rail reuses the shelf fetched above rather than asking again;
-          // an empty list means that fetch failed, so let it try its own.
-          books={books.length > 0 ? books : undefined}
-        />
-
-        {/* The discourse stopped halfway, beside the book (15 Nov 2026, UX
-            audit IA3). Home brought back only the book; a recording left at
-            minute 40 was on the Media tab and My Journey and nowhere a reader
-            opening the app would see it. Absent until something has been
-            listened to — the rail draws nothing without a playhead. */}
-        <ContinueAv sources={[]} limit={3} heading="Continue Listening" className="lg:col-span-3" />
+        {/* One resume row, books and recordings together, newest first — see
+            `ContinueRow` (16 Nov 2026). It reuses the shelf fetched above
+            rather than asking again; an empty list means that fetch failed,
+            so the book cards try their own. */}
+        <ContinueRow books={books.length > 0 ? books : undefined} className="lg:col-span-3" />
 
         {/* Below the Sutra and the resume row, never above. It appears after
             hydration (it reads storage and the push state), and at the top it
