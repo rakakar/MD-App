@@ -9,6 +9,7 @@ import { chapterLine } from "@/lib/chapter";
 import { localProgress, syncPersonal } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import { contentLang } from "@/lib/script";
+import { timeAgo } from "@/lib/dates";
 import { finishedChapter, readingHomeFor, rememberReadingHome } from "@/lib/storage";
 import type { BookSummary } from "@/lib/types";
 
@@ -53,7 +54,13 @@ export function ContinueReading({
   bare = false,
   onStamps,
   minStamp = null,
+  showWhen = false,
+  includeFinished = false,
 }: {
+  /** "Yesterday", "3 Nov" on each card — My Journey and History (UX audit ST9) */
+  showWhen?: boolean;
+  /** History keeps a book read to its end; the Continue rails do not */
+  includeFinished?: boolean;
   /**
    * Cards only, as `<li>`s, for Home's mixed Continue row (`ContinueRow`):
    * no section, no heading, no list of its own. Each card carries a flex
@@ -122,7 +129,7 @@ export function ContinueReading({
       (p) =>
         readingHomeFor(p.book_code) === null &&
         // Read to the end and not started over — see `markBookFinished`.
-        finishedChapter(p.book_code) !== p.chapter_number
+        (includeFinished || finishedChapter(p.book_code) !== p.chapter_number)
     );
     if (notLibraryDocs.length === 0) {
       setCards([]);
@@ -198,7 +205,7 @@ export function ContinueReading({
       })
     );
     setCards(named.filter((c): c is ResumeCard => c !== null));
-  }, [limit, workspace, books]);
+  }, [limit, workspace, books, includeFinished]);
 
   // Two effects, not one. The cards come from this device's own progress, so
   // they draw at once; only the sync waits for the session. Gating the first
@@ -222,7 +229,9 @@ export function ContinueReading({
 
   const shown = minStamp ? cards.filter((c) => c.updatedAt >= minStamp) : cards;
   const list = shown.map((c) => {
-          const chapterText = chapterLine(c.chapter, c.chapterTitle);
+          const chapterText =
+            chapterLine(c.chapter, c.chapterTitle) +
+            (showWhen ? ` · ${timeAgo(Date.parse(c.updatedAt))}` : "");
           const titleLang = contentLang(c.title);
           const chapterLang = contentLang(chapterText);
           return (

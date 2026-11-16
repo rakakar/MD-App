@@ -18,6 +18,7 @@ import { itemIdFromResumeKey, syncPersonal } from "@/lib/personal";
 import { AUDIO_POSTER } from "@/lib/media";
 import { contentLang } from "@/lib/script";
 import { getPlayheads } from "@/lib/storage";
+import { timeAgo } from "@/lib/dates";
 import type { FileKind, LibraryFile } from "@/lib/types";
 import { orderOf } from "@/components/home/ContinueReading";
 
@@ -462,14 +463,22 @@ function AvRow({
             {audio ? "Audio" : "Video"}
           </span>
         </span>
-        {row.subtitle && (
-          <span
-            {...contentLang(row.subtitle)}
-            className={`${contentLang(row.subtitle).className} hi-tight mt-1.5 block truncate text-sm text-ink-soft`}
-          >
-            {row.subtitle}
+        {/* When, beside the album (UX audit ST9): "what was I listening to
+            last week" is answered by the day, which the row never printed. */}
+        <span className="mt-1.5 flex min-w-0 items-baseline gap-1.5 text-sm text-ink-soft">
+          {row.subtitle && (
+            <span
+              {...contentLang(row.subtitle)}
+              className={`${contentLang(row.subtitle).className} hi-tight min-w-0 truncate`}
+            >
+              {row.subtitle}
+            </span>
+          )}
+          <span className="shrink-0">
+            {row.subtitle ? "· " : ""}
+            {timeAgo(Date.parse(row.updatedAt))}
           </span>
-        )}
+        </span>
         {percent !== null && (
           <span className="mt-3 flex items-center gap-3">
             <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-canvas sm:max-w-xl">

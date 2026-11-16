@@ -16,6 +16,8 @@ import { localProgress, syncPersonal } from "@/lib/personal";
 import { getPrefs, setPrefs, type LocalProgress } from "@/lib/storage";
 import type { BookSummary } from "@/lib/types";
 
+const NO_SOURCES: never[] = [];
+
 /**
  * **My Journey is the one workspace behind sign-in.**
  *
@@ -178,15 +180,28 @@ export default function MyJourneyPage() {
             tier="eyebrow"
             limit={2}
             layout="pair"
+            showWhen
             className="mt-8"
           />
           <ContinueAv
-            sources={[]}
+            sources={NO_SOURCES}
             limit={3}
             heading="Listening & watching"
             note="Audio and video"
             variant="list"
           />
+          {/* The rails are the latest few; the trail is on its own page
+              (UX audit ST9). */}
+          {progress.length > 0 && (
+            <Link
+              href="/me/history"
+              className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold"
+              style={{ color: "var(--ws-ink)" }}
+            >
+              See all history
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          )}
 
           {progress.length === 0 && (
             <div className="mt-8">
