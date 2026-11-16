@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { INTENT_HINT, INTENT_LABEL, INTENTS, type Intent } from "@/lib/assistant/intent";
 import { searchGlossary } from "@/lib/glossary";
 import type { BookSummary, ParibhashaWord } from "@/lib/types";
@@ -43,6 +44,7 @@ export function Landing({
   /** a live Paribhasha match was tapped */
   onPick: (word: string) => void;
 }) {
+  const { user, loading } = useAuth();
   const q = text.trim();
   const books = shelf?.length ?? null;
   const matches = useMemo(
@@ -67,6 +69,15 @@ export function Landing({
         <p className="mt-1 text-sm text-ink-soft lg:mt-2 lg:text-center">
           Answers from {books ? `${books} original books` : "the original books"}
         </p>
+        {/* What it is and what it costs, before the first question (15 Nov
+            2026, UX audit AS1): a guest used to learn that Research is AI,
+            needs an account and has a daily limit only from a failure card
+            after asking. */}
+        {!loading && !user && (
+          <p className="mt-1 text-sm text-ink-soft lg:text-center">
+            Research answers are written by AI from cited passages, and need you to sign in.
+          </p>
+        )}
       </div>
 
       {/* One slot, two layers stacked in the same grid cell. Both are always

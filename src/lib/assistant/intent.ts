@@ -234,6 +234,6 @@ export const INTENT_PLACEHOLDER: Record<Intent | "auto", string> = {
 export const INTENT_HINT: Record<Intent, string> = {
   paribhasha: "Type a word — matching entries appear as you type.",
   books: "Type a phrase — every passage that uses it, book by book in reading order.",
-  research: "Ask any Question. Answer is built using Machine language from passages in the books, each one is cited.",
+  research: "Ask any question. The answer is written by AI from passages in the books, and each one is cited.",
   navigate: "Name a place in the app — the Assistant opens it instead of answering.",
 };

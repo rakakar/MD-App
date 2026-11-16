@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
+import { bookTitle, matchesQuery, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
 import { EmptyState, PageContainer, RowListSkeleton, ctaSecondary, useUndoToast } from "@/components/ui";
 import { unsaveNote } from "@/lib/personal";
@@ -22,7 +22,10 @@ export default function NotesPage() {
   /** the book the list is narrowed to, or null for all of them */
   const [book, setBook] = useState<string | null>(null);
   const all = rows?.notes ?? null;
-  const notes = all && book ? all.filter((n) => n.book_code === book) : all;
+  const [query, setQuery] = useState("");
+  const notes =
+    all &&
+    all.filter((n) => (!book || n.book_code === book) && matchesQuery(n, query, titles));
 
   const [undoToast, offerUndo] = useUndoToast();
 
@@ -47,11 +50,23 @@ export default function NotesPage() {
         titles={titles}
         book={book}
         onBook={setBook}
+        query={query}
+        onQuery={setQuery}
       />
 
       <div className="mt-5">
         {notes === null ? (
           <RowListSkeleton />
+        ) : notes.length === 0 && query.trim() ? (
+          <EmptyState
+            title={`Nothing in your notes matches “${query.trim()}”`}
+            hint="Try another word, or fewer letters."
+            action={
+              <button type="button" onClick={() => setQuery("")} className={ctaSecondary}>
+                Clear the search
+              </button>
+            }
+          />
         ) : notes.length === 0 ? (
           <EmptyState
             title="No notes yet"

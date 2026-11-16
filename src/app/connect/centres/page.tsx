@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CentreCard } from "@/components/connect/CentreCard";
+import { CentreList } from "@/components/connect/CentreList";
 import { CentreNoteCard } from "@/components/connect/CentreNote";
 import { CentresTabs } from "@/components/connect/CentresTabs";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui";
@@ -18,10 +18,9 @@ export const metadata: Metadata = {
 /**
  * Connect → Centres (comps 7–9).
  *
- * Rendered on the server, whole. Nothing on this screen is filtered, searched
- * or paged — the API sends every published centre in the manager's order — so
- * the only client-side state in the list is whether a given card is expanded,
- * and that belongs to the card.
+ * Rendered on the server, whole — the API sends every published centre in the
+ * manager's order. Since 15 Nov 2026 the list can be narrowed to one state,
+ * on the client, from what the page already holds (`CentreList`).
  *
  * The banner at the foot is the comps' teal call to the city-wise contacts. It
  * is drawn only when there is somebody behind it… which this page cannot know
@@ -53,14 +52,8 @@ export default async function CentresPage() {
           <ErrorState />
         </div>
       ) : centres.length > 0 ? (
-        // Two columns on a desktop, each card as tall as its own content.
-        <ul className="mt-4 flex flex-col gap-3.5 lg:mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
-          {centres.map((c) => (
-            <li key={c.id}>
-              <CentreCard centre={c} />
-            </li>
-          ))}
-        </ul>
+        // The list, with a state to narrow it to — see `CentreList`.
+        <CentreList centres={centres} />
       ) : (
         <div className="mt-4">
           <EmptyState

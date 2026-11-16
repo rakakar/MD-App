@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { bookTitle, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
+import { bookTitle, matchesQuery, PersonalHeader, usePersonalRows } from "@/components/me/PersonalTabs";
 import { SavedCardFooter, savedDate } from "@/components/me/SavedCard";
 import { EmptyState, PageContainer, RowListSkeleton, ctaSecondary, useUndoToast } from "@/components/ui";
 import { unsaveBookmark } from "@/lib/personal";
@@ -57,7 +57,10 @@ export default function BookmarksPage() {
   /** the book the list is narrowed to, or null for all of them */
   const [book, setBook] = useState<string | null>(null);
   const all = rows?.bookmarks ?? null;
-  const highlights = all && book ? all.filter((b) => b.book_code === book) : all;
+  const [query, setQuery] = useState("");
+  const highlights =
+    all &&
+    all.filter((b) => (!book || b.book_code === book) && matchesQuery(b, query, titles));
 
   const [undoToast, offerUndo] = useUndoToast();
 
@@ -82,11 +85,23 @@ export default function BookmarksPage() {
         titles={titles}
         book={book}
         onBook={setBook}
+        query={query}
+        onQuery={setQuery}
       />
 
       <div className="mt-5">
         {highlights === null ? (
           <RowListSkeleton />
+        ) : highlights.length === 0 && query.trim() ? (
+          <EmptyState
+            title={`Nothing in your highlights matches “${query.trim()}”`}
+            hint="Try another word, or fewer letters."
+            action={
+              <button type="button" onClick={() => setQuery("")} className={ctaSecondary}>
+                Clear the search
+              </button>
+            }
+          />
         ) : highlights.length === 0 ? (
           <EmptyState
             title="Nothing highlighted yet"

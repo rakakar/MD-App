@@ -1,5 +1,6 @@
 import { BookRail } from "@/components/home/BookRail";
 import { ContinueReading } from "@/components/home/ContinueReading";
+import { ContinueAv } from "@/components/library/ContinueAv";
 import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
 import { LibraryBand } from "@/components/home/LibraryBand";
 import { ShortsRail } from "@/components/home/ShortsRail";
@@ -116,6 +117,13 @@ export default async function OriginalsHome() {
           // an empty list means that fetch failed, so let it try its own.
           books={books.length > 0 ? books : undefined}
         />
+
+        {/* The discourse stopped halfway, beside the book (15 Nov 2026, UX
+            audit IA3). Home brought back only the book; a recording left at
+            minute 40 was on the Media tab and My Journey and nowhere a reader
+            opening the app would see it. Absent until something has been
+            listened to — the rail draws nothing without a playhead. */}
+        <ContinueAv sources={[]} limit={3} heading="Continue Listening" className="lg:col-span-3" />
 
         {/* Below the Sutra and the resume row, never above. It appears after
             hydration (it reads storage and the push state), and at the top it

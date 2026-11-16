@@ -103,7 +103,9 @@ export const STAGES: Stage[] = [
     level: 1,
     hi: "परिचय शिविर",
     en: "Jeevan Vidya Parichay",
-    note: "7-day camp — human purpose, family, society, nature. Suggested with more than one Prabodhak.",
+    // What a shivir is, said once where a newcomer first meets the word
+    // (15 Nov 2026, UX audit ST1): "Just exploring" lands here too.
+    note: "A shivir is a study camp led by a prabodhak. This first one runs 7 days — human purpose, family, society, nature. Suggested with more than one Prabodhak.",
     duration: "1–2 camps over 6 months to 1 year",
     // JVEP — जीवन विद्या एक परिचय — is this camp's reading, and ABVP the next
     // one's; both are filed `parichay`, so the stage takes the genre and
@@ -235,6 +237,8 @@ const YT = "https://www.youtube.com";
  */
 const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
   1: [
+    // First: this stage *is* a camp, and nothing on it said where to find one.
+    { title: "आगामी शिविर", href: "/connect", kind: "link", note: "Upcoming camps" },
     { title: "परिचयात्मक संकलन", href: journeyFolderHref(77), kind: "folder", note: "Introductory reading · PDF" },
     // 229, not 26: the 1997 talks were re-filed under Originals › ऑडियो and
     // the old folder id answers 404 now.

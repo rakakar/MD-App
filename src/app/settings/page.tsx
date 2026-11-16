@@ -8,6 +8,7 @@ import { NotificationSetting } from "@/components/push/NotificationSetting";
 import { AccountCard } from "@/components/settings/AccountCard";
 import { AppearanceCard } from "@/components/settings/AppearanceCard";
 import { PersonalDetailsSection } from "@/components/settings/PersonalDetailsCard";
+import { InstallCard, useInstallSteps } from "@/components/settings/InstallCard";
 import { ReadingCard } from "@/components/settings/ReadingCard";
 import { CARD, SettingsSection, SwitchRow, useToast } from "@/components/settings/parts";
 import { ChevronRight, DownloadIcon, SignOutIcon } from "@/components/shell/icons";
@@ -143,6 +144,9 @@ export default function SettingsPage() {
           <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
         </Link>
       </SettingsSection>
+
+      {/* Absent when the app is already installed — see `InstallCard`. */}
+      <InstallSection desktop={desktop} />
 
       <SettingsSection id="privacy" title="Privacy">
         <div className={`${CARD} ${desktop ? "px-7" : "px-5"} py-5`}>
@@ -290,5 +294,16 @@ function SectionNav() {
         })}
       </ul>
     </nav>
+  );
+}
+
+/** The install steps, as a section of its own — on a phone only. */
+function InstallSection({ desktop }: { desktop: boolean }) {
+  const phone = useInstallSteps();
+  if (desktop || !phone) return null;
+  return (
+    <SettingsSection id="install" title="Install">
+      <InstallCard className={`${CARD} px-5 py-5`} />
+    </SettingsSection>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useGlossary } from "@/components/reader/GlossaryProvider";
 import { BackIcon, CloseIcon } from "@/components/shell/icons";
@@ -269,6 +270,28 @@ export function ParibhashaTrailSheet({
               size="md"
             />
           )}
+        </div>
+
+        {/* The way on from a word met while reading (15 Nov 2026, UX audit
+            IA4): its own page — where it occurs, related words — and the
+            whole A to Z, which no button in the app led to. */}
+        <div className="mt-3 flex flex-wrap gap-x-5 border-t border-(--reader-rule) pt-1">
+          {entry && (
+            <Link
+              href={`/paribhasha/${entry.id}`}
+              className="flex min-h-11 items-center text-sm font-semibold"
+              style={{ color: "var(--ws-ink)" }}
+            >
+              Where it occurs →
+            </Link>
+          )}
+          <Link
+            href="/paribhasha"
+            className="flex min-h-11 items-center text-sm font-semibold"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            All words, A to Z →
+          </Link>
         </div>
       </div>
       </TrailContext.Provider>

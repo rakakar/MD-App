@@ -85,6 +85,7 @@ export function ContinueAv({
   heading = "Resume",
   variant = "rail",
   note,
+  className,
 }: {
   /**
    * The page's collections — every A/V file on screen, still under the folder
@@ -110,6 +111,8 @@ export function ContinueAv({
   variant?: "rail" | "list";
   /** a short line beside the heading — "Audio and video" */
   note?: string;
+  /** the rail's own spacing, replaced — Home lays it out in its grid */
+  className?: string;
 }) {
   const { user, loading } = useAuth();
   const player = usePlayer();
@@ -331,7 +334,7 @@ export function ContinueAv({
   }
 
   return (
-    <section aria-label={label} className="mt-5">
+    <section aria-label={label} className={className ?? "mt-5"}>
       <h2 className="mb-2.5 text-xs font-bold uppercase tracking-[0.09em] text-ink-soft">
         {heading}
       </h2>

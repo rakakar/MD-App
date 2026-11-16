@@ -173,6 +173,8 @@ export function PersonalHeader({
   titles,
   book,
   onBook,
+  query,
+  onQuery,
 }: {
   active: PersonalTab;
   rows: PersonalRows | null;
@@ -180,6 +182,9 @@ export function PersonalHeader({
   /** the book being filtered to, or `null` for all of them */
   book: string | null;
   onBook: (code: string | null) => void;
+  /** words to find in the passages and notes — see `matchesQuery` */
+  query?: string;
+  onQuery?: (q: string) => void;
 }) {
   const { user, loading } = useAuth();
   const anything = rows !== null && rows.bookmarks.length + rows.notes.length > 0;
@@ -259,9 +264,36 @@ export function PersonalHeader({
           book={book}
           onBook={onBook}
         />
+        {/* A box to find a word in what was kept (15 Nov 2026, UX audit
+            ST5): revising, a reader remembers a word they wrote and not the
+            day. Offered once the list is long enough to need it. */}
+        {onQuery && (active === "notes" ? rows?.notes.length ?? 0 : rows?.bookmarks.length ?? 0) >= 4 && (
+          <input
+            type="search"
+            value={query ?? ""}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder={active === "notes" ? "Find in your notes" : "Find in your highlights"}
+            aria-label={active === "notes" ? "Find in your notes" : "Find in your highlights"}
+            className="mt-2 min-h-11 w-full rounded-control border border-rule bg-card px-3.5 text-base text-ink outline-none placeholder:text-ink-soft focus:border-(--ws-ink)"
+          />
+        )}
       </div>
     </>
   );
+}
+
+/**
+ * Whether a saved row holds the words typed: in the passage, the note, or the
+ * book's name. Case-folded for Roman letters; Devanagari has no case.
+ */
+export function matchesQuery(
+  row: { text_hi?: string; text?: string; book_code: string },
+  query: string,
+  titles: BookTitles
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [row.text_hi, row.text, bookTitle(row.book_code, titles)].some((s) => s?.toLowerCase().includes(q));
 }
 
 /**

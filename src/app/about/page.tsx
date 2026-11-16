@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { BackButton } from "@/components/ui/BackButton";
+import { InstallCard } from "@/components/settings/InstallCard";
 import pkg from "../../../package.json";
 
 export const metadata: Metadata = { title: "About" };
@@ -58,6 +59,8 @@ export default function AboutPage() {
               ))}
             </ul>
           </Section>
+
+          <InstallCard className="rounded-2xl border border-rule bg-card p-4" />
 
           <Section title="Official website">
             <a

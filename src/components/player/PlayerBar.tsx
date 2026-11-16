@@ -140,11 +140,16 @@ function PlayerBarInner({
     source.kind === "tts" || source.kind === "device"
       ? { code: source.bookCode, number: source.chapterNumber }
       : null;
+  const chapterPath = chapter ? `/books/${encodeURIComponent(chapter.code)}/${chapter.number}` : null;
+  // exact, so chapter 1 is not chapter 10
+  const onChapter = !!chapterPath && (path === chapterPath || path.startsWith(`${chapterPath}/`));
+  // Goes to the playing chapter unless it is the one on screen. It used to go
+  // only when no reader of any kind was showing — so from another chapter, a
+  // PDF or a Short the tap did nothing, and Audio Mode then sprang open the
+  // next time that chapter was visited (15 Nov 2026, UX audit AV2).
   const expand = chapter
     ? () => {
-        if (!reader) {
-          router.push(`/books/${encodeURIComponent(chapter.code)}/${chapter.number}`);
-        }
+        if (!onChapter && chapterPath) router.push(chapterPath);
         player.openAudioMode();
       }
     : () => player.openAudioMode();
@@ -167,9 +172,6 @@ function PlayerBarInner({
   // they woke the phone. A recording's player opens where they stand, as
   // before; chapter audio does so only when its chapter is already on
   // screen. Elsewhere the pill stays, one tap from the same place.
-  const chapterPath = chapter ? `/books/${encodeURIComponent(chapter.code)}/${chapter.number}` : null;
-  // exact, so chapter 1 is not chapter 10
-  const onChapter = !!chapterPath && (path === chapterPath || path.startsWith(`${chapterPath}/`));
   const onReturn = chapter && !onChapter ? null : expand;
   const expandRef = useRef(onReturn);
   const playingRef = useRef(player.playing);
