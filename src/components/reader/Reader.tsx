@@ -324,6 +324,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [resumeHint, setResumeHint] = useState<ResumeHint | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
+  const [tocTab, setTocTab] = useState<"contents" | "highlights">("contents");
   const [hint, setHint] = useState(false);
   /**
    * The press-and-hold coach card, on a finger's first chapter (16 Nov 2026,
@@ -2788,15 +2789,17 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         hidden={!chrome.visible}
         bottom={dockOffset}
         position={positionLabel}
-        onContents={() => setTocOpen(true)}
-        onMark={
-          touchSel.enabled
-            ? () => {
-                const at = noteHere ? paraByRef.get(noteHere.canonical_ref) : undefined;
-                if (at) setSelection({ para: at, text: "" });
-              }
-            : undefined
-        }
+        onContents={() => {
+          setTocTab("contents");
+          setTocOpen(true);
+        }}
+        // The pencil opens what it opens on the desktop bar: this book's
+        // highlights and notes (designer's call, 16 Nov 2026). It used to
+        // select the passage on the reading line and open the mark bar.
+        onHighlights={() => {
+          setTocTab("highlights");
+          setTocOpen(true);
+        }}
         // Only on a printed book: the sheet asks for a printed page number, and
         // a digital-first edition has none to ask for.
         onPosition={book.book_type === "print" ? () => setGotoOpen(true) : undefined}
@@ -2816,10 +2819,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         }
       />
 
-      {/* After the first highlight or note: where they are kept. On a phone
-          that is the Contents button — the list is a tab of its sheet — and
-          on a desktop the bar's own highlights button; both carry the anchor
-          and only the one on screen has a box. */}
+      {/* After the first highlight or note: where they are kept — the
+          pencil, on the phone's bottom bar and on the desktop bar alike; both
+          carry the anchor and only the one on screen has a box. */}
       {marksHint && !modalOpen && !showPanel && (
         <CoachMark
           anchor="[data-marks-anchor]"
@@ -2827,14 +2829,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           title="Your highlights and notes are kept here"
           onDone={() => setMarksHint(false)}
         >
-          {desktop
-            ? "Open this to see everything you have marked in this book, and to go straight back to it."
-            : "Open Contents and choose Highlights to see everything you have marked in this book, and to go straight back to it."}
+          Open this to see everything you have marked in this book, and to go straight back to it.
         </CoachMark>
       )}
 
-      {/* Press and hold, once, pointing at the Mark button the bar carries
-          for the same thing (FR9). After the marks hint, never over it. */}
+      {/* Press and hold, once (FR9), pointing at the pencil where what it
+          makes is kept. After the marks hint, never over it. */}
       {holdCoach && !desktop && !modalOpen && !marksHint && (
         <CoachMark
           anchor="[data-hold-anchor]"
@@ -2845,8 +2845,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             setPrefs({ holdHintShown: true });
           }}
         >
-          Then pick a colour to highlight it, or Note to write about it. This button does the same for the
-          passage you are reading.
+          Then pick a colour to highlight it, or Note to write about it. Everything you mark is kept under
+          this button.
         </CoachMark>
       )}
 
@@ -2944,6 +2944,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {tocMounted && (
         <TocSheet
           open={tocOpen}
+          initialTab={tocTab}
           onClose={() => setTocOpen(false)}
           bookCode={book.code}
           bookTitle={book.title_hi}

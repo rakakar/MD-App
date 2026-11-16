@@ -54,7 +54,10 @@ export function TocSheet({
   onSelectRef,
   onChanged,
   revision = 0,
+  initialTab = "contents",
 }: {
+  /** the tab it opens on: Contents from Contents, Highlights from the pencil */
+  initialTab?: Tab;
   /** bumped by the reader when a delete is undone, so the lists re-read */
   revision?: number;
   open: boolean;
@@ -114,12 +117,13 @@ export function TocSheet({
     if (user) void syncPersonal().then(reload);
   }, [open, user, loading, reload, revision]);
 
-  // Opens on Contents each time, because that is what the button that opened it
-  // is called. A sheet that reopens on the tab you left is friendlier right up
-  // until the control says "Contents" and shows something else.
+  // Opens on the tab named by the button that opened it, each time — Contents
+  // from Contents, Highlights from the pencil. A sheet that reopens on the tab
+  // you left is friendlier right up until the control says one thing and
+  // shows another.
   useEffect(() => {
-    if (open) setTab("contents");
-  }, [open]);
+    if (open) setTab(initialTab);
+  }, [open, initialTab]);
 
   // open onto where you are, not onto chapter 1
   useEffect(() => {

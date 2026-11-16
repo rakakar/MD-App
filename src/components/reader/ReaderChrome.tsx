@@ -314,7 +314,7 @@ export function ReaderBottomBar({
   bottom,
   position,
   onContents,
-  onMark,
+  onHighlights,
   onPosition,
   onListen,
   canListen,
@@ -324,12 +324,8 @@ export function ReaderBottomBar({
 }: {
   hidden: boolean;
   bottom: string;
-  /**
-   * Select the passage at the top of the page and open the highlight / note /
-   * share bar — the button a press-and-hold otherwise stands in for. See the
-   * button below. Absent where the reader's own touch selection is off.
-   */
-  onMark?: () => void;
+  /** this book's highlights and notes — the Contents sheet on its Highlights tab */
+  onHighlights: () => void;
   /** "30 / 178" */
   position: string;
   onContents: () => void;
@@ -377,29 +373,20 @@ export function ReaderBottomBar({
           reader who widens the margins would otherwise watch the bottom row
           step inward while the top row stayed put. */}
       <div className="flex items-center gap-2 px-4 py-1.5">
-        {/* `data-marks-anchor`: on a phone, highlights and notes are a tab
-            of the Contents sheet, so the first-save coach mark points here. */}
-        <span data-marks-anchor className="flex shrink-0 rounded-control">
-          <SquareBtn onClick={onContents} label="Contents">
-            <TocIcon className="h-5 w-5" />
+        <SquareBtn onClick={onContents} label="Contents">
+          <TocIcon className="h-5 w-5" />
+        </SquareBtn>
+        {/* Highlights and notes — the same door as the desktop bar's pencil
+            (designer's call, 16 Nov 2026). It opens the Contents sheet on its
+            Highlights tab. From 15 Nov it was "Mark a passage" (UX audit IN9),
+            selecting the passage on the reading line; press and hold is the
+            way to mark now, and the coach card that teaches it points here,
+            at where the marks are kept. Both coach cards anchor on it. */}
+        <span data-marks-anchor data-hold-anchor className="flex shrink-0 rounded-control">
+          <SquareBtn onClick={onHighlights} label="Highlights and notes">
+            <Icon name="highlights" className="h-5 w-5" />
           </SquareBtn>
         </span>
-        {/* Mark a passage (15 Nov 2026, UX audit IN9). On a touch screen the
-            book's text is selected by a 450ms press and hold that nothing on
-            screen announced, and highlight, note, share, copy and report all
-            waited behind it. This is the visible way in: it takes the passage
-            on the reading line — the one Resume would return to — and opens
-            the same bar a press and hold does. Beside Contents, under the
-            thumb, because that is where its results are kept. */}
-        {onMark && (
-          /* `data-hold-anchor`: the first chapter's press-and-hold coach
-             card points here (UX audit FR9). */
-          <span data-hold-anchor className="flex shrink-0 rounded-control">
-            <SquareBtn onClick={onMark} label="Mark a passage">
-              <Icon name="highlights" className="h-5 w-5" />
-            </SquareBtn>
-          </span>
-        )}
 
         {/* The comps put this in its own sunk field rather than loose on the
             bar — it is a readout, and a readout that looks like a label gets
