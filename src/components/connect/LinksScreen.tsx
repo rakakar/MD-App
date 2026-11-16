@@ -87,6 +87,33 @@ function GroupIcon({ icon }: { icon: string }) {
 
 /** One link. Every one of these leaves the app, so every one of them says so —
  *  a new tab, `rel="noopener"`, and the arrow the comps draw. */
+/**
+ * Where a link goes, named from its host (16 Nov 2026, UX audit CN9): every
+ * row ends in the same "leaves the app" glyph, so a WhatsApp group to join, a
+ * YouTube channel and a Facebook page looked alike until tapped. Only the
+ * places a reader knows by name; anything else says nothing more than before.
+ */
+const DESTINATIONS: [RegExp, string][] = [
+  [/(^|\.)(whatsapp\.com|wa\.me)$/, "WhatsApp"],
+  [/(^|\.)(youtube\.com|youtu\.be)$/, "YouTube"],
+  [/(^|\.)(facebook\.com|fb\.com|fb\.me)$/, "Facebook"],
+  [/(^|\.)instagram\.com$/, "Instagram"],
+  [/(^|\.)(t\.me|telegram\.me)$/, "Telegram"],
+  [/(^|\.)(twitter\.com|x\.com)$/, "X"],
+  [/(^|\.)drive\.google\.com$/, "Google Drive"],
+  [/(^|\.)(docs|forms)\.google\.com$/, "Google"],
+  [/(^|\.)pcloud\.(com|link)$/, "pCloud"],
+];
+
+function destination(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return DESTINATIONS.find(([re]) => re.test(host))?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function LinkRowView({
   row,
   indent = false,
@@ -98,6 +125,7 @@ function LinkRowView({
   wide?: boolean;
 }) {
   const l = contentLang(row.label);
+  const dest = destination(row.url);
   return (
     <a
       href={row.url}
@@ -111,6 +139,7 @@ function LinkRowView({
       <span {...l} className={`${l.className} min-w-0 flex-1`}>
         {row.label}
       </span>
+      {dest && <span className="mt-0.5 shrink-0 text-xs text-ink-soft">{dest}</span>}
       <span aria-hidden className="mt-0.5 shrink-0" style={{ color: "var(--ws-ink)" }}>
         {wide ? <ArrowUpRight /> : <ExternalLinkIcon className="h-4 w-4" />}
       </span>
@@ -168,7 +197,14 @@ function Group({
           >
             <GroupIcon icon={group.icon} />
           </span>
-          <span className="min-w-0 flex-1 text-title font-semibold">{group.title}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-title font-semibold">{group.title}</span>
+            {/* How much is inside before opening it, as desktop prints it
+                (16 Nov 2026, UX audit CN9). */}
+            <span className="block text-xs tabular-nums text-ink-soft">
+              {linkCount(group)} {linkCount(group) === 1 ? "link" : "links"}
+            </span>
+          </span>
           <span
             aria-hidden
             className={`shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
@@ -335,7 +371,9 @@ function LinksDesktop({ groups }: { groups: LinkGroup[] }) {
 }
 
 export function LinksScreen({ groups }: { groups: LinkGroup[] }) {
-  const [open, setOpen] = useState<string | null>(null);
+  // The first group open on arrival, as desktop always shows one (UX audit
+  // CN9): a stack of closed headings was a screen of nothing to read.
+  const [open, setOpen] = useState<string | null>(groups[0]?.code ?? null);
 
   return (
     <>

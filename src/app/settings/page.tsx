@@ -7,11 +7,10 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationSetting } from "@/components/push/NotificationSetting";
 import { AccountCard } from "@/components/settings/AccountCard";
 import { AppearanceCard } from "@/components/settings/AppearanceCard";
-import { PersonalDetailsSection } from "@/components/settings/PersonalDetailsCard";
 import { InstallCard, useInstallSteps } from "@/components/settings/InstallCard";
 import { ReadingCard } from "@/components/settings/ReadingCard";
 import { CARD, SettingsSection, SwitchRow, useToast } from "@/components/settings/parts";
-import { ChevronRight, DownloadIcon, SignOutIcon } from "@/components/shell/icons";
+import { ChevronRight, DownloadIcon } from "@/components/shell/icons";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import { BackButton } from "@/components/ui/BackButton";
@@ -33,7 +32,7 @@ import { FONT_SCALES, getPrefs, nearestStep, setPrefs, type Prefs } from "@/lib/
  * style). Both are the same settings in the same order.
  */
 export default function SettingsPage() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const display = useDisplay();
   const [undoToast, offerUndo] = useUndoToast();
   /**
@@ -92,9 +91,26 @@ export default function SettingsPage() {
         <AccountCard onSaved={showToast} />
       </SettingsSection>
 
-      {/* Mobile, email, state and city — asked once on a new account, changed
-          here after. Signed in only; renders its own section. */}
-      <PersonalDetailsSection desktop={desktop} onSaved={showToast} />
+      {/* **One home per thing** (16 Nov 2026, UX audit IA8). Settings and
+          Profile both held the personal details card, Downloads and Sign out,
+          and a reader told "change it in Settings" could be on Profile looking
+          at the same fields. Profile is who you are — details, study stage,
+          sign-in, Sign out; Settings is how the app behaves. The details are a
+          row here that goes there. Signed in only, as the card was. */}
+      {!loading && user && (
+        <SettingsSection id="details" title="Personal details">
+          <Link
+            href="/profile"
+            className={`${CARD} flex min-h-16 items-center gap-4 ${desktop ? "px-7" : "px-5"} py-4 transition-colors hover:bg-inset`}
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-title text-ink">Name, phone and city</span>
+              <span className="block text-sm text-ink-soft">On your Profile</span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
+          </Link>
+        </SettingsSection>
+      )}
 
       <SettingsSection
         id="appearance"
@@ -171,20 +187,7 @@ export default function SettingsPage() {
             : "mt-8 flex flex-col items-stretch gap-4 text-center"
         }
       >
-        {!loading && user && (
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className={
-              desktop
-                ? "inline-flex min-h-11 items-center gap-2 rounded-control border border-rule bg-card px-5 text-sm font-semibold text-accent-ink transition-colors hover:bg-inset"
-                : `${CARD} min-h-14 text-title font-semibold text-accent-ink`
-            }
-          >
-            {desktop && <SignOutIcon className="h-4.5 w-4.5" />}
-            Sign out
-          </button>
-        )}
+        {/* Sign out lives on Profile now — see "One home per thing" above. */}
         <p className="text-xs text-ink-soft">MD Study · version {APP_VERSION}</p>
       </footer>
     </>

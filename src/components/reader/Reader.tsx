@@ -1180,14 +1180,24 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const swallowClick = useRef(false);
 
   // ---- gestures: tap zones, swipe, tap-to-toggle-chrome ----
-  const gesture = useRef<{ x: number; y: number; t: number } | null>(null);
+  const gesture = useRef<{ x: number; y: number; t: number; word?: boolean } | null>(null);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     const el = e.target as HTMLElement;
+    /**
+     * **While the bars are hidden, a marked word is page like any other**
+     * (16 Nov 2026, UX audit RD9). The Paribhasha underline marks about a
+     * third of the words, so "tap the middle for controls" opened a meaning
+     * one tap in three — and in page mode a tap is the only way back to the
+     * bars. Now a tap on a word brings the bars back; with them showing, the
+     * same tap opens its meaning, as the tip says.
+     */
+    const word = !chrome.visible && !!el.closest("[data-paribhasha]");
     // never hijack a control, a link, a glossary word, or a horizontally
     // scrollable table
     if (
+      !word &&
       el.closest(
         "[data-reader-chrome],[data-paribhasha],[data-footnote],a,button,input,textarea,select,label,table"
       )
@@ -1203,8 +1213,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       gesture.current = null;
       return;
     }
-    gesture.current = { x: e.clientX, y: e.clientY, t: Date.now() };
-  }, []);
+    gesture.current = { x: e.clientX, y: e.clientY, t: Date.now(), word };
+  }, [chrome.visible]);
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
@@ -1243,6 +1253,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       }
 
       if (Math.abs(dx) < 12 && Math.abs(dy) < 12 && dt < 400) {
+        // The click that follows must not also open the word's meaning.
+        if (g.word) swallowClick.current = true;
         const zone = g.x / window.innerWidth;
         if (mode === "page" && tapZones && !chrome.visible) {
           if (zone < 0.28) return advance(-1);
@@ -2805,7 +2817,9 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
               audit IN9): until then the only place "press and hold" was
               written was the empty Highlights list, met after failing. */}
           <p className="rounded-tile bg-black/75 px-4 py-2 text-center text-xs leading-relaxed text-white">
-            Tap the middle of the page for controls.
+            Tap the page for controls; with them showing,
+            <br />
+            tap an underlined word for its meaning.
             <br />
             Press and hold a line to highlight, note or share it.
           </p>

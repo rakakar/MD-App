@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -158,6 +159,41 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 
 type Phase = "form" | "sending" | "sent" | "queued";
 
+/**
+ * After Send (16 Nov 2026, UX audit TR6). "Thank you — we've got it." closed
+ * itself in under two seconds and said nothing about what happens next, though
+ * My feedback shows each report's status, the resolution and any reply. Signed
+ * in, it now says that is where the answer will be, with the way there.
+ */
+function Thanks({
+  phase,
+  signedIn,
+  onClose,
+}: {
+  phase: Phase;
+  signedIn: boolean;
+  onClose: () => void;
+}) {
+  if (phase === "queued") {
+    return <p className="text-center text-sm">Saved. It’ll send itself when you’re back online.</p>;
+  }
+  if (!signedIn) return <p className="text-center text-sm">Thank you — we’ve got it.</p>;
+  return (
+    <div className="text-center text-sm">
+      <p className="font-semibold">Thank you — we’ve got it.</p>
+      <p className="mt-1 text-ink-soft">We’ll answer in My feedback, where you can see what happens to it.</p>
+      <Link
+        href="/feedback"
+        onClick={onClose}
+        className="mt-3 inline-flex min-h-11 items-center font-semibold underline underline-offset-2"
+        style={{ color: "var(--ws-ink)" }}
+      >
+        Open My feedback
+      </Link>
+    </div>
+  );
+}
+
 function FeedbackSheet({
   prefill,
   onClose,
@@ -241,8 +277,10 @@ function FeedbackSheet({
       track("feedback_submit", { kind, source: openedFrom, queued: result === "queued" ? 1 : 0 });
       setPhase(result === "queued" ? "queued" : "sent");
       // Long enough to read the confirmation, short enough that nobody has to
-      // dismiss it before getting back to the page they were on.
-      window.setTimeout(onClose, 1800);
+      // dismiss it before getting back to the page they were on. Not when it
+      // says where the answer will be (UX audit TR6): that link stays until
+      // the reader takes it or closes the sheet.
+      if (!(user && result !== "queued")) window.setTimeout(onClose, 1800);
     } catch (e) {
       const status = (e as { status?: number }).status;
       setPhase("form");
@@ -355,11 +393,9 @@ function FeedbackSheet({
           on a heading, and a heading brings its own leading with it.) */}
       <div className="px-5 pb-5 pt-3">
         {phase === "sent" || phase === "queued" ? (
-          <p className="pb-6 pt-3 text-center text-sm">
-            {phase === "sent"
-              ? "Thank you — we’ve got it."
-              : "Saved. It’ll send itself when you’re back online."}
-          </p>
+          <div className="pb-6 pt-3">
+            <Thanks phase={phase} signedIn={!!user} onClose={onClose} />
+          </div>
         ) : (
           <>
             <div className="flex flex-wrap gap-2">
@@ -499,9 +535,9 @@ function FeedbackDialog({
       </div>
 
       {done ? (
-        <p className="px-6 pb-10 pt-4 text-center text-sm">
-          {phase === "sent" ? "Thank you — we’ve got it." : "Saved. It’ll send itself when you’re back online."}
-        </p>
+        <div className="px-6 pb-10 pt-4">
+          <Thanks phase={phase} signedIn={signedIn} onClose={onClose} />
+        </div>
       ) : (
         <>
           <div className="px-6 pb-5">
