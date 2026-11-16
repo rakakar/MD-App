@@ -119,6 +119,13 @@ type RawRow = Record<string, unknown>;
 const withRef = (rows: RawRow[]): RawRow[] =>
   rows.filter((r) => typeof r.canonical_ref === "string" && r.canonical_ref !== "");
 
+/**
+ * Set when the server refused this device's session — expired, or signed out
+ * elsewhere — so the reader is told once instead of quietly becoming a guest
+ * (15 Nov 2026, UX audit FR10). Cleared by the notice, or by signing in.
+ */
+export const SESSION_ENDED_KEY = "md.session.ended";
+
 export async function getMe(): Promise<MeUser | null> {
   // No token means signed out, which is the common case — don't spend a
   // round-trip on every cold load to be told so.
@@ -136,6 +143,12 @@ export async function getMe(): Promise<MeUser | null> {
     const status = (e as { status?: number })?.status;
     if (status === 401 || status === 403) {
       setSessionToken(null);
+      // Said once, on the next screen — see `SessionEndedNotice`.
+      try {
+        localStorage.setItem(SESSION_ENDED_KEY, "1");
+      } catch {
+        // blocked storage: signed out without the note, as before
+      }
       return null;
     }
     return cachedUser();

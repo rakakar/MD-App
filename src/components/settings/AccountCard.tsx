@@ -53,7 +53,11 @@ export function AccountCard({ onSaved }: { onSaved: (message: string) => void })
   if (!user) {
     return (
       <div className={`${CARD} flex items-center justify-between gap-3 p-5 lg:px-7`}>
-        <p className="text-sm text-ink-soft">Reading as guest — saved on this device only.</p>
+        {/* The consequence, not just the fact (UX audit TR1). */}
+        <p className="text-sm text-ink-soft">
+          Reading as a guest. Your highlights and notes are only on this device, and clearing its
+          browser data removes them.
+        </p>
         <Link href="/login?next=/settings" className={ctaPrimary} style={{ background: "var(--ws-color)" }}>
           Sign in
         </Link>
@@ -85,7 +89,10 @@ export function AccountCard({ onSaved }: { onSaved: (message: string) => void })
         <p className="truncate text-title font-semibold text-ink">{name || contact}</p>
         {name && contact && <p className="truncate text-sm text-ink-soft">{contact}</p>}
       </div>
-      {desktop && <SyncPill />}
+      {/* On a phone too (15 Nov 2026, UX audit TR1): it was desktop-only, so
+          the device most notes are written on never said whether they had
+          reached the account. */}
+      <SyncPill />
     </div>
   );
 

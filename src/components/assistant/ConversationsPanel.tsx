@@ -7,7 +7,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { CloseIcon, PlusIcon } from "@/components/shell/icons";
 import {
   CONVERSATIONS_CHANGED,
-  deleteConversation,
   kindOf,
   listConversations,
   type Conversation,
@@ -17,6 +16,7 @@ import { dayMonth } from "@/lib/dates";
 import { signInHref } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
 import { IntentGlyph, PanelLeftGlyph, SearchGlyph } from "./icons";
+import { ConversationUndoProvider, useDeleteConversation } from "./ConversationUndo";
 import { INTENT_COLOR } from "./parts";
 
 /**
@@ -84,11 +84,12 @@ export function ConversationsPanel({
   const empty = all !== null && all.length === 0;
 
   return (
-    /* Opens and closes by its width, not by being mounted: the column slides
+    <ConversationUndoProvider>
+    {/* Opens and closes by its width, not by being mounted: the column slides
        while the chat beside it widens into the room, rather than the page
        jumping by 280px. The contents keep their own fixed width inside the
        clip, so the list never reflows mid-slide — it is uncovered, not
-       squeezed. Hidden, it is `inert`, so nothing in it takes focus. */
+       squeezed. Hidden, it is `inert`, so nothing in it takes focus. */}
     <aside
       aria-label="Conversations"
       aria-hidden={!open || undefined}
@@ -182,6 +183,7 @@ export function ConversationsPanel({
       )}
     </div>
     </aside>
+    </ConversationUndoProvider>
   );
 }
 
@@ -212,6 +214,7 @@ function Filter({ label, on, onClick }: { label: string; on: boolean; onClick: (
 }
 
 function Row({ c, on, now }: { c: Conversation; on: boolean; now: number }) {
+  const remove = useDeleteConversation();
   const k = kindOf(c);
   const t = contentLang(c.title);
   return (
@@ -240,9 +243,7 @@ function Row({ c, on, now }: { c: Conversation; on: boolean; now: number }) {
       </Link>
       <button
         type="button"
-        onClick={() => {
-          if (window.confirm(`Delete “${c.title}”? This can’t be undone.`)) deleteConversation(c.id);
-        }}
+        onClick={() => remove(c)}
         aria-label={`Delete “${c.title}”`}
         // 44px, and hidden only where a pointer can hover — a touch tablet
         // wide enough for this panel never saw the ✕ (15 Nov 2026). The row's

@@ -370,7 +370,14 @@ export function PdfReader({
   const listRef = useRef<HTMLUListElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   // Never locked: this reader has no sheet or dialog to pin the chrome open for.
-  const chrome = useReaderChrome("scroll", false, scrollerRef);
+  /**
+   * "Go to page", typed (15 Nov 2026, UX audit RD10). A 300-page scan was
+   * reached page by page — scrolling, or Prev and Next — while the bar said
+   * "Page 12 of 300" as a label. Tapping it now opens a number box; the bar
+   * stays up while it is open.
+   */
+  const [gotoDraft, setGotoDraft] = useState<string | null>(null);
+  const chrome = useReaderChrome("scroll", gotoDraft !== null, scrollerRef);
   const [tapZones, setTapZones] = useState(DEFAULT_PREFS.tapZones);
   /**
    * The bar's height, held as a number and spent as top padding on the page
@@ -1331,9 +1338,58 @@ export function PdfReader({
           </span>
           {/* The page a reader is on — the fact the native viewer hid, and the
               one the whole feature turns on. */}
-          <span className="block text-xs font-medium tabular-nums text-ink-soft">
-            {pageCount > 0 ? `Page ${current} of ${pageCount}` : "Opening…"}
-          </span>
+          {gotoDraft !== null ? (
+            <form
+              className="flex items-center gap-1.5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const n = Number(gotoDraft);
+                if (Number.isFinite(n) && n >= 1) jump(Math.round(n));
+                setGotoDraft(null);
+              }}
+            >
+              <label className="text-xs font-medium text-ink-soft" htmlFor="pdf-goto">
+                Page
+              </label>
+              <input
+                id="pdf-goto"
+                autoFocus
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={pageCount}
+                value={gotoDraft}
+                onChange={(e) => setGotoDraft(e.target.value)}
+                onBlur={(e) => {
+                  // leaving the box for its own Go button is not a cancel
+                  if (!e.currentTarget.form?.contains(e.relatedTarget as Node)) setGotoDraft(null);
+                }}
+                onKeyDown={(e) => e.key === "Escape" && setGotoDraft(null)}
+                className="h-11 w-16 rounded-control border border-rule bg-card px-2 text-sm tabular-nums text-ink outline-none focus:border-(--ws-ink)"
+              />
+              <span className="text-xs text-ink-soft">of {pageCount}</span>
+              <button
+                type="submit"
+                className="h-11 rounded-control px-3 text-xs font-semibold text-on-accent"
+                style={{ background: "var(--ws-color)" }}
+              >
+                Go
+              </button>
+            </form>
+          ) : pageCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setGotoDraft(String(current))}
+              aria-label={`Page ${current} of ${pageCount}. Go to a page`}
+              // 44px to the finger, without growing the bar: the hit area is drawn
+              // by ::before around the one-line readout.
+              className="relative block text-xs font-medium tabular-nums text-ink-soft underline decoration-dotted underline-offset-2 before:absolute before:-inset-x-2 before:-inset-y-3.5 before:content-['']"
+            >
+              Page {current} of {pageCount}
+            </button>
+          ) : (
+            <span className="block text-xs font-medium text-ink-soft">Opening…</span>
+          )}
         </span>
         {textHref && (
           <Link

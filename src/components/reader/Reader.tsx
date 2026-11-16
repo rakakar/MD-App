@@ -1335,8 +1335,38 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       ? player.deviceParaSeq
       : null;
 
+  /**
+   * The reader has scrolled away from the voice by hand (15 Nov 2026, UX
+   * audit AV6). Following used to win every time: scroll back to re-read a
+   * line while listening and the next paragraph change pulled the page back
+   * to the voice. A wheel or a finger on the page now stops following until
+   * "Back to the voice" is pressed. Scroll mode only — in page mode the
+   * reader turns pages themselves and the voice turns them back on purpose.
+   */
+  const [followPaused, setFollowPaused] = useState(false);
   useEffect(() => {
-    if (activeSeq === null || !player.playing) return;
+    if (!listening || mode !== "scroll") {
+      setFollowPaused(false);
+      return;
+    }
+    const byHand = () => setFollowPaused(true);
+    window.addEventListener("wheel", byHand, { passive: true });
+    window.addEventListener("touchmove", byHand, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", byHand);
+      window.removeEventListener("touchmove", byHand);
+    };
+  }, [listening, mode, chapterNumber]);
+  const backToVoice = useCallback(() => {
+    setFollowPaused(false);
+    if (activeSeq === null) return;
+    document
+      .querySelector<HTMLElement>(`[data-seq="${activeSeq}"]`)
+      ?.scrollIntoView({ block: "center", behavior: scrollBehavior() });
+  }, [activeSeq]);
+
+  useEffect(() => {
+    if (activeSeq === null || !player.playing || followPaused) return;
     const el = document.querySelector<HTMLElement>(`[data-seq="${activeSeq}"]`);
     if (!el) {
       // paragraph is on another display page — flip to it in page mode
@@ -1350,7 +1380,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     if (rect.top < 80 || rect.bottom > window.innerHeight - 160) {
       el.scrollIntoView({ block: "center", behavior: scrollBehavior() });
     }
-  }, [activeSeq, player.playing, mode, pages, pageIndex]);
+  }, [activeSeq, player.playing, mode, pages, pageIndex, followPaused]);
 
   /**
    * Where a previous listening session stopped in *this* chapter, or null.
@@ -2589,6 +2619,22 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
             <br />
             Press and hold a line to highlight, note or share it.
           </p>
+        </div>
+      )}
+
+      {followPaused && listening && !selection && (
+        <div
+          data-reader-chrome
+          className="pointer-events-none fixed inset-x-0 z-30 flex justify-center px-4"
+          style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
+        >
+          <button
+            type="button"
+            onClick={backToVoice}
+            className="pointer-events-auto flex min-h-11 items-center gap-1.5 rounded-full bg-overlay px-4 text-sm font-semibold text-white shadow-raised active:bg-overlay/90"
+          >
+            Back to the voice
+          </button>
         </div>
       )}
 

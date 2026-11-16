@@ -20,6 +20,7 @@ import { NavProgress } from "./NavProgress";
 import { BottomNav, Sidebar } from "./Nav";
 import { RailProvider } from "./Rail";
 import { ServiceWorker } from "./ServiceWorker";
+import { SessionEndedNotice } from "./SessionEndedNotice";
 import { WorkspaceProvider, useWorkspace } from "./WorkspaceProvider";
 import { OfflineNotice } from "./OfflineStatus";
 
@@ -118,6 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   sidebar (desktop). The Assistant draws its own app bar, so on
                   a phone it heads the page there instead. */}
               {!bare && ownHeader && <OfflineNotice placement="page" />}
+              {!bare && !reader && <SessionEndedNotice />}
               {children}
             </main>
           </RailProvider>

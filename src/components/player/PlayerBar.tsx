@@ -81,7 +81,8 @@ function PlayerBarInner({
   const barRef = useRef<HTMLDivElement>(null);
   // Only where it sits differs now: inside a book it clears the reader's own
   // bottom bar, everywhere else the tab bar.
-  const reader = ownsViewport(useRoutePath());
+  const path = useRoutePath();
+  const reader = ownsViewport(path);
   const desktop = useIsDesktop();
 
   useEffect(() => {
@@ -158,10 +159,22 @@ function PlayerBarInner({
    * listening, so the full player is the right place to land (designer,
    * 5 Nov 2026). Device speech is skipped — it has no notification to tap.
    */
-  const expandRef = useRef(expand);
+  //
+  // **Without leaving the page the reader is on** (15 Nov 2026, UX audit AV8).
+  // The same signal is also every unlock of the phone while something plays,
+  // and for chapter audio `expand` first navigates to the chapter — so a
+  // reader on Connect, or halfway down a PDF, was taken out of it each time
+  // they woke the phone. A recording's player opens where they stand, as
+  // before; chapter audio does so only when its chapter is already on
+  // screen. Elsewhere the pill stays, one tap from the same place.
+  const chapterPath = chapter ? `/books/${encodeURIComponent(chapter.code)}/${chapter.number}` : null;
+  // exact, so chapter 1 is not chapter 10
+  const onChapter = !!chapterPath && (path === chapterPath || path.startsWith(`${chapterPath}/`));
+  const onReturn = chapter && !onChapter ? null : expand;
+  const expandRef = useRef(onReturn);
   const playingRef = useRef(player.playing);
   useEffect(() => {
-    expandRef.current = expand;
+    expandRef.current = onReturn;
     playingRef.current = player.playing;
   });
   const notifiable = !desktop && !leaving && source.kind !== "device";
@@ -173,7 +186,7 @@ function PlayerBarInner({
         playingWhenHidden = playingRef.current;
       } else if (playingWhenHidden) {
         playingWhenHidden = false;
-        expandRef.current();
+        expandRef.current?.();
       }
     };
     document.addEventListener("visibilitychange", onVisibility);

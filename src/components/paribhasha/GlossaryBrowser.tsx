@@ -212,7 +212,8 @@ function LetterChip({
 /**
  * One entry. It opens in place rather than navigating: this is a list people
  * scan, and paying a page load to read two lines would make scanning it
- * impossible. `/paribhasha/{id}` still exists for sharing one word.
+ * impossible. A link at its foot goes on to `/paribhasha/{id}`, the word's
+ * own page, for the reader who wants more than the definition.
  *
  * The headword is its own control rather than the whole card being one, so the
  * definitions underneath can carry their own buttons — the glossary terms
@@ -265,6 +266,17 @@ export function WordRow({ word }: { word: ParibhashaWord }) {
             </p>
           )
         )}
+        {/* On to the word's own page (15 Nov 2026, UX audit FD8): related
+            words, where it occurs in the books, Read in context and Share all
+            live there, and the list was the one place that never led to it. */}
+        <Link
+          href={`/paribhasha/${word.id}`}
+          className="-mb-2 mt-1 flex min-h-11 items-center gap-1 text-sm font-semibold"
+          style={{ color: "var(--ws-ink)" }}
+        >
+          Where it occurs, related words
+          <span aria-hidden>→</span>
+        </Link>
       </div>
     </li>
   );

@@ -141,6 +141,20 @@ export function deleteConversation(id: string): void {
   write(read().filter((c) => c.id !== id));
 }
 
+/** Delete, and return the way to put it back where it was in the list. */
+export function removeConversation(id: string): () => void {
+  const list = read();
+  const at = list.findIndex((c) => c.id === id);
+  if (at < 0) return () => {};
+  const gone = list[at];
+  write(list.filter((c) => c.id !== id));
+  return () => {
+    const now = read();
+    if (now.some((c) => c.id === id)) return;
+    write([...now.slice(0, at), gone, ...now.slice(at)]);
+  };
+}
+
 export function titleFor(query: string): string {
   const t = query.trim().replace(/\s+/g, " ");
   return t.length > 60 ? `${t.slice(0, 57)}…` : t;

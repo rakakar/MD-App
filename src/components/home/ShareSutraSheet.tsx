@@ -19,6 +19,7 @@ import {
   sutraCardFilename,
   type SutraPlate,
 } from "@/lib/sutraCard";
+import { shareCitation } from "@/lib/refs";
 import { APP_ACCENT } from "@/lib/workspaceConfig";
 
 /**
@@ -40,7 +41,7 @@ export function ShareSutraSheet({
   text,
   source,
   page,
-  citation,
+  canonicalRef,
   date,
 }: {
   open: boolean;
@@ -49,15 +50,19 @@ export function ShareSutraSheet({
   source: string;
   /** the printed page, drawn under the book; "" when the verse has none */
   page: string;
-  /**
-   * The verse as the app has always written it out — `citationText`. Kept as
-   * the payload for a browser that cannot share a file, so that path is
-   * unchanged from before this sheet existed rather than reinvented here.
-   */
-  citation: string;
+  /** the verse's paragraph, which the shared text links back to */
+  canonicalRef: string;
   /** the verse's own date, which is what the saved file is named after */
   date: string;
 }) {
+  // The verse, its book and page, and a link to the passage — the same
+  // citation a shared passage carries. Was `citationText`, which ended in the
+  // app's internal address ("MVD 1.2.3") and no link. Only ever rendered
+  // after a tap, so `window` is there.
+  const citation =
+    typeof window === "undefined"
+      ? text
+      : shareCitation({ passage: text, bookTitle: source, ref: canonicalRef, origin: window.location.origin });
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   /**
@@ -115,7 +120,11 @@ export function ShareSutraSheet({
     track("sutra_share");
     try {
       if (navigator.canShare?.({ files: [f] })) {
-        await navigator.share({ files: [f] });
+        // The words, the book and a link ride with the picture (15 Nov 2026,
+        // UX audit IN6). The picture alone reached a WhatsApp group as an
+        // image nobody could tap — no app name, no way to open the book —
+        // while a passage and a shivir invite already sent their text along.
+        await navigator.share({ files: [f], text: citation });
         return;
       }
       // No file sharing here — a desktop browser, usually. Fall back to the

@@ -17,7 +17,7 @@ import {
   LanguageIcon,
   PinIcon,
 } from "@/components/shell/icons";
-import { ctaPrimaryBar, PageContainer } from "@/components/ui";
+import { ctaPrimary, ctaPrimaryBar, PageContainer } from "@/components/ui";
 import { ApiError, getEvent } from "@/lib/api";
 import { fullDateRange, type EventDetail } from "@/lib/events";
 import { jsonLdHtml } from "@/lib/jsonLd";
@@ -63,6 +63,14 @@ export default async function EventDetailPage({
   const t = contentLang(event.title);
   const dates = fullDateRange(event);
   const location = event.address || event.location;
+  /**
+   * A shivir that has happened (15 Nov 2026, UX audit CN10). It kept the
+   * pinned Register bar, the one thing the page asks a reader to do, for an
+   * event that could no longer be joined, while its recording — the only
+   * thing left to do — was the last panel on a page of three or four
+   * screens. Now the recording comes first and the bar goes.
+   */
+  const past = event.bucket === "past";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -134,6 +142,21 @@ export default async function EventDetailPage({
       >
         {event.title}
       </h1>
+
+      {past && event.recording_url && (
+        <div className="mt-4 rounded-card border border-rule bg-card p-4">
+          <p className="text-sm text-ink-soft">This shivir has ended. Its sessions were recorded.</p>
+          <a
+            href={event.recording_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${ctaPrimary} mt-3`}
+            style={{ background: "var(--ws-color)" }}
+          >
+            Watch the recording
+          </a>
+        </div>
+      )}
 
       <div className="mt-5 flex flex-col gap-2.5">
         {event.prabodhak && (
@@ -230,7 +253,7 @@ export default async function EventDetailPage({
           </EventPanel>
         )}
 
-        {event.recording_url && (
+        {event.recording_url && !past && (
           <EventPanel title="Shivir Recording Playlist">
             <EventLinkRow
               link={{
@@ -266,7 +289,7 @@ export default async function EventDetailPage({
         The spacer below the content is what keeps the last link row off the
         bar; `pb-24` on the scroller would not survive the bar being absent.
       */}
-      {event.registration_url && (
+      {event.registration_url && !past && (
         <>
           <div aria-hidden className="h-20" />
           <div

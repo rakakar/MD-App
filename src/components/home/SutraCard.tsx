@@ -11,7 +11,7 @@ import { track } from "@/lib/analytics";
 import { setPrefs } from "@/lib/storage";
 import { dayMonth, parseDay } from "@/lib/dates";
 import { SUTRA } from "@/lib/labels";
-import { citationText, refToHref } from "@/lib/refs";
+import { refToHref } from "@/lib/refs";
 import { ACTIVE_SUTRA_SOURCE } from "@/lib/sutra";
 import type { SutraOfTheDay } from "@/lib/types";
 
@@ -339,7 +339,7 @@ export function SutraCard({
           text={sutra.text_hi}
           source={sutra.book_title}
           page={page}
-          citation={citationText(sutra.text_hi, sutra.canonical_ref)}
+          canonicalRef={sutra.canonical_ref}
           date={sutra.sutra_date}
         />
       )}

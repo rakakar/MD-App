@@ -7,7 +7,6 @@ import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import {
   ago,
   CONVERSATIONS_CHANGED,
-  deleteConversation,
   kindOf,
   listConversations,
   type Conversation,
@@ -16,6 +15,7 @@ import { INTENT_LABEL, INTENTS, type Intent } from "@/lib/assistant/intent";
 import { contentLang } from "@/lib/script";
 import { APP_ACCENT, WORKSPACES } from "@/lib/workspaceConfig";
 import { IntentGlyph, SearchGlyph } from "./icons";
+import { ConversationUndoProvider, useDeleteConversation } from "./ConversationUndo";
 import { INTENT_COLOR } from "./parts";
 
 const WEEK = 7 * 86400 * 1000;
@@ -65,6 +65,7 @@ export function ConversationsScreen() {
 
   return (
     <AppAccent>
+      <ConversationUndoProvider>
       <div className="mx-auto w-full max-w-3xl px-4 pb-10 sm:px-6 lg:px-8">
         <header className="-mx-4 flex items-center gap-3 border-b border-rule px-4 pb-4 pt-5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <Link
@@ -146,6 +147,7 @@ export function ConversationsScreen() {
           </p>
         )}
       </div>
+      </ConversationUndoProvider>
     </AppAccent>
   );
 }
@@ -231,6 +233,7 @@ function Tag({ children, color }: { children: React.ReactNode; color: string }) 
 }
 
 function Card({ c, now, delay }: { c: Conversation; now: number; delay: number }) {
+  const remove = useDeleteConversation();
   const k = kindOf(c);
   const first = c.turns[0];
   const sources = c.turns.reduce((n, t) => n + (t.intent === "research" ? (t.count ?? 0) : 0), 0);
@@ -272,9 +275,7 @@ function Card({ c, now, delay }: { c: Conversation; now: number; delay: number }
       </Link>
       <button
         type="button"
-        onClick={() => {
-          if (window.confirm(`Delete “${c.title}”? This can’t be undone.`)) deleteConversation(c.id);
-        }}
+        onClick={() => remove(c)}
         aria-label={`Delete “${c.title}”`}
         // Hidden until hover only where there is hover. It used to be keyed on
         // width (`sm:`), so a touch tablet never saw it at all (15 Nov 2026).

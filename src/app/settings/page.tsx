@@ -14,6 +14,7 @@ import { ChevronRight, DownloadIcon, SignOutIcon } from "@/components/shell/icon
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import { BackButton } from "@/components/ui/BackButton";
+import { useUndoToast } from "@/components/ui";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { applyConsent } from "@/lib/analytics";
 import { formatBytes } from "@/lib/audioCache";
@@ -32,7 +33,29 @@ import { getPrefs, setPrefs, type Prefs } from "@/lib/storage";
  */
 export default function SettingsPage() {
   const { user, loading, logout } = useAuth();
-  const { reset } = useDisplay();
+  const display = useDisplay();
+  const [undoToast, offerUndo] = useUndoToast();
+  /**
+   * Reset, with a way back (15 Nov 2026, UX audit TR3). One tap put theme,
+   * book paper, text size and bold back to the defaults together — and for a
+   * reader who had set large bold text to read at all, the screen they would
+   * need to set it again had just become hard to read.
+   */
+  const resetAppearance = () => {
+    const before = {
+      theme: display.theme,
+      readerTheme: display.readerTheme,
+      appTextScale: display.appTextScale,
+      boldText: display.boldText,
+    };
+    display.reset();
+    offerUndo("Appearance reset to defaults", () => {
+      display.setTheme(before.theme);
+      display.setReaderTheme(before.readerTheme);
+      display.setAppTextScale(before.appTextScale);
+      display.setBoldText(before.boldText);
+    });
+  };
   const desktop = useIsDesktop();
   const [prefs, setPrefsState] = useState<Prefs | null>(null);
   const saved = useDownloads();
@@ -76,8 +99,8 @@ export default function SettingsPage() {
         id="appearance"
         title="Appearance"
         action={
-          <button type="button" onClick={reset} className={linkButton}>
-            {desktop ? "Reset to defaults" : "Reset"}
+          <button type="button" onClick={resetAppearance} className={linkButton}>
+            {desktop ? "Reset to defaults" : "Reset appearance"}
           </button>
         }
       >
@@ -178,6 +201,7 @@ export default function SettingsPage() {
         </div>
       </div>
       {toast}
+      {undoToast}
     </AppAccent>
   );
 }
