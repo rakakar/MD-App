@@ -4,13 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { SearchField } from "@/components/SearchField";
 import {
   ActiveFilters,
+  Chip,
+  ChipRow,
   CountedSegmented,
   EmptyState,
   ErrorState,
   FilterButton,
   FindRow,
 } from "@/components/ui";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getEventFilters, getEvents } from "@/lib/api";
+import { profileFor } from "@/lib/profile";
 import {
   activeFilterCount,
   BUCKET_LABEL,
@@ -147,6 +151,44 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
       .catch(() => undefined);
   }, [anyFilter, names]);
 
+  /**
+   * **Quick chips: your city, Online, and the languages on offer** (16 Nov
+   * 2026, UX audit CN1). Finding a shivir near you took the Filters sheet and
+   * a dropdown of every city, though sign-up already asked for yours. One row
+   * of chips under the search on a phone, each setting exactly what the sheet
+   * would; shown while nothing is filtered — once something is, the row of
+   * applied filters is where it is taken off. Your city only when some
+   * shivir is listed in it.
+   */
+  const { user } = useAuth();
+  // This tab's own options: a chip must never lead to an empty list, and what
+  // is on offer differs between Upcoming, Ongoing and Past.
+  const [offer, setOffer] = useState<EventFilterOptions | null>(null);
+  useEffect(() => {
+    if (desktop) return;
+    const ac = new AbortController();
+    getEventFilters({ bucket, signal: ac.signal })
+      .then(setOffer)
+      .catch(() => undefined);
+    return () => ac.abort();
+  }, [bucket, desktop]);
+  const myCity = user ? profileFor(user)?.city?.trim().toLowerCase() : undefined;
+  const cityOption = myCity ? offer?.cities.find((c) => c.name.trim().toLowerCase() === myCity) : undefined;
+  // A choice only where there is one: Online when there are both kinds, and
+  // languages when more than one is on offer.
+  const modes = (offer?.modes ?? []).filter((m) => m.count > 0);
+  const online = modes.length > 1 ? modes.find((m) => m.code === "online") : undefined;
+  const langs = (offer?.languages ?? []).filter((l) => l.count > 0);
+  const quick = [
+    ...(cityOption ? [{ key: "city", label: cityOption.name, set: { city: cityOption.name } }] : []),
+    ...(online ? [{ key: "online", label: online.name, set: { mode: online.code } }] : []),
+    ...(langs.length > 1 ? langs.slice(0, 3) : []).map((l) => ({
+      key: `l-${l.code}`,
+      label: l.name,
+      set: { languages: [l.code] },
+    })),
+  ];
+
   const nameOf = (list: { code: string; name: string }[] | undefined, code: string) =>
     list?.find((x) => x.code === code)?.name ?? code;
   const dayDate = parseDay(day);
@@ -272,6 +314,21 @@ export function EventsScreen({ initial }: { initial: EventListResponse }) {
         />
       </div>
       </div>
+
+      {!desktop && !anyFilter && quick.length > 0 && (
+        <div className="mt-1 mb-1">
+          <ChipRow label="Quick filters">
+            {quick.map((c) => (
+              <Chip
+                key={c.key}
+                label={c.label}
+                variant="tint"
+                onClick={() => setFilters({ ...EMPTY_EVENT_FILTERS, ...c.set })}
+              />
+            ))}
+          </ChipRow>
+        </div>
+      )}
 
       {/* Phone: what is on, under the bar, as Media draws it. */}
       {chips.length > 0 && (

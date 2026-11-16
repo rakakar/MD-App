@@ -33,6 +33,33 @@ interface WorkspaceState {
    */
   tab: { path: string; href: string } | null;
   claimTab: (claim: { path: string; href: string }) => void;
+  /** where the switcher takes you for each workspace — see `PLACES_KEY` */
+  placeOf: (id: WorkspaceId) => string;
+}
+
+/**
+ * **Each workspace keeps its own place** (16 Nov 2026, UX audit IA1).
+ *
+ * The welcome tour has always promised it — switch any time, "each one keeps
+ * its own place" — and the switcher has always opened the workspace's front
+ * page: a reader deep in a Student Materials folder who switched to Connect
+ * to check a date came back to the top of the shelf. Now the last screen seen
+ * in each workspace is kept on this device and the switcher opens it.
+ * Choosing the workspace already in use still goes to its front page, which
+ * is the one way back there from deep inside it.
+ *
+ * Only screens that belong to a workspace are kept — by their URL or by their
+ * section — never one that merely fell back to the last choice (Settings,
+ * sign-in), which would be nobody's place.
+ */
+const PLACES_KEY = "md.wsplace.v1";
+
+function readPlaces(): Partial<Record<WorkspaceId, string>> {
+  try {
+    return JSON.parse(localStorage.getItem(PLACES_KEY) || "{}");
+  } catch {
+    return {};
+  }
 }
 
 const WorkspaceContext = createContext<WorkspaceState>({
@@ -41,6 +68,7 @@ const WorkspaceContext = createContext<WorkspaceState>({
   derive: () => {},
   tab: null,
   claimTab: () => {},
+  placeOf: (id) => WORKSPACES[id].home,
 });
 
 export const useWorkspace = () => useContext(WorkspaceContext);
@@ -80,6 +108,33 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setDerived(id);
   }, []);
 
+  const [places, setPlaces] = useState<Partial<Record<WorkspaceId, string>>>({});
+  useEffect(() => setPlaces(readPlaces()), []);
+  const owner = routeWs ?? derived;
+  useEffect(() => {
+    if (!owner || !pathname) return;
+    // A moment's wait: a book page derives its workspace in its own effect,
+    // so for the first frame `owner` can still be the last page's section.
+    const t = window.setTimeout(() => {
+      const here = pathname + window.location.search;
+      setPlaces((prev) => {
+        if (prev[owner] === here) return prev;
+        const next = { ...prev, [owner]: here };
+        try {
+          localStorage.setItem(PLACES_KEY, JSON.stringify(next));
+        } catch {
+          // kept for this visit only
+        }
+        return next;
+      });
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [owner, pathname]);
+  const placeOf = useCallback(
+    (id: WorkspaceId) => (id === active ? WORKSPACES[id].home : places[id] ?? WORKSPACES[id].home),
+    [active, places]
+  );
+
   // A claim is only honoured on the path that made it, so nothing has to be
   // torn down on the way out: the next route either files its own claim or
   // this one stops matching and the bar goes back to reading the URL. Clearing
@@ -94,8 +149,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ workspace: WORKSPACES[active], select, derive, tab, claimTab }),
-    [active, select, derive, tab, claimTab]
+    () => ({ workspace: WORKSPACES[active], select, derive, tab, claimTab, placeOf }),
+    [active, select, derive, tab, claimTab, placeOf]
   );
 
   return (

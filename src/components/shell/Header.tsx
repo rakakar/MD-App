@@ -56,7 +56,7 @@ import {
  * a portal is immune to all four.
  */
 function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover" }) {
-  const { workspace, select } = useWorkspace();
+  const { workspace, select, placeOf } = useWorkspace();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -107,7 +107,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
     return (
       <li key={id}>
         <Link
-          href={ws.home}
+          href={placeOf(id)}
           role="radio"
           aria-checked={active}
           aria-label={`${ws.name} — ${ws.tagline}`}
@@ -161,7 +161,7 @@ function WorkspaceSwitcher({ variant = "sheet" }: { variant?: "sheet" | "popover
     return (
       <li key={id}>
         <Link
-          href={ws.home}
+          href={placeOf(id)}
           role="option"
           aria-selected={active}
           aria-label={`${ws.name} — ${ws.tagline}`}
