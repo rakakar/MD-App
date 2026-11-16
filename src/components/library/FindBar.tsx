@@ -3,9 +3,39 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { SearchField } from "@/components/SearchField";
+import { CloseIcon } from "@/components/shell/icons";
 import { FindRow } from "@/components/ui";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { findHref, MIN_QUERY_CHARS, type FindState } from "@/lib/find";
+
+/**
+ * **Recent searches, per shelf** (16 Nov 2026, UX audit FD6). Searches are
+ * written over in the address bar (`router.replace`), so going back never
+ * brought yesterday's search, and an empty box offered nothing at all. The
+ * last five on each shelf are kept on this device and offered under the box
+ * while it is focused and empty, each removable.
+ */
+const RECENT_KEY = "md.recentfind.v1";
+const RECENT_MAX = 5;
+
+function readRecent(path: string): string[] {
+  try {
+    const all = JSON.parse(localStorage.getItem(RECENT_KEY) || "{}") as Record<string, string[]>;
+    return Array.isArray(all[path]) ? all[path] : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecent(path: string, list: string[]) {
+  try {
+    const all = JSON.parse(localStorage.getItem(RECENT_KEY) || "{}") as Record<string, string[]>;
+    all[path] = list;
+    localStorage.setItem(RECENT_KEY, JSON.stringify(all));
+  } catch {
+    // not kept; the search itself still runs
+  }
+}
 
 /**
  * The find bar — one box on a shelf or a folder, scoped to what is beneath it
@@ -114,6 +144,19 @@ export function FindBar({
   const [q, setQ] = useState(state.q);
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [recent, setRecent] = useState<string[]>([]);
+  const [focused, setFocused] = useState(false);
+  useEffect(() => setRecent(readRecent(basePath)), [basePath]);
+  const remember = (typed: string) => {
+    const next = [typed, ...readRecent(basePath).filter((r) => r !== typed)].slice(0, RECENT_MAX);
+    writeRecent(basePath, next);
+    setRecent(next);
+  };
+  const forget = (word: string) => {
+    const next = readRecent(basePath).filter((r) => r !== word);
+    writeRecent(basePath, next);
+    setRecent(next);
+  };
 
   /**
    * The URL can change without the box: the back button, "Clear", a chip
@@ -136,6 +179,7 @@ export function FindBar({
     // return to is the shelf already on screen, so the reader would press
     // search and watch a second of loading buy them nothing.
     if (typed !== "" && typed.length < MIN_QUERY_CHARS) return;
+    if (typed) remember(typed);
     if (typed === state.q) return;
     // `raw` is dropped on a new query: it is a correction to one rewrite, not
     // a setting the reader turned on for the session.
@@ -147,7 +191,16 @@ export function FindBar({
   }
 
   return (
-    <div className={(placeholder && !folder) || flush ? "" : `mt-4 ${dense ? "lg:mt-0" : ""}`}>
+    <div
+      className={(placeholder && !folder) || flush ? "" : `mt-4 ${dense ? "lg:mt-0" : ""}`}
+      onFocus={(e) => {
+        if (e.target === inputRef.current) setFocused(true);
+      }}
+      onBlur={(e) => {
+        // Moving to one of the suggestions is not leaving the box.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
+      }}
+    >
       <FindRow
         search={
           <SearchField
@@ -181,6 +234,41 @@ export function FindBar({
            set of filters is the smaller cost. */
         filters={filters}
       />
+      {focused && q === "" && recent.length > 0 && (
+        <div className="mt-2 rounded-card border border-rule bg-card py-1 shadow-card">
+          <p className="px-4 pb-1 pt-2 text-xs font-semibold text-ink-soft">Recent searches</p>
+          <ul>
+            {recent.map((word) => (
+              <li key={word} className="flex items-center">
+                <button
+                  type="button"
+                  // Keeps the caret in the box: Safari does not focus a button
+                  // on click, so the box's blur would close this list first.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setQ(word);
+                    setFocused(false);
+                    commit(word);
+                    inputRef.current?.blur();
+                  }}
+                  className="ui-hi min-h-11 min-w-0 flex-1 truncate px-4 text-start text-sm text-ink hover:bg-inset"
+                >
+                  {word}
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => forget(word)}
+                  aria-label={`Remove ${word} from recent searches`}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-soft hover:text-ink"
+                >
+                  <CloseIcon className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {!placeholder && !folder && (
         <p className={`mt-1.5 px-1 text-xs text-ink-soft ${dense ? "lg:hidden" : ""}`}>
           By name, topic, year or place
