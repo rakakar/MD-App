@@ -34,6 +34,7 @@ import { journeyDocumentHref, journeyFolderHref } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
 import { getDownloaded, getPdfPlace, getPlayhead, markDownloaded } from "@/lib/storage";
 import type { LibraryFile, LibraryNode, NodeCard } from "@/lib/types";
+import { StageBrings } from "./StageBrings";
 
 /**
  * **One stage, opened** — the right-hand panel of the full path on a desktop
@@ -319,6 +320,7 @@ function About({
       <p className="mt-2 text-sm text-ink-soft">
         {stage.duration.charAt(0).toUpperCase() + stage.duration.slice(1)}
       </p>
+      <StageBrings stage={stage} className="mt-7" />
 
       {resources.length > 0 && (
         <>

@@ -46,6 +46,12 @@ export interface Stage {
    */
   flag?: "optional";
   /**
+   * What the stage tends to bring (16 Nov 2026, UX audit ST3): the guide's
+   * own परिणाम row, a few of its lines kept as written. Lines to reflect on,
+   * never a checklist — nothing in the app ticks them or asks about them.
+   */
+  brings: string[];
+  /**
    * Which shelf genres this stage's reading is drawn from — the join the BE
    * does not carry. `genre` is served on every book, so a stage names genres
    * and the books follow, which means a book added to `darshan` next month
@@ -107,6 +113,7 @@ export const STAGES: Stage[] = [
     // (15 Nov 2026, UX audit ST1): "Just exploring" lands here too.
     note: "A shivir is a study camp led by a prabodhak. This first one runs 7 days — human purpose, family, society, nature. Suggested with more than one Prabodhak.",
     duration: "1–2 camps over 6 months to 1 year",
+    brings: ["स्वयं में सतर्कता शुरू होती है।", "रिश्तों में संवेदनशीलता बढ़ती है; लोगों के साथ सहानुभूति बेहतर होगी।", "धन और वस्तुओं से संबंध स्पष्ट होता है।", "समझने की आवश्यकता स्पष्ट हो जाती है – स्वयं और दुनिया की कई समस्याओं के समाधान के रूप में।"],
     // JVEP — जीवन विद्या एक परिचय — is this camp's reading, and ABVP the next
     // one's; both are filed `parichay`, so the stage takes the genre and
     // `stageBooks` orders them.
@@ -119,6 +126,7 @@ export const STAGES: Stage[] = [
     en: "Adhyayan Bindu",
     note: "8–10 days. The 44-point booklet — coexistence, jeevan gyan, humane conduct, vivek and vigyan.",
     duration: "1–2 camps over 6–9 months",
+    brings: ["मध्यस्थ दर्शन वस्तु की “प्राथमिक संभावनाएं” समझ आना।", "विविध आयाम में भास अथवा आभास होना शुरू होता है।", "शास्त्र-पठन, अध्ययन के लिए तत्परता।"],
     genres: ["parichay"],
   },
   {
@@ -130,6 +138,7 @@ export const STAGES: Stage[] = [
     duration: "about 6 months to 1 year",
     flag: "optional",
     // A survey of everything rather than a text of its own.
+    brings: ["सभी महत्वपूर्ण शब्द और अवधारणाएँ स्पष्ट हो जाती हैं।", "भौतिक और समाज के मुद्दों से स्वयं की ओर ध्यान जाना।", "जीने से सम्बंधित निर्णय, अभ्यास, विधि में स्पष्टता।"],
     genres: null,
   },
   {
@@ -139,6 +148,7 @@ export const STAGES: Stage[] = [
     en: "First reading of the books",
     note: "Systematic study of the core literature — darshan, vaad, shastra, Paribhasha Samhita, Manaviya Samvidhan.",
     duration: "part-time 2–3 years · full-time 6 months–3 years",
+    brings: ["शब्द-परिभाषा स्पष्ट हो जाती है।", "दर्शन में ‘वस्तु’ का जोड़ना स्पष्ट हो जाता है।", "पूर्व मान्यताओं/विचारों से तुलना।"],
     genres: ["darshan", "vaad", "shastra"],
   },
   {
@@ -149,6 +159,7 @@ export const STAGES: Stage[] = [
     note: "Re-reading in small groups, testing one's own conclusions. Language synthesises into aphorism.",
     duration: "2–8 rounds over 4–8 years",
     // The same core literature, read again — so the same genres.
+    brings: ["शब्द-परिभाषा-वस्तु निष्कर्ष का स्मरण होना।", "तार्किक दृष्टि में स्थिरता।", "अध्ययन-अभ्यास विधि एवं क्रियान्वयन चिंतन स्पष्ट।"],
     genres: ["darshan", "vaad", "shastra"],
   },
   {
@@ -159,6 +170,7 @@ export const STAGES: Stage[] = [
     note: "Understanding turns into inner and outer change. Needs the entire library — published and unpublished, all audio and video, sankalan and shodh patra.",
     duration: "many years · depends on sanskar and intensity of desire",
     // "The app stops suggesting and simply stays stocked."
+    brings: ["स्व-संस्कारों में गुणात्मक परिवर्तन।", "न्याय-धर्म-सत्य इच्छा, विचार, आशा में प्रत्यक्ष।", "साक्षात्कार योग्य बनना।"],
     genres: null,
   },
   {
@@ -168,6 +180,7 @@ export const STAGES: Stage[] = [
     en: "Avdharana",
     note: "Stability in nyaya-dharma-satya. Dependence on written words begins to fall away.",
     duration: "no fixed duration",
+    brings: ["न्याय धर्म सत्य में चित्त-वृत्ति का संयत होना।", "मानवीयता पूर्ण जीवन का प्रतीति पूर्वक जीना।", "स्वयं में विश्वास स्थायी होना – अस्तित्व के प्रति, जागृति के प्रति।"],
     genres: null,
   },
   {
@@ -177,6 +190,7 @@ export const STAGES: Stage[] = [
     en: "Bodh / Purna Bodh",
     note: "Firmness in what has been realised. “पुस्तक छूट जाती है” — the book is left behind.",
     duration: "no fixed duration",
+    brings: ["अहंकार से मुक्ति।", "आवेश-हठ-अभिमान से मुक्ति।", "मानवीयता का बोध पूर्वक जीना।"],
     genres: null,
   },
   {
@@ -186,6 +200,7 @@ export const STAGES: Stage[] = [
     en: "Anubhav",
     note: "Knowledge and conduct complete. May occur alongside purna bodh.",
     duration: "no fixed duration",
+    brings: ["न्याय-धर्म-सत्य रूपी आचरण की पूर्णता।", "ज्ञान, विवेक, विज्ञान की पूर्णता।", "सहज निष्ठा।"],
     genres: null,
   },
 ];

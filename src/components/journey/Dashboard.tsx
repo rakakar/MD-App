@@ -1,5 +1,6 @@
 "use client";
 
+import { StageBrings } from "./StageBrings";
 import { count } from "@/lib/labels";
 import Link from "next/link";
 import { CoverTile } from "@/components/shelf/CoverTile";
@@ -240,6 +241,7 @@ export function PathCard({
           <Icon name="overview" className="h-4 w-4 shrink-0" />
           {capitalise(stage.duration)}
         </p>
+        <StageBrings stage={stage} className="mt-6" />
 
         {resources.length > 0 && (
           <div className="mt-6">
