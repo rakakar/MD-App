@@ -88,6 +88,7 @@ export function ReaderTopBar({
   meta,
   progress,
   pagesHref,
+  originalHref,
   onType,
   assistantHref,
 }: {
@@ -102,6 +103,13 @@ export function ReaderTopBar({
   progress: number;
   /** a text edition's way back to the scanned pages, when there is one */
   pagesHref?: string;
+  /**
+   * A translation's way back to its Hindi original — the original book's
+   * page, since chapter numbers do not line up across editions (16 Nov 2026,
+   * UX audit RD8). Absent on the originals and on the facing-page editions,
+   * which carry their Hindi in the हिन्दी | English switch.
+   */
+  originalHref?: string;
   onType: () => void;
   assistantHref: string;
 }) {
@@ -136,6 +144,17 @@ export function ReaderTopBar({
           </h1>
           <p className="hi-tight truncate text-xs text-(--reader-ink-soft)">{meta}</p>
         </div>
+
+        {originalHref && (
+          <Link
+            href={originalHref}
+            title="The Hindi original of this book"
+            lang="hi"
+            className="hi flex h-11 shrink-0 items-center rounded-control border border-(--reader-rule) px-3 text-sm font-semibold active:bg-current/10"
+          >
+            हिन्दी मूल
+          </Link>
+        )}
 
         {pagesHref && (
           <Link
@@ -477,8 +496,11 @@ export function SelectionBar({
   onDismiss,
   onParibhasha,
   onPlayHere,
+  onRemove,
 }: {
   bottom: string;
+  /** the selection is a saved highlight: take it off (UX audit RD4) */
+  onRemove?: () => void;
   onHighlight: (c: HighlightColour) => void;
   onNote: () => void;
   onShare: () => void;
@@ -545,6 +567,7 @@ export function SelectionBar({
           Share
         </SelectionAction>
         <SelectionAction onClick={onCopy}>Copy</SelectionAction>
+        {onRemove && <SelectionAction onClick={onRemove}>Remove</SelectionAction>}
 
         {onParibhasha && <SelectionAction onClick={onParibhasha}>Paribhasha</SelectionAction>}
         {onPlayHere && <SelectionAction onClick={onPlayHere}>▶ Listen</SelectionAction>}
@@ -607,6 +630,7 @@ export function ReaderDesktopBar({
   where,
   progress,
   pagesHref,
+  originalHref,
   highlightCount,
   panel,
   onContents,
@@ -631,6 +655,13 @@ export function ReaderDesktopBar({
   where: React.ReactNode;
   progress: number;
   pagesHref?: string;
+  /**
+   * A translation's way back to its Hindi original — the original book's
+   * page, since chapter numbers do not line up across editions (16 Nov 2026,
+   * UX audit RD8). Absent on the originals and on the facing-page editions,
+   * which carry their Hindi in the हिन्दी | English switch.
+   */
+  originalHref?: string;
   /** this book's highlights — the count on the pencil */
   highlightCount: number;
   /** which side panel is open, for the lit button */
@@ -735,6 +766,16 @@ export function ReaderDesktopBar({
         </div>
 
         <div className="flex items-center justify-end gap-2">
+          {originalHref && (
+            <Link
+              href={originalHref}
+              title="The Hindi original of this book"
+              lang="hi"
+              className="hi flex h-11 shrink-0 items-center rounded-control border border-(--reader-rule) px-3 text-sm font-semibold hover:bg-current/5"
+            >
+              हिन्दी मूल
+            </Link>
+          )}
           {pagesHref && (
             <Link
               href={pagesHref}

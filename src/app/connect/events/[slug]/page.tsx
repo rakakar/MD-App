@@ -12,12 +12,13 @@ import { EventDetailHeader } from "@/components/connect/EventDetailHeader";
 import { EventNote } from "@/components/connect/EventNote";
 import { EventPoster } from "@/components/connect/EventPoster";
 import { EventTracker } from "@/components/connect/EventTracker";
+import { RegisterButton } from "@/components/connect/RegisterButton";
 import {
   CalendarChipIcon,
   LanguageIcon,
   PinIcon,
 } from "@/components/shell/icons";
-import { ctaPrimary, ctaPrimaryBar, ctaSecondary, PageContainer } from "@/components/ui";
+import { ctaPrimary, ctaSecondary, PageContainer } from "@/components/ui";
 import { ApiError, getEvent } from "@/lib/api";
 import { calendarHref, fullDateRange, type EventDetail } from "@/lib/events";
 import { jsonLdHtml } from "@/lib/jsonLd";
@@ -333,15 +334,8 @@ export default async function EventDetailPage({
             {/* PageContainer's own width and gutters, so the button is exactly
                 as wide as the poster above it. */}
             <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8">
-              <a
-                href={event.registration_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${ctaPrimaryBar} w-full`}
-                style={{ background: "var(--ws-color)" }}
-              >
-                Register
-              </a>
+              {/* Asks "Did you register?" on the way back — see RegisterButton. */}
+              <RegisterButton slug={event.slug} href={event.registration_url} />
             </div>
           </div>
         </>

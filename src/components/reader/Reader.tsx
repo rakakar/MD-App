@@ -26,6 +26,8 @@ import {
   paintForNote,
   saveBookmark,
   saveNote,
+  unpaintSpan,
+  unsaveBookmark,
   saveProgress as savePersonalProgress,
   syncPersonal,
   unsaveNote,
@@ -58,6 +60,7 @@ import type { Matcher } from "@/lib/paribhasha";
 import { chapterName, FRONT_MATTER } from "@/lib/labels";
 import { contentLang } from "@/lib/script";
 import { Block } from "./blocks";
+import { NextOnPath } from "./NextOnPath";
 import {
   ReaderBottomBar,
   ReaderDesktopBar,
@@ -308,6 +311,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [noteView, setNoteView] = useState<string | null>(null);
   /** for the pointer handlers, which are deliberately not rebuilt per render */
   const notedRefs = useRef<Set<string>>(new Set());
+  /** passages with a saved highlight — a tap on their paint opens its bar (RD4) */
+  const paintedRefs = useRef<Set<string>>(new Set());
+  /** a tap on saved paint: which passage, and the words under the finger */
+  const [paintTap, setPaintTap] = useState<{ ref: string; words: string } | null>(null);
   const [gotoOpen, setGotoOpen] = useState(false);
   const [gotoValue, setGotoValue] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
@@ -1180,7 +1187,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     // Painted words with a note under them open the note (`onContentClick`);
     // the same tap must not also show or hide the bars.
     const host = el.closest("mark")?.closest("[data-ref]");
-    if (host && notedRefs.current.has(host.getAttribute("data-ref") ?? "")) {
+    const hostRef = host?.getAttribute("data-ref") ?? "";
+    if (host && (notedRefs.current.has(hostRef) || paintedRefs.current.has(hostRef))) {
       gesture.current = null;
       return;
     }
@@ -1251,9 +1259,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const sel = window.getSelection();
     if (!mark) {
       // Painted words carrying a note: open the note.
-      const host = (e.target as HTMLElement).closest?.("mark")?.closest("[data-ref]");
+      const painted = (e.target as HTMLElement).closest?.("mark");
+      const host = painted?.closest("[data-ref]");
       const ref = host?.getAttribute("data-ref");
-      if (ref && notedRefs.current.has(ref) && !(sel && !sel.isCollapsed)) setNoteView(ref);
+      if (!ref || (sel && !sel.isCollapsed)) return;
+      if (notedRefs.current.has(ref)) setNoteView(ref);
+      // A highlight with no note: its own bar, so it can be recoloured or
+      // taken off where it is (16 Nov 2026, UX audit RD4). Removing one used
+      // to mean Contents › Highlights, three screens away.
+      else if (paintedRefs.current.has(ref)) setPaintTap({ ref, words: painted?.textContent ?? "" });
       return;
     }
     if (sel && !sel.isCollapsed) return;
@@ -1610,7 +1624,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           hrefLabel: "Sign in to sync",
         });
       } else {
-        showToast({ text: `${what}.` });
+        // The way to everything kept, from the moment of keeping it (16 Nov
+        // 2026, UX audit IA6): finding yesterday's line otherwise took a
+        // workspace switch and two more taps.
+        const notes = /note/i.test(what);
+        showToast({
+          text: `${what}.`,
+          href: notes ? "/me/notes" : "/me/bookmarks",
+          hrefLabel: notes ? "All notes" : "All highlights",
+        });
       }
     },
     [user, showToast]
@@ -1904,7 +1926,61 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   }, [personalRows]);
   useEffect(() => {
     notedRefs.current = new Set([...marks].filter(([, m]) => m.note).map(([ref]) => ref));
+    paintedRefs.current = new Set([...marks].filter(([, m]) => m.colour).map(([ref]) => ref));
   }, [marks]);
+
+  // A tap on a saved highlight selects exactly its words — the range under the
+  // finger — so the bar's colours repaint that range rather than the whole
+  // paragraph, and Remove takes off that one highlight (`unpaintSpan`).
+  useEffect(() => {
+    if (!paintTap) return;
+    setPaintTap(null);
+    const para = paraByRef.get(paintTap.ref);
+    if (!para) return;
+    const ranges = painted.get(paintTap.ref) ?? [];
+    const words = paintTap.words.trim();
+    const hit =
+      ranges.find((r) => para.text_hi.slice(r.start, r.end).includes(words)) ??
+      ranges.find((r) => words.includes(para.text_hi.slice(r.start, r.end))) ??
+      ranges[0];
+    setSelection(
+      hit
+        ? { para, text: para.text_hi.slice(hit.start, hit.end), span: { start: hit.start, end: hit.end } }
+        : { para, text: "" }
+    );
+  }, [paintTap, paraByRef, painted]);
+
+  /** the selection sits on a saved highlight — the bar then offers Remove */
+  const selectedPaint =
+    selection && !selection.parts && marks.get(selection.para.canonical_ref)?.colour
+      ? (painted.get(selection.para.canonical_ref) ?? []).find(
+          (r) =>
+            !selection.span ||
+            (r.start <= selection.span.start && r.end >= selection.span.end) ||
+            (selection.span.start <= r.start && selection.span.end >= r.end)
+        ) ?? null
+      : null;
+  const removeHighlight = useCallback(
+    (ref: string, span: { start: number; end: number }) => {
+      // A whole-paragraph highlight ("Mark a passage", an older save) has no
+      // word ranges to take one from — removing it is removing the row.
+      const row = localBookmarks().find((b) => b.canonical_ref === ref);
+      const undo = row?.ranges?.length ? unpaintSpan(ref, span, !!user) : unsaveBookmark(ref, !!user);
+      refreshPainted();
+      setPersonalRevision((r) => r + 1);
+      clearSelection();
+      showToast({
+        text: "Highlight removed",
+        undo: () => {
+          undo();
+          refreshPainted();
+          setPersonalRevision((r) => r + 1);
+        },
+      });
+    },
+    [user, refreshPainted, clearSelection, showToast]
+  );
+
   /** the passage whose margin note is open for writing */
   const [marginEditing, setMarginEditing] = useState<string | null>(null);
   const progress =
@@ -2135,6 +2211,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const endOfBookText = home ? "You’ve reached the end of this text." : "You’ve reached the end of this book.";
   const prevLang = contentLang(chapter?.prev ? chapterName(chapter.prev) : "");
 
+  // A translation's original, unless this edition carries its own Hindi.
+  const originalHref =
+    book.translation_of && !sides ? `/books/${encodeURIComponent(book.translation_of)}` : undefined;
+
   /** the Assistant, open on Book search within this book */
   const bookSearchHref = `/assistant?${new URLSearchParams({ mode: "books", book: book.code })}`;
 
@@ -2162,6 +2242,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         // edition like `S-A`: 52 pages under a single heading, where a chapter
         // start is always page 1 and would send a reader forty pages back.
         pagesHref={home ? documentHref(home.at.node, home.at.item, pagesAt) : undefined}
+        originalHref={originalHref}
         onType={() => setSettingsOpen(true)}
         // Search is the assistant until there is an assistant. The designer put
         // this button here so the habit forms before the chat arrives; scoped
@@ -2180,6 +2261,7 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         where={desktopWhere}
         progress={progress}
         pagesHref={home ? documentHref(home.at.node, home.at.item, pagesAt) : undefined}
+        originalHref={originalHref}
         highlightCount={highlightCount}
         panel={showPanel ? panelTab : null}
         onContents={() => togglePanel("contents")}
@@ -2476,7 +2558,12 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                 </span>
               </nav>
               {pageIndex === pages.length - 1 && !chapter.next && (
-                <p className="mt-3 text-center text-sm text-(--reader-ink-soft)">{endOfBookText}</p>
+                <>
+                  <p className="mt-3 text-center text-sm text-(--reader-ink-soft)">{endOfBookText}</p>
+                  {!home && (
+                    <NextOnPath bookCode={book.code} className={`mt-3 ${chapterCard}`} style={chapterCardStyle} />
+                  )}
+                </>
               )}
             </section>
           )}
@@ -2544,15 +2631,21 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
                     <CardArrow />
                   </button>
                 ) : (
-                  <Link href={bookHref} className={chapterCard} style={chapterCardStyle}>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-xs font-semibold" style={{ color: "var(--ws-ink)" }}>
-                        {endOfBookText}
+                  <>
+                    <Link href={bookHref} className={chapterCard} style={chapterCardStyle}>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-semibold" style={{ color: "var(--ws-ink)" }}>
+                          {endOfBookText}
+                        </span>
+                        <span className="mt-1 block font-semibold">{bookBackText}</span>
                       </span>
-                      <span className="mt-1 block font-semibold">{bookBackText}</span>
-                    </span>
-                    <CardArrow />
-                  </Link>
+                      <CardArrow />
+                    </Link>
+                    {/* What comes after it on the path — see `NextOnPath`. */}
+                    {!home && (
+                      <NextOnPath bookCode={book.code} className={`mt-2 ${chapterCard}`} style={chapterCardStyle} />
+                    )}
+                  </>
                 )}
                 {chapter.prev && (
                   <button
@@ -2659,6 +2752,11 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
       {selection && !noteOpen && (
         <SelectionBar
           bottom={bottomOffset}
+          onRemove={
+            selectedPaint
+              ? () => removeHighlight(selection.para.canonical_ref, selectedPaint)
+              : undefined
+          }
           onHighlight={(colour) => doHighlight(selection, colour)}
           onNote={() => {
             const earlier = marks.get(selection.para.canonical_ref)?.note;

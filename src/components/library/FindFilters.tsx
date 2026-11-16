@@ -278,9 +278,10 @@ export function FindFilters({
                 topics={liveTopics(topics, options)}
                 state={state}
                 basePath={basePath}
+                counts={options}
               />
             ) : axis === "year" ? (
-              <YearChips options={options} state={state} basePath={basePath} />
+              <YearChips options={options} state={state} basePath={basePath} counted />
             ) : (
               <div className="flex flex-wrap gap-2" role="group" aria-label={AXIS_LABEL[axis]}>
                 {options.map((chip) => (
@@ -289,6 +290,10 @@ export function FindFilters({
                     label={chipLabel(axis, chip)}
                     href={findHref(basePath, toggleChip(state, axis, chip.value))}
                     selected={isChipOn(state, axis, chip.value)}
+                    // How much each one holds, as the desktop panel says it
+                    // (16 Nov 2026, UX audit FD4) — so a tap is a choice
+                    // rather than a guess checked against the footer.
+                    count={chip.count}
                   />
                 ))}
               </div>
@@ -558,11 +563,15 @@ function TopicChips({
   topics,
   state,
   basePath,
+  counts,
 }: {
   topics: Topic[];
   state: FindState;
   basePath: string;
+  /** the topic facet, for each chip's count; left out, the chips go bare */
+  counts?: FacetValue[];
 }) {
+  const counted = counts ? new Map(counts.map((f) => [f.value, f.count])) : null;
   const on = state.selection.topic ?? [];
   const single = on.length === 1 ? topics.find((t) => t.code === on[0]) : undefined;
   return (
@@ -577,6 +586,7 @@ function TopicChips({
             label={topic.name}
             href={findHref(basePath, toggleChip(state, "topic", topic.code))}
             selected={isChipOn(state, "topic", topic.code)}
+            count={counted?.get(topic.code)}
           />
         ))}
       </div>
@@ -607,10 +617,13 @@ function YearChips({
   options,
   state,
   basePath,
+  counted = false,
 }: {
   options: FacetValue[];
   state: FindState;
   basePath: string;
+  /** each band says how much it holds — the phone sheet's chips (UX audit FD4) */
+  counted?: boolean;
 }) {
   const bands = yearBands(options);
   const any = (state.selection.year?.length ?? 0) > 0;
@@ -630,6 +643,7 @@ function YearChips({
           label={band.label}
           href={findHref(basePath, toggleGroup(state, "year", band.values))}
           selected={band.values.every((v) => isChipOn(state, "year", v))}
+          count={counted ? band.count : undefined}
         />
       ))}
     </div>

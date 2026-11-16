@@ -130,7 +130,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               so this one lives at the top and decides for itself. */}
           <TrackAudioMode />
           {!bare && <BottomNav />}
-          {!reader && <ConsentBanner />}
+          {/* Not on the sign-in and profile screens either (16 Nov 2026, UX
+              audit FR4): there it covered the sticky Continue button of "A
+              little about you". It waits for the next ordinary screen. */}
+          {!bare && <ConsentBanner />}
           {/* The first-run deck, above everything and before anything else is
               worth reading. Not on the reader and not on the auth screens:
               both are places a reader arrives *deliberately*, by opening a
