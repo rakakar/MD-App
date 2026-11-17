@@ -459,18 +459,3 @@ export function stageTabs(stage: Stage): StageTab[] {
   );
 }
 
-/**
- * The stage that first reads this book, or null — what a book page names
- * under "Study this book" (16 Nov 2026, UX audit IA5). The reverse of
- * `stageBooks`, so the two cannot disagree: the stage's lead book first (ABVP
- * is अध्ययन बिंदु's, though both camps file `parichay`), then the first stage
- * whose genres hold it. A translation is read where its original is.
- */
-export function stageForBook(book: Pick<BookSummary, "code" | "genre" | "translation_of">): Stage | null {
-  const code = book.translation_of ?? book.code;
-  for (const [id, lead] of Object.entries(STAGE_LEADS)) {
-    if (lead === code) return stageById(Number(id));
-  }
-  if (!book.genre) return null;
-  return STAGES.find((s) => s.genres?.includes(book.genre!)) ?? null;
-}
