@@ -12,7 +12,7 @@ import { quotedPhrase } from "@/lib/assistant/intent";
 import { localBookmarks, saveBookmark, unsaveBookmark } from "@/lib/personal";
 import { parseRef, refToHref } from "@/lib/refs";
 import { withSearchTerms } from "@/lib/searchHit";
-import { foldSpelling } from "@/lib/spellingFold";
+import { foldSpelling, splitMarked } from "@/lib/spellingFold";
 import { LibraryLane } from "@/components/library/LibraryLane";
 import type { BookSummary, LibrarySearchRow, SearchResponse, SearchResult } from "@/lib/types";
 import { ctaPrimary } from "@/components/ui";
@@ -432,30 +432,26 @@ function BookChip({
   );
 }
 
-const RE_SPECIAL = /[.*+?^${}()|[\]\\]/g;
-
-/** Searched words marked in the snippet — as React nodes, never as HTML. */
+/**
+ * Searched words marked in the snippet — as React nodes, never as HTML.
+ * Either spelling is marked (सम्बन्ध / संबंध), as the filter already counts
+ * them the same — see `spellingFold` (UX audit FD2).
+ */
 function Highlight({ text, terms }: { text: string; terms: string[] }) {
-  const parts = useMemo(() => {
-    const t = terms.filter(Boolean);
-    if (!t.length) return [text];
-    const pattern = t.map((x) => x.replace(RE_SPECIAL, "\\$&")).join("|");
-    return text.split(new RegExp(`(${pattern})`, "gi"));
-  }, [text, terms]);
-  const set = useMemo(() => new Set(terms.map((t) => t.toLowerCase())), [terms]);
+  const parts = useMemo(() => splitMarked(text, terms), [text, terms]);
   return (
     <>
       {parts.map((part, i) =>
-        set.has(part.toLowerCase()) ? (
+        part.hit ? (
           <mark
             key={i}
             className="rounded px-0.5 text-ink"
             style={{ background: "color-mix(in srgb, var(--ws-color) 18%, var(--color-card))" }}
           >
-            {part}
+            {part.text}
           </mark>
         ) : (
-          part
+          part.text
         )
       )}
     </>
