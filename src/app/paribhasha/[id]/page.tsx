@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { BackToReading } from "@/components/paribhasha/BackToReading";
 import { EntryBack, GlossaryBack } from "@/components/paribhasha/EntryBack";
 import { EntryExtras, EntryShare } from "@/components/paribhasha/EntryExtras";
 import { WordEntry } from "@/components/paribhasha/WordEntry";
@@ -63,6 +64,8 @@ export default async function ParibhashaWordPage({ params }: { params: Promise<P
             <EntryBack />
           </Suspense>
           <span aria-hidden className="flex-1" />
+          {/* only after arriving from a word in a book */}
+          <BackToReading className="min-w-0" />
           <EntryShare title={word.hindi} />
         </div>
 

@@ -4,7 +4,7 @@ import { scrollBehavior } from "@/lib/motion";
 import type { Deleted } from "./TocSheet";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
 import { CoachMark } from "@/components/onboarding/CoachMark";
@@ -71,6 +71,7 @@ import { useIsDesktop } from "@/components/ui/Dialog";
 import { useEverOpen } from "@/components/ui/useEverOpen";
 import type { WordAnchor } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider, useGlossary } from "./GlossaryProvider";
+import { clearReadingReturn, setReadingReturn } from "@/lib/readingReturn";
 
 import { Sheet } from "./Sheet";
 import { MarginNote } from "./MarginNote";
@@ -264,7 +265,7 @@ export function Reader(props: ReaderProps) {
 function ReaderView({ book, initialChapterNumber, initialChapter, home }: ReaderProps) {
   const { user, loading: authLoading } = useAuth();
   const { open: openFeedback } = useFeedback();
-  const { matcher } = useGlossary();
+  const { matcher, lookup } = useGlossary();
   const player = usePlayer();
   const loadChapter = useChapterLoader(book.code);
   useSeedCache(book.code, initialChapter);
@@ -287,6 +288,19 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const [defineAnchor, setDefineAnchor] = useState<WordAnchor | null>(null);
   /** the underlined word whose meaning is open, tinted until the sheet closes */
   const definingEl = useRef<HTMLElement | null>(null);
+  /** the latest word tap, so a slow first lookup cannot open over a newer one */
+  const defineTicket = useRef(0);
+  /** how far to scroll the tapped line up, made as the sheet appears */
+  const pendingJump = useRef(0);
+  // Back in a book: the glossary's "Back to reading" has done its job.
+  useEffect(() => clearReadingReturn(), []);
+  useLayoutEffect(() => {
+    if (defineWord === null || !pendingJump.current) return;
+    // Instant: the sheet locks the page's scrolling as it opens, which can
+    // stop a smooth scroll halfway, and its own slide covers the jump.
+    window.scrollBy({ top: pendingJump.current, behavior: "instant" });
+    pendingJump.current = 0;
+  }, [defineWord]);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [readingSide, setReadingSide] = useState<ReadingSide>("translated");
@@ -366,14 +380,18 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   const tocMounted = useEverOpen(tocOpen);
   const settingsSheetMounted = useEverOpen(settingsOpen);
   const settingsPanelMounted = useEverOpen(showSettings);
-  const trailMounted = useEverOpen(defineWord !== null);
+  // Mounted (closed) as soon as its code is here, not on the first tap: a
+  // lazily loaded component still renders nothing for a beat on its first
+  // mount, and that beat was part of the first tap's flash.
+  const [trailWarm, setTrailWarm] = useState(false);
+  const trailMounted = useEverOpen(defineWord !== null) || trailWarm;
   // Their code, fetched while the reader has nothing else to do, so the first
   // tap on any of them finds it already here.
   useEffect(() => {
     const warm = () => {
       void loadToc();
       void loadSettings();
-      void loadWordTrail();
+      void loadWordTrail().then(() => setTrailWarm(true));
       void loadAudioMode();
     };
     if (typeof requestIdleCallback === "function") {
@@ -1314,9 +1332,6 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     const word = mark.getAttribute("data-paribhasha");
     if (!word) return;
     track("paribhasha_lookup", { source: "underline" });
-    const r = mark.getBoundingClientRect();
-    setDefineAnchor({ left: r.left, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY });
-    setDefineWord(word);
     // **The word stays in sight under its meaning** (16 Nov 2026, UX audit
     // RD5). The phone's sheet opens at half height (`peek`), the word is
     // tinted while it is open, and a line the sheet would cover is scrolled
@@ -1325,13 +1340,33 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
     definingEl.current?.removeAttribute("data-defining");
     mark.setAttribute("data-defining", "");
     definingEl.current = mark as HTMLElement;
-    if (!desktop && mode === "scroll") {
-      const limit = window.innerHeight * 0.5 - 16;
-      // Instant: the sheet locks the page's scrolling as it opens, which can
-      // stop a smooth scroll halfway, and its own slide covers the jump.
-      if (r.bottom > limit) window.scrollBy({ top: r.bottom - limit, behavior: "instant" });
-    }
-  }, [justSelected, desktop, mode]);
+    /**
+     * **The sheet opens once it has something to say** (17 Nov 2026). The
+     * first tap of a visit fetches its definition from the server — later
+     * ones are local — and the sheet used to open on "Looking up…", a short
+     * blank panel that then grew: on a phone, a white flash. The tint above
+     * answers the tap at once; the sheet waits for the definition and its own
+     * code, but never longer than 600 ms, so a slow connection still sees it
+     * open and say it is looking. A later tap supersedes a pending one.
+     */
+    const ticket = ++defineTicket.current;
+    void Promise.race([
+      Promise.all([loadWordTrail(), lookup(word).catch(() => null)]),
+      new Promise((done) => setTimeout(done, 600)),
+    ]).then(() => {
+      if (ticket !== defineTicket.current || definingEl.current !== mark) return;
+      const r = mark.getBoundingClientRect();
+      setDefineAnchor({ left: r.left, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY });
+      setDefineWord(word);
+      if (!desktop && mode === "scroll") {
+        const limit = window.innerHeight * 0.5 - 16;
+        // Made in the same frame the sheet appears (`pendingJump`'s layout
+        // effect), never before it: an instant jump with nothing over it
+        // reads as the page flashing.
+        if (r.bottom > limit) pendingJump.current = r.bottom - limit;
+      }
+    });
+  }, [justSelected, desktop, mode, lookup]);
 
   // prefetch next chapter near the end of this one (PRD §0.4)
   useEffect(() => {
@@ -2932,6 +2967,15 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         <ParibhashaTrailSheet
           word={defineWord}
           anchor={defineAnchor}
+          // The glossary's pages offer "Back to reading" — to this passage —
+          // once the reader leaves the sheet for them (17 Nov 2026).
+          onLeave={() => {
+            const para = definingEl.current?.closest('[id^="p-"]')?.id;
+            setReadingReturn({
+              href: `${window.location.pathname}${para ? `#${para}` : ""}`,
+              title: book.title_hi,
+            });
+          }}
           onClose={() => {
             setDefineWord(null);
             setDefineAnchor(null);

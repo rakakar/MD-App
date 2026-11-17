@@ -41,6 +41,7 @@ export function ParibhashaTrailSheet({
   word,
   onClose,
   anchor,
+  onLeave,
 }: {
   /** the headword to open; null closes the sheet */
   word: string | null;
@@ -50,6 +51,8 @@ export function ParibhashaTrailSheet({
    * popover beside the word rather than a sheet over the bottom of the window.
    */
   anchor?: WordAnchor | null;
+  /** called as either link out of the sheet is followed — the reader keeps its way back */
+  onLeave?: () => void;
 }) {
   const { lookup } = useGlossary();
   const desktop = useIsDesktop();
@@ -282,6 +285,7 @@ export function ParibhashaTrailSheet({
           {entry && (
             <Link
               href={`/paribhasha/${entry.id}`}
+              onClick={onLeave}
               className="flex min-h-11 items-center text-sm font-semibold"
               style={{ color: "var(--ws-ink)" }}
             >
@@ -290,6 +294,7 @@ export function ParibhashaTrailSheet({
           )}
           <Link
             href="/paribhasha"
+            onClick={onLeave}
             className="flex min-h-11 items-center text-sm font-semibold"
             style={{ color: "var(--ws-ink)" }}
           >

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BackToReading } from "@/components/paribhasha/BackToReading";
 import { GlossaryBrowser } from "@/components/paribhasha/GlossaryBrowser";
 import { WordTrailProvider } from "@/components/paribhasha/WordTrail";
 import { GlossaryProvider } from "@/components/reader/GlossaryProvider";
@@ -47,6 +48,8 @@ export default async function ParibhashaPage({
 
   return (
     <PageContainer>
+      {/* only after arriving from a word in a book */}
+      <BackToReading className="mb-4" />
       <PageTitle
         title="Paribhasha"
         description="The vocabulary of Madhyasth Darshan, based on the Paribhasha Samhita."
