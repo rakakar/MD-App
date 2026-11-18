@@ -215,7 +215,7 @@ function FullPath() {
             <span className="min-w-0 flex-1">
               <span className="block text-title font-semibold">Read the full study guide</span>
               <span className="mt-1 block text-sm text-ink-soft">
-                4 PDFs · English roadmap and overview, Hindi introduction and complete guide
+                English roadmap and overview, Hindi introduction and complete guide
               </span>
             </span>
             <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />
