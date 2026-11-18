@@ -3,6 +3,7 @@ import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { BackButton } from "@/components/ui/BackButton";
 import { InstallAppIcon } from "@/components/shell/icons";
+import { ShareAppButton } from "@/components/ui/ShareAppButton";
 import pkg from "../../../package.json";
 
 export const metadata: Metadata = { title: "About" };
@@ -65,6 +66,7 @@ export default function AboutPage() {
               <li>Tap the ⋮ menu at the top right.</li>
               <li>Choose Install app (on some phones, Add to Home screen).</li>
             </ul>
+            <ShareAppButton className="mt-4" />
           </Section>
 
           <Section title="Responsible team">

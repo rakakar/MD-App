@@ -13,6 +13,8 @@ import { Sheet } from "@/components/ui/Sheet";
 import { track } from "@/lib/analytics";
 import { displayPhone } from "@/lib/me";
 import { signInHref } from "@/lib/routes";
+import { appAddress, shareApp } from "@/lib/shareApp";
+import { useToast } from "@/components/settings/parts";
 import { WORKSPACES, WORKSPACE_ORDER, type WorkspaceId } from "@/lib/workspaceConfig";
 import { UnreadBadge, UnreadDot } from "@/components/notifications/NotificationList";
 import { useInbox } from "@/components/notifications/useInbox";
@@ -31,6 +33,7 @@ import {
   BellIcon,
   HelpIcon,
   InfoIcon,
+  ShareIcon,
   UserIcon,
   WorkspaceIcon,
   ChevronRight,
@@ -384,6 +387,7 @@ function AvatarMenu() {
   // `useSearchParams`, which opts every route under the shell into client
   // rendering to serve one link.
   const pathname = useRoutePath();
+  const [shareToast, showShareToast] = useToast();
 
   if (loading) {
     return <div className="h-11 w-11 rounded-control bg-ink/5 lg:h-12 lg:w-12" aria-hidden />;
@@ -587,6 +591,23 @@ function AvatarMenu() {
           </span>
           How to use MD Study
         </Link>
+        {/* Pass the app on (designer, 18 Nov 2026). The share sheet on a
+            phone; where there is none, the link is copied and said so. */}
+        <button
+          type="button"
+          onClick={async () => {
+            setOpen(false);
+            const r = await shareApp();
+              if (r === "copied") showShareToast("Link to MD Study copied");
+              if (r === "failed") showShareToast(`Share this address: ${appAddress()}`);
+          }}
+          className={row}
+        >
+          <span aria-hidden className={glyph}>
+            <ShareIcon className="h-5 w-5" />
+          </span>
+          Share MD Study
+        </button>
         {/* Last: the app's version, purpose and contact — read once, rarely
             looked for, so it does not stand between a reader and Settings. */}
         <Link
@@ -615,6 +636,7 @@ function AvatarMenu() {
           closes on the way here, and a sheet unmounting its own replacement
           mid-transition leaves nothing on screen. */}
       <DisplaySheet open={displayOpen} onClose={() => setDisplayOpen(false)} />
+      {shareToast}
     </>
   );
 }
@@ -648,6 +670,7 @@ export function SidebarAccount() {
   const ref = useRef<HTMLDivElement>(null);
   const signedIn = !!user;
   const { unread } = useInbox();
+  const [shareToast, showShareToast] = useToast();
 
   useEffect(() => {
     if (!signedIn) return;
@@ -821,6 +844,22 @@ export function SidebarAccount() {
             </span>
             How to use MD Study
           </Link>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={async () => {
+              setOpen(false);
+              const r = await shareApp();
+              if (r === "copied") showShareToast("Link to MD Study copied");
+              if (r === "failed") showShareToast(`Share this address: ${appAddress()}`);
+            }}
+            className={row}
+          >
+            <span aria-hidden className={glyph}>
+              <ShareIcon className="h-4.5 w-4.5" />
+            </span>
+            Share MD Study
+          </button>
           <Link
             href="/about"
             role="menuitem"
@@ -854,6 +893,7 @@ export function SidebarAccount() {
       </button>
 
       <DisplaySheet open={displayOpen} onClose={() => setDisplayOpen(false)} />
+      {shareToast}
     </div>
   );
 }
