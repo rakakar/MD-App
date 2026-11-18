@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { BackButton } from "@/components/ui/BackButton";
-import { InstallCard } from "@/components/settings/InstallCard";
+import { InstallAppIcon } from "@/components/shell/icons";
 import pkg from "../../../package.json";
 
 export const metadata: Metadata = { title: "About" };
@@ -29,24 +29,42 @@ export default function AboutPage() {
             <p className="tabular-nums text-ink-soft">v{pkg.version}</p>
           </Section>
 
-          {/* The vision and purpose from the project's founding PRD
-              (MD_Study_App_PRD.docx, May 2026), as the designer asked. The
-              free-of-charge line stays under it: it is what a reader may do
-              with the contents, which the vision does not say. */}
+          {/* Wording from the designer, 18 Nov 2026 (replaces the PRD's
+              vision and its six-point list). */}
           <Section title="Purpose of the app">
             <p className="text-ink-soft">
-              A unified digital ecosystem for studying, understanding, practicing and sharing
-              Madhyasth Darshan, by Shri A. Nagraj — through reading, listening, watching, guided
-              learning journeys, community engagement and AI-powered assistance.
+              A unified digital system to enable the study, practice and sharing of Madhyasth
+              Darshan, by Shri A. Nagraj — through reading, listening, watching, guided learning
+              journeys, community engagement and AI-powered assistance.
             </p>
-            <ul className="mt-3 flex list-disc flex-col gap-1 ps-5 text-ink-soft marker:text-ink-soft/60">
-              {PURPOSE.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
             <p className="mt-3 text-sm text-ink-soft">
               Provided free of charge. The contents may be used for personal study.
             </p>
+          </Section>
+
+          {/* Both sets of steps at once, unlike Settings' `InstallCard`,
+              which shows only the phone it is on: About is where someone
+              looks up how to get it onto their *other* device. Designer's
+              wording, 18 Nov 2026. */}
+          <Section title="How to use">
+            <h3 className="text-sm font-semibold text-ink">On PCs / laptops</h3>
+            <ul className="mt-1 flex list-disc flex-col gap-1 ps-5 text-ink-soft marker:text-ink-soft/60">
+              <li>Open in a browser like any website and use.</li>
+              <li>
+                To install it as an app, look for the
+                <InstallAppIcon className="mx-1 inline-block h-[1.15em] w-[1.15em] -translate-y-px align-middle text-ink" />
+                icon at the right end of the address bar.
+              </li>
+            </ul>
+            <h3 className="mt-3 text-sm font-semibold text-ink">On mobile phones</h3>
+            <ul className="mt-1 flex list-disc flex-col gap-1 ps-5 text-ink-soft marker:text-ink-soft/60">
+              <li>
+                Open <span className="font-medium text-ink">app.madhyasth.org</span> in Chrome or
+                your browser.
+              </li>
+              <li>Tap the ⋮ menu at the top right.</li>
+              <li>Choose Install app (on some phones, Add to Home screen).</li>
+            </ul>
           </Section>
 
           <Section title="Responsible team">
@@ -60,7 +78,6 @@ export default function AboutPage() {
             </ul>
           </Section>
 
-          <InstallCard className="rounded-2xl border border-rule bg-card p-4" />
 
           <Section title="Official website">
             <a
@@ -89,15 +106,6 @@ export default function AboutPage() {
     </AppAccent>
   );
 }
-
-const PURPOSE = [
-  "Structured access to MD literature and study resources",
-  "Self-study and guided learning",
-  "Access in many languages",
-  "A connected learning community",
-  "AI-assisted understanding and research",
-  "One place for publishers, learners and contributors",
-];
 
 /** Name and role, in the order the designer gave (5 Nov 2026). */
 const TEAM: [string, string][] = [

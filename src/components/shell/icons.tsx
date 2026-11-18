@@ -461,6 +461,20 @@ export function PathIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * The desktop browser's own "Install app" button, drawn as Chrome draws it in
+ * the address bar — a window with a + in its open top-right corner — so the
+ * About page can show readers which button to look for.
+ */
+export function InstallAppIcon({ className }: { className?: string }) {
+  return (
+    <Svg className={className}>
+      <path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" />
+      <path d="M12 4v16M4 12h16M17 3v6M14 6h6" />
+    </Svg>
+  );
+}
+
 export function PlusIcon({ className }: { className?: string }) {
   return (
     <Svg className={className ?? "h-5 w-5"}>
