@@ -79,6 +79,22 @@ export function Composer({
   tray?: ReactNode;
 }) {
   const keyboard = useKeyboardInset();
+  /**
+   * With the keyboard up, the height left between it and the Assistant's
+   * header. The landing rides up on this block with the keyboard, and on a
+   * phone it is taller than what is left, so its title ran up over the
+   * header (19 Nov 2026, Android). Capped to this, the landing scrolls
+   * inside the gap instead, its foot — the chips and examples — kept in view.
+   */
+  const [room, setRoom] = useState<number | null>(null);
+  useEffect(() => {
+    if (keyboard === 0) {
+      setRoom(null);
+      return;
+    }
+    const top = document.querySelector("[data-assistant-header]")?.getBoundingClientRect().bottom ?? 0;
+    setRoom(Math.max(0, window.innerHeight - keyboard - top));
+  }, [keyboard]);
   const [hi, setHi] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const showCommands = commands.length > 0 && !dismissed;
@@ -96,13 +112,19 @@ export function Composer({
 
   return (
     <div
-      className={`fixed inset-x-0 z-30 lg:static lg:z-auto ${className}`}
+      className={`fixed inset-x-0 z-30 flex flex-col lg:static lg:z-auto ${className}`}
       // On the keyboard when it is up, on the tab bar when it is down — the
       // keyboard covers the tab bar, so the box must not wait above it.
-      style={{ bottom: keyboard > 0 ? keyboard : "var(--bottom-nav-h, 0px)" }}
+      style={{
+        bottom: keyboard > 0 ? keyboard : "var(--bottom-nav-h, 0px)",
+        maxHeight: room ?? undefined,
+      }}
     >
-      {above}
-      <div className={`border-t border-rule bg-surface ${docked ? "" : "lg:border-t-0 lg:bg-transparent"}`}>
+      {/* `column-reverse` so a capped landing opens scrolled to its foot. */}
+      {above && (
+        <div className={room !== null ? "flex min-h-0 flex-col-reverse overflow-y-auto" : ""}>{above}</div>
+      )}
+      <div className={`shrink-0 border-t border-rule bg-surface ${docked ? "" : "lg:border-t-0 lg:bg-transparent"}`}>
       <div className="mx-auto max-w-3xl px-4 pb-3 pt-3 sm:px-6">
         {showCommands && (
           <div
