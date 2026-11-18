@@ -30,17 +30,17 @@ import { StateSheet } from "./StateSheet";
  * request; the first refetch is the reader's first choice.
  */
 /**
- * Alphabetical by city, then by name within a city (designer, 16 Nov 2026).
- * Sorted here rather than trusted from the API, whose order is the panel's.
- * A contact with no city falls back to its printed location.
+ * Alphabetical by person's name, then by city for two people of the same name
+ * (designer, 18 Nov 2026 — was city-first). Sorted here rather than trusted
+ * from the API, whose order is the panel's. An honorific is skipped, so
+ * "Dr. Sanket Thakur" files under S.
  */
-function byCity(rows: DirectoryContact[]): DirectoryContact[] {
-  const key = (c: DirectoryContact) => (c.city || c.location || "").trim();
-  return [...rows].sort(
-    (a, b) =>
-      key(a).localeCompare(key(b), undefined, { sensitivity: "base" }) ||
-      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-  );
+const HONORIFIC = /^(dr|shri|smt|sri|mr|mrs|ms|prof)\.?\s+/i;
+function byName(rows: DirectoryContact[]): DirectoryContact[] {
+  const name = (c: DirectoryContact) => c.name.trim().replace(HONORIFIC, "");
+  const city = (c: DirectoryContact) => (c.city || c.location || "").trim();
+  const cmp = (x: string, y: string) => x.localeCompare(y, undefined, { sensitivity: "base" });
+  return [...rows].sort((a, b) => cmp(name(a), name(b)) || cmp(city(a), city(b)));
 }
 
 export function ContactsScreen({
@@ -136,7 +136,7 @@ export function ContactsScreen({
           <ErrorState />
         ) : rows.length > 0 ? (
           <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-6">
-            {byCity(rows).map((c) => (
+            {byName(rows).map((c) => (
               <li key={c.id} className="lg:[&>article]:h-full">
                 <ContactCard contact={c} />
               </li>
