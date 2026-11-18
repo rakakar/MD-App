@@ -516,7 +516,6 @@ function Marking() {
 /* ---- 6. the journey -------------------------------------------------- */
 
 /** "Level One" — the level's number said as a word, as `StageCard` draws it. */
-const LEVEL_WORD: Record<number, string> = { 1: "One", 2: "Two", 3: "Three", 4: "Four" };
 
 /**
  * Stage one, drawn as the dashboard's own card draws it.
@@ -538,7 +537,7 @@ function Journey() {
     <Stage tone="tint">
       <div className="flex items-baseline justify-between gap-3">
         <p className={LABEL} style={{ color: "var(--ws-ink)" }}>
-          Level {LEVEL_WORD[level.id]}
+          Level {level.letter}
         </p>
         <p className="shrink-0 text-sm text-ink-soft">
           Stage {stage.id} of {STAGES.length}

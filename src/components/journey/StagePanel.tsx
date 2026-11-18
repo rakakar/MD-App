@@ -77,7 +77,7 @@ export function StagePanel({
   const eyebrow =
     variant === "panel"
       ? `Stage ${stage.id} of ${STAGES.length}${stage.en ? ` · ${stage.en}` : ""}`
-      : `Level ${level.id} · Stage ${stage.id} of ${STAGES.length}`;
+      : `Level ${level.letter} · Stage ${stage.id} of ${STAGES.length}`;
 
   const content = (
     <TabContent stage={stage} tab={active} folders={folders} onTab={onTab} />

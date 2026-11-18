@@ -53,10 +53,10 @@ export function PathOverview() {
                 color: "var(--ws-ink)",
               }}
             >
-              {level.id}
+              {level.letter}
             </span>
             <h3 lang="hi" className="hi hi-tight mt-3 text-title font-semibold">
-              <span className="sr-only">Level {level.id}: </span>
+              <span className="sr-only">Level {level.letter}: </span>
               {level.hi}
             </h3>
             <p className="mt-1 text-sm text-ink-soft">{level.en}</p>

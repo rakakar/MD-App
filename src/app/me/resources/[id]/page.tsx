@@ -17,12 +17,12 @@ export const dynamicParams = true;
 
 /**
  * The folders the full path opens directly — every stage's own resources, and
- * the study guide's folder that /me/path links to (144). A folder at or under
+ * the study guide's folder that /me/path links to (348). A folder at or under
  * one of these is "inside this tree"; the library folders *above* them are
  * not, and a back pill into one would leave the stage for a filing cabinet.
  */
 const ENTRY_FOLDERS = new Set<number>([
-  144,
+  348,
   ...STAGES.flatMap((s) => stageResources(s)).flatMap((r) => resourceFolderId(r) ?? []),
 ]);
 

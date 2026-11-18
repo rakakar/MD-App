@@ -54,8 +54,8 @@ export default function FullPathPage() {
 
 const TABS: StageTab[] = ["about", "reading", "audio", "video"];
 
-/** "Start here - Study Roadmap", the library folder holding the three guides. */
-const STUDY_GUIDE_FOLDER = 144;
+/** "Roadmap - मार्गदर्शिका" (348), the library folder holding the four guides. */
+const STUDY_GUIDE_FOLDER = 348;
 
 function FullPath() {
   const params = useSearchParams();
@@ -153,7 +153,7 @@ function FullPath() {
             The full path
           </h1>
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-soft lg:text-lg">
-            Four levels, nine stages. Durations say how long this usually{" "}
+            Four levels, A to D, and nine stages. Durations say how long this usually{" "}
             <em>unfolds over</em> — they are not deadlines, and nothing here is locked.
           </p>
         </header>
@@ -165,7 +165,7 @@ function FullPath() {
                 className="text-xs font-bold uppercase tracking-[0.09em]"
                 style={{ color: "var(--ws-ink)" }}
               >
-                Level {level.id}
+                Level {level.letter}
               </p>
               <h2
                 id={`level-${level.id}`}
@@ -203,7 +203,7 @@ function FullPath() {
             The path as one student estimates it — not doctrine.
           </p>
 
-          {/* The guides this screen is drawn from — the three PDFs of the
+          {/* The guides this screen is drawn from — the four PDFs of the
               library's study-roadmap folder, opened inside My Journey. A box
               rather than a text link: it is a destination with things in it,
               drawn like the stage resources above. */}
@@ -215,7 +215,7 @@ function FullPath() {
             <span className="min-w-0 flex-1">
               <span className="block text-title font-semibold">Read the full study guide</span>
               <span className="mt-1 block text-sm text-ink-soft">
-                3 PDFs · English roadmap, short and detailed Hindi guides
+                4 PDFs · English roadmap and overview, Hindi introduction and complete guide
               </span>
             </span>
             <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft" />

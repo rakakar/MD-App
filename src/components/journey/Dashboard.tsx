@@ -77,13 +77,13 @@ export function PathBar({ stage }: { stage: Stage }) {
           </span>
           <span className="text-ink-soft">
             {" "}
-            · Levels 1–3<span className="hidden sm:inline"> · with the books</span>
+            · Levels A–C<span className="hidden sm:inline"> · with the books</span>
           </span>
         </p>
         <p className="shrink-0 text-end">
-          <span className="hidden text-ink-soft sm:inline">Level 4 · beyond the books </span>
+          <span className="hidden text-ink-soft sm:inline">Level D · beyond the books </span>
           <span className="font-semibold" style={{ color: L4_INK }}>
-            <span className="sm:hidden">Level 4</span>
+            <span className="sm:hidden">Level D</span>
             <span className="hidden sm:inline"> Understanding</span>
           </span>
         </p>
@@ -107,7 +107,7 @@ export function PathBar({ stage }: { stage: Stage }) {
 
       <div
         role="img"
-        aria-label={`Stage ${stage.id} of ${STAGES.length}, level ${stage.level} of ${LEVELS.length}`}
+        aria-label={`Stage ${stage.id} of ${STAGES.length}, level ${levelOf(stage).letter}`}
         className="relative mt-1 h-5"
       >
         <span
@@ -144,7 +144,7 @@ export function PathBar({ stage }: { stage: Stage }) {
             className="hi hi-tight min-w-0 truncate pe-3 text-ink-soft"
             style={{ width: `${third}%` }}
           >
-            {l.id} · {l.hi}
+            {l.letter} · {l.hi}
           </span>
         ))}
         <span lang="hi" className="hi hi-tight min-w-0 flex-1 truncate pe-3 text-ink-soft">
@@ -225,7 +225,7 @@ export function PathCard({
           className="text-xs font-bold uppercase tracking-[0.09em]"
           style={{ color: "var(--ws-ink)" }}
         >
-          Level {level.id} · {level.en.replace(/\s*\(.*\)$/, "")}
+          Level {level.letter} · {level.en.replace(/\s*\(.*\)$/, "")}
         </p>
         <h2
           lang="hi"

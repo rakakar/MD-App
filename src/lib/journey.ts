@@ -23,7 +23,7 @@
  *    that this is one student's estimate.
  */
 
-import { journeyFolderHref } from "./routes";
+import { journeyDocumentHref, journeyFolderHref } from "./routes";
 import type { BookSummary } from "./types";
 
 export type StageId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
@@ -66,6 +66,13 @@ export interface Stage {
 
 export interface Level {
   id: LevelId;
+  /**
+   * What the screens call it. Levels are lettered, not numbered, so "Level 2"
+   * never reads as "Stage 2" — nine numbered stages inside four numbered
+   * levels confused testers (team test notes, 18 Nov 2026). `id` stays a
+   * number underneath: stages and saved prefs refer to it.
+   */
+  letter: "A" | "B" | "C" | "D";
   hi: string;
   en: string;
   stages: StageId[];
@@ -75,6 +82,7 @@ export interface Level {
 export const LEVELS: Level[] = [
   {
     id: 1,
+    letter: "A",
     hi: "प्राथमिक आधार",
     en: "Basic Foundation",
     stages: [1, 2, 3],
@@ -82,6 +90,7 @@ export const LEVELS: Level[] = [
   },
   {
     id: 2,
+    letter: "B",
     hi: "क्रमबद्ध अध्ययन",
     en: "Systematic Study (Shravan)",
     stages: [4, 5],
@@ -89,6 +98,7 @@ export const LEVELS: Level[] = [
   },
   {
     id: 3,
+    letter: "C",
     hi: "विधिवत अभ्यास",
     en: "Systematic Practice (Manan)",
     stages: [6],
@@ -96,6 +106,7 @@ export const LEVELS: Level[] = [
   },
   {
     id: 4,
+    letter: "D",
     hi: "समझ — साक्षात्कार, बोध, अनुभव",
     en: "Understanding & Knowledge",
     stages: [7, 8, 9],
@@ -238,23 +249,36 @@ const YT = "https://www.youtube.com";
 /**
  * Each stage's resources, from A. Nagraj ji's study roadmap as one student
  * set it out (the "विस्तृत मार्गदर्शिका", which is itself in the library at
- * `/library/144`).
+ * `/library/348`).
  *
  * **Editorial, like the stages.** The guide's own links are pCloud folders; a
  * folder here is the library's equivalent where the library has one. The
  * ids are library folders on the live BE, so a folder that is unpublished
  * stops opening rather than breaking the stage.
  *
- * **Stages 2 and 5 have no library folder of their own yet.** The guide's
- * अध्ययन बिंदु and गोष्ठी reading packs exist only on pCloud; they belong
- * here the day the library has them. Stages 7–9 have none by design — the
- * guide itself names only a single book there.
+ * **Each stage's पठन सामग्री is its folder under "Stagewise Study Guides"
+ * (345)** — the pCloud "अध्ययन श्रृंखला मार्गदर्शिका" imported on 24 Oct
+ * 2026, one folder per stage, each opening on the guide's कड़ी मार्गदर्शिका
+ * PDF (team test notes, 18 Nov 2026). Files that were already in मूल ग्रंथ
+ * were refused as duplicates on import, so a stage folder can be shorter than
+ * its pCloud original; those are books, and the stage shows its books
+ * separately. The guide has one folder for the whole of समझ, so stages 7–9
+ * share it.
  */
+const SAMAJH_GUIDE: StageResource = {
+  title: "समझ कड़ी मार्गदर्शिका",
+  href: journeyFolderHref(354),
+  kind: "folder",
+  note: "Stage guide · PDF",
+};
+
 const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
   1: [
     // First: this stage *is* a camp, and nothing on it said where to find one.
     { title: "आगामी शिविर", href: "/connect", kind: "link", note: "Upcoming camps" },
-    { title: "परिचयात्मक संकलन", href: journeyFolderHref(77), kind: "folder", note: "Introductory reading · PDF" },
+    { title: "पठन सामग्री", href: journeyFolderHref(347), kind: "folder", note: "Stage guide and reading · PDF" },
+    // Was "परिचयात्मक संकलन" → folder 77, which the library no longer serves.
+    { title: "सम्पूर्ण प्रवेश संकलन", href: journeyFolderHref(299), kind: "folder", note: "The seven introductory books · PDF" },
     // 229, not 26: the 1997 talks were re-filed under Originals › ऑडियो and
     // the old folder id answers 404 now.
     { title: "जीवन विद्या: एक परिचय", href: journeyFolderHref(229), kind: "audio", note: "Nagraj ji's introductory talks · 1997" },
@@ -266,15 +290,12 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
       note: "Jeevan Vidya official channel",
     },
   ],
-  // The guide's अध्ययन बिंदु booklet and camp recordings are not in the
-  // library yet (the only Adhyayan Bindu file is the Kannada translation), so
-  // the stage offers what does exist: where the next camp is. Connect's events
-  // are the shivir calendar.
   2: [
     { title: "आगामी शिविर", href: "/connect", kind: "link", note: "Upcoming camps" },
+    { title: "अध्ययन बिंदु पठन सामग्री", href: journeyFolderHref(349), kind: "folder", note: "Stage guide and reading · PDF" },
   ],
   3: [
-    { title: "अवलोकन पठन सामग्री", href: journeyFolderHref(77), kind: "folder", note: "The reading for this stage · PDF" },
+    { title: "अवलोकन पठन सामग्री", href: journeyFolderHref(350), kind: "folder", note: "Stage guide and reading · PDF" },
     { title: "सहअस्तित्ववादी विज्ञान (1999)", href: journeyFolderHref(59), kind: "video", note: "Nagraj ji's 1999 video series" },
     {
       title: "पूर्व अवलोकन शिविर",
@@ -284,7 +305,11 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
     },
   ],
   4: [
-    { title: "संवाद — नागराजजी के साथ", href: journeyFolderHref(51), kind: "folder", note: "Samvad · PDF" },
+    { title: "उत्तरोत्तर अध्ययन क्रम मार्गदर्शिका", href: journeyFolderHref(351), kind: "folder", note: "Stage guide · PDF" },
+    // Folder 51 is gone; the two published Samvad volumes now sit with the
+    // rest of the published literature in मूल ग्रंथ › प्रकाशित दर्शन (298).
+    { title: "संवाद — नागराजजी के साथ", href: journeyDocumentHref(298, 3560), kind: "pdf", note: "Samvad part 1 · PDF" },
+    { title: "संवाद — नागराजजी के साथ", href: journeyDocumentHref(298, 3561), kind: "pdf", note: "Samvad part 2 · PDF" },
     { title: "सम्मेलन — मसूरी 2005", href: journeyFolderHref(55), kind: "video", note: "On why and how to study" },
     {
       title: "१२ पुस्तक — 400 घंटे पठन शिविर",
@@ -300,7 +325,8 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
     },
   ],
   5: [
-    { title: "अध्ययन विधि सम्बंधित लेख", href: journeyFolderHref(117), kind: "folder", note: "On how to study · PDF" },
+    { title: "अध्ययन गोष्ठी पठन सामग्री", href: journeyFolderHref(352), kind: "folder", note: "Stage guide and discussion points · PDF" },
+    { title: "अध्ययन विधि सम्बंधित लेख", href: journeyFolderHref(387), kind: "folder", note: "On how to study · PDF" },
     {
       title: "अध्ययन विधि परिचय",
       href: `${YT}/watch?v=Em7QUw9jdgg&list=PLnQVMclfMfocWa-E1G4zzxGwoWmKbPizG`,
@@ -321,12 +347,13 @@ const STAGE_RESOURCES: Record<StageId, StageResource[]> = {
     },
   ],
   6: [
-    { title: "संवाद — नागराजजी के साथ", href: journeyFolderHref(51), kind: "folder", note: "Including the unpublished Samvad · PDF" },
-    { title: "विद्यार्थी लिखित पुस्तक एवं लेख", href: journeyFolderHref(115), kind: "folder", note: "Students' compilations and research · PDF" },
+    { title: "मनन-अभ्यास पठन सामग्री", href: journeyFolderHref(353), kind: "folder", note: "Stage guide and shodh patra · PDF" },
+    { title: "अप्रकाशित संवाद", href: journeyFolderHref(318), kind: "folder", note: "The unpublished Samvad · PDF" },
+    { title: "विद्यार्थी लिखित पुस्तक एवं लेख", href: journeyFolderHref(385), kind: "folder", note: "Students' compilations and research · PDF" },
   ],
-  7: [],
-  8: [],
-  9: [],
+  7: [SAMAJH_GUIDE],
+  8: [SAMAJH_GUIDE],
+  9: [SAMAJH_GUIDE],
 };
 
 export function stageResources(stage: Stage): StageResource[] {
