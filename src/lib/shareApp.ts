@@ -1,3 +1,5 @@
+import { APP_NAME } from "./brand";
+
 /**
  * Share the app itself — the account menu's "Share MD Study" and the About
  * page's button (designer, 18 Nov 2026).
@@ -10,9 +12,8 @@
  */
 export async function shareApp(): Promise<"shared" | "copied" | "cancelled" | "failed"> {
   const url = `${window.location.origin}/`;
-  const title = "MD Study";
-  const text =
-    "MD Study — read, listen to and study Madhyasth Darshan by Shri A. Nagraj. Free to use.";
+  const title = APP_NAME;
+  const text = `${APP_NAME} — read, listen to and study the works of Shri A. Nagraj. Free to use.`;
   if (navigator.share) {
     try {
       await navigator.share({ title, text, url });

@@ -598,7 +598,7 @@ function AvatarMenu() {
           onClick={async () => {
             setOpen(false);
             const r = await shareApp();
-              if (r === "copied") showShareToast("Link to MD Study copied");
+              if (r === "copied") showShareToast("Link to the app copied");
               if (r === "failed") showShareToast(`Share this address: ${appAddress()}`);
           }}
           className={row}
@@ -606,7 +606,7 @@ function AvatarMenu() {
           <span aria-hidden className={glyph}>
             <ShareIcon className="h-5 w-5" />
           </span>
-          Share MD Study
+          Share the app
         </button>
         {/* Last: the app's version, purpose and contact — read once, rarely
             looked for, so it does not stand between a reader and Settings. */}
@@ -850,7 +850,7 @@ export function SidebarAccount() {
             onClick={async () => {
               setOpen(false);
               const r = await shareApp();
-              if (r === "copied") showShareToast("Link to MD Study copied");
+              if (r === "copied") showShareToast("Link to the app copied");
               if (r === "failed") showShareToast(`Share this address: ${appAddress()}`);
             }}
             className={row}
@@ -858,7 +858,7 @@ export function SidebarAccount() {
             <span aria-hidden className={glyph}>
               <ShareIcon className="h-4.5 w-4.5" />
             </span>
-            Share MD Study
+            Share the app
           </button>
           <Link
             href="/about"

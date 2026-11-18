@@ -240,8 +240,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               keyboard ? "opacity-0" : "opacity-100"
             }`}
           >
-            <p lang="hi" className="auth-name font-devanagari-sans" style={{ color: "var(--ws-ink)" }}>
-              {LAUNCH.founderLine}
+            {/* The app's name, as the launch screen sets it (18 Nov 2026; it was
+                the Hindi founder line). */}
+            <p className="auth-name font-display font-medium" style={{ color: "var(--ws-ink)" }}>
+              {LAUNCH.title}
+              <span className="auth-sub block">{LAUNCH.subtitle}</span>
             </p>
             <p className="launch-eyebrow font-semibold uppercase text-ink-soft">{LAUNCH.eyebrow}</p>
           </div>

@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
+import { APP_NAME, APP_SHORT_NAME } from "@/lib/brand";
 import { iconUrl } from "@/lib/iconVersion";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "MD Study — Madhyasth Darshan",
-    short_name: "MD Study",
+    name: APP_NAME,
+    // what sits under the home-screen icon, where the full name would be cut
+    short_name: APP_SHORT_NAME,
     description:
       "Read A. Nagrajji’s books, listen to discourses, study translations and resources.",
     start_url: "/",

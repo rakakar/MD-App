@@ -108,7 +108,10 @@ export function advanceLabel(index: number): string {
  * the reader has already walked through.
  */
 export const LAUNCH = {
+  /** `title`, `subtitle` and `eyebrow` together read as `APP_NAME` (lib/brand) */
   title: "Madhyasth Darshan",
+  /** set smaller than the title, on a line of its own (designer, 18 Nov 2026) */
+  subtitle: "(Jeevan Vidya)",
   eyebrow: "Study",
   description:
     "The all-in-one platform to read original literature, explore deep study resources, and connect with fellow students on the path of coexistence.",

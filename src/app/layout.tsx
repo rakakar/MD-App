@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { APP_NAME } from "@/lib/brand";
 import { Instrument_Sans, Mukta, Newsreader } from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@/components/consent/ConsentBanner";
@@ -106,12 +107,12 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "MD Study — A. Nagrajji’s Literature",
+    default: APP_NAME,
     template: "%s · MD Study",
   },
   description:
     "Read A. Nagrajji’s published books (Madhyasth Darshan), listen to discourses, and study translations and resources.",
-  applicationName: "MD Study",
+  applicationName: APP_NAME,
   manifest: "/manifest.webmanifest",
   // Without these an iOS home-screen install gets a screenshot for an icon and
   // a browser-chrome title bar — most of this audience installs from Safari.
@@ -150,13 +151,13 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "MD Study",
+    siteName: APP_NAME,
     locale: "hi_IN",
     // A link pasted into WhatsApp — how most of this audience shares — showed
     // no picture at all. The 512 logo is the only brand image that is square
     // and big enough for a preview; pages that set their own `openGraph`
     // replace this whole object, so they bring their own (15 Nov 2026).
-    images: [{ url: iconUrl("/icon-512.png"), width: 512, height: 512, alt: "MD Study" }],
+    images: [{ url: iconUrl("/icon-512.png"), width: 512, height: 512, alt: APP_NAME }],
   },
 };
 

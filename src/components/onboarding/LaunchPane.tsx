@@ -86,6 +86,7 @@ export function LaunchPane({
               style={{ color: "var(--ws-ink)", "--launch-at": "0.65s" } as React.CSSProperties}
             >
               {LAUNCH.title}
+              <span className="launch-sub mt-1 block">{LAUNCH.subtitle}</span>
             </h1>
             <p
               className="launch-in launch-eyebrow font-semibold uppercase text-ink-soft"
