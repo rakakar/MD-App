@@ -1,16 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, PinIcon } from "@/components/shell/icons";
 import { EmptyState, ErrorState } from "@/components/ui";
 import { getContacts } from "@/lib/api";
-import {
-  ALL_STATES,
-  stateButtonLabel,
-  type ContactStates,
-  type DirectoryContact,
-} from "@/lib/directory";
+import { ALL_STATES, type ContactStates, type DirectoryContact } from "@/lib/directory";
 import { ContactCard } from "./ContactCard";
+import { StateChooser } from "./StateChooser";
 import { StateSheet } from "./StateSheet";
 
 /**
@@ -102,29 +97,15 @@ export function ContactsScreen({
       <div className="sticky top-(--app-header-h) z-30 -mx-4 bg-surface px-4 pb-2 pt-4 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:flex lg:items-center lg:justify-between lg:gap-8 lg:border-b lg:border-rule lg:px-8 lg:pb-6">
       {tabs}
       <div className={`${tabs ? "mt-3" : ""} lg:mt-0 lg:w-[30rem] lg:shrink-0`}>
-      <button
-        type="button"
-        onClick={() => setSheetOpen(true)}
-        aria-haspopup="dialog"
-        className="flex min-h-14 w-full items-center gap-3 rounded-control border border-rule bg-card px-3.5 text-start"
-      >
-        <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
-          <PinIcon />
-        </span>
-        <span
-          className={`min-w-0 flex-1 truncate text-base ${
-            chosen ? "font-semibold text-ink" : "text-ink-soft"
-          }`}
-        >
-          {stateButtonLabel(state, states.states)}
-        </span>
-        {chosen && (
-          <span className="shrink-0 text-sm tabular-nums text-ink-soft">{rows.length}</span>
-        )}
-        <span aria-hidden className="shrink-0 text-muted">
-          <ChevronDown />
-        </span>
-      </button>
+      <StateChooser
+        state={state}
+        allValue={ALL_STATES}
+        states={states.states}
+        count={rows.length}
+        noun="contacts"
+        onOpen={() => setSheetOpen(true)}
+        onClear={() => setState(ALL_STATES)}
+      />
       </div>
       </div>
 

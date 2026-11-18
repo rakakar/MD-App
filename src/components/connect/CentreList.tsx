@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ChevronDown, PinIcon } from "@/components/shell/icons";
 import { profileFor } from "@/lib/profile";
-import { ALL_STATES, stateButtonLabel, type Centre, type ContactStates } from "@/lib/directory";
+import { ALL_STATES, type Centre, type ContactStates } from "@/lib/directory";
 import { CentreCard } from "./CentreCard";
+import { StateChooser } from "./StateChooser";
 import { StateSheet } from "./StateSheet";
 
 /**
@@ -60,25 +60,17 @@ export function CentreList({ centres }: { centres: Centre[] }) {
     <>
       {states.states.length > 1 && (
         // The contacts tab's chooser, as drawn there.
-        <button
-          type="button"
-          onClick={() => setSheetOpen(true)}
-          aria-haspopup="dialog"
-          className="mt-4 flex min-h-14 w-full items-center gap-3 rounded-control border border-rule bg-card px-3.5 text-start lg:mt-8 lg:w-[30rem]"
-        >
-          <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
-            <PinIcon />
-          </span>
-          <span
-            className={`min-w-0 flex-1 truncate text-base ${chosen ? "font-semibold text-ink" : "text-ink-soft"}`}
-          >
-            {stateButtonLabel(state, states.states)}
-          </span>
-          {chosen && <span className="shrink-0 text-sm tabular-nums text-ink-soft">{shown.length}</span>}
-          <span aria-hidden className="shrink-0 text-muted">
-            <ChevronDown />
-          </span>
-        </button>
+        <div className="mt-4 lg:mt-8 lg:w-[30rem]">
+          <StateChooser
+            state={state}
+            allValue={ALL_STATES}
+            states={states.states}
+            count={shown.length}
+            noun="centres"
+            onOpen={() => setSheetOpen(true)}
+            onClear={() => setState(ALL_STATES)}
+          />
+        </div>
       )}
 
       {/* Two columns on a desktop, each card as tall as its own content. */}
