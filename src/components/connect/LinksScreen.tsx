@@ -371,9 +371,11 @@ function LinksDesktop({ groups }: { groups: LinkGroup[] }) {
 }
 
 export function LinksScreen({ groups }: { groups: LinkGroup[] }) {
-  // The first group open on arrival, as desktop always shows one (UX audit
-  // CN9): a stack of closed headings was a screen of nothing to read.
-  const [open, setOpen] = useState<string | null>(groups[0]?.code ?? null);
+  // Every group closed on arrival (designer, 19 Nov 2026 — reverses the
+  // first-group-open of UX audit CN9): the first group is the long
+  // WhatsApp/Telegram list, and open it pushed the other groups off a phone
+  // screen. Each closed card already says how many links it holds.
+  const [open, setOpen] = useState<string | null>(null);
 
   return (
     <>
