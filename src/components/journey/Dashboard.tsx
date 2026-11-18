@@ -148,10 +148,10 @@ export function PathBar({ stage }: { stage: Stage }) {
           </span>
         ))}
         <span lang="hi" className="hi hi-tight min-w-0 flex-1 truncate pe-3 text-ink-soft">
-          3 · {LEVELS[2].hi}
+          {LEVELS[2].letter} · {LEVELS[2].hi}
         </span>
         <span lang="hi" className="hi hi-tight shrink-0 font-semibold" style={{ color: L4_INK }}>
-          4 · {LEVELS[3].hi}
+          {LEVELS[3].letter} · {LEVELS[3].hi}
         </span>
       </div>
       <div aria-hidden className="mt-2 flex justify-between text-sm sm:hidden">

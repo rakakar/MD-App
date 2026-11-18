@@ -123,7 +123,7 @@ export const STAGES: Stage[] = [
     // What a shivir is, said once where a newcomer first meets the word
     // (15 Nov 2026, UX audit ST1): "Just exploring" lands here too.
     note: "A shivir is a study camp led by a prabodhak. This first one runs 7 days — human purpose, family, society, nature. Suggested with more than one Prabodhak.",
-    duration: "1–2 camps over 6 months to 1 year",
+    duration: "1–2 camps over 3 to 6 months",
     brings: ["स्वयं में सतर्कता शुरू होती है।", "रिश्तों में संवेदनशीलता बढ़ती है; लोगों के साथ सहानुभूति बेहतर होगी।", "धन और वस्तुओं से संबंध स्पष्ट होता है।", "समझने की आवश्यकता स्पष्ट हो जाती है – स्वयं और दुनिया की कई समस्याओं के समाधान के रूप में।"],
     // JVEP — जीवन विद्या एक परिचय — is this camp's reading, and ABVP the next
     // one's; both are filed `parichay`, so the stage takes the genre and

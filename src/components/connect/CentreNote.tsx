@@ -87,10 +87,9 @@ export function CentreNoteCard({ note }: { note: CentreNote }) {
  * and `PageContainer`'s `text` size is what every other run of prose in the
  * app is set on.
  *
- * `{{here}}` is the one substitution: both notes point at a caution note
- * published elsewhere whose address has not been given, so until
- * `CAUTION_NOTE_URL` is set the word renders as text. See the note on that
- * constant for why a placeholder link would be worse here than none.
+ * `{{here}}` is the one substitution: the word links to `CAUTION_NOTE_URL`,
+ * which is now the caution note at the foot of the same page, or renders as
+ * plain text if that is ever unset.
  */
 export function CentreNoteBody({ note }: { note: CentreNote }) {
   const tone = TONE[note.tone];
@@ -123,17 +122,43 @@ export function CentreNoteBody({ note }: { note: CentreNote }) {
             );
           }
           if (b.kind === "h") {
+            // `scroll-mt` keeps an anchored heading clear of the sticky bar.
             return (
-              <h2 key={i} className="mt-3 font-display text-2xl font-medium leading-snug">
+              <h2
+                key={i}
+                id={b.id}
+                {...(b.lang === "hi" ? { lang: "hi" } : {})}
+                className={`mt-3 scroll-mt-24 font-display text-2xl font-medium leading-snug ${b.lang === "hi" ? "hi hi-tight" : ""}`}
+              >
                 {b.text}
               </h2>
             );
           }
           if (b.kind === "strong") {
             return (
-              <p key={i} className="text-title font-semibold leading-relaxed">
+              <p
+                key={i}
+                {...(b.lang === "hi" ? { lang: "hi" } : {})}
+                className={`text-title font-semibold leading-relaxed ${b.lang === "hi" ? "hi" : ""}`}
+              >
                 {b.text}
               </p>
+            );
+          }
+          if (b.kind === "list") {
+            const List = b.ordered ? "ol" : "ul";
+            return (
+              <List
+                key={i}
+                {...(b.lang === "hi" ? { lang: "hi" } : {})}
+                className={`flex flex-col gap-2 ps-6 text-title leading-relaxed text-ink-soft marker:text-ink-soft ${b.ordered ? "list-decimal" : "list-disc"} ${b.lang === "hi" ? "hi" : ""}`}
+              >
+                {b.items.map((item, j) => (
+                  <li key={j} className="ps-1">
+                    {item}
+                  </li>
+                ))}
+              </List>
             );
           }
           if (b.kind === "callout") {
@@ -184,13 +209,14 @@ function withHereLink(text: string): React.ReactNode {
       </>
     );
   }
+  // In-page (`#…`) stays in this tab; an address elsewhere opens a new one.
+  const external = !CAUTION_NOTE_URL.startsWith("#");
   return (
     <>
       {before}
       <a
         href={CAUTION_NOTE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+        {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className="font-semibold underline underline-offset-2"
         style={{ color: "var(--ws-ink)" }}
       >
