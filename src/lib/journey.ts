@@ -165,7 +165,7 @@ export const STAGES: Stage[] = [
   {
     id: 5,
     level: 2,
-    hi: "श्रवण — अध्ययन-अभ्यास गोष्ठी",
+    hi: "श्रवण — शास्त्र अध्ययन गोष्ठी",
     en: "Shravan",
     note: "Re-reading in small groups, testing one's own conclusions. Language synthesises into aphorism.",
     duration: "2–8 rounds over 4–8 years",
