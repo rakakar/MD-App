@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { APP_NAME } from "@/lib/brand";
-import { Instrument_Sans, Mukta, Newsreader } from "next/font/google";
+import { Atkinson_Hyperlegible_Next, Instrument_Sans, Literata, Mukta, Newsreader } from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@/components/consent/ConsentBanner";
 import { InlineScript } from "@/components/InlineScript";
@@ -27,6 +27,31 @@ const instrumentSans = Instrument_Sans({
 // face reflows whole paragraphs.
 const newsreader = Newsreader({
   variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
+  preload: false,
+});
+
+// English book text — the English pages of a translation (Raka, 19 Nov 2026).
+// Mukta's and DPS Shree's own Latin letters set it before: DPS's are widely
+// spaced with holes in a justified line, Mukta's are serviceable. Compared side
+// by side at matched x-height on JVE-ENG: Literata for the Classic face, built
+// for long e-reading and close in colour to DPS Medium beside it; Atkinson
+// Hyperlegible Next for Sans, for its unmistakable letterforms. Variable files
+// (no `weight`), so 400, the Bold paper's 500 and headings' 600/700 are one
+// file each. Italics too, since both have real ones (the Hindi faces don't, so
+// Hindi emphasis is Mukta 500); a browser fetches an italic only when a page
+// uses it. Not preloaded: only a translation's English pages draw them.
+const literata = Literata({
+  variable: "--font-literata",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
+  preload: false,
+});
+const atkinson = Atkinson_Hyperlegible_Next({
+  variable: "--font-atkinson",
   subsets: ["latin"],
   style: ["normal", "italic"],
   display: "swap",
@@ -258,7 +283,7 @@ export default function RootLayout({
       data-reader-face="sans"
       data-reader-theme="original"
       suppressHydrationWarning
-      className={`${instrumentSans.variable} ${newsreader.variable} ${dpsShree.variable} ${mukta.variable} h-full antialiased`}
+      className={`${instrumentSans.variable} ${newsreader.variable} ${dpsShree.variable} ${mukta.variable} ${literata.variable} ${atkinson.variable} h-full antialiased`}
     >
       <head>
         <InlineScript html={THEME_SCRIPT} />

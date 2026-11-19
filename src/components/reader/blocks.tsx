@@ -112,6 +112,8 @@ function Styled({ b, i, children }: { b?: boolean; i?: boolean; children: React.
   // Upright, 15 Nov 2026: neither DPS Shree nor Mukta has an italic, so
   // `italic` got a browser-faked slant. Emphasis is Mukta at 500 instead — a
   // weight step in the default (Mukta) face, a change of face under the serif.
+  // English blocks undo all three in globals.css (`.hi[lang="en"] i`): Literata
+  // and Atkinson have real italics, so English emphasis is italic again.
   if (i) out = <i className="not-italic font-devanagari-sans font-medium">{out}</i>;
   if (b) out = <b className="font-bold">{out}</b>;
   return <>{out}</>;
@@ -267,10 +269,10 @@ const SHORT_LINE = 60;
 
 /**
  * The language of a body block: `en` when its letters are clearly English (the
- * English pages of a translation), `hi` otherwise. It keeps the `hi` class and
- * the Mukta/DPS face either way; what `lang="en"` changes is the leading
- * (globals.css sets English 0.2 tighter, because Latin's small x-height looks
- * double-spaced at Devanagari leading) and lets the browser hyphenate it. Mixed
+ * English pages of a translation), `hi` otherwise. It keeps the `hi` class
+ * either way; `lang="en"` is what globals.css keys English on: its own faces
+ * (Literata / Atkinson Hyperlegible Next), leading 0.2 tighter (Latin's small
+ * x-height looks double-spaced at Devanagari leading) and hyphenation. Mixed
  * text — a glossary row, a Hindi term in an English line that is mostly Hindi —
  * stays `hi`, as does Kannada for now.
  */
@@ -301,14 +303,14 @@ export function Block({
   switch (para.block_type) {
     case "heading":
       return (
-        <h2 lang="hi" className={`hi reader-heading mt-8 mb-3 text-[1.35em] font-bold ${align}`} style={indent}>
+        <h2 lang={bodyLang(para.text_hi)} className={`hi reader-heading mt-8 mb-3 text-[1.35em] font-bold ${align}`} style={indent}>
           <Marker marker={para.marker} />
           {plainText}
         </h2>
       );
     case "subheading":
       return (
-        <h3 lang="hi" className={`hi reader-heading mt-6 mb-2 text-[1.15em] font-semibold ${align}`} style={indent}>
+        <h3 lang={bodyLang(para.text_hi)} className={`hi reader-heading mt-6 mb-2 text-[1.15em] font-semibold ${align}`} style={indent}>
           <Marker marker={para.marker} />
           {plainText}
         </h3>

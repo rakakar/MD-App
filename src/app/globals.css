@@ -346,6 +346,12 @@
 
   --font-devanagari: var(--font-dps-shree), "DPS Shree", serif;
   --font-devanagari-sans: var(--font-mukta), "Mukta", sans-serif;
+  /* English book text. Latin first, then the Devanagari face of the same
+     voice, so a Hindi word inside an English line still sets per glyph in the
+     reader's own Hindi face. */
+  --font-book-latin: var(--font-literata), Georgia, var(--font-devanagari);
+  --font-book-latin-sans: var(--font-atkinson), system-ui,
+    var(--font-devanagari-sans);
   --font-ui: var(--font-instrument-sans), system-ui, sans-serif;
   --font-display: var(--font-newsreader), Georgia, serif;
 }
@@ -1062,6 +1068,27 @@ html[data-reader-face="sans"] .reader-surface .hi {
   hyphens: auto;
 }
 
+/* …and its own faces: Literata in Classic, Atkinson Hyperlegible Next in Sans
+   and on the Bold paper (which takes Hindi to the sans too). See layout.tsx.
+   Written with `html` in front so these outrank every `.hi` face rule above —
+   the Typeface, Bold paper and app-wide Bold switches — whatever their order;
+   the weights those set (500 on Bold) still apply, both files are variable. */
+html .reader-surface .hi[lang="en"] {
+  font-family: var(--font-book-latin);
+}
+html[data-reader-face="sans"] .reader-surface .hi[lang="en"],
+html[data-reader-theme="bold"] .reader-surface .hi[lang="en"] {
+  font-family: var(--font-book-latin-sans);
+}
+/* English emphasis is a real italic in the English face. Hindi emphasis is
+   Mukta 500 upright (`Styled` in blocks.tsx), because neither Hindi face has an
+   italic; these two do, so the utilities that set that are undone here. */
+.reader-surface .hi[lang="en"] i {
+  font-family: inherit;
+  font-style: italic;
+  font-weight: inherit;
+}
+
 /* A chapter's headings. They had `leading-snug`, which the rule above
    outranks, so a title that wrapped got the body's 2.05 at 1.35em and its
    second line read as a separate thought. Headings are bold, so they are in
@@ -1069,6 +1096,7 @@ html[data-reader-face="sans"] .reader-surface .hi {
    setting — a heading is one idea, not a page to scan. */
 .reader-surface .hi.reader-heading {
   line-height: 1.5;
+  hyphens: manual;
 }
 
 /* **The gap between paragraphs follows the line spacing.** It was a fixed
@@ -1105,7 +1133,7 @@ html[data-reader-face="sans"] .reader-surface .hi {
     line-height: 1.35;
   }
   /* and English keeps its 0.2 under the Hindi */
-  .reader-surface .hi[lang="en"] {
+  .reader-surface .hi[lang="en"]:not(.reader-heading) {
     line-height: calc(var(--reader-line-height, 1.85) - 0.4);
   }
   .reader-content .reader-para {
