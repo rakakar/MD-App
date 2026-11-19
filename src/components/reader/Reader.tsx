@@ -2903,7 +2903,10 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
         <div
           data-reader-chrome
           className="pointer-events-none fixed inset-x-0 z-30 flex justify-center px-4"
-          style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
+          // Above the player as well as the bottom bar: it only shows while
+          // the voice is playing, so the player pill is always up beside it,
+          // and at a bare 4.5rem it sat on top of the pill's title.
+          style={{ bottom: `calc(${bottomOffset} + 4.5rem + var(--player-float-h, 0px))` }}
         >
           <button
             type="button"
@@ -3245,7 +3248,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
           watch for the change. */}
       <div
         className="pointer-events-none fixed inset-x-0 z-55 flex justify-center px-4"
-        style={{ bottom: `calc(${bottomOffset} + 4.5rem)` }}
+        // clears the player pill too, when one is up (`--player-float-h`, 0 otherwise)
+        style={{ bottom: `calc(${bottomOffset} + 4.5rem + var(--player-float-h, 0px))` }}
       >
         <div role="status">
           {toast && (

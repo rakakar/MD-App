@@ -84,6 +84,8 @@ function PlayerBarInner({
   const path = useRoutePath();
   const reader = ownsViewport(path);
   const desktop = useIsDesktop();
+  /** which element `barRef` is on — the desktop reader's player or the pill */
+  const desktopMini = reader && desktop && source.kind !== "track";
 
   useEffect(() => {
     const el = barRef.current;
@@ -110,7 +112,11 @@ function PlayerBarInner({
       document.documentElement.style.setProperty("--player-h", "0px");
       document.documentElement.style.setProperty("--player-float-h", "0px");
     };
-  }, [reader]);
+    // Re-run when the element changes, not only the route: the desktop
+    // reader's player and the pill are different elements, and a window
+    // resized across the breakpoint left this watching the one that was gone
+    // (height 0), so "Back to the voice" sat on top of the pill.
+  }, [reader, desktopMini]);
 
   const device = source.kind === "device";
   /**
@@ -195,7 +201,7 @@ function PlayerBarInner({
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [notifiable]);
 
-  if (reader && desktop && source.kind !== "track") {
+  if (desktopMini) {
     return (
       <DesktopReaderPill
         barRef={barRef}
