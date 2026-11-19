@@ -201,6 +201,11 @@ export async function NodeView({
                track wears the wave on that shelf's colour instead. */
             audioArt={ws === "originals" ? "portrait" : "glyph"}
             sessionType={node.session_type}
+            albumCover={
+              ws === "originals" && isRecordings
+                ? { name: node.name, kind: "audio", sessionLabel: node.session_type_label, year: node.year }
+                : null
+            }
             folderProvenance={node.provenance}
             playAll={isRecordings && isAlbum}
             fullSeries={node.external_url}
@@ -308,9 +313,12 @@ function Header({
   return (
     <CollectionHero
       tone={hue.to}
-      /* A recording album's header is light, so its dark cover is the one
-         strong shape in it (Raka, 19 Nov 2026). Same test as the cover. */
-      surface={isRecordings && ws === "originals" ? "hint" : "tone"}
+      /* Every collection's header is the light hint (Raka, 19 Nov 2026):
+         first for recording albums, so their dark cover is the one strong
+         shape in it, then for every Library and Resources collection, where
+         the workspace accent at full strength read as a flash of red. One
+         header for every collection page; books keep their own hue. */
+      surface="hint"
       /* Back goes where the reader came from, which for a collection of
          recordings is the A/V tab and not the folder above it. The tree step
          was literally true and useless: a reader arrives here off `/av`, and

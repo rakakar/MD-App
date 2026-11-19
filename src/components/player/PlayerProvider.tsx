@@ -56,6 +56,19 @@ export interface DeviceTtsSource {
   translation?: boolean;
 }
 
+/**
+ * What an `AlbumCover` is drawn from. Audio Mode draws the album's cover itself
+ * rather than taking an image: the Originals covers are not image files.
+ */
+export interface AlbumCoverFacts {
+  name: string;
+  kind: "audio" | "video";
+  sessionLabel?: string | null;
+  year?: string | null;
+  /** which part of the album is playing — "03", "2" — where it has one */
+  part?: string | null;
+}
+
 export interface TrackSource {
   kind: "track";
   id: string;
@@ -64,6 +77,8 @@ export interface TrackSource {
   url: string;
   durationMs?: number;
   coverImage?: string | null;
+  /** the album's drawn cover, which Audio Mode shows in place of `coverImage` */
+  albumCover?: AlbumCoverFacts | null;
   /**
    * Where to remember this playhead, if it is worth remembering — set by the
    * surface that knows the track has an identity to return to (a Resources

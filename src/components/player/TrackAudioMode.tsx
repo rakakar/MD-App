@@ -18,6 +18,7 @@ import {
   useSheetDismiss,
 } from "./audioChrome";
 import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
+import { AlbumCover } from "@/components/library/AlbumCover";
 
 /**
  * Audio Mode for a recording — the full-screen surface for anything that is
@@ -95,68 +96,88 @@ export function TrackAudioMode() {
           "linear-gradient(180deg, var(--color-audio-top), var(--color-audio-bg) 38%)",
       }}
     >
-      {/* ---- header ---- */}
-      <div className="flex items-start gap-2 px-4 pt-3">
+      {/* ---- header ----
+          Three columns, the outer two the same fixed width — room for Sleep
+          and the speed (at "1.75×" the controls spill 8px into the gap, never
+          onto the title), narrow enough that "AUDIO MODE" keeps its one line
+          on a 375px phone — so the title is centred on the cover
+          it names whatever its length. One button on the left against two on
+          the right had put it 26px off (Raka, 19 Nov 2026); equal \`1fr\` sides
+          were not enough on a phone, where a long album name widened the middle
+          and squeezed the sides unevenly. */}
+      <div className="grid grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] items-start gap-2 px-4 pt-3">
         <button
           type="button"
           onClick={collapse}
           aria-label="Close audio mode"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/10"
+          className="flex h-11 w-11 shrink-0 items-center justify-center justify-self-start rounded-control bg-audio-ink/10 text-audio-ink/80 active:bg-audio-ink/10"
         >
           <ChevronDown className="h-5.5 w-5.5" />
         </button>
-        <div className="min-w-0 flex-1 pt-1.5 text-center">
-          <p className="text-xs font-semibold tracking-[0.18em] text-audio-accent">AUDIO MODE</p>
+        <div className="min-w-0 pt-1.5 text-center">
+          <p className="whitespace-nowrap text-xs font-semibold tracking-[0.18em] text-audio-accent">AUDIO MODE</p>
           {source.subtitle && (
             <p {...subtitle} className={`${subtitle.className} truncate text-xs text-audio-ink/70`}>
               {source.subtitle}
             </p>
           )}
         </div>
-        <SleepControl
-          open={menu === "sleep"}
-          onOpenChange={(o) => setMenu(o ? "sleep" : null)}
-          remainingMs={player.sleepRemainingMs}
-          onSet={player.setSleepTimer}
-        />
-        <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setMenu(menu === "rate" ? null : "rate")}
-            aria-haspopup="menu"
-            aria-expanded={menu === "rate"}
-            aria-label={`Playback speed ${player.rate}x`}
-            className="flex h-11 min-w-11 items-center justify-center rounded-control bg-audio-ink/10 px-3 text-sm font-semibold tabular-nums"
-          >
-            {player.rate}×
-          </button>
-          {menu === "rate" && (
-            <Menu className="end-0 top-full mt-1 w-24">
-              {RATES.map((r) => (
-                <MenuItem
-                  key={r}
-                  selected={r === player.rate}
-                  onClick={() => {
-                    player.setRate(r);
-                    setMenu(null);
-                  }}
-                >
-                  {r}×
-                </MenuItem>
-              ))}
-            </Menu>
-          )}
+        <div className="flex justify-end gap-2">
+          <SleepControl
+            open={menu === "sleep"}
+            onOpenChange={(o) => setMenu(o ? "sleep" : null)}
+            remainingMs={player.sleepRemainingMs}
+            onSet={player.setSleepTimer}
+          />
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setMenu(menu === "rate" ? null : "rate")}
+              aria-haspopup="menu"
+              aria-expanded={menu === "rate"}
+              aria-label={`Playback speed ${player.rate}x`}
+              className="flex h-11 min-w-11 items-center justify-center rounded-control bg-audio-ink/10 px-3 text-sm font-semibold tabular-nums"
+            >
+              {player.rate}×
+            </button>
+            {menu === "rate" && (
+              <Menu className="end-0 top-full mt-1 w-24">
+                {RATES.map((r) => (
+                  <MenuItem
+                    key={r}
+                    selected={r === player.rate}
+                    onClick={() => {
+                      player.setRate(r);
+                      setMenu(null);
+                    }}
+                  >
+                    {r}×
+                  </MenuItem>
+                ))}
+              </Menu>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ---- the cover, given the room the text has in a chapter ---- */}
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-4">
         <div className="flex w-full max-w-sm scale-125 flex-col items-center sm:scale-150">
-          <CoverArt
-            src={source.coverImage}
-            hue={bookHue(source.subtitle ?? source.title)}
-            fallback={source.title?.[0] ?? "◉"}
-          />
+          {source.albumCover ? (
+            /* An Originals album's own drawn cover — the one on its card and
+               its page — at the width CoverArt takes, square by its own ratio
+               (Raka, 19 Nov 2026). */
+            <AlbumCover
+              {...source.albumCover}
+              className="w-[38vw] max-w-44 shrink-0 shadow-raised short-landscape:w-[22dvh]"
+            />
+          ) : (
+            <CoverArt
+              src={source.coverImage}
+              hue={bookHue(source.subtitle ?? source.title)}
+              fallback={source.title?.[0] ?? "◉"}
+            />
+          )}
         </div>
         <p
           {...title}

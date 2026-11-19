@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ChapterNav } from "./PlayerProvider";
+import type { AlbumCoverFacts, ChapterNav } from "./PlayerProvider";
 import { getPlayhead } from "@/lib/storage";
 import { usePlayer } from "./PlayerProvider";
 
@@ -14,6 +14,7 @@ export interface QueueEntry {
   url: string;
   durationMs?: number;
   coverImage?: string | null;
+  albumCover?: AlbumCoverFacts | null;
 }
 
 /**
@@ -65,6 +66,7 @@ export function useAudioQueue(entries: QueueEntry[]) {
           url: entry.url,
           durationMs: entry.durationMs,
           coverImage: entry.coverImage ?? null,
+          albumCover: entry.albumCover ?? null,
           resumeKey: entry.id,
         },
         { startMs: fromStart ? 0 : (getPlayhead(entry.id) ?? 0) }

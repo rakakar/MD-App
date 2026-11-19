@@ -174,16 +174,18 @@
      and a play button, it is often the last thing looked at before sleep, and
      a sepia page behind a play button reads as a page that has gone wrong.
 
-     The two ends are sampled from the comp's gradient, top and bottom. Ratios
-     are against `audio-bg`, which is what all but the top strip sits on; the
-     accent still clears AA on `audio-top` (4.73:1), which is the only place
-     the label above the title lands. */
-  --color-audio-top: #4e2b13;
+     The bottom is sampled from the comp's gradient. The top was too (#4e2b13)
+     until the pill went sindoor (Raka, 19 Nov 2026): it is now the pill's own
+     red taken a step darker, so the pill and the screen it opens into are one
+     colour at two sizes. Ratios are against `audio-bg`, which is what all but
+     the top strip sits on; the accent clears AA on `audio-top` too (5.42:1),
+     which is the only place the label above the title lands. */
+  --color-audio-top: #56221a;
   --color-audio-bg: #17120f;
   --color-audio-ink: #f2ece2; /* 16.0:1 — 5.4:1 at the 55% the unspoken
                                  follow-along lines are set in, which is the
                                  floor those had to be raised to */
-  --color-audio-accent: #f2913d; /* brand Saffron — 7.87:1 on bg · 5.30:1 on top */
+  --color-audio-accent: #f2913d; /* brand Saffron — 7.87:1 on bg · 5.42:1 on top */
   --color-audio-raised: #241e19; /* menus and the surface under a control;
                                     ink/55 lands 5.15:1 on it */
 
@@ -233,10 +235,15 @@
      doing work. */
   --color-kind-doc: #e6e1f5;
   --color-kind-doc-ink: #5b4f9c; /* 5.41:1 on its tile */
-  --color-kind-video: #eaf0f4;
-  --color-kind-video-ink: #39647c; /* 5.56:1 */
-  --color-kind-audio: #fdf3ea;
-  --color-kind-audio-ink: #9e4a11; /* 5.57:1 */
+  /* Audio and video take a pale tint of their own album covers (Raka, 19 Nov
+     2026): marigold-cream for audio (umber covers, marigold badge), pale
+     sindoor for video (sindoor-brown covers, cream badge). Video was blue
+     until the covers arrived, and a blue chip under a red-brown cover was the
+     one cold thing on a warm card. */
+  --color-kind-video: #f6e1d9;
+  --color-kind-video-ink: #7a2e1c; /* 7.47:1 */
+  --color-kind-audio: #fbe9d2;
+  --color-kind-audio-ink: #7a4511; /* 6.58:1 */
   --color-kind-image: #f6e2e9;
   --color-kind-image-ink: #833653; /* 6.48:1 */
   --color-kind-folder: #f6e2ce;
@@ -521,14 +528,14 @@
      Sepia's own audio tile: 1.11:1 off the card, accent-ink 4.74:1 on it. */
   --color-accent-tint: #faede0; /* accent-ink on it 4.77:1 */
 
-  /* The same four pairs, warmed onto sepia paper. Glyphs measure 5.35 / 5.22 /
-     5.55 / 4.97 on their own tiles. */
+  /* The same four pairs, warmed onto sepia paper. Glyphs measure 5.35 / 7.47 /
+     6.75 / 4.97 on their own tiles (doc / video / audio / image). */
   --color-kind-doc: #e7e0ee;
   --color-kind-doc-ink: #5b4f9c;
-  --color-kind-video: #e3e9ee;
-  --color-kind-video-ink: #39647c;
-  --color-kind-audio: #f8e9d8;
-  --color-kind-audio-ink: #96460f;
+  --color-kind-video: #f0d8cc;
+  --color-kind-video-ink: #73291a; /* 7.47:1 */
+  --color-kind-audio: #f5e0c3;
+  --color-kind-audio-ink: #713f0f; /* 6.75:1 */
   --color-kind-image: #f2dfe4;
   --color-kind-image-ink: #833653;
   --color-kind-folder: #f2dcc2;
@@ -572,10 +579,10 @@
      7.07 / 6.27 / 6.27 on their own tiles. */
   --color-kind-doc: #2b2740;
   --color-kind-doc-ink: #a9a0dc;
-  --color-kind-video: #1e2a33;
-  --color-kind-video-ink: #8fbad4;
-  --color-kind-audio: #33221a;
-  --color-kind-audio-ink: #e9924e;
+  --color-kind-video: #3a1d17;
+  --color-kind-video-ink: #f0a58a; /* 7.64:1 */
+  --color-kind-audio: #33261a;
+  --color-kind-audio-ink: #f7be6e; /* 8.76:1 */
   --color-kind-image: #33212a;
   --color-kind-image-ink: #de96ae;
   --color-kind-folder: #332318;
@@ -633,10 +640,10 @@
 
   --color-kind-doc: #e6e1f5;
   --color-kind-doc-ink: #5b4f9c;
-  --color-kind-video: #eaf0f4;
-  --color-kind-video-ink: #39647c;
-  --color-kind-audio: #fdf3ea;
-  --color-kind-audio-ink: #9e4a11;
+  --color-kind-video: #f6e1d9;
+  --color-kind-video-ink: #7a2e1c;
+  --color-kind-audio: #fbe9d2;
+  --color-kind-audio-ink: #7a4511;
   --color-kind-image: #f6e2e9;
   --color-kind-image-ink: #833653;
   --color-kind-folder: #f6e2ce;
@@ -1463,9 +1470,16 @@ html[data-reading="1"] body {
  * The alpha is the whole design here. At 26% the bars read as texture; much
  * above that and they are a chart, which invites the eye to try to read them
  * against the audio, which they have nothing to do with. */
+/* Sindoor (Raka, 19 Nov 2026): the ground moved off umber, where it sank into
+   the umber track thumbnails it floats over, to the accent's red taken two
+   steps deeper and greyer — distinct at a glance in both themes, at about half
+   the volume of the accent itself. Cream words on it are 9.1:1. The bars are a
+   faint cream now; in the workspace colour they would be red on red. */
 .player-pill {
-  --pill-bar: color-mix(in srgb, var(--ws-color) 26%, transparent);
-  background-color: var(--color-audio-bg);
+  --pill-ground: #6e2c1a;
+  --pill-bar: rgb(255 255 255 / 0.08);
+  color: #fbefe3;
+  background-color: var(--pill-ground);
   background-image:
     linear-gradient(var(--pill-bar), var(--pill-bar)),
     linear-gradient(var(--pill-bar), var(--pill-bar)),
@@ -1473,11 +1487,7 @@ html[data-reading="1"] body {
     linear-gradient(var(--pill-bar), var(--pill-bar)),
     linear-gradient(var(--pill-bar), var(--pill-bar)),
     linear-gradient(var(--pill-bar), var(--pill-bar)),
-    linear-gradient(
-      105deg,
-      transparent 30%,
-      color-mix(in srgb, var(--color-audio-top) 55%, transparent) 100%
-    );
+    linear-gradient(170deg, #7d3420, #6e2c1a 60%, #5f2616);
   background-repeat: no-repeat;
   background-size:
     14px 34%,
@@ -1487,14 +1497,29 @@ html[data-reading="1"] body {
     14px 44%,
     14px 20%,
     100% 100%;
+  /* Anchored from the right in px, not as shares of the width: as 56%…96%
+     they were 27px apart on a phone and ~130px apart on a wide desktop pill,
+     which read as six stray posts rather than one equaliser (Raka, 19 Nov
+     2026). These are the phone's own positions, so a phone is unchanged. */
   background-position:
-    56% 100%,
-    64% 100%,
-    72% 100%,
-    80% 100%,
-    88% 100%,
-    96% 100%,
+    right 149px bottom 0,
+    right 122px bottom 0,
+    right 95px bottom 0,
+    right 68px bottom 0,
+    right 41px bottom 0,
+    right 14px bottom 0,
     0 0;
+}
+/* The shelf's pill on a desktop: one fixed width, centred in the column right
+   of the sidebar, rather than stretched from the sidebar to the window's edge
+   — the same 40rem the reader's desktop pill takes. Unlayered, so it outranks
+   the phone's \`inset-x-3\` utility. */
+@media (min-width: 64rem) {
+  .player-pill-shelf {
+    left: calc(16rem + (100% - 16rem - 40rem) / 2);
+    right: auto;
+    width: 40rem;
+  }
 }
 
 /* Audio Mode collapsing into the pill, and the pill arriving.
@@ -2368,13 +2393,22 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   container-type: inline-size;
   position: relative;
   display: block;
+  /* Square always. No max-width here: this rule sits outside Tailwind's
+     layers, so it outranked a caller's \`max-w-*\` and Audio Mode's cover came
+     out 390 wide by 176 tall. Callers size the width; the ratio sets the rest. */
   aspect-ratio: 1;
-  max-width: 100%;
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--radius-cover);
   background: var(--color-brand-umber);
   color: var(--color-brand-hint);
+}
+/* Video: a deep sindoor-brown, umber's neighbour toward red (Raka, 19 Nov
+   2026 — blue sat outside the warm identity). Same depth as umber, so cream is
+   13.4:1 and marigold 9.5:1 on it (13.6 and 9.7 on umber); the hue alone
+   parts the kinds. */
+.album-cover[data-kind="video"] {
+  background: #3b1714;
 }
 /* Large enough that three rings show and the vermilion core sits just under
    the bottom edge; its top stays below the date line. */
@@ -2396,6 +2430,9 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   align-items: center;
   justify-content: space-between;
   gap: 2cqw;
+  /* the mark's height, so the Type word sits on the mark's centre line */
+  min-height: 14cqw;
+  padding-right: 17cqw;
   color: var(--color-brand-marigold);
   font-size: 4.2cqw;
   line-height: 1.2;
@@ -2405,22 +2442,32 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   font-weight: 600;
 }
 .album-cover__kind {
-  display: flex;
-  align-items: center;
-  gap: 1.6cqw;
-  font-family: var(--font-ui);
-  font-size: 3.6cqw;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  /* On the text's own margin (8cqw), top and right, so the mark lines up
+     with the words rather than hugging the corner. */
+  position: absolute;
+  top: 8cqw;
+  right: 8cqw;
+  display: grid;
+  place-items: center;
+  width: 14cqw;
+  height: 14cqw;
+  border-radius: 50%;
+  background: var(--color-brand-marigold);
+  color: var(--color-brand-umber);
+}
+/* Video's mark in cream, against audio's marigold. */
+.album-cover[data-kind="video"] .album-cover__kind {
+  background: var(--color-brand-hint);
+  color: #3b1714;
 }
 .album-cover__kind svg {
-  width: 1.1em;
-  height: 1.1em;
+  width: 56%;
+  height: 56%;
+  stroke-width: 2.4;
 }
 .album-cover__title {
   display: -webkit-box;
-  margin-top: 4cqw;
+  margin-top: 1.5cqw;
   overflow: hidden;
   font-family: var(--font-display);
   font-size: 11cqw;
@@ -2438,9 +2485,12 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
 .album-cover__date {
   display: flex;
   align-items: baseline;
-  gap: 3.4cqw;
-  margin-top: auto;
-  margin-bottom: 31cqw;
+  gap: 3cqw;
+  /* A fixed step under the name, not pinned to the foot: pinned, a two-line
+     name ran straight into the year (0px) while a one-line name left 24px.
+     Now every cover has the same gap, and even a two-line Hindi name keeps
+     the date clear of the sun's rim. */
+  margin-top: 5cqw;
 }
 .album-cover__date,
 .album-cover__small {
@@ -2449,12 +2499,12 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   letter-spacing: -0.02em;
 }
 .album-cover__month {
-  font-size: 12.5cqw;
+  font-size: 10cqw;
   font-style: italic;
   color: var(--color-brand-marigold);
 }
 .album-cover__year {
-  font-size: 18.5cqw;
+  font-size: 14.5cqw;
   font-variant-numeric: lining-nums;
 }
 .album-cover__small {
@@ -2487,9 +2537,41 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   height: 26cqw;
   color: var(--color-brand-marigold);
 }
+/* Audio Mode's cover: the playing part, bottom left, under the date and
+   clear of the sun, as the track thumbnails set it. */
+.album-cover__part {
+  position: absolute;
+  left: 8cqw;
+  bottom: 8cqw;
+  display: flex;
+  align-items: baseline;
+  gap: 2cqw;
+  font-family: var(--font-display);
+  font-size: 10cqw;
+  line-height: 0.8;
+  font-variant-numeric: lining-nums;
+  color: var(--color-brand-hint);
+}
+.album-cover__part-word {
+  font-size: 6.5cqw;
+  font-style: italic;
+  color: var(--color-brand-marigold);
+}
 @container (max-width: 110px) {
   .album-cover__text {
     display: none;
+  }
+  .album-cover__part {
+    display: none;
+  }
+  .album-cover__kind {
+    /* bottom left: the date fills the top, the sun the bottom right */
+    top: auto;
+    right: auto;
+    bottom: 10cqw;
+    left: 10cqw;
+    width: 26cqw;
+    height: 26cqw;
   }
   .album-cover__small {
     display: flex;
@@ -2505,7 +2587,10 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
 :root {
   --hero-ink: #fff;
   --hero-kicker: rgb(255 255 255 / 0.75);
-  --hero-cta-bg: #fff;
+  --hero-chip: rgb(255 255 255 / 0.2);
+  --hero-chip-ink: #fff;
+  /* the primary button: the warm off-white every tone hero has used */
+  --hero-cta-bg: var(--color-on-accent);
 }
 
 /* `surface="hint"` — the recording albums' header (Option B, Raka 19 Nov
@@ -2516,6 +2601,8 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
 .hero-hint {
   --hero-ink: var(--color-brand-umber);
   --hero-kicker: var(--color-accent-deep);
+  --hero-chip: rgb(43 30 22 / 0.08);
+  --hero-chip-ink: var(--color-brand-umber);
   --hero-cta-bg: var(--color-accent-deep);
   --hero-cta-ink: #fff;
   background: linear-gradient(170deg, #fdf1e2 0%, #fbe9d2 60%, #f7dfc0 100%);
@@ -2530,6 +2617,8 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
    takes a hairline of cream to stay an object. */
 [data-theme="dark"] .hero-hint {
   --hero-ink: #f3e9dd;
+  --hero-chip: rgb(255 255 255 / 0.1);
+  --hero-chip-ink: #f3e9dd;
   --hero-kicker: var(--color-brand-saffron);
   background: linear-gradient(170deg, #3a2b21 0%, #2e231b 60%, #281e17 100%);
 }
@@ -2572,4 +2661,55 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   font-size: 17cqw;
   font-variant-numeric: lining-nums;
   color: var(--color-brand-hint);
+}
+
+/* `surface="tint"` — a book's header (Raka, 19 Nov 2026): the book's own hue
+   (\`--hero-tone\`, set inline) washed into paper, umber words, the hue's deep
+   shade for the chips' ink and the primary button. Each book keeps its colour;
+   the printed cover becomes the strong object on it, as on the album pages.
+   Measured across every hue in \`bookHue\`: white on the deep button is at
+   least 7.45:1, the chips' ink 5.91:1; in dark, the lifted button 6.05:1, the
+   chips 5.14:1, cream words on the ground 11.5:1. */
+.hero-tint {
+  --hero-ink: var(--color-brand-umber);
+  --hero-kicker: color-mix(in srgb, var(--hero-tone) 62%, #000);
+  --hero-chip: color-mix(in srgb, var(--hero-tone) 16%, transparent);
+  --hero-chip-ink: var(--hero-kicker);
+  --hero-cta-bg: color-mix(in srgb, var(--hero-tone) 72%, #000);
+  --hero-cta-ink: #fff;
+  background: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--hero-tone) 9%, #fbf7f1),
+    color-mix(in srgb, var(--hero-tone) 16%, #f6efe4)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hero-tone) 18%, transparent);
+}
+.hero-tint__sun {
+  opacity: 0.18;
+}
+[data-theme="sepia"] .hero-tint {
+  background: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--hero-tone) 10%, #f6ead6),
+    color-mix(in srgb, var(--hero-tone) 18%, #efdfc4)
+  );
+}
+/* Dark: the hue deepened into the night page, cream words, the hue lifted
+   toward white for the chips and the button, dark words on that. */
+[data-theme="dark"] .hero-tint {
+  --hero-ink: #ece4d6;
+  --hero-kicker: color-mix(in srgb, var(--hero-tone) 55%, #fff);
+  --hero-chip: color-mix(in srgb, var(--hero-tone) 22%, transparent);
+  --hero-chip-ink: var(--hero-kicker);
+  --hero-cta-bg: color-mix(in srgb, var(--hero-tone) 55%, #fff);
+  --hero-cta-ink: #1c1712;
+  background: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--hero-tone) 26%, #1c1712),
+    color-mix(in srgb, var(--hero-tone) 14%, #17130f)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hero-tone) 22%, transparent);
+}
+[data-theme="dark"] .hero-tint__sun {
+  opacity: 0.08;
 }

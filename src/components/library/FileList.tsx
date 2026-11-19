@@ -10,6 +10,7 @@ import { DownloadIcon, ExternalLinkIcon } from "@/components/shell/icons";
 import { contentLang } from "@/lib/script";
 import type { FileKind, LibraryFile, LocatedFile, Provenance } from "@/lib/types";
 import { downloadProps } from "@/lib/download";
+import type { AlbumCoverFacts } from "@/components/player/PlayerProvider";
 
 /**
  * A folder's files, each kind served as the thing it is (contract §13.5):
@@ -29,6 +30,7 @@ export function FileList({
   coverUrl = null,
   audioArt,
   sessionType,
+  albumCover,
   folderProvenance,
 }: {
   files: LibraryFile[];
@@ -40,6 +42,8 @@ export function FileList({
   audioArt?: "portrait" | "glyph";
   /** the album's Type, for what a track's thumbnail says — see `AlbumAudio` */
   sessionType?: string | null;
+  /** the album's drawn cover, for Audio Mode — see `AlbumAudio` */
+  albumCover?: AlbumCoverFacts | null;
   /**
    * The folder's own provenance, so a row can stay silent when it agrees.
    * Passed down rather than looked up because a cross-posted file inherits
@@ -75,6 +79,7 @@ export function FileList({
             coverUrl={coverUrl}
             audioArt={audioArt}
           sessionType={sessionType}
+        albumCover={albumCover}
             folderProvenance={folderProvenance}
           />
         </section>
@@ -90,6 +95,7 @@ function KindGroup({
   coverUrl,
   audioArt,
   sessionType,
+  albumCover,
   folderProvenance,
 }: {
   kind: FileKind;
@@ -99,6 +105,8 @@ function KindGroup({
   audioArt?: "portrait" | "glyph";
   /** the album's Type, for what a track's thumbnail says — see `AlbumAudio` */
   sessionType?: string | null;
+  /** the album's drawn cover, for Audio Mode — see `AlbumAudio` */
+  albumCover?: AlbumCoverFacts | null;
   folderProvenance?: Provenance;
 }) {
   if (kind === "audio") {
@@ -109,6 +117,7 @@ function KindGroup({
         coverUrl={coverUrl}
         art={audioArt}
         sessionType={sessionType}
+        albumCover={albumCover}
       />
     );
   }

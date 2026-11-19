@@ -7,6 +7,7 @@ import { FOLDER_PLACEHOLDER } from "@/components/library/FindBar";
 import { PhonePlayRow } from "@/components/library/FolderHeroActions";
 import { LARGE_BYTES } from "@/components/library/folderActions";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
+import type { AlbumCoverFacts } from "@/components/player/PlayerProvider";
 
 /**
  * A folder's own files, with a box to narrow them (designer's comps, 8 Oct
@@ -26,6 +27,7 @@ export function FolderFiles({
   coverUrl,
   audioArt,
   sessionType,
+  albumCover,
   folderProvenance,
   playAll = false,
   fullSeries,
@@ -38,6 +40,8 @@ export function FolderFiles({
   audioArt?: "portrait" | "glyph";
   /** the album's Type, for what a track's thumbnail says — see `AlbumAudio` */
   sessionType?: string | null;
+  /** the album's drawn cover, for Audio Mode — see `AlbumAudio` */
+  albumCover?: AlbumCoverFacts | null;
   folderProvenance?: Provenance;
   /** a series of recordings: Play all goes under the search on a phone */
   playAll?: boolean;
@@ -95,6 +99,7 @@ export function FolderFiles({
           coverUrl={coverUrl}
           audioArt={audioArt}
           sessionType={sessionType}
+        albumCover={albumCover}
           folderProvenance={folderProvenance}
         />
       )}

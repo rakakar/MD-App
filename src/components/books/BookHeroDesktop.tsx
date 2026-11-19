@@ -46,27 +46,36 @@ export function BookHeroDesktop({
 
   return (
     <section
-      className="relative hidden overflow-hidden text-white lg:block"
-      style={{
-        background: `linear-gradient(120deg, color-mix(in srgb, ${tone} 88%, #fff), ${tone} 55%, color-mix(in srgb, ${tone} 80%, #000))`,
-      }}
+      /* The book's hue washed into paper rather than painted at full strength
+         (Raka, 19 Nov 2026): the printed cover is the one strong object, as on
+         the album pages, and each book still has its own colour. */
+      className="hero-tint relative hidden overflow-hidden text-(--hero-ink) lg:block"
+      style={{ "--hero-tone": tone } as React.CSSProperties}
     >
-      {/* The one ornament: a large pale disc behind the actions, as drawn. */}
-      <span
+      {/* The one ornament: the Sah Astitva sun, large and faint, rising from
+          the bottom right behind the actions — the identity's mark where a
+          plain disc stood. */}
+      <svg
         aria-hidden
-        className="pointer-events-none absolute -right-24 -top-40 h-[34rem] w-[34rem] rounded-full bg-white/6"
-      />
+        viewBox="0 0 160 160"
+        className="hero-tint__sun pointer-events-none absolute -bottom-72 -right-16 h-[32rem] w-[32rem]"
+      >
+        <circle cx="80" cy="80" r="62.4" fill="var(--color-brand-hint)" />
+        <circle cx="80" cy="93.87" r="48.53" fill="var(--color-brand-marigold)" />
+        <circle cx="80" cy="106.58" r="35.82" fill="var(--color-brand-saffron)" />
+        <circle cx="80" cy="118.13" r="24.27" fill="var(--color-brand-vermilion)" />
+      </svg>
 
       <div className="relative mx-auto max-w-[1088px] px-8 pb-9 pt-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
           <Link
             href={back.href}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-white/25 bg-white/10 pe-3.5 ps-2.5 font-semibold transition-colors hover:bg-white/20"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-(--hero-ink)/20 bg-(--hero-ink)/8 pe-3.5 ps-2.5 font-semibold transition-colors hover:bg-(--hero-ink)/15"
           >
             <BackIcon className="h-4 w-4" />
             {back.label}
           </Link>
-          {crumb && <span className="text-white/75">/ {crumb}</span>}
+          {crumb && <span className="text-(--hero-ink)/75">/ {crumb}</span>}
         </nav>
 
         <div className="mt-6 flex items-center gap-9">
@@ -78,7 +87,7 @@ export function BookHeroDesktop({
                 {chips.map((c) => (
                   <span
                     key={c}
-                    className="rounded-md bg-white/20 px-2 py-1 text-xs font-bold uppercase tracking-[0.06em]"
+                    className="rounded-md bg-(--hero-chip) px-2 py-1 text-xs font-bold uppercase tracking-[0.06em] text-(--hero-chip-ink)"
                   >
                     {c}
                   </span>
@@ -94,7 +103,7 @@ export function BookHeroDesktop({
             >
               {book.title_hi}
             </h1>
-            <p lang="hi" className="hi hi-tight mt-2 text-title text-white/80">
+            <p lang="hi" className="hi hi-tight mt-2 text-title text-(--hero-ink)/80">
               {book.author}
               {book.translation_of && book.translator && (
                 // One size on one line, and the English marked as English
@@ -102,7 +111,7 @@ export function BookHeroDesktop({
                 // the author rather than the second half of the credit.
                 <span lang="en" className="font-ui">
                   {" "}
-                  · Translator: <span className="font-semibold text-white">{book.translator}</span>
+                  · Translator: <span className="font-semibold text-(--hero-ink)">{book.translator}</span>
                 </span>
               )}
             </p>
@@ -112,11 +121,11 @@ export function BookHeroDesktop({
                 {stats.map((s, i) => (
                   <div
                     key={s.label}
-                    className={`flex flex-col-reverse ${i > 0 ? "border-l border-white/25 pl-8" : ""} ${
+                    className={`flex flex-col-reverse ${i > 0 ? "border-l border-(--hero-ink)/20 pl-8" : ""} ${
                       i < stats.length - 1 ? "pr-8" : ""
                     }`}
                   >
-                    <dt className="mt-1 text-xs text-white/75">{s.label}</dt>
+                    <dt className="mt-1 text-xs text-(--hero-ink)/75">{s.label}</dt>
                     <dd
                       className="text-2xl font-semibold leading-none tabular-nums"
                       style={{ fontFamily: "var(--font-devanagari-sans)" }}

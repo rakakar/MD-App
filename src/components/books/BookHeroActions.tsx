@@ -41,14 +41,14 @@ export function BookHeroActions({
             aria-valuenow={Math.round(resume.percent)}
             aria-valuemin={0}
             aria-valuemax={100}
-            className="h-[5px] flex-1 overflow-hidden rounded-full bg-white/20"
+            className="h-[5px] flex-1 overflow-hidden rounded-full bg-(--hero-ink)/20"
           >
             <div
-              className="h-full rounded-full bg-card"
+              className="h-full rounded-full bg-(--hero-ink)"
               style={{ width: `${Math.round(resume.percent)}%` }}
             />
           </div>
-          <span className="shrink-0 text-xs font-bold tabular-nums text-white/90">
+          <span className="shrink-0 text-xs font-bold tabular-nums text-(--hero-ink)/90">
             {Math.round(resume.percent)}% complete
           </span>
         </div>

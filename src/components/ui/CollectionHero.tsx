@@ -50,9 +50,11 @@ export function CollectionHero({
    * `tone`, the default: the gradient of `tone` under white text. `hint`: the
    * Sah Astitva sun's palest ring under umber text (Raka, 19 Nov 2026) — the
    * recording albums' header, where a dark \`AlbumCover\` sat badly in a hot
-   * terracotta field. Its colours are `.hero-hint`'s, per theme.
+   * terracotta field. Its colours are `.hero-hint`'s, per theme. `tint`: the
+   * same idea in the thing's own hue — `tone` washed into paper — for a book,
+   * whose colour is its identity (Raka, 19 Nov 2026). See `.hero-tint`.
    */
-  surface?: "tone" | "hint";
+  surface?: "tone" | "hint" | "tint";
   /**
    * What this is and which shelf it is on — "COLLECTION · LIBRARY", "SERIES ·
    * MEDIA" — in small capitals over the title (designer's comps, 8 Oct 2026).
@@ -104,12 +106,14 @@ export function CollectionHero({
   return (
     <div
       className={`-mx-4 -mt-5 px-4 pb-5 pt-4 text-(--hero-ink) sm:mx-0 sm:mt-0 sm:rounded-hero sm:px-6 ${
-        surface === "hint" ? "hero-hint" : ""
+        surface === "hint" ? "hero-hint" : surface === "tint" ? "hero-tint" : ""
       }`}
       style={
         surface === "hint"
           ? undefined
-          : {
+          : surface === "tint"
+            ? ({ "--hero-tone": tone } as React.CSSProperties)
+            : {
               background: `linear-gradient(168deg, color-mix(in srgb, ${tone} 88%, #fff), ${tone} 62%, color-mix(in srgb, ${tone} 86%, #000))`,
             }
       }
@@ -184,7 +188,7 @@ export function CollectionHero({
                   {chips.map((c) => (
                     <span
                       key={c}
-                      className="rounded-md bg-(--hero-ink)/20 px-2 py-1 text-xs font-semibold uppercase tracking-[0.06em]"
+                      className="rounded-md bg-(--hero-chip) px-2 py-1 text-xs font-semibold uppercase tracking-[0.06em] text-(--hero-chip-ink)"
                     >
                       {c}
                     </span>
@@ -296,8 +300,8 @@ export function HeroAction({
   return (
     <Link
       href={href}
-      className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-control bg-on-accent px-4 text-title font-semibold transition-opacity hover:opacity-90"
-      style={{ color: tone }}
+      className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-control bg-(--hero-cta-bg) px-4 text-title font-semibold transition-opacity hover:opacity-90"
+      style={{ color: `var(--hero-cta-ink, ${tone})` }}
     >
       {children}
     </Link>

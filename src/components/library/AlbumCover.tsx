@@ -19,14 +19,19 @@ import type { FileKind, NodeCard } from "@/lib/types";
  *
  * The colours are the identity's own and do not follow the reader's theme: a
  * cover is artwork, like a book's, and reads the same on paper, sepia and dark.
+ * A video album's ground is a deep sindoor-brown instead of umber, so the two
+ * kinds part at a glance without leaving the warm identity.
  */
 export function AlbumCover({
   name,
   kind,
   sessionLabel,
   year,
+  part = null,
   className = "",
 }: {
+  /** a track's part, printed on the cover where Audio Mode shows it */
+  part?: string | null;
   /** the folder name as pCloud gave it — "2008 01 Jan Shriram Rakesh" */
   name: string;
   kind: "audio" | "video";
@@ -43,8 +48,16 @@ export function AlbumCover({
   return (
     <span
       className={`album-cover ${className}`}
+      data-kind={kind}
       role="img"
-      aria-label={[title, month && yr ? `${month} ${yr}` : yr].filter(Boolean).join(", ")}
+      aria-label={[
+        title,
+        month && yr ? `${month} ${yr}` : yr,
+        part ? `part ${part}` : null,
+        kind === "audio" ? "audio" : "video",
+      ]
+        .filter(Boolean)
+        .join(", ")}
     >
       <svg className="album-cover__sun" viewBox="0 0 160 160" aria-hidden>
         <circle cx="80" cy="80" r="62.4" fill="var(--color-brand-hint)" />
@@ -57,10 +70,6 @@ export function AlbumCover({
           <span lang="hi" className="album-cover__type">
             {type}
           </span>
-          <span className="album-cover__kind">
-            {kind === "audio" ? <WaveformIcon /> : <VideoIcon />}
-            {kind === "audio" ? "Audio" : "Video"}
-          </span>
         </span>
         <span lang={t.lang} className="album-cover__title">
           {title}
@@ -71,6 +80,20 @@ export function AlbumCover({
             <span className="album-cover__year">{yr}</span>
           </span>
         )}
+      </span>
+      {/* Which part is playing — Audio Mode's cover only, in the track
+          thumbnails' own words: italic "Part", the number in cream. */}
+      {part && (
+        <span className="album-cover__part" aria-hidden>
+          <span className="album-cover__part-word">Part</span>
+          <span>{part}</span>
+        </span>
+      )}
+      {/* Audio or video, as a mark rather than a word (Raka, 19 Nov 2026):
+          large enough to read at a glance, and kept on the small cover too,
+          where the ground's hue says it as well. */}
+      <span className="album-cover__kind" aria-hidden>
+        {kind === "audio" ? <WaveformIcon /> : <VideoIcon />}
       </span>
       {/* The small cover says when; an album whose name carries no date says
           what kind of occasion it was, and failing that, audio or video. */}

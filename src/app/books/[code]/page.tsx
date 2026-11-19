@@ -224,6 +224,7 @@ export default async function BookDetailPage({
           when they are otherwise identical rows of Devanagari on one paper. */}
       <CollectionHero
         tone={hue.to}
+        surface="tint"
         back={backLink(ws)}
         /* Every way out of this page in one place, as on a collection's hero:
            the other language, and the link to here.
@@ -279,7 +280,7 @@ export default async function BookDetailPage({
             */}
             {book.translation_of && book.translator && (
               <span className="mt-1 block">
-                Translator: <span className="font-semibold text-white">{book.translator}</span>
+                Translator: <span className="font-semibold text-(--hero-ink)">{book.translator}</span>
                 {book.language_label && <span> · {book.language_label}</span>}
               </span>
             )}

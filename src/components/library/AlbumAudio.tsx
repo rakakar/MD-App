@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueue";
+import type { AlbumCoverFacts } from "@/components/player/PlayerProvider";
 import { MediaRows } from "@/components/library/MediaRows";
 import { PLAY_ALL, announcePlayAll, resumeIndex } from "@/components/library/folderActions";
 import { WaveformIcon } from "@/components/shell/icons";
@@ -42,7 +43,10 @@ export function AlbumAudio({
   coverUrl = null,
   art = "portrait",
   sessionType = null,
+  albumCover = null,
 }: {
+  /** the album's drawn cover, for Audio Mode — Originals only */
+  albumCover?: AlbumCoverFacts | null;
   /**
    * The album's Type — `"shivir"`, `"samvad"`… — which decides what a track
    * with no number in its title shows on its thumbnail. See `trackLabel`.
@@ -66,15 +70,24 @@ export function AlbumAudio({
 }) {
   const entries = useMemo<QueueEntry[]>(
     () =>
-      items.map((item) => ({
+      items.map((item, index) => ({
         id: trackId(item),
         title: item.title,
         subtitle: albumTitle,
         url: item.url,
         durationMs: item.duration_seconds ? item.duration_seconds * 1000 : undefined,
         coverImage: coverUrl,
+        // The album's cover with this track's part on it, for Audio Mode. A
+        // samvad track has no part (its length is under the cover already).
+        albumCover: albumCover && {
+          ...albumCover,
+          part: (() => {
+            const label = trackLabel(item, index, sessionType);
+            return label?.kind === "part" ? label.value : null;
+          })(),
+        },
       })),
-    [items, albumTitle, coverUrl]
+    [items, albumTitle, coverUrl, albumCover, sessionType]
   );
 
   const { play, resumes, activeId } = useAudioQueue(entries);

@@ -15,7 +15,7 @@ import { fileTitle } from "@/lib/fileTitle";
 import { EMPTY_FIND } from "@/lib/find";
 import { getProgress } from "@/lib/me";
 import { itemIdFromResumeKey, syncPersonal } from "@/lib/personal";
-import { AUDIO_POSTER } from "@/lib/media";
+import { AUDIO_POSTER_WARM } from "@/lib/media";
 import { contentLang } from "@/lib/script";
 import { getPlayheads } from "@/lib/storage";
 import { timeAgo } from "@/lib/dates";
@@ -550,7 +550,7 @@ function ResumeCard({
       : "";
   // Both kinds carry a picture now: a video its own still, a recording the
   // shared portrait. The tile they replaced was the same glyph on every card.
-  const poster = row.kind === "video" ? videoPoster(row.file) : AUDIO_POSTER;
+  const poster = row.kind === "video" ? videoPoster(row.file) : AUDIO_POSTER_WARM;
 
   const body = (
     <>

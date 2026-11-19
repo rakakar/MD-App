@@ -242,7 +242,7 @@ function PlayerBarInner({
       // a sweep, which is a stylesheet's job and not a class list's.
       className={`player-pill ${
         leaving ? "player-pill-out" : "player-pill-in"
-      } fixed inset-x-3 z-40 flex flex-col rounded-2xl px-3 pb-2 pt-2.5 text-white shadow-raised lg:left-[15.75rem]`}
+      } player-pill-shelf fixed inset-x-3 z-40 flex flex-col rounded-2xl px-3 pb-2 pt-2.5 text-white shadow-raised`}
       style={{
         // Inside a book it clears the reader's own bottom bar; everywhere else
         // it clears the tab bar. Same pill, one number apart — on a desktop
@@ -305,12 +305,11 @@ function PlayerBarInner({
         type="button"
         onClick={player.toggle}
         aria-label={player.playing ? "Pause" : "Play"}
-        // Terracotta to start, cream to stop — the same pair Audio Mode's own
-        // play button wears, so the two read as one player in two sizes.
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95 ${
-          player.playing ? "bg-audio-ink text-overlay" : "text-white"
-        }`}
-        style={player.playing ? undefined : { background: "var(--ws-color)" }}
+        // Cream in both states, the icon in the pill's own sindoor: a
+        // terracotta Play disappeared into the sindoor ground (Raka, 19 Nov
+        // 2026). The icon alone says play or pause.
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-audio-ink transition-colors active:scale-95"
+        style={{ color: "var(--pill-ground)" }}
       >
         {player.playing ? (
           <PauseIcon className="h-5 w-5" />
@@ -480,10 +479,8 @@ function DesktopReaderPill({
         type="button"
         onClick={player.toggle}
         aria-label={player.playing ? "Pause" : "Play"}
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95 ${
-          player.playing ? "bg-audio-ink text-overlay" : "text-white"
-        }`}
-        style={player.playing ? undefined : { background: "var(--ws-color)" }}
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-audio-ink transition-colors active:scale-95"
+        style={{ color: "var(--pill-ground)" }}
       >
         {player.playing ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="ms-0.5 h-5 w-5" />}
       </button>
