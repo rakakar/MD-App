@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { count } from "@/lib/labels";
 import { ContinueReading } from "@/components/home/ContinueReading";
 import { BookShelf } from "@/components/shelf/BookShelf";
-import { ShoppingBagIcon } from "@/components/shell/icons";
+import { BuyBooksLink } from "@/components/shelf/BuyBooksLink";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { PageTitle } from "@/components/ui/PageTitle";
@@ -76,21 +76,7 @@ export default async function BooksPage() {
             )
           }
         />
-        <a
-          href="https://purchase.madhyasth.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control border bg-card px-4 text-sm font-semibold transition-colors hover:bg-accent-tint max-lg:-my-2"
-          style={{
-            color: "var(--ws-ink)",
-            borderColor: "color-mix(in srgb, var(--ws-color) 45%, transparent)",
-          }}
-        >
-          <ShoppingBagIcon className="h-4.5 w-4.5" />
-          Buy books
-          <span aria-hidden>↗</span>
-          <span className="sr-only">(opens in a new tab)</span>
-        </a>
+        <BuyBooksLink />
       </div>
 
       {/* Resume rows sit above the shelf (design 1B): someone opening "Read"

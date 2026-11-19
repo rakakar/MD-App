@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArchiveLink } from "@/components/library/ArchiveLink";
 import { ContinueDocument } from "@/components/library/ContinueDocument";
 import { WorkspaceShelf } from "@/components/library/WorkspaceShelf";
+import { BuyBooksLink } from "@/components/shelf/BuyBooksLink";
 import { WorkspaceScope } from "@/components/shell/WorkspaceProvider";
 import { PageContainer } from "@/components/ui";
 import { ApiError, getNode, getTopics, getWorkspaces } from "@/lib/api";
@@ -104,6 +105,8 @@ export async function OriginalsShelfPage({ params }: { params: RawParams }) {
         title="Library"
         description="Original unpublished diaries, articles, charts by Shri A.Nagraj"
         lead={<ContinueDocument />}
+        /* "Buy books" here too (designer, 19 Nov 2026), as on the Books tab. */
+        titleAction={<BuyBooksLink />}
         state={state}
         topics={topics}
         shelves={shelves}

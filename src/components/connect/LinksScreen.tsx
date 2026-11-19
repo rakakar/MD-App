@@ -5,9 +5,11 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLinkIcon,
+  ShoppingBagIcon,
   UserIcon,
   VideoIcon,
 } from "@/components/shell/icons";
+import { PURCHASE_URL } from "@/components/shelf/BuyBooksLink";
 import type { LinkGroup, LinkRow } from "@/lib/directory";
 import { contentLang } from "@/lib/script";
 
@@ -257,6 +259,47 @@ function Group({
   );
 }
 
+/**
+ * "Buy books" — the print store, as its own row after the groups (designer,
+ * 19 Nov 2026). Not a group: it is one link, so it is drawn the size of a
+ * group's header but opens the store directly instead of an accordion.
+ * The app's own, not the panel's, like the button on the Books and Library
+ * shelves it repeats.
+ */
+function BuyBooksCard({ wide = false }: { wide?: boolean }) {
+  return (
+    <a
+      href={PURCHASE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`flex w-full items-center text-start rounded-card bg-card shadow-card transition-colors ${
+        wide
+          ? "min-h-20 gap-4 border-2 border-rule px-5 hover:border-ink/20"
+          : "min-h-16 gap-3.5 border border-rule p-3.5 active:bg-ink/[.03]"
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`flex shrink-0 items-center justify-center rounded-tile ${wide ? "h-12 w-12" : "h-11 w-11"}`}
+        style={{
+          background: "color-mix(in srgb, var(--ws-color) 12%, var(--color-card))",
+          color: "var(--ws-ink)",
+        }}
+      >
+        <ShoppingBagIcon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-title font-semibold">Buy books</span>
+        <span className="block text-xs text-ink-soft">Printed editions · purchase.madhyasth.org</span>
+      </span>
+      <span aria-hidden className="shrink-0" style={{ color: "var(--ws-ink)" }}>
+        <ExternalLinkIcon className="h-4 w-4" />
+      </span>
+      <span className="sr-only">(opens in a new tab)</span>
+    </a>
+  );
+}
+
 /** The comp's ↗ — smaller and plainer than the box-and-arrow, for a panel
  *  where every row leaves the app and the glyph only has to say so. */
 function ArrowUpRight() {
@@ -331,6 +374,9 @@ function LinksDesktop({ groups }: { groups: LinkGroup[] }) {
             </li>
           );
         })}
+        <li>
+          <BuyBooksCard wide />
+        </li>
       </ul>
 
       <section
@@ -391,6 +437,9 @@ export function LinksScreen({ groups }: { groups: LinkGroup[] }) {
           />
         </li>
       ))}
+      <li>
+        <BuyBooksCard />
+      </li>
     </ul>
     </>
   );

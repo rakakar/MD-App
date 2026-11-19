@@ -81,6 +81,7 @@ export async function WorkspaceShelf({
   filtersButton = true,
   chipAxis = "kind",
   afterDoors,
+  titleAction,
 }: {
   root: LibraryNode;
   /**
@@ -92,6 +93,8 @@ export async function WorkspaceShelf({
   description: React.ReactNode;
   /** what sits between the title and the controls — the resume rail */
   lead?: React.ReactNode;
+  /** a control beside the title, as the Books shelf draws "Buy books" */
+  titleAction?: React.ReactNode;
   state: FindState;
   topics: Topic[];
   shelves: Record<number, string>;
@@ -258,7 +261,16 @@ export async function WorkspaceShelf({
     ) : null;
   const heading = (
     <>
-      <PageTitle shelf title={title} description={description} meta={meta} />
+      {titleAction ? (
+        // The Books shelf's row: centred on title + count on a desktop,
+        // top-aligned on a phone where only the title shows (see `BuyBooksLink`).
+        <div className="flex items-start justify-between gap-4 lg:items-center">
+          <PageTitle className="min-w-0" shelf title={title} description={description} meta={meta} />
+          {titleAction}
+        </div>
+      ) : (
+        <PageTitle shelf title={title} description={description} meta={meta} />
+      )}
       {lead}
     </>
   );
