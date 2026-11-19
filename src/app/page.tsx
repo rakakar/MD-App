@@ -147,7 +147,7 @@ export default async function OriginalsHome() {
         {/* Draws nothing until there is something; see lib/shorts, which is
             where the fact that there is not yet is kept. */}
         {shorts.length > 0 && (
-          <section className="lg:col-span-2">
+          <section className="lg:col-span-2 lg:row-span-2">
             <SectionHeading tier="title">Shorts</SectionHeading>
             <ShortsRail shorts={shorts} />
           </section>
@@ -157,12 +157,14 @@ export default async function OriginalsHome() {
           The spec's pair of media cards sat here, pointing at the audio and
           video shelves that Content Model v3 dissolved, and were pulled rather
           than left pointing at nothing. One of them came back once /av was
-          real. The desktop revision leaves it off: there the sidebar's
-          Audio/Video item is always in view, and the band was a second door
-          to the same room. On a phone the tab bar says "Media" and the band
-          still earns its place.
+          real. The desktop revision left it off, the sidebar's Media item
+          being a second door to the same room; it came back on desktop on
+          19 Nov 2026 (Raka) — Home is where a reader looks for what there is,
+          and the sidebar item is easy to read past. On desktop it stacks with
+          Library in the right-hand column, beside Shorts (which spans both
+          rows), filling the space the Library tiles left under them.
         */}
-        <section className="lg:hidden">
+        <section className="lg:col-start-3">
           <SectionHeading tier="title">Media</SectionHeading>
           <PromoBand
             href="/av"
