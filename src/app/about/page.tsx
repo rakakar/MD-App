@@ -27,7 +27,8 @@ export default function AboutPage() {
 
         <div className="mt-4 flex flex-col gap-3">
           <Section title="App version">
-            <p className="tabular-nums text-ink-soft">v{pkg.version}</p>
+            {/* "2.0.0" reads as "v2.0": a zero patch is dropped. */}
+            <p className="tabular-nums text-ink-soft">v{pkg.version.replace(/\.0$/, "")}</p>
           </Section>
 
           {/* Wording from the designer, 18 Nov 2026 (replaces the PRD's
@@ -80,6 +81,14 @@ export default function AboutPage() {
             </ul>
           </Section>
 
+          {/* Designer's wording, 20 Nov 2026. */}
+          <Section title="Gratitude">
+            <p className="text-sm text-ink-soft">
+              For contributions made so far in reaching here: book writing, typing, printing,
+              audio, video, tech, etc:
+            </p>
+            <p className="mt-2 text-ink">{GRATITUDE.join(", ")}</p>
+          </Section>
 
           <Section title="Official website">
             <a
@@ -117,7 +126,20 @@ const TEAM: [string, string][] = [
   ["Himanshu Pastagiya", "coord"],
   ["Hirendra Chauhan", "coord"],
   ["Testing team", ""],
-  ["Shriram Narasimhan", "content"],
+  ["Shriram Narasimhan", "structure"],
+];
+
+/** In the order the designer gave (20 Nov 2026). */
+const GRATITUDE = [
+  "Sharda Amba didi",
+  "Sadhan Bhattacharya & others",
+  "BR & Anchala Agrawal",
+  "Sunil Kherwa",
+  "Ramesh Choudhary",
+  "Gopal Gupta",
+  "Anand Dammani",
+  "Ummed Nahata",
+  "Achal Agrawal",
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
