@@ -83,14 +83,16 @@ const COVER_HUES: Record<string, BookHue> = {
   //
   // terracotta — 3.01:1 / 4.51:1
   "JVE-ENG": { from: "#d08339", to: "#a96728" },
+  // The generated translation covers (`translation-covers/build_covers.py`,
+  // 19 Nov 2026) print their spine in the same saffron ink as JVE-ENG's
+  // pattern, so they share its pair: one family on the shelf and in the hero.
+  // The sampler reads them a shade duller (#a46935…#a56834) only because the
+  // spine is thin line-work antialiased into cream; the ink itself is this.
+  // Re-sample if a translation gets a different cover.
   "MAND-ENG-RG": { from: "#d08339", to: "#a96728" },
-  // sage — 3.00:1 / 4.53:1. Low confidence: both covers are almost entirely
-  // unsaturated cream, so the sampler is reading a faint watermark rather
-  // than a printed band — the fallback hash palette would have been an
-  // equally defensible answer here. Re-sample if either cover is redrawn with
-  // real ink in it.
-  "JVEP-KND-GS": { from: "#9d9752", to: "#7d7841" },
-  "MVD-KND-GS": { from: "#9b984f", to: "#7b793f" },
+  "MVD-ENG-RG": { from: "#d08339", to: "#a96728" },
+  "JVEP-KND-GS": { from: "#d08339", to: "#a96728" },
+  "MVD-KND-GS": { from: "#d08339", to: "#a96728" },
 };
 
 /**
