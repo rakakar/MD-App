@@ -28,22 +28,23 @@ export function ShortsRail({ shorts }: { shorts: Short[] }) {
   if (shorts.length === 0) return null;
 
   return (
-    // From lg, one row that fits its two-thirds of the page — four, five from
-    // xl — as the desktop revision draws it; the player is a feed, so the rest
+    // From lg, one row of four across its two-thirds of the page (five from xl
+    // until 19 Nov 2026, when stretched to the column's height they read as
+    // slivers — Raka); the player is a feed, so the rest
     // are a swipe away once one is open. The row grows to the height of the
     // Media and Library column beside it (`flex-1` in Home's column section),
     // and the cards with it, taller than 9:16 there — at 9:16 they stopped
     // ~50px short and left a gap under the rail (Raka, 19 Nov 2026). The
     // poster is `cover`, so it crops at the sides; `min-h-48` keeps them near
     // 9:16 should that column ever be short.
-    <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:flex-1 lg:grid-cols-4 lg:overflow-visible xl:grid-cols-5">
+    <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:flex-1 lg:grid-cols-4 lg:overflow-visible">
       {shorts.map((s, i) => {
         const t = contentLang(s.title);
         return (
           <li
             key={s.id}
             className={`w-[9.5rem] shrink-0 snap-start lg:w-full ${
-              i >= 5 ? "lg:hidden" : i >= 4 ? "lg:hidden xl:block" : ""
+              i >= 4 ? "lg:hidden" : ""
             }`}
           >
             <Link
