@@ -237,6 +237,8 @@ export const INTENT_GLOSS: Record<Intent, string> = {
 export const EXAMPLE_WORDS = ["अनुभव", "जागृति", "समाधान", "व्यवस्था"];
 export const EXAMPLE_PHRASE = "मानवीयतापूर्ण आचरण";
 export const EXAMPLE_QUESTION = "जानना और मानना में क्या अंतर है?";
+/** a place, for Navigate — matches the events destination's "शिविर" */
+export const EXAMPLE_PLACE = "आने वाले शिविर";
 
 export const INTENT_PLACEHOLDER: Record<Intent | "auto", string> = {
   auto: "Ask anything from the books",

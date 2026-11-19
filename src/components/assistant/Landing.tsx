@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   EXAMPLE_PHRASE,
+  EXAMPLE_PLACE,
   EXAMPLE_QUESTION,
   EXAMPLE_WORDS,
   exactGlossaryWord,
@@ -69,7 +70,7 @@ export function Landing({
     () => EXAMPLE_WORDS.find((w) => exactGlossaryWord(dictionary, w)) ?? EXAMPLE_WORDS[0],
     [dictionary]
   );
-  const examples: { intent: Intent; label: string; ask: () => void }[] = [
+  const examples: { intent: Intent; label: string; ask: () => void; desktop?: boolean }[] = [
     { intent: "paribhasha", label: `${word} का अर्थ क्या है?`, ask: () => onAsk(word, "paribhasha") },
     {
       intent: "books",
@@ -77,10 +78,13 @@ export function Landing({
       ask: () => onAsk(EXAMPLE_PHRASE, "books", { exact: true }),
     },
     { intent: "research", label: EXAMPLE_QUESTION, ask: () => onAsk(EXAMPLE_QUESTION, "research") },
+    // Desktop only (designer, 20 Nov 2026): it completes the 2 × 2 there, and
+    // on a phone a fourth row would push the chips further from the thumb.
+    { intent: "navigate", label: EXAMPLE_PLACE, ask: () => onAsk(EXAMPLE_PLACE, "navigate"), desktop: true },
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-4 sm:px-6">
+    <div className="mx-auto max-w-3xl px-4 pb-2 sm:px-6 lg:pb-0">
       {/* The question is answered once a chip is chosen, so it fades with the
           chip row. Opacity only: it keeps its place, so the help line and the
           box below it stay exactly where they were. */}
@@ -118,7 +122,7 @@ export function Landing({
       <div className="mt-5 grid grid-cols-1">
         <div
           inert={mode !== null || undefined}
-          className={`col-start-1 row-start-1 flex min-w-0 flex-col justify-end gap-3 transition-[opacity,transform] ease-out motion-reduce:transform-none ${
+          className={`col-start-1 row-start-1 flex min-w-0 flex-col justify-end gap-3 lg:mx-auto lg:w-fit transition-[opacity,transform] ease-out motion-reduce:transform-none ${
             mode ? "translate-y-1 opacity-0 duration-150" : "translate-y-0 opacity-100 delay-150 duration-300"
           }`}
         >
@@ -145,10 +149,17 @@ export function Landing({
           ))}
         </div>
         {/* Something to ask, not only ways of asking (UX audit AS2): one
-            example per kind of answer, each asked on the tap. */}
-        <ul aria-label="For example" className="flex min-w-0 flex-col lg:items-center">
+            example per kind of answer, each asked on the tap.
+            On a desktop, two columns of two read across — Paribhasha · Book
+            search, then Research · Navigate — spanning exactly the chip row
+            above, Paribhasha's left edge to Navigate's right (designer, 20 Nov
+            2026). Rows flush left, not centred line by line, which zig-zagged
+            the glyphs. The layer is `w-fit`, so the chips set its width;
+            `w-0 min-w-full` lets this list fill that width without widening
+            it. */}
+        <ul aria-label="For example" className="flex min-w-0 flex-col lg:grid lg:w-0 lg:min-w-full lg:grid-cols-2 lg:gap-x-8">
           {examples.map((e) => (
-            <li key={e.intent}>
+            <li key={e.intent} className={e.desktop ? "hidden lg:block" : undefined}>
               <button
                 type="button"
                 onClick={e.ask}
