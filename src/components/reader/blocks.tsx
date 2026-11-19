@@ -1,3 +1,4 @@
+import { dominantScript } from "@/lib/bookLanguage";
 import type { PaintedSegment } from "@/lib/highlights";
 import {
   formatRuns,
@@ -264,6 +265,19 @@ function TocRow({
  */
 const SHORT_LINE = 60;
 
+/**
+ * The language of a body block: `en` when its letters are clearly English (the
+ * English pages of a translation), `hi` otherwise. It keeps the `hi` class and
+ * the Mukta/DPS face either way; what `lang="en"` changes is the leading
+ * (globals.css sets English 0.2 tighter, because Latin's small x-height looks
+ * double-spaced at Devanagari leading) and lets the browser hyphenate it. Mixed
+ * text — a glossary row, a Hindi term in an English line that is mostly Hindi —
+ * stays `hi`, as does Kannada for now.
+ */
+function bodyLang(text: string): "hi" | "en" {
+  return dominantScript(text) === "en" ? "en" : "hi";
+}
+
 /** One paragraph block. Font sizing inherits from the reader root scale. */
 export function Block({
   para,
@@ -306,7 +320,7 @@ export function Block({
       // started 40px into a 369px column and read as a new item.
       return (
         <p
-          lang="hi"
+          lang={bodyLang(para.text_hi)}
           className={`hi reader-list ${para.marker ? "grid grid-cols-[auto_minmax(0,1fr)] gap-x-[0.5em]" : ""} ${align}`}
           style={{ paddingInlineStart: `calc(${para.indent_level * 1.5}rem + 0.4em)` }}
         >
@@ -318,7 +332,7 @@ export function Block({
       // the Sutra look — typographic ceremony (PRD §5)
       return (
         <p
-          lang="hi"
+          lang={bodyLang(para.text_hi)}
           className={`hi my-6 px-4 text-[1.1em] font-semibold ${
             para.align ? ALIGN[para.align] : "text-center"
           }`}
@@ -331,7 +345,7 @@ export function Block({
     case "quote":
       return (
         <blockquote
-          lang="hi"
+          lang={bodyLang(para.text_hi)}
           // Upright (15 Nov 2026): no Devanagari face here has an italic, so
           // the slant was synthesised. The ruled edge and softer ink carry it.
           className={`hi my-4 border-s-2 ps-4 not-italic text-(--reader-ink-soft) ${align}`}
@@ -418,7 +432,7 @@ export function Block({
       // "अध्याय – एक". Right-set lines (a signature, a date) stay right.
       return (
         <p
-          lang="hi"
+          lang={bodyLang(para.text_hi)}
           className={`hi reader-para ${
             para.align === "right" || (para.align === "center" && para.text_hi.length <= SHORT_LINE)
               ? align

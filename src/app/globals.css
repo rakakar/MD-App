@@ -1048,6 +1048,20 @@ html[data-reader-face="sans"] .reader-surface .hi {
   line-height: 1.35;
 }
 
+/* **English body text: 0.2 tighter than the Hindi at every setting.** The
+   English pages of a translation are set in the same face and size, and at
+   Devanagari leading they read as double-spaced: Latin is mostly x-height,
+   with no headline or matras to fill the line, so the same 40px pitch leaves
+   far more white between lines. Compared side by side on JVE-ENG at the phone
+   default, English at 1.65 matched the density of Hindi at 1.85 (Raka, 19 Nov
+   2026). Compact / Relaxed / Airy give 1.65 / 1.85 / 2.1. `lang="en"` comes
+   from `bodyLang` in blocks.tsx. Hyphenation too: the justified column
+   otherwise opens wide word gaps, which reads as loose as the leading did. */
+.reader-surface .hi[lang="en"] {
+  line-height: calc(var(--reader-line-height, 1.85) - 0.2);
+  hyphens: auto;
+}
+
 /* A chapter's headings. They had `leading-snug`, which the rule above
    outranks, so a title that wrapped got the body's 2.05 at 1.35em and its
    second line read as a separate thought. Headings are bold, so they are in
@@ -1089,6 +1103,10 @@ html[data-reader-face="sans"] .reader-surface .hi {
   /* restated, since this block comes after it: chrome stays tight */
   .reader-surface .hi-tight {
     line-height: 1.35;
+  }
+  /* and English keeps its 0.2 under the Hindi */
+  .reader-surface .hi[lang="en"] {
+    line-height: calc(var(--reader-line-height, 1.85) - 0.4);
   }
   .reader-content .reader-para {
     margin-block: calc((var(--reader-line-height, 1.85) - 0.2 - 1.15) * 1em);
