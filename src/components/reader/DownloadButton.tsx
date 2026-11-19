@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CheckIcon, DownloadIcon } from "@/components/shell/icons";
 import { HERO_PILL } from "@/components/ui/CollectionHero";
 import { track } from "@/lib/analytics";
 import { getChapter, getParibhashaIndex } from "@/lib/api";
 import { ensureFullGlossary } from "@/lib/glossary";
 import {
-  getDownload,
   listDownloads,
   markDownloaded,
   putCachedChapter,
   removeDownload,
 } from "@/lib/idb";
-import { keepDownloads, refreshDownloaded } from "@/lib/offline";
-import { removeBookPages, saveBookPages } from "@/lib/offlinePages";
+import { keepDownloads, refreshDownloaded, useDownloadedBooks } from "@/lib/offline";
+import {
+  SHELL_PATHS,
+  bookPagePaths,
+  removeBookPages,
+  saveBookPages,
+} from "@/lib/offlinePages";
 import type { BookDetail } from "@/lib/types";
 
 type Status = "idle" | "downloading" | "done";
@@ -33,46 +37,54 @@ export function DownloadButton({
    *  `heroPill` the labelled one in the desktop hero's action row */
   variant?: "pill" | "hero" | "heroPill";
 }) {
-  const [status, setStatus] = useState<Status>("idle");
+  // Whether the book is saved comes from the shared list, not this button's
+  // own memory: the hero renders a phone and a desktop copy, and Downloads can
+  // remove the book too, so every copy has to agree on what is on the device.
+  const saved = useDownloadedBooks().has(book.code);
+  const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    void getDownload(book.code).then((d) => {
-      if (d) setStatus("done");
-    });
-  }, [book.code]);
+  const status: Status = busy ? "downloading" : saved ? "done" : "idle";
 
   const download = async () => {
-    setStatus("downloading");
+    if (busy) return;
+    setBusy(true);
     setProgress(0);
     void keepDownloads();
     try {
+      // Every step counts the same: a chapter's text, then each page that
+      // shows it (the book's, each chapter's, the app's own way in). The
+      // page count is taken from the same lists saveBookPages saves, so the
+      // bar cannot run past 100% when they change. Pages are the slower half
+      // (the first also brings the build files), so the bar moves on through
+      // them rather than parking at a fixed mark.
+      const numbers = book.chapters.map((c) => c.number);
+      const steps =
+        numbers.length + bookPagePaths(book.code, numbers).length + SHELL_PATHS.length;
+      const show = (done: number) => setProgress(Math.min(99, Math.round((done / steps) * 100)));
       for (let i = 0; i < book.chapters.length; i++) {
         const ch = book.chapters[i];
         const payload = await getChapter(book.code, ch.number);
         await putCachedChapter(book.code, ch.number, payload);
-        // the text is most of the wait; the pages that show it are the rest
-        setProgress(Math.round(((i + 1) / book.chapters.length) * 70));
+        show(i + 1);
       }
       // The pages too, or the text could only be read in chapters already
       // visited online (lib/offlinePages). Best effort per page.
-      const numbers = book.chapters.map((c) => c.number);
-      const total = numbers.length + 3;
       await saveBookPages(book.code, numbers, {
-        onEach: (done) => setProgress(70 + Math.round((done / total) * 30)),
+        onEach: (done) => show(numbers.length + done),
       });
+      setProgress(100);
       await markDownloaded({
         code: book.code,
         title_hi: book.title_hi,
         chapter_count: book.chapters.length,
         cover_image: book.cover_image,
       });
-      void refreshDownloaded();
+      await refreshDownloaded();
       track("book_download_offline");
-      setStatus("done");
     } catch {
-      setStatus("idle");
       return;
+    } finally {
+      setBusy(false);
     }
 
     // The dictionary comes along. "Available offline" has to mean the book
@@ -89,10 +101,12 @@ export function DownloadButton({
   };
 
   const remove = async () => {
+    // One stray tap on a ticked button should not throw away a book that took
+    // a minute to save, so removing asks first, as Downloads does.
+    if (!window.confirm(`Remove "${book.title_hi}" from this device? It will need a connection to read again.`)) return;
     await removeDownload(book.code);
     await removeBookPages(book.code, (await listDownloads()).length).catch(() => undefined);
-    void refreshDownloaded();
-    setStatus("idle");
+    await refreshDownloaded();
   };
 
   if (variant === "heroPill") {
