@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cardSummary } from "./format";
 import { ChevronRight } from "@/components/shell/icons";
 import { KindTile } from "@/components/ui";
+import { AlbumCover, isRecordingAlbum } from "./AlbumCover";
 import type { TileKind } from "@/components/ui/KindTile";
 import { nodeHref } from "@/lib/library";
 import { contentLang } from "@/lib/script";
@@ -44,7 +45,7 @@ export function CollectionGridCard({
 }: {
   href: string;
   name: string;
-  /** the kind tile at `sm` — 36px, the card's own scale */
+  /** the kind tile at `sm` — 36px — or an album's cover at the card's full width */
   tile: React.ReactNode;
   /** what is inside: "19 Videos", "10 PDFs · 2 folders" */
   chip: React.ReactNode;
@@ -214,6 +215,12 @@ function doorFacts({ door, rollup, shelves }: DoorProps) {
     name: door.name,
     kind: (kinds.length === 1 ? kinds[0] : "folder") as TileKind,
     cover: door.cover_url,
+    // A recording album wears its drawn cover, not an uploaded one, so it
+    // looks the same here as on the Audio/Video shelf (Raka, 19 Nov 2026).
+    album: isRecordingAlbum(door, kinds)
+      ? { name: door.name, sessionLabel: door.session_type_label, year: door.year,
+          kind: kinds.includes("video") && !kinds.includes("audio") ? ("video" as const) : ("audio" as const) }
+      : null,
     description: door.description || null,
     chip: cardSummary(door) || "Nothing yet",
     note: hours > 0 ? `${hours} ${hours === 1 ? "hour" : "hours"}` : undefined,
@@ -221,12 +228,14 @@ function doorFacts({ door, rollup, shelves }: DoorProps) {
 }
 
 export function DoorCard(props: DoorProps) {
-  const { href, name, kind, cover, chip, note } = doorFacts(props);
+  const { href, name, kind, cover, album, chip, note } = doorFacts(props);
   return (
     <CollectionGridCard
       href={href}
       name={name}
-      tile={<KindTile kind={kind} cover={cover} size="sm" />}
+      tile={
+        album ? <AlbumCover {...album} className="w-full" /> : <KindTile kind={kind} cover={cover} size="sm" />
+      }
       chip={chip}
       note={note}
     />
@@ -234,13 +243,19 @@ export function DoorCard(props: DoorProps) {
 }
 
 export function DoorRow(props: DoorProps) {
-  const { href, name, description, kind, cover, chip, note } = doorFacts(props);
+  const { href, name, description, kind, cover, album, chip, note } = doorFacts(props);
   return (
     <CollectionListRow
       href={href}
       name={name}
       description={props.withDescription ? description : undefined}
-      tile={<KindTile kind={kind} cover={cover} size="xl" />}
+      tile={
+        album ? (
+          <AlbumCover {...album} className="w-[4.5rem] shrink-0" />
+        ) : (
+          <KindTile kind={kind} cover={cover} size="xl" />
+        )
+      }
       chip={chip}
       note={note}
     />

@@ -25,6 +25,7 @@ export function FolderFiles({
   albumTitle,
   coverUrl,
   audioArt,
+  sessionType,
   folderProvenance,
   playAll = false,
   fullSeries,
@@ -35,6 +36,8 @@ export function FolderFiles({
   albumTitle?: string;
   coverUrl?: string | null;
   audioArt?: "portrait" | "glyph";
+  /** the album's Type, for what a track's thumbnail says — see `AlbumAudio` */
+  sessionType?: string | null;
   folderProvenance?: Provenance;
   /** a series of recordings: Play all goes under the search on a phone */
   playAll?: boolean;
@@ -91,6 +94,7 @@ export function FolderFiles({
           albumTitle={albumTitle}
           coverUrl={coverUrl}
           audioArt={audioArt}
+          sessionType={sessionType}
           folderProvenance={folderProvenance}
         />
       )}

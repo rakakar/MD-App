@@ -19,6 +19,16 @@
 export const AUDIO_POSTER = "/audio-cover.webp";
 
 /**
+ * The same portrait toned to umber and cream, moved right, with a solid umber
+ * band on its left (Raka, 19 Nov 2026) — what an Originals album's tracks wear
+ * under their part number or length (`AlbumAudio`'s `TrackArt`). Made once
+ * from `audio-cover.webp` (`colorize` black #2B1E16 → mid #9A7454 → white
+ * #FBE9D2, pasted 14% right, the shade baked in) rather than filtered on every
+ * row; re-make it from that file if the portrait changes.
+ */
+export const AUDIO_POSTER_WARM = "/audio-cover-warm.webp";
+
+/**
  * The illustrated portrait of Shri A. Nagraj (designer's phone comps, 8 Oct
  * 2026): what a series of recordings with no cover of its own wears in its
  * hero, on Originals.

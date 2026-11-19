@@ -2355,3 +2355,221 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   font-family: var(--font-devanagari-sans);
   line-height: 1.3;
 }
+
+/* ---------------------------------------------------------------------------
+   Album cover — Udaya A3.1 (Raka, 19 Nov 2026). See `AlbumCover.tsx`.
+
+   Every measure is in `cqw`, a share of the cover's own width, so the one
+   recipe is a 72px list tile and a 160px hero thumb. The colours are the
+   identity's and stay put in every theme: a cover is artwork. Cream on umber
+   is 13.9:1, marigold on umber 9.6:1.
+   --------------------------------------------------------------------------- */
+.album-cover {
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  max-width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--radius-cover);
+  background: var(--color-brand-umber);
+  color: var(--color-brand-hint);
+}
+/* Large enough that three rings show and the vermilion core sits just under
+   the bottom edge; its top stays below the date line. */
+.album-cover__sun {
+  position: absolute;
+  right: -20%;
+  bottom: -37%;
+  width: 83%;
+}
+.album-cover__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8cqw;
+}
+.album-cover__kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqw;
+  color: var(--color-brand-marigold);
+  font-size: 4.2cqw;
+  line-height: 1.2;
+}
+.album-cover__type {
+  font-family: var(--font-devanagari-sans);
+  font-weight: 600;
+}
+.album-cover__kind {
+  display: flex;
+  align-items: center;
+  gap: 1.6cqw;
+  font-family: var(--font-ui);
+  font-size: 3.6cqw;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.album-cover__kind svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+.album-cover__title {
+  display: -webkit-box;
+  margin-top: 4cqw;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 11cqw;
+  font-weight: 500;
+  line-height: 1.04;
+  text-wrap: balance;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.album-cover__title:lang(hi) {
+  font-family: var(--font-devanagari);
+  font-size: 10cqw;
+  line-height: 1.3;
+}
+.album-cover__date {
+  display: flex;
+  align-items: baseline;
+  gap: 3.4cqw;
+  margin-top: auto;
+  margin-bottom: 31cqw;
+}
+.album-cover__date,
+.album-cover__small {
+  font-family: var(--font-display);
+  line-height: 0.82;
+  letter-spacing: -0.02em;
+}
+.album-cover__month {
+  font-size: 12.5cqw;
+  font-style: italic;
+  color: var(--color-brand-marigold);
+}
+.album-cover__year {
+  font-size: 18.5cqw;
+  font-variant-numeric: lining-nums;
+}
+.album-cover__small {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  gap: 1cqw;
+  padding: 10cqw 0 0 10cqw;
+  line-height: 0.9;
+}
+.album-cover__small .album-cover__month {
+  font-size: 19cqw;
+}
+.album-cover__small .album-cover__year {
+  font-size: 25cqw;
+}
+/* No date in the name: the Type word, in the top line's marigold, at the size
+   the year would take; or the kind's glyph. */
+.album-cover__word {
+  font-family: var(--font-devanagari-sans);
+  font-size: 19cqw;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0;
+  color: var(--color-brand-marigold);
+}
+.album-cover__glyph {
+  width: 26cqw;
+  height: 26cqw;
+  color: var(--color-brand-marigold);
+}
+@container (max-width: 110px) {
+  .album-cover__text {
+    display: none;
+  }
+  .album-cover__small {
+    display: flex;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The detail hero's colours (`CollectionHero`). White on the tone gradient by
+   default — every hero, and every Share / Full series / Play all drawn into
+   one, reads these, so a panel that changes them changes its buttons too.
+   Theme-independent on purpose: the default panel is the accent in all three.
+   --------------------------------------------------------------------------- */
+:root {
+  --hero-ink: #fff;
+  --hero-kicker: rgb(255 255 255 / 0.75);
+  --hero-cta-bg: #fff;
+}
+
+/* `surface="hint"` — the recording albums' header (Option B, Raka 19 Nov
+   2026): the sun's palest ring, warming toward marigold at the foot, under
+   umber, so the dark album cover is the one strong shape on it. Play all
+   inverts to deep vermilion under white (6.2:1). Umber on the ground 14:1,
+   the vermilion kicker 5.1:1 at its darkest stop. */
+.hero-hint {
+  --hero-ink: var(--color-brand-umber);
+  --hero-kicker: var(--color-accent-deep);
+  --hero-cta-bg: var(--color-accent-deep);
+  --hero-cta-ink: #fff;
+  background: linear-gradient(170deg, #fdf1e2 0%, #fbe9d2 60%, #f7dfc0 100%);
+}
+/* A step deeper on sepia paper, as the sutra card is: the light ramp is too
+   close to that surface to read as a panel. */
+[data-theme="sepia"] .hero-hint {
+  background: linear-gradient(170deg, #f9ead6 0%, #f4dfc3 60%, #efd4b2 100%);
+}
+/* Dark: the same idea at night — a warm brown a step above the page, cream
+   words, saffron kicker (6.6:1). The cover is nearly its colour here, so it
+   takes a hairline of cream to stay an object. */
+[data-theme="dark"] .hero-hint {
+  --hero-ink: #f3e9dd;
+  --hero-kicker: var(--color-brand-saffron);
+  background: linear-gradient(170deg, #3a2b21 0%, #2e231b 60%, #281e17 100%);
+}
+[data-theme="dark"] .hero-hint .album-cover {
+  box-shadow: 0 0 0 1px rgb(251 233 210 / 0.18);
+}
+
+/* ---------------------------------------------------------------------------
+   An Originals audio track's thumbnail (Raka, 19 Nov 2026): the warmed
+   portrait, and on its umber left the part number or the length, set as the
+   album cover sets its date — "Part 03", "18 min", italic marigold word and
+   cream figure on one baseline. Sized in `cqw` of the thumbnail, so the list's
+   112px and the grid's 300px are one recipe. What it says: `trackLabel`.
+   --------------------------------------------------------------------------- */
+.track-art {
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--color-brand-umber);
+}
+.track-art__line {
+  position: absolute;
+  left: 7cqw;
+  bottom: 9cqw;
+  display: flex;
+  align-items: baseline;
+  gap: 2.6cqw;
+  font-family: var(--font-display);
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+}
+.track-art__word {
+  font-size: 10cqw;
+  font-style: italic;
+  color: var(--color-brand-marigold);
+}
+.track-art__num {
+  font-size: 17cqw;
+  font-variant-numeric: lining-nums;
+  color: var(--color-brand-hint);
+}

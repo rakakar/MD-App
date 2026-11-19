@@ -7,7 +7,8 @@ import { FindBar } from "./FindBar";
 import { RailFacets } from "./RailFacets";
 import { albumSummary } from "./format";
 import { RailSlot } from "@/components/shell/Rail";
-import { EmptyState, KindTile } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
+import { AlbumCover } from "./AlbumCover";
 import type { TileKind } from "@/components/ui/KindTile";
 import { KindChips, type KindChoice } from "./KindChips";
 import {
@@ -149,10 +150,9 @@ export function AvShelf({
     ) : null;
 
   return (
-    /* List first, for a reader who has never chosen. Every tile on this page
-       is the same glyph in one of two tints, and the names — long, often
-       Devanagari — are the content; the grid spent a 165px column on artwork
-       that told them nothing while the name wrapped to three lines. */
+    /* List first, for a reader who has never chosen: the names — long, often
+       Devanagari — are what they scan. The grid shows each album's whole
+       cover; the list keeps it to the month over the year. */
     <CollectionViewProvider fallback="list">
       <PageTitle shelf title={title} description={description} meta={meta} />
 
@@ -442,10 +442,9 @@ function collectionsOf(albums: LibraryAlbum[] | undefined, groups: FolderGroup[]
  * out to the full series; the inline copy here had none of those. So the card
  * goes there rather than trying to be it.
  *
- * No cover of its own: an album arrives as the find's `albums` entry — id,
- * name and counts, not its artwork. The kind glyph and its tint do the work
- * instead — the same pair the Library shelf's tiles use, and on this tab every
- * collection is purely one kind or the other.
+ * Its cover is drawn from its own facts — name, date, Type, kind — by
+ * `AlbumCover`, since an album arrives as the find's `albums` entry with no
+ * artwork of its own.
  */
 function CollectionCard({ album, shelves }: { album: Collection; shelves: ShelfMap }) {
   const kind = onlyKind(album.kinds);
@@ -454,7 +453,7 @@ function CollectionCard({ album, shelves }: { album: Collection; shelves: ShelfM
     <CollectionGridCard
       href={nodeHref(album.id, shelves)}
       name={head}
-      tile={<KindTile kind={kind} size="sm" />}
+      tile={<CollectionCover album={album} className="w-full" />}
       chip={albumSummary(album.items, album.kinds)}
       chipTint={CHIP_TINT[kind]}
       note={note}
@@ -505,11 +504,8 @@ function CollectionLayout({
  * reader who is scanning names rather than looking at shapes.
  *
  * A card each rather than rows on one divided sheet, as the designer draws it:
- * the tile is large enough here to be the row's anchor, and a hairline between
- * two 100px rows would have read as a table. The grid is right when the tiles
- * differ from one another; on this tab they are the same glyph in one of two
- * tints, so a 165px column spends its width on artwork that carries almost
- * nothing while the name it needs wraps to three lines.
+ * the cover is large enough here to be the row's anchor, and a hairline
+ * between two 100px rows would have read as a table.
  */
 function CollectionRow({ album, shelves }: { album: Collection; shelves: ShelfMap }) {
   const kind = onlyKind(album.kinds);
@@ -518,7 +514,7 @@ function CollectionRow({ album, shelves }: { album: Collection; shelves: ShelfMa
     <CollectionListRow
       href={nodeHref(album.id, shelves)}
       name={head}
-      tile={<KindTile kind={kind} size="xl" />}
+      tile={<CollectionCover album={album} className="w-[4.5rem] shrink-0" />}
       chip={albumSummary(album.items, album.kinds)}
       chipTint={CHIP_TINT[kind]}
       note={note}
@@ -567,6 +563,21 @@ function albumLines(album: Collection): { head: string; note: string } {
  * colour. A mixed folder has no true glyph, and the folder mark is the honest
  * answer rather than picking whichever kind happened to be first.
  */
+/**
+ * The album's cover (Udaya A3.1). At the row's 72px it is the month over the
+ * year; on a grid card it is the whole cover, name and all.
+ */
+function CollectionCover({ album, className }: { album: Collection; className: string }) {
+  return (
+    <AlbumCover
+      name={album.name}
+      kind={onlyKind(album.kinds) === "video" ? "video" : "audio"}
+      sessionLabel={album.session_type_label}
+      className={className}
+    />
+  );
+}
+
 function onlyKind(kinds: FileKind[]): TileKind {
   return kinds.length === 1 ? kinds[0] : "folder";
 }

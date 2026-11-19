@@ -21,7 +21,12 @@ import { contentLang } from "@/lib/script";
  *
  * The panel carries white text in every theme, and that is not an oversight:
  * the accent is the background here, so no theme can change the pairing. It is
- * the same rule the workspace fills follow everywhere else.
+ * the same rule the workspace fills follow everywhere else. The one exception
+ * is `surface="hint"`, a light panel with its own colours per theme.
+ *
+ * Its colours are `--hero-*` variables, white by default (`globals.css`), so
+ * the buttons drawn into it — Share, Full series, Play all — follow whichever
+ * panel they are in without being told.
  */
 export function CollectionHero({
   tone,
@@ -39,7 +44,15 @@ export function CollectionHero({
   kicker,
   aside,
   variant = "full",
+  surface = "tone",
 }: {
+  /**
+   * `tone`, the default: the gradient of `tone` under white text. `hint`: the
+   * Sah Astitva sun's palest ring under umber text (Raka, 19 Nov 2026) — the
+   * recording albums' header, where a dark \`AlbumCover\` sat badly in a hot
+   * terracotta field. Its colours are `.hero-hint`'s, per theme.
+   */
+  surface?: "tone" | "hint";
   /**
    * What this is and which shelf it is on — "COLLECTION · LIBRARY", "SERIES ·
    * MEDIA" — in small capitals over the title (designer's comps, 8 Oct 2026).
@@ -90,16 +103,22 @@ export function CollectionHero({
   const t = contentLang(title);
   return (
     <div
-      className="-mx-4 -mt-5 px-4 pb-5 pt-4 text-white sm:mx-0 sm:mt-0 sm:rounded-hero sm:px-6"
-      style={{
-        background: `linear-gradient(168deg, color-mix(in srgb, ${tone} 88%, #fff), ${tone} 62%, color-mix(in srgb, ${tone} 86%, #000))`,
-      }}
+      className={`-mx-4 -mt-5 px-4 pb-5 pt-4 text-(--hero-ink) sm:mx-0 sm:mt-0 sm:rounded-hero sm:px-6 ${
+        surface === "hint" ? "hero-hint" : ""
+      }`}
+      style={
+        surface === "hint"
+          ? undefined
+          : {
+              background: `linear-gradient(168deg, color-mix(in srgb, ${tone} 88%, #fff), ${tone} 62%, color-mix(in srgb, ${tone} 86%, #000))`,
+            }
+      }
     >
       <div className="flex items-center gap-3">
         {back && (
           <Link
             href={back.href}
-            className="inline-flex min-h-11 min-w-0 items-center gap-1.5 rounded-control border border-white/20 bg-white/10 pe-3.5 ps-2.5 text-sm font-semibold transition-colors hover:bg-white/20"
+            className="inline-flex min-h-11 min-w-0 items-center gap-1.5 rounded-control border border-(--hero-ink)/20 bg-(--hero-ink)/10 pe-3.5 ps-2.5 text-sm font-semibold transition-colors hover:bg-(--hero-ink)/20"
           >
             <BackIcon className="h-4 w-4 shrink-0" />
             {/* On the compact variant the pill is just the arrow: the title is on
@@ -144,12 +163,12 @@ export function CollectionHero({
             {thumb}
             <div className="min-w-0 flex-1">
               {eyebrow && (
-                <div className="mb-1 text-xs font-semibold text-white/70">{eyebrow}</div>
+                <div className="mb-1 text-xs font-semibold text-(--hero-ink)/70">{eyebrow}</div>
               )}
               {kicker && (
                 // Desktop only: the phone comps (8 Oct 2026) open straight on the
                 // title, under a back pill that already says where it sits.
-                <p className="mb-1.5 hidden text-xs font-bold uppercase tracking-[0.12em] text-white/75 lg:block">
+                <p className="mb-1.5 hidden text-xs font-bold uppercase tracking-[0.12em] text-(--hero-kicker) lg:block">
                   {kicker}
                 </p>
               )}
@@ -159,13 +178,13 @@ export function CollectionHero({
               >
                 {title}
               </h1>
-              {meta && <p className="mt-1 text-sm font-medium text-white/80">{meta}</p>}
+              {meta && <p className="mt-1 text-sm font-medium text-(--hero-ink)/80">{meta}</p>}
               {chips && chips.length > 0 && (
                 <div className={`mt-2.5 flex flex-wrap gap-1.5 ${chipsClassName}`}>
                   {chips.map((c) => (
                     <span
                       key={c}
-                      className="rounded-md bg-white/20 px-2 py-1 text-xs font-semibold uppercase tracking-[0.06em]"
+                      className="rounded-md bg-(--hero-ink)/20 px-2 py-1 text-xs font-semibold uppercase tracking-[0.06em]"
                     >
                       {c}
                     </span>
@@ -175,11 +194,11 @@ export function CollectionHero({
               {progress && (
                 <>
                   <div
-                    className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-white/25"
+                    className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-(--hero-ink)/25"
                     role="presentation"
                   >
                     <div
-                      className="h-full rounded-full bg-white"
+                      className="h-full rounded-full bg-(--hero-ink)"
                       style={{ width: `${Math.min(100, Math.max(0, progress.percent))}%` }}
                     />
                   </div>
@@ -192,7 +211,7 @@ export function CollectionHero({
               {description && (
                 <p
                   {...contentLang(description)}
-                  className={`${contentLang(description).className} hi-note mt-3 text-sm leading-relaxed text-white/85`}
+                  className={`${contentLang(description).className} hi-note mt-3 text-sm leading-relaxed text-(--hero-ink)/85`}
                 >
                   {description}
                 </p>
@@ -240,7 +259,7 @@ export function HeroPill({
   children: React.ReactNode;
 }) {
   const className =
-    "inline-flex h-12 shrink-0 items-center gap-1.5 rounded-control border border-white/20 bg-white/15 px-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/25";
+    "inline-flex h-12 shrink-0 items-center gap-1.5 rounded-control border border-(--hero-ink)/20 bg-(--hero-ink)/15 px-3.5 text-sm font-semibold text-(--hero-ink) transition-colors hover:bg-(--hero-ink)/25";
   if (external) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
@@ -291,7 +310,7 @@ export function HeroAction({
  * `HeroIconButton`, with words, because on desktop there is the width for them.
  */
 export const HERO_PILL =
-  "inline-flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-control border border-white/25 bg-white/10 px-3 text-sm font-semibold text-white transition-colors hover:bg-white/20";
+  "inline-flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-control border border-(--hero-ink)/25 bg-(--hero-ink)/10 px-3 text-sm font-semibold text-(--hero-ink) transition-colors hover:bg-(--hero-ink)/20";
 
 /** The square neighbour beside it — download, share. Translucent, not white:
  *  two white buttons side by side have no primary. */
@@ -303,7 +322,7 @@ export function HeroIconButton({
     <button
       type="button"
       {...rest}
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-white/20 bg-white/15 text-white transition-colors hover:bg-white/25"
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-(--hero-ink)/20 bg-(--hero-ink)/15 text-(--hero-ink) transition-colors hover:bg-(--hero-ink)/25"
     >
       {children}
     </button>

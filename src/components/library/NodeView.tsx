@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { SERIES_PORTRAIT } from "@/lib/media";
 import { albumName, formatYear, splitAlbumName } from "@/lib/albumName";
+import { AlbumCover } from "@/components/library/AlbumCover";
 import { FolderFiles } from "@/components/library/FolderFiles";
 import { PlayAllButton } from "@/components/library/FolderHeroActions";
 import { FindBar } from "@/components/library/FindBar";
@@ -200,6 +200,7 @@ export async function NodeView({
                the recording is him — see `AlbumAudio`. On any other shelf the
                track wears the wave on that shelf's colour instead. */
             audioArt={ws === "originals" ? "portrait" : "glyph"}
+            sessionType={node.session_type}
             folderProvenance={node.provenance}
             playAll={isRecordings && isAlbum}
             fullSeries={node.external_url}
@@ -307,6 +308,9 @@ function Header({
   return (
     <CollectionHero
       tone={hue.to}
+      /* A recording album's header is light, so its dark cover is the one
+         strong shape in it (Raka, 19 Nov 2026). Same test as the cover. */
+      surface={isRecordings && ws === "originals" ? "hint" : "tone"}
       /* Back goes where the reader came from, which for a collection of
          recordings is the A/V tab and not the folder above it. The tree step
          was literally true and useless: a reader arrives here off `/av`, and
@@ -350,16 +354,18 @@ function Header({
         ) : undefined
       }
       thumb={
-        isRecordings && !node.cover_url && ws === "originals" ? (
-          /* A series with no cover of its own wears the shared portrait, wide,
-             as the phone comps draw it — the same face its rows fall back to,
-             rather than a numeral on a blank tile. Originals only: elsewhere
-             the recording is not necessarily him (see \`AlbumAudio\`). */
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={SERIES_PORTRAIT}
-            alt=""
-            className="aspect-[4/3] w-32 shrink-0 rounded-cover object-cover shadow-card lg:w-40"
+        isRecordings && ws === "originals" ? (
+          /* Every series wears its album cover (Udaya A3.1, Raka 19 Nov 2026),
+             drawn from its name, date and Type — the same cover its card on the
+             Audio/Video shelf shows. It replaced both the shared portrait and
+             any picture uploaded in the panel, so every album looks like one
+             series (Raka, 19 Nov 2026). Originals only, as the portrait was. */
+          <AlbumCover
+            name={node.name}
+            kind={files.every((f) => f.kind === "video") ? "video" : "audio"}
+            sessionLabel={node.session_type_label}
+            year={node.year}
+            className="w-32 shrink-0 shadow-card lg:w-40"
           />
         ) : isAlbum && !(ws === "originals" && !isRecordings) && ws !== "resources" ? (
           /* Not on the Originals Library's folders (designer, 23 Oct 2026)

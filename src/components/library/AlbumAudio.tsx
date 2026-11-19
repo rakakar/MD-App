@@ -5,7 +5,7 @@ import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueu
 import { MediaRows } from "@/components/library/MediaRows";
 import { PLAY_ALL, announcePlayAll, resumeIndex } from "@/components/library/folderActions";
 import { WaveformIcon } from "@/components/shell/icons";
-import { AUDIO_POSTER } from "@/lib/media";
+import { AUDIO_POSTER_WARM } from "@/lib/media";
 import type { LibraryFile } from "@/lib/types";
 
 /** where this file's playhead is kept, and how the player names it */
@@ -41,7 +41,13 @@ export function AlbumAudio({
   albumTitle,
   coverUrl = null,
   art = "portrait",
+  sessionType = null,
 }: {
+  /**
+   * The album's Type — `"shivir"`, `"samvad"`… — which decides what a track
+   * with no number in its title shows on its thumbnail. See `trackLabel`.
+   */
+  sessionType?: string | null;
   items: LibraryFile[];
   /** what the player calls the album — the folder the files sit in */
   albumTitle?: string;
@@ -101,19 +107,21 @@ export function AlbumAudio({
   return (
     <MediaRows
       verb="listened"
-      items={items.map((item) => {
+      items={items.map((item, index) => {
         const key = trackId(item);
         const start = () => {
           const entry = byId.get(key);
           if (entry) play(entry);
         };
         const resumeMs = resumes[key] ?? 0;
+        const label = art === "portrait" ? trackLabel(item, index, sessionType) : null;
         return {
           key: item.id,
           title: item.title,
           description: item.description,
           durationSeconds: item.duration_seconds,
-          art: <AudioArt art={art} />,
+          art: <AudioArt art={art} label={label} />,
+          lengthOnArt: label?.kind === "length",
           onPlay: start,
           active: activeId === key,
           percent: item.duration_seconds
@@ -133,7 +141,7 @@ export function AlbumAudio({
  * shelf's colour elsewhere — and the wave too if the portrait fails to load,
  * so a row is never a black box. See `art` above.
  */
-function AudioArt({ art }: { art: "portrait" | "glyph" }) {
+function AudioArt({ art, label }: { art: "portrait" | "glyph"; label: TrackLabel | null }) {
   const [failed, setFailed] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
   useEffect(() => {
@@ -154,14 +162,61 @@ function AudioArt({ art }: { art: "portrait" | "glyph" }) {
     );
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      ref={ref}
-      src={AUDIO_POSTER}
-      alt=""
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="h-full w-full object-cover"
-    />
+    <span className="track-art" aria-hidden>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        ref={ref}
+        src={AUDIO_POSTER_WARM}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="h-full w-full object-cover"
+      />
+      {label && (
+        <span className="track-art__line">
+          {label.kind === "part" ? (
+            <>
+              <span className="track-art__word">Part</span>
+              <span className="track-art__num">{label.value}</span>
+            </>
+          ) : (
+            <>
+              <span className="track-art__num">{label.value}</span>
+              <span className="track-art__word">min</span>
+            </>
+          )}
+        </span>
+      )}
+    </span>
   );
+}
+
+type TrackLabel = { kind: "part" | "length"; value: string };
+
+/**
+ * **What a track's thumbnail says** (Raka, 19 Nov 2026), so sixteen parts of
+ * one album stop being sixteen copies of one face. The number comes from the
+ * track first, then from the album:
+ *
+ * 1. a title ending in its own number — "तदाकार, संस्कार-2" — shows that
+ *    number, in any album. A samvad often holds short runs of one topic
+ *    (album 265: संस्कार-1, -2, -3, then a standalone talk, then जाग्रति-1,
+ *    -2), and the title is where that run is numbered. Only a number at the
+ *    very end counts, so "पूर्व स्मृति - अड़चन" is not read as a part;
+ * 2. otherwise, in a shivir or sammelan, its place in the album — the talks
+ *    of a course follow on from one another, so "Part 03" says where you are;
+ * 3. otherwise, in a samvad, its length. A samvad is separate conversations
+ *    in the order they were recorded; "Part 37 of 114" would invent a sequence,
+ *    and between a 2-minute answer and a 40-minute discussion the length is
+ *    what a listener chooses on.
+ *
+ * `null` where there is nothing true to print — a samvad track of unknown
+ * length — and the portrait is shown bare.
+ */
+function trackLabel(item: LibraryFile, index: number, sessionType: string | null): TrackLabel | null {
+  const own = /[-–]\s*(\d{1,2})\s*$/.exec(item.title.trim());
+  if (own) return { kind: "part", value: String(Number(own[1])) };
+  if (sessionType !== "samvad") return { kind: "part", value: String(index + 1).padStart(2, "0") };
+  const s = item.duration_seconds;
+  return s ? { kind: "length", value: String(Math.max(1, Math.round(s / 60))) } : null;
 }

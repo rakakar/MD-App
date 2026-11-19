@@ -29,6 +29,9 @@ export interface MediaItem {
   durationSeconds?: number | null;
   /** the picture — a poster, the portrait or a glyph, already sized to fill */
   art: React.ReactNode;
+  /** the picture already prints the length (a samvad track's thumbnail), so
+   *  the chip on it would say it twice */
+  lengthOnArt?: boolean;
   onPlay: () => void;
   /** this one is playing now */
   active?: boolean;
@@ -87,21 +90,23 @@ function ListRow({ item, verb }: { item: MediaItem; verb: string }) {
       <span className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-cover bg-black sm:w-32">
         {item.art}
         {/* Desktop only: on a phone the picture is the picture, with its
-            length on it — the comps draw no button over the face. */}
-        <span className="absolute inset-0 hidden items-center justify-center sm:flex">
+            length on it — the comps draw no button over the face. Small and
+            in the bottom corner rather than over the middle, so it never sits
+            on the part number or the face (Raka, 19 Nov 2026). */}
+        <span className="absolute bottom-1.5 end-1.5 hidden sm:flex">
           <span
-            className="flex h-9 w-9 items-center justify-center rounded-full shadow-card transition-transform group-hover:scale-110"
+            className="flex h-6 w-6 items-center justify-center rounded-full shadow-card transition-transform group-hover:scale-110"
             style={
               item.active
                 ? { background: "var(--ws-color)", color: "white" }
                 : { background: "rgb(255 255 255 / 0.92)", color: "var(--ws-color)" }
             }
           >
-            <PlayIcon className="ms-0.5 h-3.5 w-3.5" />
+            <PlayIcon className="ms-px h-2.5 w-2.5" />
           </span>
         </span>
         {/* Phone: the length rides the picture, where the row has no column for it. */}
-        {length && (
+        {length && !item.lengthOnArt && (
           <span className="absolute bottom-1 end-1 rounded-md bg-black/75 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-white sm:hidden">
             {length}
           </span>
@@ -187,7 +192,7 @@ function GridCard({ item }: { item: MediaItem }) {
             <PlayIcon className="ms-0.5 h-4.5 w-4.5" />
           </span>
         </span>
-        {length && (
+        {length && !item.lengthOnArt && (
           <span className="absolute bottom-2 end-2 rounded-md bg-black/75 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-white">
             {length}
           </span>

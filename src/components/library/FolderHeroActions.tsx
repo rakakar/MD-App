@@ -42,10 +42,11 @@ export function PlayAllButton() {
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event(PLAY_ALL))}
-      className="inline-flex min-h-11 items-center gap-2 rounded-control bg-white px-4 text-sm font-semibold transition-opacity hover:opacity-90"
+      className="inline-flex min-h-11 items-center gap-2 rounded-control bg-(--hero-cta-bg) px-4 text-sm font-semibold transition-opacity hover:opacity-90"
       // the raw hue, not --ws-ink: the chip is white in every theme, and the
-      // dark lift (meant for a near-black ground) made this 2.8:1 on it
-      style={{ color: "var(--ws-color)" }}
+      // dark lift (meant for a near-black ground) made this 2.8:1 on it. A
+      // light hero inverts it — the hue as the fill, white words.
+      style={{ color: "var(--hero-cta-ink, var(--ws-color))" }}
     >
       <PlayIcon className="h-3.5 w-3.5" />
       <span className="tabular-nums">{label}</span>
