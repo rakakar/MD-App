@@ -164,9 +164,13 @@ export default async function OriginalsHome() {
           19 Nov 2026 (Raka) — Home is where a reader looks for what there is,
           and the sidebar item is easy to read past. On desktop it stacks with
           Library in the right-hand column, beside Shorts (which spans both
-          rows), filling the space the Library tiles left under them.
+          rows), filling the space the Library tiles left under them. The
+          pair sits 20px apart, not the grid's 40: they are one column of
+          small things, and 40 read as a hole between them (Raka, 19 Nov
+          2026). A negative margin rather than a smaller row gap, which would
+          close every desktop row; the Shorts cards shrink with it.
         */}
-        <section className="lg:col-start-3">
+        <section className="lg:col-start-3 lg:-mb-5">
           <SectionHeading tier="title">Media</SectionHeading>
           <PromoBand
             href="/av"
