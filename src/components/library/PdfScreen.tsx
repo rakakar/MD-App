@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PdfFallback } from "@/components/library/PdfFallback";
 import { PdfReader } from "@/components/library/PdfReader";
+import { pdfSource } from "@/lib/pdfCache";
 import { savePdfPage } from "@/lib/personal";
 import { getPdfPlace, setPdfPlace } from "@/lib/storage";
 import type { LibraryFile } from "@/lib/types";
@@ -48,6 +49,13 @@ export function PdfScreen({
   // Resolved before the reader mounts, so it opens *at* the saved page rather
   // than opening at page one and jumping.
   const [start, setStart] = useState<number | null>(null);
+  // Decided once, with the start page: saving the file mid-read must not
+  // change the URL under the reader, which would reopen the document.
+  const [source, setSource] = useState(file.url);
+
+  useEffect(() => {
+    setSource(pdfSource({ id: file.id, url: file.url }));
+  }, [file.id, file.url]);
 
   useEffect(() => {
     if (openAt !== null) {
@@ -105,7 +113,7 @@ export function PdfScreen({
   return (
     <>
       <PdfReader
-        url={file.url}
+        url={source}
         title={file.title}
         startPage={start}
         backHref={backHref}

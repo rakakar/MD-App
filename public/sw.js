@@ -19,6 +19,9 @@ const BOOKS_CACHE = "md-books-v1";
 /* Library PDFs saved to read offline, with the reader page that opens each
    (src/lib/pdfCache.ts). Kept across deploys like the two above. */
 const PDF_CACHE = "md-pdfs-v1";
+/* The query flag the page puts on a saved PDF's URL — SAVED_PDF_MARK in
+   src/lib/pdfCache.ts. Keep the two in step. */
+const SAVED_PDF_MARK = "md-saved";
 
 /* How long each cache may grow, and how long a page may keep a reader waiting.
  *
@@ -135,9 +138,18 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) {
     if (req.destination === "audio" || /\.(wav|mp3|m4a|ogg|opus|aac)$/i.test(url.pathname)) {
       event.respondWith(servedAudio(req, url));
-    } else if (/\.pdf$/i.test(url.pathname)) {
+    } else if (/\.pdf$/i.test(url.pathname) && url.searchParams.has(SAVED_PDF_MARK)) {
       /* A saved PDF, answered the same way — pdf.js reads a document in
-         ranges, and gets them from the device's copy. */
+         ranges, and gets them from the device's copy.
+
+         Only when the page has flagged it as saved (pdfSource in
+         src/lib/pdfCache.ts). This branch used to take every cross-origin
+         .pdf and pass the misses on with fetch(req), and on iOS that
+         pass-through rejects for pdf.js's ranged CORS requests ("FetchEvent.
+         respondWith received an error: TypeError: Load failed"), which broke
+         every PDF nobody had saved. Unflagged requests now never reach
+         respondWith, exactly as if there were no worker. */
+      url.searchParams.delete(SAVED_PDF_MARK); // saved under the plain URL
       event.respondWith(servedAudio(req, url, PDF_CACHE));
     }
     // API responses are cached in IndexedDB by the app, not here

@@ -98,6 +98,37 @@ export function isPdfSavedSync(id: number): boolean {
 }
 
 /**
+ * The query flag that tells public/sw.js "this one is on the device".
+ * Keep in step with SAVED_PDF_MARK there.
+ */
+export const SAVED_PDF_MARK = "md-saved";
+
+/**
+ * The address the reader should open: `file.url`, flagged when it is saved.
+ *
+ * **The worker answers only flagged requests, and that is the iPhone fix.**
+ * It used to step in for every cross-origin `.pdf`, and on a miss pass the
+ * request on with `fetch(req)`. iOS WebKit cannot carry pdf.js's ranged,
+ * aborted-and-restarted CORS fetches through a worker like that: the
+ * pass-through rejects and the reader dies with "FetchEvent.respondWith
+ * received an error: TypeError: Load failed", for every PDF that was never
+ * saved. A worker can't look in a cache before deciding to answer (the
+ * decision is synchronous), but this page can, from the ledger, so it says
+ * so in the URL and unsaved PDFs never touch the worker. The media host
+ * ignores the query string, so the flag is harmless without a worker.
+ */
+export function pdfSource(file: { id: number; url: string }): string {
+  if (!isPdfSavedSync(file.id)) return file.url;
+  try {
+    const u = new URL(file.url);
+    u.searchParams.set(SAVED_PDF_MARK, "1");
+    return u.href;
+  } catch {
+    return file.url;
+  }
+}
+
+/**
  * Save one PDF. `onProgress` gets 0…1 as the bytes arrive. Resolves false when
  * the device or the network said no (offline, out of space, refused).
  */
