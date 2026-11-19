@@ -147,7 +147,9 @@ export default async function OriginalsHome() {
         {/* Draws nothing until there is something; see lib/shorts, which is
             where the fact that there is not yet is kept. */}
         {shorts.length > 0 && (
-          <section className="lg:col-span-2 lg:row-span-2">
+          // A column on desktop, so the rail can take whatever height Media and
+          // Library give the two rows it spans (ShortsRail stretches to it).
+          <section className="lg:col-span-2 lg:row-span-2 lg:flex lg:flex-col">
             <SectionHeading tier="title">Shorts</SectionHeading>
             <ShortsRail shorts={shorts} />
           </section>

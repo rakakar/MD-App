@@ -30,8 +30,13 @@ export function ShortsRail({ shorts }: { shorts: Short[] }) {
   return (
     // From lg, one row that fits its two-thirds of the page — four, five from
     // xl — as the desktop revision draws it; the player is a feed, so the rest
-    // are a swipe away once one is open.
-    <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:grid-cols-4 lg:overflow-visible xl:grid-cols-5">
+    // are a swipe away once one is open. The row grows to the height of the
+    // Media and Library column beside it (`flex-1` in Home's column section),
+    // and the cards with it, taller than 9:16 there — at 9:16 they stopped
+    // ~50px short and left a gap under the rail (Raka, 19 Nov 2026). The
+    // poster is `cover`, so it crops at the sides; `min-h-48` keeps them near
+    // 9:16 should that column ever be short.
+    <ul className="-mx-4 -mb-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scroll-pl-4 sm:mx-0 sm:px-0 sm:scroll-pl-0 lg:grid lg:flex-1 lg:grid-cols-4 lg:overflow-visible xl:grid-cols-5">
       {shorts.map((s, i) => {
         const t = contentLang(s.title);
         return (
@@ -43,10 +48,16 @@ export function ShortsRail({ shorts }: { shorts: Short[] }) {
           >
             <Link
               href={s.href}
-              className="group relative flex aspect-9/16 flex-col justify-end overflow-hidden rounded-card p-2.5 text-white shadow-card transition-shadow hover:shadow-raised"
+              className="group relative flex aspect-9/16 flex-col lg:aspect-auto lg:h-full lg:min-h-48 justify-end overflow-hidden rounded-card p-2.5 text-white shadow-card transition-shadow hover:shadow-raised"
               style={
                 s.poster
-                  ? { backgroundImage: `url(${s.poster})`, backgroundSize: "cover" }
+                  ? {
+                      backgroundImage: `url(${s.poster})`,
+                      backgroundSize: "cover",
+                      // centred: the desktop card is narrower than 9:16 and
+                      // crops at the sides, which from the left lost the face
+                      backgroundPosition: "center",
+                    }
                   : { background: coverGradient(bookHue(s.id)) }
               }
             >
