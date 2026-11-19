@@ -387,6 +387,7 @@ depart from a comp or from what this file said before.
 | Audio Mode on a phone held sideways | Cover and text side by side (`short-landscape:` variant) | Stacked, Play fell off a screen that cannot scroll. |
 | Folder hero "Play all" always from part 1 | "Resume · 7 of 14" when a part is in progress, and it opens that part | Every row already knew its progress. |
 | Delete a note or highlight: instant and final | Instant, with a 7s "Note deleted · Undo" toast (`ui/useUndoToast`; the reader's own toast in the book) | Undo restores the row exactly — place, date, spans, server id (`restoreLocalNote`). |
+| Book "Offline": a tick when saved, one tap on it removes the book | Saving ends on a 7s "Saved for offline reading · View" toast (`ui/useActionToast`) opening `/downloads?show=books`; removing asks first | Readers did not know where a saved book went, and a stray tap threw away a minute's download. |
 | Three scrim strengths (30% + blur, 40%, 50%) | One `--color-scrim`, 45% black, on `.ws-sheet-backdrop` | Same job, one value. `Dialog` lost its blur. |
 | Disabled CTA at 60% of the accent (~2:1) | The idle look Sign in had: `canvas` fill, `ink-soft` words (`.cta:disabled`) | Read as broken, not "not yet". `aria-busy` keeps the fill on a button disabled while it works. |
 | Assistant answers: app terracotta on CTAs and citations | Each answer's own hue (`--ws-color` / `--ws-ink`) | A green Research answer carried terracotta numbers and a terracotta Sign in. Hindi answer paragraphs now take `.hi` (Mukta, 1.85). |

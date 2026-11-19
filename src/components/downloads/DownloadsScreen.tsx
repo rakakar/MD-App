@@ -2,7 +2,7 @@
 
 import { count } from "@/lib/labels";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { CheckIcon, ChevronDown, HeadphonesIcon, TrashIcon } from "@/components/shell/icons";
 import { BackButton } from "@/components/ui/BackButton";
@@ -34,9 +34,23 @@ const GROUP_PREVIEW = 3;
  * cannot be scanned, and audio is where the space goes — the storage bar at the
  * top says so before the reader has to work it out.
  */
+/** The kind `?show=` asks for. Read from the address directly rather than
+ *  with useSearchParams, which would need a Suspense boundary on the
+ *  prerendered page. */
+function askedFilter(): Filter {
+  const want = new URLSearchParams(location.search).get("show");
+  return want === "books" || want === "pdfs" || want === "audio" ? want : "all";
+}
+const noSubscribe = () => () => {};
+
 export function DownloadsScreen() {
   const d = useDownloads();
-  const [filter, setFilter] = useState<Filter>("all");
+  // `?show=books` opens on one kind — where "Saved for offline · View" on a
+  // book lands, so the book just saved is in front rather than among audio.
+  // Hydrates as All, the server's answer, then takes the address's.
+  const asked = useSyncExternalStore(noSubscribe, askedFilter, () => "all" as Filter);
+  const [chosen, setFilter] = useState<Filter | null>(null);
+  const filter = chosen ?? asked;
   const [sort, setSort] = useState<Sort>("recent");
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());

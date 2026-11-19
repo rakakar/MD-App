@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 import { CheckIcon, DownloadIcon } from "@/components/shell/icons";
 import { HERO_PILL } from "@/components/ui/CollectionHero";
+import { useActionToast } from "@/components/ui/UndoToast";
 import { track } from "@/lib/analytics";
 import { getChapter, getParibhashaIndex } from "@/lib/api";
 import { ensureFullGlossary } from "@/lib/glossary";
@@ -44,6 +46,19 @@ export function DownloadButton({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const status: Status = busy ? "downloading" : saved ? "done" : "idle";
+  // Saving ends on a toast with the way to where the book now lives, so the
+  // reader learns there is a Downloads at the moment they have something in it.
+  const [toast, showToast] = useActionToast();
+  // Into <body>: the hero clips and stacks its contents, and a fixed toast has
+  // to float over the whole page. Both flags are client-only (false while
+  // hydrating), and the region is up from the start of a download, before its
+  // message, so a screen reader announces the message when it comes.
+  const withToast = (button: ReactElement) => (
+    <>
+      {button}
+      {(busy || saved) && createPortal(toast, document.body)}
+    </>
+  );
 
   const download = async () => {
     if (busy) return;
@@ -81,6 +96,7 @@ export function DownloadButton({
       });
       await refreshDownloaded();
       track("book_download_offline");
+      showToast("Saved for offline reading", { label: "View", href: "/downloads?show=books" });
     } catch {
       return;
     } finally {
@@ -119,7 +135,7 @@ export function DownloadButton({
         : status === "downloading"
           ? `Saving for offline reading, ${progress}%`
           : "Save for offline reading";
-    return (
+    return withToast(
       <button
         type="button"
         aria-label={label}
@@ -145,7 +161,7 @@ export function DownloadButton({
         : status === "downloading"
           ? `Downloading ${progress}%`
           : "Download for offline";
-    return (
+    return withToast(
       <button
         type="button"
         aria-label={label}
@@ -173,7 +189,7 @@ export function DownloadButton({
   }
 
   if (status === "done") {
-    return (
+    return withToast(
       <button
         type="button"
         onClick={remove}
@@ -191,7 +207,7 @@ export function DownloadButton({
     );
   }
 
-  return (
+  return withToast(
     <button
       type="button"
       onClick={download}
