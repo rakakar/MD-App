@@ -18,9 +18,22 @@ import { StateSheet } from "./StateSheet";
  * those of the centres themselves, counted, rather than the contacts' list.
  *
  * Starts on the reader's own state when their profile names one that has a
- * centre; otherwise on all of them. Filtered here, not refetched: the server
- * already sent every centre with the page.
+ * centre; otherwise on all of them. Once the reader picks or clears a state
+ * themselves, that choice is remembered on the device and wins over the
+ * profile on later visits (19 Nov 2026: clearing Chhattisgarh kept coming
+ * back). Filtered here, not refetched: the server already sent every centre
+ * with the page.
  */
+const CHOICE_KEY = "centres.state";
+
+function readChoice(): string | null {
+  try {
+    return localStorage.getItem(CHOICE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function CentreList({ centres }: { centres: Centre[] }) {
   const { user } = useAuth();
   const states: ContactStates = useMemo(() => {
@@ -40,10 +53,25 @@ export function CentreList({ centres }: { centres: Centre[] }) {
   const [state, setState] = useState<string>(ALL_STATES);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // The reader's own state, once, when the profile names one with a centre.
+  // The reader's own pick, kept for next time — including "all states".
+  const choose = (code: string) => {
+    setState(code);
+    try {
+      localStorage.setItem(CHOICE_KEY, code);
+    } catch {}
+  };
+
+  // A remembered pick first; else the profile's state, once, when it has a centre.
   const [started, setStarted] = useState(false);
   useEffect(() => {
-    if (started || !user) return;
+    if (started) return;
+    const saved = readChoice();
+    if (saved !== null) {
+      setStarted(true);
+      if (saved === ALL_STATES || states.states.some((s) => s.code === saved)) setState(saved);
+      return;
+    }
+    if (!user) return;
     setStarted(true);
     const mine = profileFor(user)?.state?.trim().toLowerCase();
     if (!mine) return;
@@ -68,7 +96,7 @@ export function CentreList({ centres }: { centres: Centre[] }) {
             count={shown.length}
             noun="centres"
             onOpen={() => setSheetOpen(true)}
-            onClear={() => setState(ALL_STATES)}
+            onClear={() => choose(ALL_STATES)}
           />
         </div>
       )}
@@ -85,7 +113,7 @@ export function CentreList({ centres }: { centres: Centre[] }) {
       {chosen && (
         <button
           type="button"
-          onClick={() => setState(ALL_STATES)}
+          onClick={() => choose(ALL_STATES)}
           className="mt-3 flex min-h-11 items-center text-sm font-semibold"
           style={{ color: "var(--ws-ink)" }}
         >
@@ -98,7 +126,7 @@ export function CentreList({ centres }: { centres: Centre[] }) {
           onClose={() => setSheetOpen(false)}
           states={states}
           selected={state}
-          onSelect={setState}
+          onSelect={choose}
         />
       )}
     </>
