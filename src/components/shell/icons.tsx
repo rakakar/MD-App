@@ -566,6 +566,17 @@ function SkipIcon({
   back: boolean;
 }) {
   if (seconds === 10) return <Skip10 className={className} back={back} />;
+  // "¶" is the device voice's step by paragraph: rewind / fast-forward double
+  // triangles, filled like the chapter buttons beside them but without their
+  // bar, so a paragraph and a chapter never look alike (Raka, 19 Nov 2026).
+  // It replaced the ring with ¶ in it, which read as a skip of seconds.
+  if (seconds === "¶") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className={className ?? "h-5 w-5"} aria-hidden="true">
+        <path d={back ? "M11.5 6v12L3 12zM21 6v12l-9.5-6z" : "M12.5 6v12l8.5-6zM3 6v12l9.5-6z"} />
+      </svg>
+    );
+  }
   return (
     <svg
       viewBox="0 0 24 24"
