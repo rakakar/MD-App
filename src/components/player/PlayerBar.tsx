@@ -16,6 +16,8 @@ import { ownsViewport } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
 import {
   SKIP_SECONDS,
+  skipLabel,
+  skipMark,
   activeRendition,
   paraAtPosition,
   usePlayer,
@@ -302,10 +304,10 @@ function PlayerBarInner({
       <button
         type="button"
         onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-        aria-label={`Back ${SKIP_SECONDS} seconds`}
+        aria-label={skipLabel("back", device)}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
       >
-        <SkipBackIcon className="h-5.5 w-5.5" seconds={SKIP_SECONDS} />
+        <SkipBackIcon className="h-5.5 w-5.5" seconds={skipMark(device)} />
       </button>
       <button
         type="button"
@@ -326,10 +328,10 @@ function PlayerBarInner({
       <button
         type="button"
         onClick={() => player.skipSeconds(SKIP_SECONDS)}
-        aria-label={`Forward ${SKIP_SECONDS} seconds`}
+        aria-label={skipLabel("forward", device)}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:bg-white/15"
       >
-        <SkipForwardIcon className="h-5.5 w-5.5" seconds={SKIP_SECONDS} />
+        <SkipForwardIcon className="h-5.5 w-5.5" seconds={skipMark(device)} />
       </button>
       </div>
 
@@ -490,11 +492,11 @@ function DesktopReaderPill({
       >
         {player.playing ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="ms-0.5 h-5 w-5" />}
       </button>
-      <button type="button" onClick={() => player.skipSeconds(-SKIP_SECONDS)} aria-label={`Back ${SKIP_SECONDS} seconds`} className={btn}>
-        <SkipBackIcon className="h-5 w-5" seconds={SKIP_SECONDS} />
+      <button type="button" onClick={() => player.skipSeconds(-SKIP_SECONDS)} aria-label={skipLabel("back", device)} className={btn}>
+        <SkipBackIcon className="h-5 w-5" seconds={skipMark(device)} />
       </button>
-      <button type="button" onClick={() => player.skipSeconds(SKIP_SECONDS)} aria-label={`Forward ${SKIP_SECONDS} seconds`} className={btn}>
-        <SkipForwardIcon className="h-5 w-5" seconds={SKIP_SECONDS} />
+      <button type="button" onClick={() => player.skipSeconds(SKIP_SECONDS)} aria-label={skipLabel("forward", device)} className={btn}>
+        <SkipForwardIcon className="h-5 w-5" seconds={skipMark(device)} />
       </button>
 
       <button type="button" onClick={onExpand} aria-label="Open audio mode" className="mx-2 min-w-0 flex-1 text-left">

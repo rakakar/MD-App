@@ -134,8 +134,9 @@ interface PlayerState {
   seekMs: (ms: number) => void;
   /**
    * Jump by seconds, signed. In device-voice mode there is no timeline, so the
-   * seconds are estimated from the voice's measured reading speed and moved
-   * through the text — see `DeviceSpeaker.skipSeconds`.
+   * sign is taken as one paragraph back or forward — see
+   * `DeviceSpeaker.jumpParas`, and `skipMark`/`skipLabel` for what the
+   * buttons say.
    */
   skipSeconds: (seconds: number) => void;
   setRate: (rate: number) => void;
@@ -156,6 +157,18 @@ interface PlayerState {
  * seconds re-hears a clause without losing the sentence.
  */
 export const SKIP_SECONDS = 10;
+
+/** What the skip buttons show: "10", or "¶" for the device voice, which skips
+ *  by paragraph (it has no timeline) — the same ring, a different unit. */
+export function skipMark(device: boolean): number | string {
+  return device ? "¶" : SKIP_SECONDS;
+}
+
+/** The skip buttons' accessible names, by direction. */
+export function skipLabel(dir: "back" | "forward", device: boolean): string {
+  if (device) return dir === "back" ? "Previous paragraph" : "Next paragraph";
+  return dir === "back" ? `Back ${SKIP_SECONDS} seconds` : `Forward ${SKIP_SECONDS} seconds`;
+}
 
 const PlayerContext = createContext<PlayerState | null>(null);
 
@@ -467,7 +480,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const skipSeconds = useCallback(
     (seconds: number) => {
       if (source?.kind === "device") {
-        const seq = speaker.current?.skipSeconds(seconds) ?? null;
+        const seq = speaker.current?.jumpParas(seconds < 0 ? -1 : 1) ?? null;
         if (seq !== null) {
           setDeviceParaSeq(seq);
           setDeviceParaIndex(speaker.current?.paraIndex ?? 0);

@@ -162,6 +162,9 @@ interface SpeakerCallbacks {
  * one at a time so a stop is immediate and the current paragraph is always
  * known (the API's own queue reports nothing useful).
  */
+/** Back this far into a paragraph restarts it; sooner, it goes to the one before. */
+const RESTART_AFTER_S = 3;
+
 export class DeviceSpeaker {
   private paras: SpokenPara[] = [];
   private index = 0;
@@ -170,8 +173,8 @@ export class DeviceSpeaker {
   private chunkStarts: number[] = [];
   private chunkIndex = 0;
   /**
-   * **How fast this voice reads**, in characters a second at rate 1 — what an
-   * estimated ten-second skip is measured in, since speech has no timeline.
+   * **How fast this voice reads**, in characters a second at rate 1 — what Back's
+   * "a few seconds in" is measured in, since speech has no timeline.
    * Starts at a guess for a Hindi voice and is corrected from every chunk the
    * device actually finishes, so after a sentence or two it is this phone's
    * voice rather than an average one.
@@ -221,44 +224,32 @@ export class DeviceSpeaker {
   }
 
   /**
-   * **Skip about `seconds` of speech**, back or forward — the same ±10s the
-   * recorded player has, estimated (the designer's call, 26 Sep 2026). There
-   * is no position to move by seconds, so the skip is measured in text: where
-   * the voice is now (the chunk it is speaking, plus how far into it by the
-   * clock, less time paused), plus or minus `seconds` at the measured reading
-   * speed. It crosses paragraph boundaries either way and resumes at the start
-   * of a word. Past the end of the chapter it stops at the last word rather
-   * than finishing the chapter, as the recorded player clamps.
+   * **Step one paragraph back or forward** — this voice's answer to ±10s
+   * (Raka, 19 Nov 2026). An estimated ten seconds (26 Sep) landed mid-sentence,
+   * somewhere the listener could not predict, because speech has no timeline
+   * to move along; a paragraph is the unit the reader can see, and the
+   * read-along highlight moves with it.
+   *
+   * Back works the way "previous" does on any player: a few seconds into a
+   * paragraph it starts that one again, at its start it goes to the one
+   * before. Forward from the last paragraph does nothing rather than finishing
+   * the chapter.
    *
    * Returns the paragraph landed on, or null if there was nowhere to go.
    */
-  skipSeconds(seconds: number): number | null {
+  jumpParas(delta: -1 | 1): number | null {
     if (this.stopped || !this.paras.length) return null;
-    let index = this.index;
-    let offset = this.position() + seconds * this.cps * this.rate;
-
-    while (offset < 0 && index > 0) {
-      index -= 1;
-      offset += this.paras[index].text.length;
-    }
-    while (index < this.paras.length - 1 && offset >= this.paras[index].text.length) {
-      offset -= this.paras[index].text.length;
-      index += 1;
-    }
-    const text = this.paras[index].text;
-    offset = Math.max(0, Math.min(offset, text.length));
-    offset = seconds < 0 ? wordStartAtOrBefore(text, offset) : wordStartAtOrAfter(text, offset);
-    // Forward off the end of the last paragraph: back to its last word.
-    if (offset >= text.length) offset = wordStartAtOrBefore(text, text.length - 1);
-
-    this.index = index;
+    const restart = delta < 0 && this.position() >= RESTART_AFTER_S * this.cps * this.rate;
+    const next = restart ? this.index : Math.min(Math.max(this.index + delta, 0), this.paras.length - 1);
+    if (next === this.index && !restart && !(delta < 0 && this.index === 0)) return null;
+    this.index = next;
     const synth = window.speechSynthesis;
     synth.cancel();
     // cancel() while paused leaves the engine paused, and the next speak()
     // would queue silently behind it.
     if (synth.paused) synth.resume();
     this.pausedAt = null;
-    this.speakCurrentPara(offset);
+    this.speakCurrentPara();
     return this.paras[this.index]?.sequence ?? null;
   }
 
@@ -381,22 +372,4 @@ export class DeviceSpeaker {
       this.keepAlive = null;
     }
   }
-}
-
-/** The start of the word containing `at`, or of the word before a space. */
-function wordStartAtOrBefore(text: string, at: number): number {
-  let i = Math.min(at, text.length - 1);
-  while (i > 0 && /\s/.test(text[i])) i -= 1;
-  while (i > 0 && !/\s/.test(text[i - 1])) i -= 1;
-  return Math.max(0, i);
-}
-
-/** The start of the next word at or after `at`; `text.length` if none. */
-function wordStartAtOrAfter(text: string, at: number): number {
-  let i = at;
-  if (i > 0 && i < text.length && !/\s/.test(text[i - 1])) {
-    while (i < text.length && !/\s/.test(text[i])) i += 1;
-  }
-  while (i < text.length && /\s/.test(text[i])) i += 1;
-  return i;
 }

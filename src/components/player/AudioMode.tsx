@@ -37,6 +37,8 @@ import {
 } from "./audioChrome";
 import {
   SKIP_SECONDS,
+  skipLabel,
+  skipMark,
   activeRendition,
   usePlayer,
   voiceNames,
@@ -378,10 +380,10 @@ export function AudioMode({
           </TransportBtn>
           <TransportBtn
             onClick={() => player.skipSeconds(-SKIP_SECONDS)}
-            label={`Back ${SKIP_SECONDS} seconds`}
+            label={skipLabel("back", device)}
             big
           >
-            <SkipBackIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
+            <SkipBackIcon className="h-6 w-6" seconds={skipMark(device)} />
           </TransportBtn>
           <button
             type="button"
@@ -404,10 +406,10 @@ export function AudioMode({
           </button>
           <TransportBtn
             onClick={() => player.skipSeconds(SKIP_SECONDS)}
-            label={`Forward ${SKIP_SECONDS} seconds`}
+            label={skipLabel("forward", device)}
             big
           >
-            <SkipForwardIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
+            <SkipForwardIcon className="h-6 w-6" seconds={skipMark(device)} />
           </TransportBtn>
           <TransportBtn
             onClick={() => player.chapterNav?.next?.()}
@@ -853,8 +855,8 @@ function DesktopAudioMode({
           >
             <PrevChapterIcon />
           </TransportBtn>
-          <TransportBtn onClick={() => player.skipSeconds(-SKIP_SECONDS)} label={`Back ${SKIP_SECONDS} seconds`} big>
-            <SkipBackIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
+          <TransportBtn onClick={() => player.skipSeconds(-SKIP_SECONDS)} label={skipLabel("back", device)} big>
+            <SkipBackIcon className="h-6 w-6" seconds={skipMark(device)} />
           </TransportBtn>
           <button
             type="button"
@@ -867,8 +869,8 @@ function DesktopAudioMode({
           >
             {player.playing ? <PauseIcon className="h-7 w-7" /> : <PlayIcon className="ms-0.5 h-7 w-7" />}
           </button>
-          <TransportBtn onClick={() => player.skipSeconds(SKIP_SECONDS)} label={`Forward ${SKIP_SECONDS} seconds`} big>
-            <SkipForwardIcon className="h-6 w-6" seconds={SKIP_SECONDS} />
+          <TransportBtn onClick={() => player.skipSeconds(SKIP_SECONDS)} label={skipLabel("forward", device)} big>
+            <SkipForwardIcon className="h-6 w-6" seconds={skipMark(device)} />
           </TransportBtn>
           <TransportBtn
             onClick={() => player.chapterNav?.next?.()}
