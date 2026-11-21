@@ -182,13 +182,23 @@ export function formatDuration(seconds: number | null | undefined): string {
 /** the facts under a file's title — kind, then whatever the BE actually knows */
 export function fileFacts(file: LibraryFile): string {
   return [
-    KIND_LABEL[file.kind],
+    file.kind === "other" ? fileFormat(file.url) : KIND_LABEL[file.kind],
     file.page_count ? `${file.page_count} ${file.page_count === 1 ? "page" : "pages"}` : null,
     formatDuration(file.duration_seconds) || null,
     formatBytes(file.file_size) || null,
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+/**
+ * A download-only file's format, from its bucket extension — "ZIP", "PPTX".
+ * "File" says nothing to someone deciding whether to download 25 MB; the
+ * extension says what they will get and whether their phone can open it.
+ */
+function fileFormat(url: string): string {
+  const ext = /\.([a-z0-9]{1,5})$/i.exec(url.split(/[?#]/)[0])?.[1];
+  return ext ? ext.toUpperCase() : KIND_LABEL.other;
 }
 
 /** the folder's own facts line — year · type · people · language */
