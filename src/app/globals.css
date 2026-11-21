@@ -1510,6 +1510,17 @@ html[data-reading="1"] body {
     right 14px bottom 0,
     0 0;
 }
+/* The Library's Cloud Archive card (Raka, 19 Nov 2026): a card washed with the
+   workspace colour and edged in it, so it reads as an action rather than one
+   more folder. Twice the wash in dark, where 7% of the accent on a near-black
+   card is all but invisible. */
+.archive-card {
+  background-color: color-mix(in srgb, var(--ws-color) 7%, var(--color-card));
+  border-color: color-mix(in srgb, var(--ws-color) 35%, transparent);
+}
+[data-theme="dark"] .archive-card {
+  background-color: color-mix(in srgb, var(--ws-color) 14%, var(--color-card));
+}
 /* The shelf's pill on a desktop: one fixed width, centred in the column right
    of the sidebar, rather than stretched from the sidebar to the window's edge
    — the same 40rem the reader's desktop pill takes. Unlayered, so it outranks
