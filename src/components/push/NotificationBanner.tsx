@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { track } from "@/lib/analytics";
+import { getPrefs } from "@/lib/storage";
 import { usePush } from "./usePush";
 import { ctaPrimaryCompact } from "@/components/ui";
 
@@ -24,6 +25,10 @@ export function NotificationBanner({ className = "" }: { className?: string }) {
   const [dismissed, setDismissed] = useState(true); // assume hidden until read
 
   useEffect(() => {
+    // Not until a chapter has been opened (lib/firstRun): on a first visit
+    // this was the fourth ask on one screen, and "new chapters" is a promise
+    // that means nothing to someone who has not read one yet.
+    if (!getPrefs().chapterOpened) return;
     try {
       setDismissed(localStorage.getItem(DISMISSED_KEY) === "1");
     } catch {

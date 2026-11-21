@@ -4,6 +4,7 @@ import { ExploreWorkspaces } from "@/components/home/ExploreWorkspaces";
 import { LibraryBand } from "@/components/home/LibraryBand";
 import { ShortsRail } from "@/components/home/ShortsRail";
 import { SutraCard } from "@/components/home/SutraCard";
+import { BetaCard } from "@/components/beta/Beta";
 import { NotificationBanner } from "@/components/push/NotificationBanner";
 import {
   EmptyState,
@@ -117,6 +118,10 @@ export default async function OriginalsHome() {
             here it only pushes what is below it, which they have not reached.
             Dismissible, and gone for good once dismissed, so it still gets
             seen by anyone who scrolls at all. */}
+        {/* The beta's card (24 Nov 2026 release), beside the banner above and
+            placed here for the same reason. Dismissible; see `BetaCard`. */}
+        <BetaCard className="lg:col-span-3" />
+
         <NotificationBanner className="lg:col-span-3" />
 
         <section className="lg:col-span-3">

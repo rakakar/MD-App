@@ -8,6 +8,7 @@ import { OfflineNotice } from "./OfflineStatus";
 import { RailHost } from "./Rail";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BrandMark, Icon } from "./icons";
+import { BetaChip } from "@/components/beta/Beta";
 import { WORKSPACES, type NavItem } from "@/lib/workspaceConfig";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
@@ -136,6 +137,8 @@ export function Sidebar() {
           <BrandMark className="h-7.5 w-7.5" />
           <span className="text-sm font-semibold tracking-[-0.01em]">MD Study</span>
         </Link>
+        {/* beside the name it qualifies; see `BetaChip` */}
+        <BetaChip className="-ms-2" />
         <div className="ms-auto">
           <NotificationBell />
         </div>

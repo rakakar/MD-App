@@ -23,6 +23,7 @@ import { useWorkspace } from "@/components/shell/WorkspaceProvider";
 import { CloseIcon } from "@/components/shell/icons";
 import { useRoutePath } from "@/components/shell/useRoutePath";
 import { track } from "@/lib/analytics";
+import { markBetaUsed, whatsappFeedbackHref } from "@/lib/beta";
 import { signInHref } from "@/lib/routes";
 import { watchClientErrors } from "@/lib/clientErrors";
 import {
@@ -277,6 +278,7 @@ function FeedbackSheet({
         screenshot
       );
       track("feedback_submit", { kind, source: openedFrom, queued: result === "queued" ? 1 : 0 });
+      if (openedFrom === "beta") markBetaUsed();
       setPhase(result === "queued" ? "queued" : "sent");
       // Long enough to read the confirmation, short enough that nobody has to
       // dismiss it before getting back to the page they were on. Not when it
@@ -458,7 +460,7 @@ function FeedbackSheet({
             {error && <p className="mt-2 text-sm text-danger">{error}</p>}
 
 
-            {!user && <GuestNote />}
+            {!user && <GuestNote message={message} />}
 
             <p className="mt-3 text-xs leading-relaxed text-(--reader-ink-soft)">
               We also attach the screen you were on, your app version and device — never your
@@ -599,7 +601,7 @@ function FeedbackDialog({
                 <span className="truncate">{screenshot ? screenshot.name : "Add screenshot"}</span>
               </button>
             ) : (
-              <GuestNote />
+              <GuestNote message={message} />
             )}
           </div>
 
@@ -635,13 +637,37 @@ function FeedbackDialog({
   );
 }
 
-/** What happens to a guest's report when they press Send. */
-function GuestNote() {
+/**
+ * What happens to a guest's report when they press Send — and, during the
+ * beta, the way round it: WhatsApp, with what they have written so far. For
+ * the reader who will not make an account to send one note, or would rather
+ * send a voice note than type. Hidden when no number is configured.
+ */
+function GuestNote({ message }: { message: string }) {
+  const whatsapp = whatsappFeedbackHref(message);
   return (
-    <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-      Sending needs an account, so we can tell you what happened to it. You’ll sign in, then come
-      straight back here with this report ready to send.
-    </p>
+    <div className="mt-3 text-sm leading-relaxed text-ink-soft">
+      <p>
+        Sending needs an account, so we can tell you what happened to it. You’ll sign in, then
+        come straight back here with this report ready to send.
+      </p>
+      {whatsapp && (
+        <p className="mt-1">
+          Or{" "}
+          <a
+            href={whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track("feedback_whatsapp", { source: "guest" })}
+            className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            send it on WhatsApp
+          </a>{" "}
+          — no account needed, voice notes welcome.
+        </p>
+      )}
+    </div>
   );
 }
 

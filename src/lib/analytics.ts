@@ -91,7 +91,15 @@ export type GaEvent =
   | "feedback_open"
   | "feedback_submit"
   /** a guest pressed "Sign in to send" with a report written */
-  | "feedback_sign_in";
+  | "feedback_sign_in"
+  // The beta sheet opened (`source`: chip | menu | card | welcome) — which of
+  // the beta's doors readers actually find.
+  | "beta_open"
+  // The Home beta card closed with its × (it also retires on its own once used).
+  | "beta_card_dismiss"
+  // A WhatsApp chat with the team opened (`source`: beta | guest). Set beside
+  // feedback_sign_in, it says how many guests chose talking over signing in.
+  | "feedback_whatsapp";
 
 export function track(event: GaEvent, params: Record<string, string | number> = {}): void {
   if (typeof window === "undefined" || !window.gtag) return;

@@ -8,6 +8,7 @@ import { ProfileGate } from "@/components/auth/ProfileGate";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { FirstRunGate } from "@/components/onboarding/FirstRunGate";
 import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
+import { BetaProvider } from "@/components/beta/Beta";
 import { PlayerBar } from "@/components/player/PlayerBar";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
 import { TrackAudioMode } from "@/components/player/TrackAudioMode";
@@ -81,6 +82,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             from is one that has just failed to render — a sheet mounted inside
             a route could not open then. Paints nothing until it is opened. */}
         <FeedbackProvider>
+        {/* Inside feedback: the beta sheet's "बताएँ" is the same composer. Above
+            the header, the rail and the first-run gate, which all open it. */}
+        <BetaProvider>
         <PlayerProvider>
           {/* The rail and the route are on opposite sides of the router — the
               sidebar is mounted once here and a page's facets are fetched per
@@ -149,6 +153,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               seen — it is the reader's own opt-in, not app chrome. */}
           <PushProvider />
         </PlayerProvider>
+        </BetaProvider>
         </FeedbackProvider>
       </WorkspaceProvider>
     </AuthProvider>

@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { FIRST_RUN_DONE } from "@/components/journey/StagePrompt";
 import { getPrefs, setPrefs } from "@/lib/storage";
+import { useBeta } from "@/components/beta/Beta";
+import { BETA, BETA_WELCOME_DONE } from "@/lib/beta";
 
 /*
  * **The deck and the hint are loaded only for the visitor who will see them.**
@@ -54,13 +56,14 @@ const NEVER_CHANGES = () => () => {};
  * infinite render loop. Rebuilt only when a flag actually differs from the one
  * last handed out.
  */
-let cached = { deck: false, hint: false };
+let cached = { deck: false, hint: false, beta: false };
 function READ() {
   const p = getPrefs();
   const deck = REPLAY ? false : p.onboardingSeen;
   const hint = REPLAY ? false : p.switcherHintShown;
-  if (deck !== cached.deck || hint !== cached.hint) {
-    cached = { deck, hint };
+  const beta = REPLAY ? false : p.betaWelcomeSeen;
+  if (deck !== cached.deck || hint !== cached.hint || beta !== cached.beta) {
+    cached = { deck, hint, beta };
   }
   return cached;
 }
@@ -99,6 +102,9 @@ const REPLAY =
  * last card wearing different clothes.
  */
 const SETTLE_MS = 6000;
+
+/** The breath between the deck closing and the welcome sheet rising. */
+const HANDOFF_MS = 700;
 
 /**
  * ...and how long since they last touched anything.
@@ -176,7 +182,7 @@ function useSettled(active: boolean): boolean {
  * server snapshot by identity too, and a fresh `{}` every render is the same
  * infinite-loop warning `cached` above exists to avoid on the client side.
  */
-const SERVER_SNAPSHOT = { deck: true, hint: true };
+const SERVER_SNAPSHOT = { deck: true, hint: true, beta: true };
 
 export function FirstRunGate() {
   const stored = useSyncExternalStore(NEVER_CHANGES, READ, () => SERVER_SNAPSHOT);
@@ -189,11 +195,45 @@ export function FirstRunGate() {
    * the deck — a reader who skipped an explanation is the one who most needs
    * to be shown where the switcher is.
    */
-  const [done, setDone] = useState({ deck: false, hint: false });
+  const [done, setDone] = useState({ deck: false, hint: false, beta: false });
   const deckSeen = stored.deck || done.deck;
-  const hintOwed = deckSeen && !stored.hint && !done.hint;
-  // Counted from the moment the mark becomes owed — the tap that closed the
-  // deck, or the frame a reader who left before it arrived comes back.
+
+  /**
+   * **Second: the welcome sheet** (beta release, 24 Nov 2026; reordered
+   * 21 Nov — see lib/firstRun). The beta explained and the analytics question
+   * asked as one choice, so a new reader makes one decision and then has the
+   * app. Straight after the deck, on a short beat, because it is the deck's
+   * hand-off rather than an interruption of anything; for a reader who
+   * finished the deck before the beta began, on the first quiet moment of
+   * their next visit instead.
+   */
+  const { open: openBeta } = useBeta();
+  const betaOwed = BETA && deckSeen && !stored.beta && !done.beta;
+  const betaSettled = useSettled(betaOwed && !done.deck);
+  const [beat, setBeat] = useState(false);
+  useEffect(() => {
+    if (!betaOwed || !done.deck) return;
+    const t = window.setTimeout(() => setBeat(true), HANDOFF_MS);
+    return () => window.clearTimeout(t);
+  }, [betaOwed, done.deck]);
+  const betaReady = betaOwed && (done.deck ? beat : betaSettled);
+  const betaAsked = useRef(false);
+  useEffect(() => {
+    if (!betaReady || betaAsked.current) return;
+    betaAsked.current = true;
+    openBeta("welcome", () => {
+      setPrefs({ betaWelcomeSeen: true });
+      setDone((d) => ({ ...d, beta: true }));
+      // The analytics banner waits for this, and appears only if the sheet
+      // was closed without an answer.
+      window.dispatchEvent(new Event(BETA_WELCOME_DONE));
+    });
+  }, [betaReady, openBeta]);
+
+  // Third: the switcher mark, once the welcome is answered, in a pause.
+  // Counted from the moment the mark becomes owed — the welcome closing, or
+  // the frame a reader who left before it arrived comes back.
+  const hintOwed = deckSeen && !betaOwed && !stored.hint && !done.hint;
   const settled = useSettled(hintOwed);
 
   // Releases the page the pre-paint script held back (see `data-first-run` in

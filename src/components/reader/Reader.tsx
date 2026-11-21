@@ -17,6 +17,7 @@ import {
   usePlayer,
 } from "@/components/player/PlayerProvider";
 import { track } from "@/lib/analytics";
+import { markChapterOpened } from "@/lib/firstRun";
 import {
   PERSONAL_SYNCED,
   flushProgress,
@@ -667,6 +668,8 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
   }, [book.code]);
   useEffect(() => {
     track("chapter_read", { book: book.code, chapter: chapterNumber });
+    // What the notification card on Home waits for (lib/firstRun).
+    markChapterOpened();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapterNumber]);
 

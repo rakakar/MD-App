@@ -20,6 +20,9 @@ import { UnreadBadge, UnreadDot } from "@/components/notifications/NotificationL
 import { useInbox } from "@/components/notifications/useInbox";
 import { useDisplay } from "./DisplayProvider";
 import { OfflineNotice } from "./OfflineStatus";
+import { useBeta } from "@/components/beta/Beta";
+import { BETA, BETA_COPY } from "@/lib/beta";
+import { getPrefs, setPrefs } from "@/lib/storage";
 import { useEverOpen } from "@/components/ui/useEverOpen";
 import { useWorkspace } from "./WorkspaceProvider";
 import {
@@ -388,6 +391,15 @@ function AvatarMenu() {
   // rendering to serve one link.
   const pathname = useRoutePath();
   const [shareToast, showShareToast] = useToast();
+  const { open: openBeta } = useBeta();
+  /* The beta's door on a phone is the first row of this menu (designer,
+     21 Nov 2026 — the chip it replaced took the switcher's width). The dot
+     says once that something new is in here, and goes when the menu is
+     opened. Read after mount: storage does not exist on the server. */
+  const [betaDot, setBetaDot] = useState(false);
+  useEffect(() => {
+    setBetaDot(BETA && !getPrefs().betaMenuSeen);
+  }, []);
 
   if (loading) {
     return <div className="h-11 w-11 rounded-control bg-ink/5 lg:h-12 lg:w-12" aria-hidden />;
@@ -425,7 +437,13 @@ function AvatarMenu() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={unread > 0 ? `Account menu, ${unread} unread notifications` : "Account menu"}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          if (betaDot) {
+            setPrefs({ betaMenuSeen: true });
+            setBetaDot(false);
+          }
+        }}
         /* 44px on the phone, squaring up with the switcher beside it — the two
            are the only things in the bar and one standing shorter than the
            other read as a misalignment rather than a hierarchy. 44 is the touch
@@ -438,7 +456,7 @@ function AvatarMenu() {
         <UserIcon className="h-5 w-5" />
         {/* Something unread: the menu holds Notifications, so the dot sits on
             the door to it (designer's comp, 13 Oct 2026). */}
-        {unread > 0 && <UnreadDot className="-end-1 -top-1" />}
+        {(unread > 0 || betaDot) && <UnreadDot className="-end-1 -top-1" />}
       </button>
 
       {/*
@@ -491,6 +509,29 @@ function AvatarMenu() {
             thing. They are not: the journey is content, this menu is the app.
             That conflation is also why Settings used to live at `/me/settings`
             and hijacked the chrome; see the redirect left at that path. */}
+        {/* The beta, first and ruled off, for as long as there is one. Opens
+            the beta sheet — the word explained, then Tell us and WhatsApp —
+            rather than the composer, so this row means what the chip and the
+            Home card mean. */}
+        {BETA && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                openBeta("menu");
+              }}
+              className={row}
+              style={{ color: "var(--ws-ink)" }}
+            >
+              <span aria-hidden className={glyph} style={{ color: "var(--ws-ink)" }}>
+                <FeedbackIcon className="h-5 w-5" />
+              </span>
+              <span lang="hi" className="hi-note">{BETA_COPY.menuRow}</span>
+            </button>
+            {rule}
+          </>
+        )}
         {/* First, with its count, and ruled off from the rest: it is the one
             row here that changes on its own. */}
         <Link

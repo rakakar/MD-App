@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FIRST_RUN_DONE } from "@/components/journey/StagePrompt";
+import { BETA, BETA_WELCOME_DONE } from "@/lib/beta";
 import Script from "next/script";
 import { useEffect, useState } from "react";
 import { GA_ID, applyConsent } from "@/lib/analytics";
@@ -46,13 +47,25 @@ export function ConsentBanner() {
     // screen, six cards, then this card over the tab bar and a notification
     // ask on Home — three asks before reading a line. It waits for the deck
     // to close; nothing is collected meanwhile, since consent is still unset.
-    if (getPrefs().onboardingSeen) {
+    //
+    // During the beta the welcome sheet asks this question itself (lib/
+    // firstRun), so the banner also waits for that sheet, and is only the
+    // fallback for a reader who closed it without answering.
+    const ready = () =>
+      getPrefs().onboardingSeen && !(BETA && !getPrefs().betaWelcomeSeen);
+    if (ready()) {
       setVisible(true);
       return;
     }
-    const show = () => setVisible(getPrefs().consent === null);
+    const show = () => {
+      if (ready()) setVisible(getPrefs().consent === null);
+    };
     window.addEventListener(FIRST_RUN_DONE, show);
-    return () => window.removeEventListener(FIRST_RUN_DONE, show);
+    window.addEventListener(BETA_WELCOME_DONE, show);
+    return () => {
+      window.removeEventListener(FIRST_RUN_DONE, show);
+      window.removeEventListener(BETA_WELCOME_DONE, show);
+    };
   }, []);
 
   if (!visible) return null;

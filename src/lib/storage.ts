@@ -219,6 +219,27 @@ export interface Prefs {
    */
   switcherHintShown: boolean;
   /**
+   * Whether the one-time beta welcome has been shown (24 Nov 2026 release).
+   * Comes straight after the deck and before the switcher mark (lib/firstRun).
+   * Local, like the two above: a fact about this device, not the account.
+   */
+  betaWelcomeSeen: boolean;
+  /** The beta card on Home: closed with its ×, or retired once the reader
+   *  has used the beta to tell us something. The account-menu row stays. */
+  betaCardDismissed: boolean;
+  /** The dot on the account button, until the menu holding the beta row has
+   *  been opened once. */
+  betaMenuSeen: boolean;
+  /**
+   * How many visits this device has made — a visit being a browser session,
+   * counted once by `visitNumber()` in lib/firstRun. What lets the first visit
+   * be the welcome alone, with the Home cards held back to the next one.
+   */
+  visits: number;
+  /** Whether a chapter has ever been opened here. The notification ask waits
+   *  for it: "new chapters" means something once the reader has read one. */
+  chapterOpened: boolean;
+  /**
    * Which stage of the study path the reader says they are in — 1–9, or null
    * before they have been asked.
    *
@@ -319,6 +340,11 @@ export const DEFAULT_PREFS: Prefs = {
   highlightNames: {},
   onboardingSeen: false,
   switcherHintShown: false,
+  betaWelcomeSeen: false,
+  betaCardDismissed: false,
+  betaMenuSeen: false,
+  visits: 0,
+  chapterOpened: false,
   journeyStage: null,
   journeyAnswer: null,
   sutraCollapsed: false,
