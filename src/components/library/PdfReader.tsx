@@ -9,7 +9,10 @@ import type {
   RenderTask,
 } from "pdfjs-dist";
 import { useReaderChrome } from "@/components/reader/useReaderChrome";
-import { BackIcon } from "@/components/shell/icons";
+import { BackIcon, DownloadIcon } from "@/components/shell/icons";
+import { SrName } from "@/components/ui";
+import { formatBytes } from "@/components/library/format";
+import { downloadProps } from "@/lib/download";
 import { useDisplay } from "@/components/shell/DisplayProvider";
 import { FULL_PAGE, measureCrop, type CropBox } from "@/lib/pdfCrop";
 import { textEditionAtPage } from "@/lib/routes";
@@ -312,6 +315,7 @@ export function PdfReader({
   backHref,
   textHref,
   fileSize = null,
+  downloadUrl,
   stateKey,
 }: {
   url: string;
@@ -353,6 +357,13 @@ export function PdfReader({
   textHref?: string;
   /** bytes, when known — decides whether the file is fetched whole or rationed */
   fileSize?: number | null;
+  /**
+   * The file itself, to keep. A shared link lands here, and the person who
+   * tapped it should be able to look first and then take it (Raka, 21 Nov
+   * 2026) — library rows download rather than open, so this bar is the one
+   * place a viewer meets the file.
+   */
+  downloadUrl?: string;
   /**
    * Where this document's *view* is remembered — the same key its place is
    * saved under, so the two are found together.
@@ -1403,6 +1414,17 @@ export function PdfReader({
           >
             <span lang="hi" className="hi">पाठ</span>
           </Link>
+        )}
+        {downloadUrl && (
+          <a
+            {...downloadProps(downloadUrl, title)}
+            title={fileSize ? `Download · ${formatBytes(fileSize)}` : "Download"}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control transition-colors hover:bg-ink/5"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            <SrName verb="Download" name={title} />
+            <DownloadIcon className="h-4 w-4" />
+          </a>
         )}
         <button
           type="button"
