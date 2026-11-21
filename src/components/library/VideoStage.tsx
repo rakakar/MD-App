@@ -88,9 +88,16 @@ export function VideoStage({ file, onClose }: { file: LibraryFile; onClose: () =
       </div>
       {/* Centred in what is left, at its own ratio: a 16:9 recording stretched
           to a phone's 19.5:9 portrait screen would be either cropped or
-          letterboxed twice over. */}
-      <div className="flex flex-1 items-center justify-center px-3 pb-[env(safe-area-inset-bottom)]">
-        <div className="w-full">
+          letterboxed twice over.
+
+          Bounded by height too, not only width: on a 16:9 desktop screen a
+          full-width player is as tall as the whole viewport, so the title bar
+          pushed YouTube's control strip off the bottom. The middle area is a
+          size container and the player's width is capped at 16/9 of its
+          height. Where container units are unsupported the cap is dropped and
+          it falls back to full width, as before. */}
+      <div className="flex min-h-0 flex-1 items-center justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] [container-type:size]">
+        <div className="w-full max-w-[calc(100cqh*16/9)]">
           <VideoView file={file} layout="full" />
         </div>
       </div>
