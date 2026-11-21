@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { SearchField } from "@/components/SearchField";
 import { FileList } from "@/components/library/FileList";
 import { FOLDER_PLACEHOLDER } from "@/components/library/FindBar";
-import { PhonePlayRow } from "@/components/library/FolderHeroActions";
+import { PhoneDownloadAll, PhonePlayRow } from "@/components/library/FolderHeroActions";
 import { LARGE_BYTES } from "@/components/library/folderActions";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
 import type { AlbumCoverFacts } from "@/components/player/PlayerProvider";
@@ -89,6 +89,7 @@ export function FolderFiles({
         </div>
       )}
       <PhonePlayRow playAll={playAll} fullSeries={fullSeries} />
+      <PhoneDownloadAll files={[...files, ...linked].filter((f) => f.kind === "pdf")} />
       {none ? (
         <p className="mt-6 text-center text-sm text-ink-soft">Nothing in this folder matches “{q.trim()}”.</p>
       ) : (

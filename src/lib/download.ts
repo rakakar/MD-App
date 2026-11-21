@@ -46,7 +46,7 @@ export function downloadProps(url: string, title?: string) {
  * ordinary download. One listener covers every `downloadProps` link, including
  * the ones Download all clicks from code.
  */
-function installedApp(): boolean {
+export function installedApp(): boolean {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true ||

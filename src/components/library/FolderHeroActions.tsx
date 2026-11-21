@@ -1,13 +1,16 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { formatBytes } from "@/components/library/format";
+import { installedApp } from "@/lib/download";
 import {
+  downloadFiles,
   PLAY_ALL,
   PLAY_ALL_STATE,
   currentPlayAllState,
   type PlayAllState,
 } from "@/components/library/folderActions";
-import { PlayIcon } from "@/components/shell/icons";
+import { DownloadIcon, PlayIcon } from "@/components/shell/icons";
 
 /**
  * The folder hero's actions (designer's comps, 8 Oct 2026). Client
@@ -50,6 +53,61 @@ export function PlayAllButton() {
     >
       <PlayIcon className="h-3.5 w-3.5" />
       <span className="tabular-nums">{label}</span>
+    </button>
+  );
+}
+
+/**
+ * **Download all** — every PDF in the folder, one after another (Raka, 21 Nov
+ * 2026). Rows download one file each and have no checkboxes any more, so this
+ * is the way to take the whole folder. The size is on the button because it is
+ * the whole warning: "Download all · 365 MB" is a decision on mobile data.
+ *
+ * Not in the installed app: there a download opens in the system browser one
+ * file per tap (`download.ts`), and a run of eighteen would stop at the first.
+ */
+type Saveable = { url: string; title: string; file_size?: number | null };
+
+function useCanDownloadAll(files: Saveable[]): boolean {
+  const [ok, setOk] = useState(true);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- the display mode is only known in the browser
+  useEffect(() => setOk(!installedApp()), []);
+  return ok && files.length > 1;
+}
+
+function downloadAllLabel(files: Saveable[]): string {
+  const bytes = files.reduce((n, f) => n + (f.file_size ?? 0), 0);
+  return bytes > 0 ? `Download all · ${formatBytes(bytes)}` : "Download all";
+}
+
+/** the hero's copy, on a desktop */
+export function DownloadAllButton({ files }: { files: Saveable[] }) {
+  if (!useCanDownloadAll(files)) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => downloadFiles(files)}
+      className="inline-flex min-h-11 items-center gap-2 rounded-control bg-(--hero-cta-bg) px-4 text-sm font-semibold transition-opacity hover:opacity-90"
+      style={{ color: "var(--hero-cta-ink, var(--ws-color))" }}
+    >
+      <DownloadIcon className="h-4 w-4" />
+      <span className="tabular-nums">{downloadAllLabel(files)}</span>
+    </button>
+  );
+}
+
+/** the phone's copy, under the search, where Play all sits for recordings */
+export function PhoneDownloadAll({ files }: { files: Saveable[] }) {
+  if (!useCanDownloadAll(files)) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => downloadFiles(files)}
+      className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 lg:hidden"
+      style={{ background: "var(--ws-color)" }}
+    >
+      <DownloadIcon className="h-4 w-4" />
+      <span className="tabular-nums">{downloadAllLabel(files)}</span>
     </button>
   );
 }
