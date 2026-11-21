@@ -36,3 +36,33 @@ export function downloadProps(url: string, title?: string) {
     ? { href, download: "", target: "_blank", rel: "noopener noreferrer" }
     : { href, download: "" };
 }
+
+/**
+ * **In the installed app a download link opens the file bare** (Raka, 21 Nov
+ * 2026): iOS ignores `download`, loads the PDF into the app's own window, and
+ * that window has no toolbar — no Share, no Save to Files, no way back. So
+ * there, a download link opens the file itself in the system's browser view
+ * instead, whose Share sheet is how iOS saves a file. A browser tab keeps the
+ * ordinary download. One listener covers every `downloadProps` link, including
+ * the ones Download all clicks from code.
+ */
+function installedApp(): boolean {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true ||
+    document.documentElement.dataset.shell === "native"
+  );
+}
+
+if (typeof window !== "undefined") {
+  document.addEventListener("click", (e) => {
+    const a = (e.target as Element | null)?.closest?.("a[download]");
+    if (!(a instanceof HTMLAnchorElement) || !installedApp()) return;
+    const href = new URL(a.href, window.location.href);
+    // The bucket file itself, which opens inline, rather than the attachment.
+    const file = href.pathname === "/api/download" ? href.searchParams.get("url") : href.toString();
+    if (!file) return;
+    e.preventDefault();
+    window.open(file, "_blank", "noopener");
+  });
+}
