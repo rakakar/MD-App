@@ -210,9 +210,16 @@ export async function WorkspaceShelf({
   // The doors, minus any whose whole contents belong to another tab. Done here
   // rather than on the endpoint because the answer is already in hand: `rollup`
   // says which kinds live under each card, all the way down.
-  const doors = nodeChildren(root).filter(
-    (door) => !hidesDoor(rollup[String(door.id)]?.kinds, hideKinds)
-  );
+  //
+  // And minus any with nothing published anywhere beneath (Raka, 21 Nov 2026):
+  // Student Materials carried seven empty top-level folders, each a door onto
+  // "nothing here yet". Only on a rollup that answered — an unknown one still
+  // shows the folder, as `hidesDoor` does.
+  const doors = nodeChildren(root).filter((door) => {
+    const r = rollup[String(door.id)];
+    if (r && r.items === 0) return false;
+    return !hidesDoor(r?.kinds, hideKinds);
+  });
 
   // How much is in scope right now: the match count once something has been
   // asked, and the size of the shelf before that. Both are the number the
