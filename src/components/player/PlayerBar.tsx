@@ -366,6 +366,9 @@ function PlayerBarInner({
           start={fmt(player.positionMs)}
           end={fmt(player.durationMs)}
           valueText={`${fmt(player.positionMs)} of ${fmt(player.durationMs)}`}
+          positionMs={player.positionMs}
+          durationMs={player.durationMs}
+          onSeek={player.seekMs}
         />
       ) : null}
     </div>
@@ -381,10 +384,13 @@ function PlayerBarInner({
  * left" is the question a listener asks most often and can least afford to
  * open a new surface for.
  *
- * A readout, not a scrubber. The pill is three finger-sized controls in a
- * 62px-tall strip; a drag target three pixels high wedged between them would
- * be a control that mostly misses, and the scrub bar that *is* draggable is
- * one tap away on the title. So this reports, and the ends carry the numbers.
+ * **Draggable where it measures time** (Raka, 21 Nov 2026). It began as a
+ * readout, on the worry that a 4px bar between finger-sized buttons would be
+ * a control that mostly misses. So the band stays 4px to look at and the
+ * slider around it is 24px tall to hit — the same `audio-scrub` Audio Mode
+ * uses — and a listener can drag back to the line they missed without leaving
+ * the page. The device voice has no timeline, only paragraphs, and stays a
+ * readout: ±15 already steps it a paragraph at a time.
  *
  * It takes a percentage and, optionally, the two labels — because the two
  * things it measures are not the same unit, and only one of them has ends
@@ -395,6 +401,9 @@ function PillProgress({
   start,
   end,
   valueText,
+  positionMs,
+  durationMs,
+  onSeek,
 }: {
   percent: number;
   /** the left end — where the listener is; omitted where that is not a time */
@@ -402,25 +411,46 @@ function PillProgress({
   /** the right end — how much there is altogether */
   end?: string;
   valueText: string;
+  /** given all three, the bar is a slider */
+  positionMs?: number;
+  durationMs?: number;
+  onSeek?: (ms: number) => void;
 }) {
   const width = Math.min(100, Math.max(0, percent));
+  const seekable = onSeek && durationMs !== undefined && positionMs !== undefined;
 
   return (
-    <div className="mt-1.5 flex w-full items-center gap-2">
+    <div className={`flex w-full items-center gap-2 ${seekable ? "mt-0.5 -mb-1" : "mt-1.5"}`}>
       {start && (
         <span className="shrink-0 text-xs font-medium tabular-nums text-white/70">{start}</span>
       )}
-      <span
-        role="progressbar"
-        aria-label="Playback position"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(width)}
-        aria-valuetext={valueText}
-        className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-white/25"
-      >
-        <span className="block h-full rounded-full bg-white/90" style={{ width: `${width}%` }} />
-      </span>
+      {seekable ? (
+        <input
+          type="range"
+          aria-label="Seek"
+          aria-valuetext={valueText}
+          min={0}
+          max={durationMs || 1}
+          value={Math.min(positionMs, durationMs)}
+          onChange={(e) => onSeek(Number(e.target.value))}
+          className="audio-scrub h-6 min-w-0 flex-1 cursor-pointer appearance-none bg-transparent"
+          style={{
+            background: `linear-gradient(to right, rgb(255 255 255 / 0.9) ${width}%, rgb(255 255 255 / 0.25) 0)`,
+          }}
+        />
+      ) : (
+        <span
+          role="progressbar"
+          aria-label="Playback position"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(width)}
+          aria-valuetext={valueText}
+          className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-white/25"
+        >
+          <span className="block h-full rounded-full bg-white/90" style={{ width: `${width}%` }} />
+        </span>
+      )}
       {end && (
         <span className="shrink-0 text-xs font-medium tabular-nums text-white/70">{end}</span>
       )}
@@ -501,7 +531,11 @@ function DesktopReaderPill({
         <SkipForwardIcon className="h-5 w-5" seconds={skipMark(device)} />
       </button>
 
-      <button type="button" onClick={onExpand} aria-label="Open audio mode" className="mx-2 min-w-0 flex-1 text-left">
+      {/* The title opens Audio mode; the bar under it is its own control now
+          — a slider for a recording, a readout for the computer's voice — so
+          the two are siblings rather than the bar riding inside the button. */}
+      <div className="mx-2 min-w-0 flex-1">
+      <button type="button" onClick={onExpand} aria-label="Open audio mode" className="block w-full text-left">
         <span className="flex items-baseline gap-2">
           <span lang="hi" className="hi hi-tight min-w-0 truncate text-sm font-semibold">
             {source.chapterTitle}
@@ -518,6 +552,22 @@ function DesktopReaderPill({
             </span>
           )}
         </span>
+      </button>
+      {!device && player.durationMs > 0 ? (
+        <input
+          type="range"
+          aria-label="Seek"
+          aria-valuetext={`${fmt(player.positionMs)} of ${fmt(player.durationMs)}`}
+          min={0}
+          max={player.durationMs}
+          value={Math.min(player.positionMs, player.durationMs)}
+          onChange={(e) => player.seekMs(Number(e.target.value))}
+          className="audio-scrub -mb-2 block h-6 w-full cursor-pointer appearance-none bg-transparent"
+          style={{
+            background: `linear-gradient(to right, var(--color-audio-accent) ${Math.min(100, percent)}%, rgb(255 255 255 / 0.2) 0)`,
+          }}
+        />
+      ) : (
         <span
           role="progressbar"
           aria-label="Playback position"
@@ -528,7 +578,8 @@ function DesktopReaderPill({
         >
           <span className="block h-full rounded-full bg-audio-accent" style={{ width: `${Math.min(100, percent)}%` }} />
         </span>
-      </button>
+      )}
+      </div>
 
       <button
         type="button"
