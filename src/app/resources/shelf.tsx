@@ -172,6 +172,11 @@ export async function ResourcesShelfPage({ params }: { params: RawParams }) {
           basePath="/resources"
           searchScope="Student Materials"
           photoStrip={false}
+          /* No Year and no Sort here (Raka, 21 Nov 2026): student material is
+             not read by year, and the shelf was imported in one batch, so
+             Newest/Oldest by date-added would only shuffle it. */
+          hideAxes={["year"]}
+          sortable={false}
           emptyTitle="Resources are on their way"
           emptyHint="The library is being filled folder by folder; material appears here as it is published."
         />

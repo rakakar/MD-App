@@ -192,6 +192,7 @@ export function FindFilters({
   noun = "item",
   hideAxes = [],
   iconOnly = false,
+  sortable = true,
 }: {
   topics: Topic[];
   facets: LibraryFacets;
@@ -204,6 +205,12 @@ export function FindFilters({
   hideAxes?: FindAxis[];
   /** draw the trigger as the glyph alone — see `FilterButton` */
   iconOnly?: boolean;
+  /**
+   * Offer Sort by. Off on Student Materials (Raka, 21 Nov 2026): Newest and
+   * Oldest go by the date a row was added to the app, and that whole shelf was
+   * imported in one batch, so both orders read as arbitrary.
+   */
+  sortable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -239,6 +246,7 @@ export function FindFilters({
         basePath={basePath}
         itemCount={itemCount}
         noun={noun}
+        sortable={sortable}
         clearAllHref={count > 0 || state.ordering ? findHref(basePath, clearSheet(state, live)) : null}
       />
     );
@@ -300,7 +308,7 @@ export function FindFilters({
             )}
           </FilterSection>
         ))}
-        <SortSection state={state} basePath={basePath} />
+        {sortable && <SortSection state={state} basePath={basePath} />}
       </Sheet>
     </>
   );
@@ -348,6 +356,7 @@ function FilterPopover({
   basePath,
   itemCount,
   noun,
+  sortable,
   clearAllHref,
 }: {
   open: boolean;
@@ -361,6 +370,7 @@ function FilterPopover({
   basePath: string;
   itemCount: number;
   noun: string;
+  sortable: boolean;
   clearAllHref: string | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -464,17 +474,19 @@ function FilterPopover({
               );
             })}
 
-            <section className="px-4 py-3.5">
-              <h3 className={`${heading} mb-2.5`}>Sort by</h3>
-              {/* The shared raised segment (15 Nov 2026): this was a copy at 36px
-                  with a grey hairline, the look Settings retired. */}
-              <RadioSegmented
-                label="Sort by"
-                options={sorts}
-                value={current}
-                onChange={(v) => router.push(findHref(basePath, setOrdering(state, v)))}
-              />
-            </section>
+            {sortable && (
+              <section className="px-4 py-3.5">
+                <h3 className={`${heading} mb-2.5`}>Sort by</h3>
+                {/* The shared raised segment (15 Nov 2026): this was a copy at 36px
+                    with a grey hairline, the look Settings retired. */}
+                <RadioSegmented
+                  label="Sort by"
+                  options={sorts}
+                  value={current}
+                  onChange={(v) => router.push(findHref(basePath, setOrdering(state, v)))}
+                />
+              </section>
+            )}
           </div>
 
           <div className="flex items-center justify-between border-t border-rule px-4 py-3">

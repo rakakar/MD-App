@@ -53,6 +53,7 @@ export function FindResults({
   activeFilters,
   asked,
   also,
+  sortable = true,
 }: {
   /** the same words counted on the other shelves — see `OtherShelves` */
   also?: React.ReactNode;
@@ -74,6 +75,8 @@ export function FindResults({
    * or its later pages would bring back what the first one left out.
    */
   asked?: FindState;
+  /** offer the Newest first chip — off where `FindFilters` has no Sort */
+  sortable?: boolean;
 }) {
   const { results, count } = find;
   // With chips on the line, their own Clear is the way out; the line's would
@@ -98,7 +101,7 @@ export function FindResults({
           <span className={chipsCarryClear ? "hidden" : "hidden lg:inline"}>
             <ClearFind basePath={basePath} state={state} />
           </span>
-          {count > 1 && <NewestFirst state={state} basePath={basePath} />}
+          {sortable && count > 1 && <NewestFirst state={state} basePath={basePath} />}
         </span>
       </div>
 

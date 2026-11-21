@@ -77,6 +77,7 @@ export async function WorkspaceShelf({
   hideKinds = [],
   searchScope = "library",
   hideAxes = [],
+  sortable = true,
   photoStrip = true,
   filtersButton = true,
   chipAxis = "kind",
@@ -142,6 +143,8 @@ export async function WorkspaceShelf({
    * missing from one and linger in another.
    */
   hideAxes?: FindAxis[];
+  /** offer Sort by in the filters — see `FindFilters` */
+  sortable?: boolean;
   /**
    * Whether the shelf ends with a strip of its photographs.
    *
@@ -347,6 +350,7 @@ export async function WorkspaceShelf({
                   itemCount={itemCount}
                   hideAxes={filterAxes}
                   iconOnly
+                  sortable={sortable}
                 />
               )
             }
@@ -372,6 +376,7 @@ export async function WorkspaceShelf({
           />
         </RailSlot>
         <FindResults
+          sortable={sortable}
           find={find}
           state={state}
           asked={asked}
@@ -449,6 +454,7 @@ export async function WorkspaceShelf({
                   itemCount={itemCount}
                   hideAxes={filterAxes}
                   iconOnly
+                  sortable={sortable}
                 />
               )
             }
