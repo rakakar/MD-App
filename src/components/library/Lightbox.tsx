@@ -396,7 +396,11 @@ export function Lightbox({
               sizes={shown.sizes}
               alt={item.title}
               draggable={false}
-              className="max-h-full max-w-full rounded-card object-contain"
+              // Fills the stage and letterboxes, rather than `max-*-full`: a
+              // max can only shrink, so the picture stayed at the size of
+              // whichever copy came first — the grid tile, ~660px across a
+              // 1300px screen — and never grew when the sharp one arrived.
+              className="h-full w-full rounded-card object-contain"
               style={{
                 transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
                 transformOrigin: "center",
