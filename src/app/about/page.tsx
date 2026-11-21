@@ -135,8 +135,6 @@ const GRATITUDE = [
   "Sadhan Bhattacharya & others",
   "BR & Anchala Agrawal",
   "Sunil Kherwa",
-  "Ramesh Choudhary",
-  "Gopal Gupta",
   "Anand Dammani",
   "Ummed Nahata",
   "Achal Agrawal",
