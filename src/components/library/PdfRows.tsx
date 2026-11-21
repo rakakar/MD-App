@@ -2,8 +2,7 @@
 
 import { SrName } from "@/components/ui";
 import { count } from "@/lib/labels";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { ReadingCard } from "@/components/library/ReadingCard";
@@ -13,7 +12,6 @@ import { formatBytes } from "@/components/library/format";
 import { CheckIcon, DownloadIcon } from "@/components/shell/icons";
 import { KindTile } from "@/components/ui/KindTile";
 import { contentLang } from "@/lib/script";
-import { getPdfPlace } from "@/lib/storage";
 import { useSavedPdf } from "@/lib/useSavedPdf";
 import type { LibraryFile, LocatedFile, Provenance } from "@/lib/types";
 import { downloadProps } from "@/lib/download";
@@ -134,15 +132,11 @@ function PdfRow({
   // A cross-posted file names the folder it really lives in.
   const from = "breadcrumb" in file && file.breadcrumb.length ? file.breadcrumb[file.breadcrumb.length - 1].name : folderName;
   const offline = useSavedPdf(file, from);
-  const [resume, setResume] = useState<number | null>(null);
-  useEffect(() => {
-    const saved = getPdfPlace(`library-file:${file.id}`);
-    // Page one is where it opens anyway — "resume" there promises nothing.
-    if (saved && saved.page > 1) setResume(saved.page);
-  }, [file.id]);
 
+  // A library PDF is for taking away, not reading here (Raka, 21 Nov 2026):
+  // the whole row downloads, like its icon. The reader route stays for links
+  // already shared, and Share still points at it.
   const readHref = `/library/${file.node}/read/${file.id}`;
-  const href = resume ? `${readHref}?page=${resume}` : readHref;
   const large = (file.file_size ?? 0) >= LARGE_BYTES;
   const pages = file.page_count ? `${file.page_count} pp` : "";
   // Spelt out on a phone, where it is a line of words rather than a column.
@@ -179,13 +173,14 @@ function PdfRow({
 
       <span className="min-w-0 flex-1">
         {"breadcrumb" in file && file.breadcrumb.length > 0 && <BreadcrumbLine steps={file.breadcrumb} />}
-        <Link
-          href={href}
+        <a
+          {...downloadProps(file.url, file.title)}
           {...t}
-          className={`${t.className} hi-tight line-clamp-2 block text-sm font-medium after:absolute after:inset-0 group-hover:underline sm:line-clamp-none sm:truncate sm:text-base`}
+          title={size ? `Download · ${size}` : "Download"}
+          className={`${t.className} hi-tight line-clamp-2 block text-sm font-medium after:absolute after:inset-0 sm:line-clamp-none sm:truncate sm:text-base`}
         >
           {file.title}
-        </Link>
+        </a>
         {/* Phone: the columns, under the title. */}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-ink-soft tabular-nums sm:hidden">
           {[pagesWord, size].filter(Boolean).join(" · ")}
@@ -205,13 +200,8 @@ function PdfRow({
                 : "Couldn’t save — check your connection"}
           </span>
         )}
-        {(resume || file.provenance !== folderProvenance) && (
+        {file.provenance !== folderProvenance && (
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
-            {resume && (
-              <span className="font-semibold tabular-nums" style={{ color: "var(--ws-ink)" }}>
-                Resume on page {resume}
-              </span>
-            )}
             {file.provenance !== folderProvenance && <ProvenanceBadge provenance={file.provenance} />}
           </span>
         )}
@@ -230,18 +220,13 @@ function PdfRow({
         <SrName verb="Download" name={file.title} />
         <DownloadIcon className="h-4 w-4" />
       </a>
-      {/* On a phone too, now that it holds Save offline — the one way to
-          keep a PDF readable in the app with no connection. */}
+      {/* Copy link and Share, on a phone too. */}
       <RowMenu
         label={file.title}
-        items={[
-          { label: "Open", href },
-          offline.status === "saved"
-            ? { label: "Remove offline copy", onClick: offline.remove }
-            : offline.status === "saving"
-              ? { label: "Saving offline…", onClick: () => undefined }
-              : { label: size ? `Save offline · ${size}` : "Save offline", onClick: offline.save },
-        ]}
+        items={
+          // Only download, copy and share now; a copy saved before keeps a way out.
+          offline.status === "saved" ? [{ label: "Remove offline copy", onClick: offline.remove }] : []
+        }
         share={{ title: file.title, url: readHref }}
       />
     </div>
