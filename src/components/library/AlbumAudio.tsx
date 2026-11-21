@@ -5,7 +5,9 @@ import { useAudioQueue, type QueueEntry } from "@/components/player/useAudioQueu
 import type { AlbumCoverFacts } from "@/components/player/PlayerProvider";
 import { MediaRows } from "@/components/library/MediaRows";
 import { PLAY_ALL, announcePlayAll, resumeIndex } from "@/components/library/folderActions";
+import { formatDuration } from "@/components/library/format";
 import { WaveformIcon } from "@/components/shell/icons";
+import { contentLang } from "@/lib/script";
 import { AUDIO_POSTER_WARM } from "@/lib/media";
 import type { LibraryFile } from "@/lib/types";
 
@@ -63,8 +65,7 @@ export function AlbumAudio({
    * honest on Originals: the note on `AUDIO_POSTER` says it is not
    * identification "since every recording here is him", which stops being
    * true the moment the shelf is Resources and the recording is a geet sung
-   * by students. `glyph` is the wave on the shelf's own colour — the same
-   * tile the portrait already falls back to when the file is missing.
+   * by students. `glyph` is the song's own title page — see `SongArt`.
    */
   art?: "portrait" | "glyph";
 }) {
@@ -133,8 +134,14 @@ export function AlbumAudio({
           title: item.title,
           description: item.description,
           durationSeconds: item.duration_seconds,
-          art: <AudioArt art={art} label={label} />,
-          lengthOnArt: label?.kind === "length",
+          art:
+            art === "glyph" ? (
+              <SongArt title={item.title} album={albumTitle} length={formatDuration(item.duration_seconds)} />
+            ) : (
+              <AudioArt label={label} />
+            ),
+          // The song page prints its length on its own footer line.
+          lengthOnArt: art === "glyph" || label?.kind === "length",
           onPlay: start,
           active: activeId === key,
           percent: item.duration_seconds
@@ -150,26 +157,69 @@ export function AlbumAudio({
 }
 
 /**
- * What a track wears: the shared portrait on Originals, the wave on the
- * shelf's colour elsewhere — and the wave too if the portrait fails to load,
- * so a row is never a black box. See `art` above.
+ * A song's thumbnail outside Originals (Raka, 21 Nov 2026): the Patra title
+ * page from the album-cover round, in the Resources iris instead of vermilion
+ * — paper ground, the song's name set in serif at the foot, the album and the
+ * length on the footer line under a hairline rule. One ink colour for every
+ * song, because a shelf of differently coloured tiles read as a toy box; the
+ * name is what tells one song from the next.
+ *
+ * Under ~180px (the list row) the words would be too small to read and the
+ * title is beside it anyway, so the page keeps only its note mark, with the
+ * length on a phone where the row has no column for it. Sized in `cqw`, as
+ * `.track-art` is. `गीत` heads the page only when the folder says it holds
+ * songs; elsewhere the note mark stands alone, rather than call a talk a song.
  */
-function AudioArt({ art, label }: { art: "portrait" | "glyph"; label: TrackLabel | null }) {
+function SongArt({ title, album, length }: { title: string; album?: string; length: string }) {
+  const t = contentLang(title);
+  const songs = /geet|गीत/i.test(album ?? "");
+  return (
+    <span className="song-art" aria-hidden>
+      <span className="song-art__page">
+        <span className="song-art__top">
+          <span className="song-art__kind">{songs ? "गीत" : ""}</span>
+          <NoteIcon className="song-art__note" />
+        </span>
+        <span {...t} className={`${t.className} song-art__title`}>
+          {title}
+        </span>
+        <span className="song-art__foot">
+          <span className="truncate">{album}</span>
+          {length && <b>{length}</b>}
+        </span>
+      </span>
+      <span className="song-art__small">
+        <NoteIcon className="song-art__note" />
+        {length && <span className="song-art__len sm:hidden">{length}</span>}
+      </span>
+    </span>
+  );
+}
+
+function NoteIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="17" r="3" />
+      <circle cx="16" cy="15" r="3" />
+      <path d="M9 17V5l10-2v12" />
+    </svg>
+  );
+}
+
+/**
+ * What an Originals track wears: the shared portrait, and the wave on the
+ * audio tint if the portrait fails to load, so a row is never a black box.
+ */
+function AudioArt({ label }: { label: TrackLabel | null }) {
   const [failed, setFailed] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (el && el.complete && el.naturalWidth === 0) setFailed(true);
   }, []);
-  if (art === "glyph" || failed) {
+  if (failed) {
     return (
-      <span
-        aria-hidden
-        className={`flex h-full w-full items-center justify-center ${
-          art === "glyph" ? "text-white" : "bg-kind-audio text-kind-audio-ink"
-        }`}
-        style={art === "glyph" ? { background: "var(--ws-color)" } : undefined}
-      >
+      <span aria-hidden className="flex h-full w-full items-center justify-center bg-kind-audio text-kind-audio-ink">
         <WaveformIcon className="h-6 w-6" />
       </span>
     );

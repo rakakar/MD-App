@@ -2625,6 +2625,31 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
 [data-theme="dark"] .hero-hint .album-cover {
   box-shadow: 0 0 0 1px rgb(251 233 210 / 0.18);
 }
+/* Resources wears its own iris, not Originals' marigold (Raka, 21 Nov 2026):
+   the same light panel, washed from the palest iris toward lavender at the
+   foot, so a Resources page is told apart by its colour as its rail and tiles
+   already are. Ink #2e2b4a ~12:1 on the ground; the iris kicker ~5:1 at the
+   darkest stop; white on the iris Play all ~6.6:1. Written after the warm
+   rules and one attribute longer, so it wins in every theme. */
+[data-ws="resources"] .hero-hint {
+  --hero-ink: #2e2b4a;
+  --hero-kicker: var(--color-ws-resources);
+  --hero-chip: rgb(46 43 74 / 0.08);
+  --hero-chip-ink: #2e2b4a;
+  --hero-cta-bg: var(--color-ws-resources);
+  --hero-cta-ink: #fff;
+  background: linear-gradient(170deg, #f5f4fa 0%, #ecebf5 60%, #e2dfef 100%);
+}
+[data-theme="sepia"] [data-ws="resources"] .hero-hint {
+  background: linear-gradient(170deg, #efebf1 0%, #e7e2ec 60%, #ddd7e6 100%);
+}
+[data-theme="dark"] [data-ws="resources"] .hero-hint {
+  --hero-ink: #e9e6f5;
+  --hero-chip: rgb(255 255 255 / 0.1);
+  --hero-chip-ink: #e9e6f5;
+  --hero-kicker: #b3aee0;
+  background: linear-gradient(170deg, #2d2a3b 0%, #262333 60%, #201d2b 100%);
+}
 
 /* ---------------------------------------------------------------------------
    An Originals audio track's thumbnail (Raka, 19 Nov 2026): the warmed
@@ -2661,6 +2686,113 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   font-size: 17cqw;
   font-variant-numeric: lining-nums;
   color: var(--color-brand-hint);
+}
+
+/* A song's thumbnail outside Originals — `SongArt` (Raka, 21 Nov 2026): the
+   Patra title page in iris. Ink #2e2b4a on the paper ~13:1; the iris footer
+   figures ~5.6:1. Full page from 180px; below that, the note alone. */
+.song-art {
+  --song-paper: #f7f5fa;
+  --song-ring: #dddaea;
+  --song-iris: var(--color-ws-resources);
+  --song-soft: #6f6a9c;
+  --song-ink: #2e2b4a;
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--song-paper);
+  box-shadow: inset 0 0 0 1px var(--song-ring);
+  color: var(--song-ink);
+}
+[data-theme="sepia"] .song-art {
+  --song-paper: #efebf1;
+  --song-ring: #dbd4e3;
+}
+[data-theme="dark"] .song-art {
+  --song-paper: #24212f;
+  --song-ring: #3a3650;
+  --song-iris: #b3aee0;
+  --song-soft: #9a95c9;
+  --song-ink: #e6e3f5;
+}
+.song-art__page {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 5cqw 6cqw;
+}
+.song-art__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.song-art__kind {
+  font-family: var(--font-devanagari-sans);
+  font-size: 5cqw;
+  font-weight: 600;
+  color: var(--song-iris);
+}
+.song-art__note {
+  width: 6.5cqw;
+  height: 6.5cqw;
+  color: var(--song-iris);
+}
+.song-art__title {
+  margin-top: auto;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 9.6cqw;
+  line-height: 1.08;
+  color: var(--song-ink);
+  text-wrap: balance;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.song-art__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 3cqw;
+  margin-top: 3cqw;
+  padding-top: 2.6cqw;
+  border-top: 0.5cqw solid var(--song-ink);
+  font-size: 4.4cqw;
+  line-height: 1.2;
+  color: var(--song-soft);
+}
+.song-art__foot b {
+  flex: none;
+  font-weight: 600;
+  color: var(--song-iris);
+  font-variant-numeric: tabular-nums;
+}
+.song-art__small {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.song-art__small .song-art__note {
+  width: 22cqw;
+  height: 22cqw;
+}
+.song-art__len {
+  position: absolute;
+  left: 6cqw;
+  bottom: 5cqw;
+  font-size: 11cqw;
+  font-weight: 600;
+  color: var(--song-iris);
+  font-variant-numeric: tabular-nums;
+}
+@container (min-width: 180px) {
+  .song-art__page { display: flex; }
+  .song-art__small { display: none; }
 }
 
 /* `surface="tint"` — a book's header (Raka, 19 Nov 2026): the book's own hue
