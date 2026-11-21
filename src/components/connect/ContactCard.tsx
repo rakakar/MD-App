@@ -1,6 +1,5 @@
 import { PhoneIcon, PinIcon } from "@/components/shell/icons";
 import type { DirectoryContact } from "@/lib/directory";
-import { whatsappHref } from "./EventDetail";
 import { contentLang } from "@/lib/script";
 
 /**
@@ -32,24 +31,6 @@ function MailIcon({ className = "h-4 w-4" }: { className?: string }) {
     >
       <rect x="3" y="5" width="18" height="14" rx="2" />
       <path d="m3.5 7 8.5 6 8.5-6" />
-    </svg>
-  );
-}
-
-/** A speech bubble, for the WhatsApp row — the app carries no brand marks. */
-function ChatIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M20 11.5a7.5 7.5 0 0 1-11.1 6.6L4 19.5l1.4-4.6A7.5 7.5 0 1 1 20 11.5Z" />
     </svg>
   );
 }
@@ -158,13 +139,8 @@ export function ContactCard({ contact }: { contact: DirectoryContact }) {
               {contact.phone}
             </ReachRow>
           )}
-          {/* WhatsApp beside the call (16 Nov 2026, UX audit CN7): how most
-              readers actually reach a contact. Only for a mobile number. */}
-          {contact.phone && whatsappHref(contact.phone) && (
-            <ReachRow icon={<ChatIcon />} href={whatsappHref(contact.phone)!} gutter="w-11">
-              WhatsApp
-            </ReachRow>
-          )}
+          {/* No WhatsApp row. One sat here from 16 Nov 2026 (UX audit CN7) and
+              was taken off by the designer on 21 Nov: call and mail only. */}
           {contact.email && (
             <ReachRow icon={<MailIcon />} href={`mailto:${contact.email}`} gutter="w-11">
               {contact.email}
@@ -215,11 +191,6 @@ export function ContactRow({ contact }: { contact: DirectoryContact }) {
           gutter="w-8"
         >
           {contact.phone}
-        </ReachRow>
-      )}
-      {contact.phone && whatsappHref(contact.phone) && (
-        <ReachRow icon={<ChatIcon />} href={whatsappHref(contact.phone)!} gutter="w-8">
-          WhatsApp
         </ReachRow>
       )}
       {contact.email && (
