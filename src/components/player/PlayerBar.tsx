@@ -12,7 +12,6 @@ import {
 } from "@/components/shell/icons";
 import { useIsDesktop } from "@/components/ui/Dialog";
 import { RATES, fmt } from "./audioChrome";
-import { usePillDrag } from "./usePillDrag";
 import { ownsViewport } from "@/lib/routes";
 import { contentLang } from "@/lib/script";
 import {
@@ -189,8 +188,6 @@ function PlayerBarInner({
     playingRef.current = player.playing;
   });
   const notifiable = !desktop && !leaving && source.kind !== "device";
-  // desktop only — see usePillDrag; the reader's desktop pill has its own
-  const drag = usePillDrag(barRef, desktop && !desktopMini, "shelf");
   useEffect(() => {
     if (!notifiable) return;
     let playingWhenHidden = false;
@@ -255,10 +252,8 @@ function PlayerBarInner({
         source.kind === "track" && source.tone === "resources" ? "player-pill--iris" : ""
       } ${
         leaving ? "player-pill-out" : "player-pill-in"
-      } player-pill-shelf fixed inset-x-3 z-40 flex flex-col rounded-2xl px-3 pb-2 pt-2.5 text-white shadow-raised ${drag.dragClass}`}
-      {...drag.dragProps}
+      } player-pill-shelf fixed inset-x-3 z-40 flex flex-col rounded-2xl px-3 pb-2 pt-2.5 text-white shadow-raised`}
       style={{
-        ...drag.dragStyle,
         // Inside a book it clears the reader's own bottom bar; everywhere else
         // it clears the tab bar. Same pill, one number apart — on a desktop
         // there is neither, so it sits on the floor beside the sidebar.
@@ -474,7 +469,6 @@ function DesktopReaderPill({
       ? (player.positionMs / player.durationMs) * 100
       : 0;
   const nextRate = RATES[(RATES.indexOf(player.rate) + 1) % RATES.length] ?? 1;
-  const drag = usePillDrag(barRef, true, "reader");
 
   const btn =
     "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/10";
@@ -489,9 +483,7 @@ function DesktopReaderPill({
       // animate `transform`, which would replace a -50% and push it right.
       className={`player-pill ${
         leaving ? "player-pill-out" : "player-pill-in"
-      } fixed inset-x-0 bottom-6 z-40 mx-auto flex w-[min(40rem,calc(100%-2rem))] items-center gap-2 rounded-2xl py-2.5 pe-3 ps-2.5 text-white shadow-raised ${drag.dragClass}`}
-      {...drag.dragProps}
-      style={drag.dragStyle}
+      } fixed inset-x-0 bottom-6 z-40 mx-auto flex w-[min(40rem,calc(100%-2rem))] items-center gap-2 rounded-2xl py-2.5 pe-3 ps-2.5 text-white shadow-raised`}
     >
       <button
         type="button"
