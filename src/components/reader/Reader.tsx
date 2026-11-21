@@ -1227,8 +1227,13 @@ function ReaderView({ book, initialChapterNumber, initialChapter, home }: Reader
      * one tap in three — and in page mode a tap is the only way back to the
      * bars. Now a tap on a word brings the bars back; with them showing, the
      * same tap opens its meaning, as the tip says.
+     *
+     * **Touch only** (21 Nov 2026). A mouse click on an underlined word opens
+     * its meaning on the first click: a desktop reader has a pointer to aim
+     * with and other ways back to the bars, and the extra click read as a bug.
      */
-    const word = !chrome.visible && !!el.closest("[data-paribhasha]");
+    const word =
+      e.pointerType !== "mouse" && !chrome.visible && !!el.closest("[data-paribhasha]");
     // never hijack a control, a link, a glossary word, or a horizontally
     // scrollable table
     if (
