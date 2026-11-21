@@ -252,6 +252,8 @@ function PlayerBarInner({
       // painted there rather than here because it is six gradient layers and
       // a sweep, which is a stylesheet's job and not a class list's.
       className={`player-pill ${
+        source.kind === "track" && source.tone === "resources" ? "player-pill--iris" : ""
+      } ${
         leaving ? "player-pill-out" : "player-pill-in"
       } player-pill-shelf fixed inset-x-3 z-40 flex flex-col rounded-2xl px-3 pb-2 pt-2.5 text-white shadow-raised ${drag.dragClass}`}
       {...drag.dragProps}

@@ -2794,6 +2794,32 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
   .song-art__page { display: flex; }
   .song-art__small { display: none; }
 }
+.song-art--page .song-art__page { display: flex; }
+.song-art--page .song-art__small { display: none; }
+
+/* A Resources track's player (Raka, 21 Nov 2026): the pill and the Audio
+   Mode screen it opens into take the shelf's iris where Originals take
+   sindoor, so a song keeps its shelf's colour after the listener has walked
+   away from the shelf (the tone rides the track — see \`TrackTone\`). Cream
+   on the pill ground ~8.9:1; the lavender label ~5.6:1 on the top stop and
+   ~9:1 on the ground. */
+.player-pill--iris {
+  --pill-ground: #46416f;
+  background-image:
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(var(--pill-bar), var(--pill-bar)),
+    linear-gradient(170deg, #524c80, #46416f 60%, #3c3762);
+}
+.audio-iris {
+  --color-audio-top: #36315c;
+  --color-audio-bg: #131219;
+  --color-audio-raised: #1f1d29;
+  --color-audio-accent: #b3aee0;
+}
 
 /* `surface="tint"` — a book's header (Raka, 19 Nov 2026): the book's own hue
    (\`--hero-tone\`, set inline) washed into paper, umber words, the hue's deep

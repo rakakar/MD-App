@@ -19,6 +19,7 @@ import {
 } from "./audioChrome";
 import { SKIP_SECONDS, usePlayer } from "./PlayerProvider";
 import { AlbumCover } from "@/components/library/AlbumCover";
+import { SongArt } from "@/components/library/AlbumAudio";
 
 /**
  * Audio Mode for a recording — the full-screen surface for anything that is
@@ -84,7 +85,9 @@ export function TrackAudioMode() {
       aria-modal="true"
       aria-label="Audio mode"
       {...sheetProps}
-      className={`fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink ${sheetProps.className}`}
+      className={`fixed inset-0 z-50 flex flex-col bg-audio-bg text-audio-ink ${
+        source.tone === "resources" ? "audio-iris" : ""
+      } ${sheetProps.className}`}
       style={{
         ...sheetProps.style,
         paddingTop: "env(safe-area-inset-top)",
@@ -163,7 +166,13 @@ export function TrackAudioMode() {
       {/* ---- the cover, given the room the text has in a chapter ---- */}
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-4">
         <div className="flex w-full max-w-sm scale-125 flex-col items-center sm:scale-150">
-          {source.albumCover ? (
+          {source.tone === "resources" ? (
+            /* A Resources song's own title page, the tile on its row, square
+               here at the width the other covers take (Raka, 21 Nov 2026). */
+            <span className="block aspect-square w-[38vw] max-w-44 shrink-0 overflow-hidden rounded-cover shadow-raised short-landscape:w-[22dvh]">
+              <SongArt title={source.title} album={source.subtitle} length="" page />
+            </span>
+          ) : source.albumCover ? (
             /* An Originals album's own drawn cover — the one on its card and
                its page — at the width CoverArt takes, square by its own ratio
                (Raka, 19 Nov 2026). */

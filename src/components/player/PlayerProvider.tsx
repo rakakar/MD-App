@@ -69,8 +69,17 @@ export interface AlbumCoverFacts {
   part?: string | null;
 }
 
+/**
+ * Whose colours the player wears for a track. Absent is the sindoor every
+ * Originals recording and chapter plays in; `resources` is that shelf's iris
+ * (Raka, 21 Nov 2026). Carried on the track, not read from the page, so the
+ * pill keeps its colour when the listener walks off to another shelf.
+ */
+export type TrackTone = "resources";
+
 export interface TrackSource {
   kind: "track";
+  tone?: TrackTone;
   id: string;
   title: string;
   subtitle?: string;

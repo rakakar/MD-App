@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AlbumCoverFacts, ChapterNav } from "./PlayerProvider";
+import type { AlbumCoverFacts, ChapterNav, TrackTone } from "./PlayerProvider";
 import { getPlayhead } from "@/lib/storage";
 import { usePlayer } from "./PlayerProvider";
 
@@ -15,6 +15,8 @@ export interface QueueEntry {
   durationMs?: number;
   coverImage?: string | null;
   albumCover?: AlbumCoverFacts | null;
+  /** the shelf the track belongs to, for the player's colours — see `TrackSource` */
+  tone?: TrackTone;
 }
 
 /**
@@ -67,6 +69,7 @@ export function useAudioQueue(entries: QueueEntry[]) {
           durationMs: entry.durationMs,
           coverImage: entry.coverImage ?? null,
           albumCover: entry.albumCover ?? null,
+          tone: entry.tone,
           resumeKey: entry.id,
         },
         { startMs: fromStart ? 0 : (getPlayhead(entry.id) ?? 0) }

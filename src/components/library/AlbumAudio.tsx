@@ -78,6 +78,7 @@ export function AlbumAudio({
         url: item.url,
         durationMs: item.duration_seconds ? item.duration_seconds * 1000 : undefined,
         coverImage: coverUrl,
+        tone: art === "glyph" ? "resources" : undefined,
         // The album's cover with this track's part on it, for Audio Mode. A
         // samvad track has no part (its length is under the cover already).
         albumCover: albumCover && {
@@ -88,7 +89,7 @@ export function AlbumAudio({
           })(),
         },
       })),
-    [items, albumTitle, coverUrl, albumCover, sessionType]
+    [items, albumTitle, coverUrl, albumCover, sessionType, art]
   );
 
   const { play, resumes, activeId } = useAudioQueue(entries);
@@ -170,11 +171,22 @@ export function AlbumAudio({
  * `.track-art` is. `गीत` heads the page only when the folder says it holds
  * songs; elsewhere the note mark stands alone, rather than call a talk a song.
  */
-function SongArt({ title, album, length }: { title: string; album?: string; length: string }) {
+export function SongArt({
+  title,
+  album,
+  length,
+  page = false,
+}: {
+  title: string;
+  album?: string;
+  length: string;
+  /** always the full page, at any size — Audio Mode's cover is under 180px */
+  page?: boolean;
+}) {
   const t = contentLang(title);
   const songs = /geet|गीत/i.test(album ?? "");
   return (
-    <span className="song-art" aria-hidden>
+    <span className={`song-art${page ? " song-art--page" : ""}`} aria-hidden>
       <span className="song-art__page">
         <span className="song-art__top">
           <span className="song-art__kind">{songs ? "गीत" : ""}</span>
