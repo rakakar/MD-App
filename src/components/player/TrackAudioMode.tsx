@@ -199,15 +199,20 @@ export function TrackAudioMode() {
         </p>
       </div>
 
-      {/* ---- transport ---- */}
-      <div className="shrink-0 border-t border-audio-ink/10 bg-audio-bg px-5 pb-2 pt-3">
+      {/* ---- transport ----
+          The chapter player's footer, both ways (Raka, 21 Nov 2026): 24px
+          under the buttons on a phone, so the transport is not the last thing
+          against the home indicator; and on a desktop the scrub bar spans the
+          window while the five buttons gather in the middle, rather than
+          prev/next landing at the window's two far edges. */}
+      <div className="shrink-0 border-t border-audio-ink/10 bg-audio-bg px-5 pb-6 pt-3 short-landscape:pb-2 short-landscape:pt-1 lg:px-8 lg:pb-5">
         <ScrubBar
           positionMs={player.positionMs}
           durationMs={player.durationMs}
           onSeek={player.seekMs}
         />
 
-        <div className="mt-2 flex items-center justify-between gap-1">
+        <div className="mt-2 flex items-center justify-between gap-1 lg:justify-center lg:gap-4">
           <TransportBtn
             onClick={() => player.chapterNav?.prev?.()}
             disabled={!player.chapterNav?.prev}
