@@ -125,6 +125,26 @@ const withRef = (rows: RawRow[]): RawRow[] =>
  * (15 Nov 2026, UX audit FR10). Cleared by the notice, or by signing in.
  */
 export const SESSION_ENDED_KEY = "md.session.ended";
+/** The value `SESSION_ENDED_KEY` holds when the reader deleted the account. */
+export const ACCOUNT_DELETED = "deleted";
+
+/**
+ * Delete the reader's account and everything on it (contract §6.4).
+ *
+ * `password` is required when the account has one — a session left open on a
+ * shared phone should not be enough to erase someone. A mobile-only account
+ * has none; its session itself came from a WhatsApp code.
+ *
+ * Throws as `authedFetch` does: 400 `{password: [...]}` for a wrong password,
+ * 405 from a server that cannot delete yet. On success the token is dropped.
+ */
+export async function deleteAccount(password?: string): Promise<void> {
+  await authedFetch<void>(meUrl(""), {
+    method: "DELETE",
+    body: JSON.stringify(password ? { password } : {}),
+  });
+  setSessionToken(null);
+}
 
 export async function getMe(): Promise<MeUser | null> {
   // No token means signed out, which is the common case — don't spend a

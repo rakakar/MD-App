@@ -10,12 +10,13 @@ import { AppAccent } from "@/components/shell/WorkspaceProvider";
 import { SectionHeading } from "@/components/ui";
 import { BackButton } from "@/components/ui/BackButton";
 import { useIsDesktop } from "@/components/ui/Dialog";
+import { DeleteAccount } from "./DeleteAccount";
 import { EditProfile } from "./EditProfile";
 import { VerifyContact } from "./VerifyContact";
 import { getBooks } from "@/lib/api";
 import { contentLang } from "@/lib/script";
 import { ONBOARDING_OPTIONS, stageBooks, stageById } from "@/lib/journey";
-import { displayPhone } from "@/lib/me";
+import { ACCOUNT_DELETED, SESSION_ENDED_KEY, displayPhone } from "@/lib/me";
 import { profileFor, type ReaderProfile } from "@/lib/profile";
 import { signInHref } from "@/lib/routes";
 import { getPrefs, setPrefs } from "@/lib/storage";
@@ -54,11 +55,14 @@ export function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [verifying, setVerifying] = useState<"email" | "mobile" | null>(null);
   const [changingStage, setChangingStage] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.replace(signInHref("/profile"));
+      // Just deleted: home, where the notice says so — not a sign-in form
+      // for an account that no longer exists.
+      router.replace(justDeleted() ? "/" : signInHref("/profile"));
       return;
     }
     setProfile(profileFor(user));
@@ -219,11 +223,23 @@ export function ProfileScreen() {
                     </button>
                   </div>
                 )}
+                {/* Under the card rather than a row in it: findable where a
+                    reader looks for it, beside Sign out, but quiet — and never
+                    one row from Sign out, a tap that is meant to be easy. */}
+                <button
+                  type="button"
+                  onClick={() => setDeleting(true)}
+                  className={`mt-2 inline-flex min-h-11 items-center text-sm font-medium text-danger hover:underline ${desktop ? "px-1" : "px-5"}`}
+                >
+                  Delete account
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {deleting && <DeleteAccount open desktop={desktop} onClose={() => setDeleting(false)} />}
 
       {verifying && (
         <VerifyContact
@@ -261,6 +277,14 @@ export function ProfileScreen() {
       )}
     </AppAccent>
   );
+}
+
+function justDeleted(): boolean {
+  try {
+    return localStorage.getItem(SESSION_ENDED_KEY) === ACCOUNT_DELETED;
+  } catch {
+    return false;
+  }
 }
 
 /** "March 2026", from whichever join date the server sends. */

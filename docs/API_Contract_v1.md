@@ -506,6 +506,41 @@ Cookies no longer matter to the FE — see §6.1, the session travels in a heade
 
 ---
 
+### 6.4 Deleting the account — **not built yet** (FE shipped 2026-11-22)
+
+The reader deletes their own account from Profile → Delete account. App Store
+(guideline 5.1.1(v)) and Google Play both require this in any app that lets
+people sign up; an email address on /privacy does not satisfy either.
+
+```
+DELETE /api/v1/me/          X-Session-Token: …
+{"password": "…"}           ← required when the account has a usable password
+                            ← {} for a mobile-only account (no password)
+→ 204                       account gone, every session of it ended
+→ 400 {"password": ["Incorrect password."]}   wrong or missing password
+```
+
+What it must do, in one transaction:
+
+- Delete the `User`, its `ReaderProfile`, bookmarks (with their highlight
+  ranges), notes, progress rows (paragraph and `item:` ones), push
+  subscriptions, verified emails/phones, and any pending verify codes.
+- End **every** session of the account (allauth's sessions and app tokens),
+  not just the calling one, so another signed-in device stops on its next
+  request — it already treats a `401`/`403` from `/me/` as "signed out".
+- Feedback the reader sent stays, with its user link set to null: it is a
+  report about the app, not personal data the reader keeps.
+- Refuse staff and operator accounts (`403`): only `user_type="public"`
+  readers delete themselves here.
+- The freed email and mobile can be used to sign up again at once.
+
+Password check: `user.has_usable_password()` → require `password` and check
+it with `user.check_password`. No usable password (mobile sign-up) → no
+second factor; the session itself came from a fresh WhatsApp code.
+
+Until this ships the endpoint answers `405` (Allow: GET, PATCH), and the FE
+tells the reader to write to app@madhyasth.org instead.
+
 ## 7. Frontend stack note (recommendation, FE dev decides)
 
 Next.js (App Router) is a good fit: published content is immutable, so book and

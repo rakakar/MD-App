@@ -10,7 +10,13 @@ import {
   type ReactNode,
 } from "react";
 import { clearConversations, hasConversations } from "@/lib/assistant/conversations";
-import { getMe, logout as apiLogout } from "@/lib/me";
+import {
+  ACCOUNT_DELETED,
+  SESSION_ENDED_KEY,
+  deleteAccount as apiDeleteAccount,
+  getMe,
+  logout as apiLogout,
+} from "@/lib/me";
 import {
   announceSync,
   flushPersonal,
@@ -31,6 +37,11 @@ interface AuthState {
   onAuthenticated: () => Promise<void>;
   /** `false` when the reader chose to stay signed in (unsent work, offline) */
   logout: () => Promise<boolean>;
+  /**
+   * Delete the account for good (contract §6.4). Throws what the server said,
+   * so the sheet can show it; on success this device is wiped as on sign-out.
+   */
+  deleteAccount: (password?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -39,6 +50,7 @@ const AuthContext = createContext<AuthState>({
   refresh: async () => null,
   onAuthenticated: async () => {},
   logout: async () => false,
+  deleteAccount: async () => {},
 });
 
 export function useAuth(): AuthState {
@@ -91,6 +103,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
+  /** Leave nothing of the reader on this device — sign-out and deletion alike. */
+  const forgetDevice = useCallback(() => {
+    setUser(null);
+    // The rows belong to the account, not the device. Leaving them behind
+    // would show one person's bookmarks to whoever reads next on a shared
+    // phone — and they are safe on the server either way.
+    clearLocalStore();
+    // Device-only, so not the account's to keep: see the warning in logout.
+    clearConversations();
+    // Anything already on screen — the reader's painted lines, an open
+    // list — re-reads the now-empty store instead of showing the last
+    // reader's highlights until a reload.
+    announceSync();
+  }, []);
+
   const logout = useCallback(async () => {
     // Last chance to push anything still pending, while the cookie is valid —
     // and a fresh sweep, not one already running, which would have missed the
@@ -124,23 +151,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await apiLogout();
     } finally {
-      setUser(null);
-      // The rows belong to the account, not the device. Leaving them behind
-      // would show one person's bookmarks to whoever reads next on a shared
-      // phone — and they are safe on the server either way.
-      clearLocalStore();
-      // Device-only, so not the account's to keep: see the warning above.
-      clearConversations();
-      // Anything already on screen — the reader's painted lines, an open
-      // list — re-reads the now-empty store instead of showing the last
-      // reader's highlights until a reload.
-      announceSync();
+      forgetDevice();
     }
     return true;
-  }, []);
+  }, [forgetDevice]);
+
+  const deleteAccount = useCallback(
+    async (password?: string) => {
+      // No flush first, unlike sign-out: whatever is pending is about to be
+      // deleted along with the account it would have gone to.
+      await apiDeleteAccount(password);
+      // Said once on the next screen, so the reader knows it went through.
+      // Set before the wipe: Profile reads it to send the reader home rather
+      // than to Sign in, the moment it sees them signed out.
+      try {
+        localStorage.setItem(SESSION_ENDED_KEY, ACCOUNT_DELETED);
+      } catch {
+        // blocked storage: deleted without the note
+      }
+      forgetDevice();
+    },
+    [forgetDevice]
+  );
 
   return (
-    <AuthContext.Provider value={{ user, loading, refresh, onAuthenticated, logout }}>
+    <AuthContext.Provider value={{ user, loading, refresh, onAuthenticated, logout, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

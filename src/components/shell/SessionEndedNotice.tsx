@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CloseIcon } from "@/components/shell/icons";
-import { SESSION_ENDED_KEY } from "@/lib/me";
+import { ACCOUNT_DELETED, SESSION_ENDED_KEY } from "@/lib/me";
 import { signInHref } from "@/lib/routes";
 import { useRoutePath } from "./useRoutePath";
 
@@ -22,19 +22,20 @@ import { useRoutePath } from "./useRoutePath";
 export function SessionEndedNotice() {
   const { user, loading } = useAuth();
   const path = useRoutePath();
-  const [ended, setEnded] = useState(false);
+  // "1" when the server ended the session, ACCOUNT_DELETED when the reader did.
+  const [ended, setEnded] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
     try {
       if (user) {
         localStorage.removeItem(SESSION_ENDED_KEY);
-        setEnded(false);
+        setEnded(null);
       } else {
-        setEnded(localStorage.getItem(SESSION_ENDED_KEY) === "1");
+        setEnded(localStorage.getItem(SESSION_ENDED_KEY));
       }
     } catch {
-      setEnded(false);
+      setEnded(null);
     }
   }, [user, loading]);
 
@@ -46,22 +47,28 @@ export function SessionEndedNotice() {
     } catch {
       // nothing to forget
     }
-    setEnded(false);
+    setEnded(null);
   };
+
+  const deleted = ended === ACCOUNT_DELETED;
 
   return (
     <div role="status" className="mx-auto w-full max-w-3xl px-4 pt-3 sm:px-6 lg:px-8">
       <div className="flex items-center gap-2 rounded-card border border-rule bg-card py-2 ps-4 pe-1 shadow-card">
         <p className="min-w-0 flex-1 text-sm text-ink">
-          You were signed out. Your notes and progress are safe on your account.
+          {deleted
+            ? "Your account has been deleted. You can go on reading as a guest."
+            : "You were signed out. Your notes and progress are safe on your account."}
         </p>
-        <Link
-          href={signInHref(path)}
-          className="flex min-h-11 shrink-0 items-center rounded-control px-3 text-sm font-semibold"
-          style={{ color: "var(--ws-ink)" }}
-        >
-          Sign in
-        </Link>
+        {!deleted && (
+          <Link
+            href={signInHref(path)}
+            className="flex min-h-11 shrink-0 items-center rounded-control px-3 text-sm font-semibold"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            Sign in
+          </Link>
+        )}
         <button
           type="button"
           onClick={dismiss}

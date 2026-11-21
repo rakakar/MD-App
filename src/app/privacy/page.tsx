@@ -102,8 +102,9 @@ export default function PrivacyPage() {
                 </>,
                 "Notifications: switch them off in Settings, or in your phone's settings for this app.",
                 <>
-                  To have your account and everything on it removed, write to{" "}
-                  <InlineLink href="mailto:app@madhyasth.org">app@madhyasth.org</InlineLink> and give the
+                  To delete your account and everything on it, use Delete account on your{" "}
+                  <InlineLink href="/profile">Profile</InlineLink>, or write to{" "}
+                  <InlineLink href="mailto:app@madhyasth.org">app@madhyasth.org</InlineLink> with the
                   number or email you sign in with.
                 </>,
               ]}
