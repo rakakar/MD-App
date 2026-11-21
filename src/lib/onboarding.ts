@@ -62,7 +62,7 @@ export const ONBOARDING_CARDS: OnboardingCard[] = [
   {
     id: "translations",
     workspace: "translations",
-    title: "Read in English or Kannada",
+    title: "Translations",
     body:
       "Translations are available alongside the original. In read mode you can switch between Hindi and your chosen language at any point, without losing your place.",
     fragmentLabel:
