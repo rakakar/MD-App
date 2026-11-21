@@ -2,6 +2,7 @@ import { AlbumAudio } from "@/components/library/AlbumAudio";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ImageGallery } from "@/components/library/ImageGallery";
 import { PdfRows } from "@/components/library/PdfRows";
+import { RowMenu } from "@/components/library/RowMenu";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { VideoPlaylist } from "@/components/library/VideoPlaylist";
 import { VideoView } from "@/components/library/VideoView";
@@ -145,6 +146,30 @@ function KindGroup({
   // difference is only what happens next: a link opens where it lives, a file
   // downloads. `url` is always present on a served file, so neither is dead.
   const opensOut = kind === "link";
+  // A file is download-only — a slide deck, say — but gets the PDF row's ⋯
+  // (Copy link, Share) so it can be passed on the same way. Its link is the
+  // file itself: the reader route would try to draw it as a PDF.
+  if (!opensOut) {
+    return (
+      <ul className="divide-y divide-rule rounded-2xl border border-rule bg-card [&>li:first-child>*]:rounded-t-2xl [&>li:last-child>*]:rounded-b-2xl">
+        {files.map((file) => (
+          <li key={file.id}>
+            <div className="flex items-center gap-1 pe-2 transition-colors hover:bg-ink/[.03]">
+              <a {...downloadProps(file.url, file.title)} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3">
+                <span className="min-w-0 flex-1">
+                  <FileHeading file={file} />
+                </span>
+                <span className="shrink-0 self-center" style={{ color: "var(--ws-ink)" }} aria-label="Download">
+                  <DownloadIcon />
+                </span>
+              </a>
+              <RowMenu label={file.title} items={[]} share={{ title: file.title, url: file.url }} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
   return (
     <ul className="divide-y divide-rule overflow-hidden rounded-2xl border border-rule bg-card">
       {files.map((file) => (
