@@ -2,12 +2,11 @@
 
 import { SrName } from "@/components/ui";
 import { count } from "@/lib/labels";
-import { useMemo, useState } from "react";
 import { BreadcrumbLine } from "@/components/library/NodeCard";
 import { ProvenanceBadge } from "@/components/library/ProvenanceBadge";
 import { ReadingCard } from "@/components/library/ReadingCard";
 import { RowMenu } from "@/components/library/RowMenu";
-import { LARGE_BYTES, downloadFiles } from "@/components/library/folderActions";
+import { LARGE_BYTES } from "@/components/library/folderActions";
 import { formatBytes } from "@/components/library/format";
 import { CheckIcon, DownloadIcon } from "@/components/shell/icons";
 import { KindTile } from "@/components/ui/KindTile";
@@ -23,9 +22,11 @@ type File = LibraryFile | LocatedFile;
  * edition as reading cards first, then the rest as one ruled list a reader can
  * pick from.
  *
- * Each row is one line — a checkbox, the first page in its file tile, the title, pages, size,
- * download and ⋯ — and ticking rows raises a bar with what they come to and
- * one Download for all of them. Large files say so before a byte moves.
+ * Each row is one line — the first page in its file tile, the title, pages,
+ * size, download and ⋯ — and the whole row downloads. No checkboxes, on any
+ * screen (Raka, 21 Nov 2026): the phone comps never had them, and on desktop a
+ * click that just missed the box landed on the row and downloaded the file.
+ * Large files say so before a byte moves.
  */
 export function PdfRows({
   files,
@@ -39,20 +40,6 @@ export function PdfRows({
 }) {
   const reading = files.filter((f) => f.reading);
   const plain = files.filter((f) => !f.reading);
-  const [picked, setPicked] = useState<Set<number>>(new Set());
-
-  // A file that left the list (the folder search narrowed it away) is not
-  // still quietly picked.
-  const chosen = useMemo(() => plain.filter((f) => picked.has(f.id)), [plain, picked]);
-  const bytes = chosen.reduce((n, f) => n + (f.file_size ?? 0), 0);
-
-  const toggle = (id: number) =>
-    setPicked((p) => {
-      const next = new Set(p);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
 
   return (
     <>
@@ -68,42 +55,15 @@ export function PdfRows({
 
       {plain.length > 0 && (
         <>
-          {chosen.length > 0 && (
-            <div
-              role="toolbar"
-              aria-label="Selected files"
-              className={`${reading.length > 0 ? "mt-5" : ""} mb-3 inline-flex items-center gap-1 rounded-control bg-ink p-1 ps-3.5 text-sm text-card`}
-            >
-              <span className="me-2 tabular-nums">{chosen.length} selected</span>
-              <button
-                type="button"
-                onClick={() => downloadFiles(chosen)}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-control bg-card/15 px-3 font-semibold transition-colors hover:bg-card/25"
-              >
-                <DownloadIcon className="h-4 w-4" />
-                Download
-                {bytes > 0 && <span className="tabular-nums opacity-80">{formatBytes(bytes)}</span>}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPicked(new Set())}
-                className="min-h-11 rounded-control px-3 font-medium opacity-80 transition-opacity hover:opacity-100"
-              >
-                Clear
-              </button>
-            </div>
-          )}
           {/* Not `overflow-hidden`, which clipped the last rows' ⋯ menus; the
               end rows round their own fill instead. */}
           <ul
-            className={`${reading.length > 0 && chosen.length === 0 ? "mt-5" : ""} divide-y divide-rule rounded-2xl border border-rule bg-card [&>li:first-child>*]:rounded-t-2xl [&>li:last-child>*]:rounded-b-2xl`}
+            className={`${reading.length > 0 ? "mt-5" : ""} divide-y divide-rule rounded-2xl border border-rule bg-card [&>li:first-child>*]:rounded-t-2xl [&>li:last-child>*]:rounded-b-2xl`}
           >
             {plain.map((f) => (
               <li key={f.id}>
                 <PdfRow
                   file={f}
-                  picked={picked.has(f.id)}
-                  onPick={() => toggle(f.id)}
                   folderProvenance={folderProvenance}
                   folderName={folderName}
                 />
@@ -118,14 +78,10 @@ export function PdfRows({
 
 function PdfRow({
   file,
-  picked,
-  onPick,
   folderProvenance,
   folderName,
 }: {
   file: File;
-  picked: boolean;
-  onPick: () => void;
   folderProvenance?: Provenance;
   folderName: string;
 }) {
@@ -147,25 +103,7 @@ function PdfRow({
   return (
     <div
       className="group relative flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-ink/[.03] sm:gap-4 sm:px-4"
-      style={picked ? { background: "color-mix(in srgb, var(--ws-color) 6%, transparent)" } : undefined}
     >
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={picked}
-        aria-label={`Select ${file.title}`}
-        onClick={onPick}
-        /* Desktop only: the phone comps (8 Oct 2026) draw no picking. */
-        className="relative z-10 hidden h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors sm:flex"
-        style={
-          picked
-            ? { background: "var(--ws-color)", borderColor: "var(--ws-color)", color: "white" }
-            : { borderColor: "var(--color-ink-soft)", opacity: 0.6 }
-        }
-      >
-        {picked && <CheckIcon className="h-3.5 w-3.5" />}
-      </button>
-
       {/* The document's own first page in the app's file tile, as the list had
           it before the ruled rows (designer's call, 8 Oct 2026) — smaller than a
           folder's tile, because a file is the smaller thing. */}
