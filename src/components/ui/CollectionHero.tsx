@@ -25,7 +25,7 @@ import { contentLang } from "@/lib/script";
  * is `surface="hint"`, a light panel with its own colours per theme.
  *
  * Its colours are `--hero-*` variables, white by default (`globals.css`), so
- * the buttons drawn into it — Share, Full series, Play all — follow whichever
+ * the buttons drawn into it — Share, Play all — follow whichever
  * panel they are in without being told.
  */
 export function CollectionHero({

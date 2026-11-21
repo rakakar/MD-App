@@ -10,7 +10,7 @@ import { Sieve } from "@/components/library/Sieve";
 import { filesSummary, formatBytes, languageInEnglish, totalRunTime } from "@/components/library/format";
 import { CoverTile } from "@/components/shelf/CoverTile";
 import { NavScope } from "@/components/shell/WorkspaceProvider";
-import { CollectionHero, EmptyState, HeroPill, ShareButton } from "@/components/ui";
+import { CollectionHero, EmptyState, ShareButton } from "@/components/ui";
 import { findLibrary, nodeChildren } from "@/lib/api";
 import { workspaceHue } from "@/lib/bookHue";
 import {
@@ -208,7 +208,6 @@ export async function NodeView({
             }
             folderProvenance={node.provenance}
             playAll={isRecordings && isAlbum}
-            fullSeries={node.external_url}
           />
 
           {children.length === 0 && node.linked_children.length === 0 && files.length === 0 && (
@@ -356,9 +355,8 @@ function Header({
         av ? "Media" : libraryTabLabel(ws)
       }`}
       aside={
-        node.external_url || (isRecordings && isAlbum) || pdfs.length > 1 ? (
+        (isRecordings && isAlbum) || pdfs.length > 1 ? (
           <>
-            {node.external_url && <WholeSetLink url={node.external_url} />}
             {isRecordings && isAlbum && <PlayAllButton />}
             {pdfs.length > 1 && <DownloadAllButton files={pdfs} />}
           </>
@@ -448,22 +446,6 @@ function Header({
       }
     />
   );
-}
-
-/**
- * "The whole set, where it also lives" — a YouTube playlist for a folder of
- * recordings.
- *
- * In the panel's top row next to Share, which is where the two controls that
- * leave this page belong. Two words rather than five: it is a small control on
- * a busy row now, and "the full series" was explaining itself to a reader who
- * is looking at the series.
- *
- * The arrow is the whole warning that this opens YouTube. Nothing else here
- * leaves the app, so it does not have to compete for notice.
- */
-function WholeSetLink({ url }: { url: string }) {
-  return <HeroPill href={url} external>Full series</HeroPill>;
 }
 
 /**

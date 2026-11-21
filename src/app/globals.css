@@ -2580,7 +2580,7 @@ html:not([data-sutra-collapsed]) .sutra-label-show {
 
 /* ---------------------------------------------------------------------------
    The detail hero's colours (`CollectionHero`). White on the tone gradient by
-   default — every hero, and every Share / Full series / Play all drawn into
+   default — every hero, and every Share / Play all drawn into
    one, reads these, so a panel that changes them changes its buttons too.
    Theme-independent on purpose: the default panel is the accent in all three.
    --------------------------------------------------------------------------- */

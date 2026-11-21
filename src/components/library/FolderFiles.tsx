@@ -30,7 +30,6 @@ export function FolderFiles({
   albumCover,
   folderProvenance,
   playAll = false,
-  fullSeries,
 }: {
   files: LibraryFile[];
   linked: LocatedFile[];
@@ -45,8 +44,6 @@ export function FolderFiles({
   folderProvenance?: Provenance;
   /** a series of recordings: Play all goes under the search on a phone */
   playAll?: boolean;
-  /** where the whole set also lives — Full series, beside Play all */
-  fullSeries?: string | null;
 }) {
   const [q, setQ] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +85,7 @@ export function FolderFiles({
           />
         </div>
       )}
-      <PhonePlayRow playAll={playAll} fullSeries={fullSeries} />
+      <PhonePlayRow playAll={playAll} />
       <PhoneDownloadAll files={[...files, ...linked].filter((f) => f.kind === "pdf")} />
       {none ? (
         <p className="mt-6 text-center text-sm text-ink-soft">Nothing in this folder matches “{q.trim()}”.</p>
