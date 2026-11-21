@@ -2,7 +2,7 @@ import Link from "next/link";
 import { albumName, formatYear, splitAlbumName } from "@/lib/albumName";
 import { AlbumCover } from "@/components/library/AlbumCover";
 import { FolderFiles } from "@/components/library/FolderFiles";
-import { PlayAllButton } from "@/components/library/FolderHeroActions";
+import { DownloadAllButton, PlayAllButton } from "@/components/library/FolderHeroActions";
 import { FindBar } from "@/components/library/FindBar";
 import { FindResults } from "@/components/library/FindResults";
 import { DoorRow } from "@/components/library/CollectionShell";
@@ -266,6 +266,8 @@ function Header({
   const hue = workspaceHue(WORKSPACES[ws].color);
   const parent = node.breadcrumb.at(-1);
   const files = [...node.items, ...node.linked_items];
+  // what Download all takes — the folder's PDFs, borrowed ones included
+  const pdfs = files.filter((f) => f.kind === "pdf");
   // The BE's count is over this folder's own files; a borrowed one is counted
   // where it lives. Adding the linked rows here is what makes the header match
   // the cards actually on the screen.
@@ -354,10 +356,11 @@ function Header({
         av ? "Media" : libraryTabLabel(ws)
       }`}
       aside={
-        node.external_url || (isRecordings && isAlbum) ? (
+        node.external_url || (isRecordings && isAlbum) || pdfs.length > 1 ? (
           <>
             {node.external_url && <WholeSetLink url={node.external_url} />}
             {isRecordings && isAlbum && <PlayAllButton />}
+            {pdfs.length > 1 && <DownloadAllButton files={pdfs} />}
           </>
         ) : undefined
       }
